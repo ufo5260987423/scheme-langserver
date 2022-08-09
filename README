@@ -1,0 +1,26 @@
+# Overview
+
+This package is a dependable thread pool package for chez scheme. I hacked chez-a-sync(https://github.com/ChrisVine/chez-a-sync) and simplified it. And my purpose is making this library easily imported into other code.
+
+This package is published with Akku(https://akkuscm.org/), which is a language package manager for Scheme. 
+
+This package has been tested with Chez Scheme versions 9.4 and 9.5.
+
+
+# API
+Usage please refer to tests/test-ufo-thread-pool.sps.
+
+1. (init-thread-pool size [blocked]) =>thread-pool
+3. (thread-pool? value)=>#t/#f
+4. (thread-pool-blocked?-ref pool)=>#t/#f
+5. (thread-pool-blocked?-change pool #f/#t)=>#t/#f
+6. (thread-pool-thread-number-ref pool)=>thread-number
+7. (thread-pool-job-number-ref pool)=>job-number
+8. (thread-pool-size-ref pool)=>size
+9. (thread-pool-size-add pool value)=>size
+10. (thread-pool-add-job pool job [fail-handler])=>result 
+11. (thread-pool-stop! pool)
+12. (with-thread-pool-increment pool body0 body1 ...)
+
+# Test
+> bash test.sh

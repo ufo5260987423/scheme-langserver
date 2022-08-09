@@ -1,0 +1,13 @@
+#!r6rs ; -*- mode: scheme; coding: utf-8 -*-
+(import (akku format manifest))
+
+(akku-package ("scheme-langserver" "1.0.0-alpha.0")
+  (synopsis "I did not edit Akku.manifest")
+  (authors "Guy Q. Schemer")
+  (license "MIT")
+  (depends ("ufo-match" "^1.0.0-alpha.0")
+           ("ufo-thread-pool" "^1.0.0")
+           ("arew-json" "^1.0.0-alpha.0")
+           ((slib string-search) "^3.1.5")
+           ("chez-srfi" "^0.0.0-akku.209.552cd37"))
+)
