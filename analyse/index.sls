@@ -6,9 +6,9 @@
   (fileds
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
   ;; 有个root-uri属性
-    (immutable root-uri)
+    (immutable root-path)
   ))
 
-(define (init-index root-uri)
-  (make-index uri))
+(define (init-index root-path)
+  (make-index root-path))
 )

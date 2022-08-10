@@ -120,7 +120,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server id params)
   (let* (
-        [root-uri (assq-ref 'rootUri params)]
+        [root-path (uri->path (assq-ref 'rootUri params))]
         [client-capabilities (assq-ref 'capabilities params)]
         [sync-options (make-alist 
               'openClose #t 
@@ -150,7 +150,7 @@
         ; [workspace-configuration (make-alist 'workspaceFolders (make-alist))]
         )
     (with-mutex (server-mutex server)
-      (server-index-set! server (init-index root-uri)))
+      (server-index-set! server (init-index root-path)))
       ;;todo start server 
     (success-response id (make-alist 'capabilities server-capabilities))))
 
