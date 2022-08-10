@@ -22,7 +22,8 @@
         (immutable mutex)
         ; (immutable condition)
         (mutable document-hashtable)
-        (mutable shutdown?)))
+        (mutable shutdown?))
+        (mutable index)))
 
 ; (define-record-type state
 ;     (fileds 
@@ -117,6 +118,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server id params)
+  (with-mutex (server-mutex)
+    (server-index-set! server (init-server (params 'rootUri ))))
   (let ( [sync-options (make-alist 
               'openClose #t 
               ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
@@ -175,7 +178,8 @@
                     (if (threaded?) (make-mutex) '()) 
                     (if (threaded?) (make-condition) '()) 
                     (make-eq-hashtable) 
-                    #f)])
+                    #f
+                    '())])
             (let loop ([message (read-message server)])
             ;;log
               (pretty-print message)
