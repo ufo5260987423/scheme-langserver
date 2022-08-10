@@ -1,4 +1,4 @@
-(library (scheme-langserver index document)
+(library (scheme-langserver analyse document)
   (export 
     collect-document-libraries
     init-document)

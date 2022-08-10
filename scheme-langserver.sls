@@ -11,7 +11,8 @@
     (ufo-match) 
     (srfi :13 strings)
     (scheme-langserver protocol error-code) 
-    (scheme-langserver protocol message))
+    (scheme-langserver protocol message)
+    (scheme-langserver util association))
 
 (define-record-type server
     (fields 
@@ -118,19 +119,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server id params)
-  (with-mutex (server-mutex)
-    (server-index-set! server (init-server (params 'rootUri ))))
-  (let ( [sync-options (make-alist 
+  (let* (
+        [root-uri (assq-ref 'rootUri params)]
+        [client-capabilities (assq-ref 'capabilities params)]
+        [sync-options (make-alist 
               'openClose #t 
               ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
               ;; Incremental=2
               'change 2
               'willSave #f 
               'willSaveWaitUntil #f)]
-        [rename-provider (assq 'prepareProvider)]
-        ; [workspace-configuration (make-alist 
-        ;       'workspaceFolders (make-alist)
-        ;       )]
         [server-capabilities (make-alist 
               'textDocumentSync sync-options
               'hoverProvider #t
@@ -139,7 +137,7 @@
               'completionProvider (make-alist 'triggerCharacters (list "("))
               ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
               'implementationProvider #t
-              ; 'renameProvider rename-provider
+              'renameProvider #t
               ; 'documentHighlightProvider #t
               ; 'documentSymbolProvider #t
               ; 'documentLinkProvider #t
@@ -148,10 +146,13 @@
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
               ; 'foldingRangeProvider #t
               ; 'workspace workspace-configuration
-              )
-        ])
+              )]
+        ; [workspace-configuration (make-alist 'workspaceFolders (make-alist))]
+        )
+    (with-mutex (server-mutex server)
+      (server-index-set! server (init-index root-uri)))
       ;;todo start server 
-      (success-response id (make-alist 'capabilities server-capabilities))))
+    (success-response id (make-alist 'capabilities server-capabilities))))
 
 (define (shutdown server id)
 ;;todo: kill server

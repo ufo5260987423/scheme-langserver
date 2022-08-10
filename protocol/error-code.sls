@@ -1,4 +1,4 @@
-(library (scheme-langserver protocol message)
+(library (scheme-langserver protocol error-code)
   (export 
     parse-error
     invalid-request
