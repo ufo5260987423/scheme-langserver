@@ -4,19 +4,19 @@
 
 (define (assq-ref key alist)
     (let ((key-value-pair (assq key alist)))
-        (if (pair? key-value-pari)
+        (if (pair? key-value-pair)
             (cdr key-value-pair)
             #f)))
 
 (define (assv-ref key alist)
     (let ((key-value-pair (assv key alist)))
-        (if (pair? key-value-pari)
+        (if (pair? key-value-pair)
             (cdr key-value-pair)
             #f)))
 
 (define (assoc-ref key alist)
     (let ((key-value-pair (assoc key alist)))
-        (if (pair? key-value-pari)
+        (if (pair? key-value-pair)
             (cdr key-value-pair)
             #f)))
 
