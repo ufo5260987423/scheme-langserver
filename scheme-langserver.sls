@@ -172,15 +172,10 @@
     (case-lambda
         [() (init-server (current-input-port) (current-output-port))]
         [(input-port output-port) 
-          (let ([server (make-server 
-                    input-port 
-                    output-port 
-                    (if (threaded?) (init-thread-pool 4 #t) '()) 
-                    (if (threaded?) (make-mutex) '()) 
-                    (if (threaded?) (make-condition) '()) 
-                    (make-eq-hashtable) 
-                    #f
-                    '())])
+          (let ([server 
+                  (if (threaded?)
+                    (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) (make-condition) (make-eq-hashtable) #f '())
+                    (make-server input-port output-port '() '() '() (make-eq-hashtable) #f '()) ])
             (let loop ([message (read-message server)])
             ;;log
               (pretty-print message)
