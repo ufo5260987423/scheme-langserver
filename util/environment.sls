@@ -1,7 +1,9 @@
 (library (scheme-langserver util environment)
     (export 
       windows?)
-    (import (rnrs) (srfi :13 strings))
+    (import 
+      (chezscheme) 
+      (only (srfi :13 strings) string-suffix?))
 
 ; (define arch-pairs
 ;   '(("a6"    . amd64)

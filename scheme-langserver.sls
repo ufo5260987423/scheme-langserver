@@ -26,11 +26,6 @@
         (mutable shutdown?))
         (mutable index)))
 
-; (define-record-type state
-;     (fileds 
-;       (immutable root-uri)
-;       (immutable documents)
-;       (immutable shutdown?)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processes a request. This procedure should always return a response
 (define (process-request server request)
@@ -42,6 +37,7 @@
        (initialize server id params)]
       ["shutdown"
        (shutdown server id)]
+      ;; text document 
       ["textDocument/hover"
        (text-document/hover id params)]
       ["textDocument/completion"
@@ -56,8 +52,6 @@
        (text-document/references id params)]
       ["textDocument/documentSymbol"
        (text-document/document-symbol id params)]
-      ; ["textDocument/rename"
-      ;  (text-document/rename id params)]
       ; ["textDocument/prepareRename"
       ;  (text-document/prepareRename id params)]
       ; ["textDocument/formatting"
@@ -105,16 +99,20 @@
         [params (request-params request)])
     (match method
       ["exit"
-        (with-mutex (server-mutex server)
-         (exit  
-          (if (server-shutdown? server) 1 0)))
-        ]
-      ["textDocument/didOpen"
-        (text-document/did-open! server params)]
-      ["textDocument/didClose"
-        (text-document/did-close! params)]
+        (if (null? (server-mutex server))
+          (exit  (if (server-shutdown? server) 1 0))
+          (with-mutex (server-mutex server)
+            (exit  (if (server-shutdown? server) 1 0))))]
+      ; ["textDocument/didOpen"
+      ;   (text-document/did-open! server params)]
+      ; ["textDocument/didClose"
+      ;   (text-document/did-close! params)]
       ["textDocument/didChange"
         (text-document/did-change! params)]
+      ["textDocument/didSave"
+       (text-document/didSave id params)]
+      ["textDocument/rename"
+       (text-document/rename id params)]
       [_ (void)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
