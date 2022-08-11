@@ -3,10 +3,12 @@
       path->uri 
       uri->path 
       uri-is-path? 
-      uri->name)
+      uri->name
+      path->name)
     (import 
       ; (rnrs) 
       ; (only (chezscheme) path-absolute? current-directory)
+      (only (chibi pathname) path-strip-directory)
       (chezscheme)
       (scheme-langserver util environment) 
       ; (only (scheme-langserver util environment) windows?)
@@ -40,17 +42,9 @@
 (define (uri-is-path? str)
   (string-prefix? str "file://"))
 
-(define (uri->name uri path)
-  ;; Find longest matching prefix of uri in path and use remaining part of uri
-  (string-drop
-   uri
-   (+ 1 (string-length
-         (fold-left
-          (lambda (prefix best-prefix)
-            (if (and (> (string-length prefix) (string-length best-prefix))
-                     (string-prefix? prefix uri))
-              prefix
-              best-prefix))
-          "file://"
-          path)))))
+(define (uri->name uri)
+  (path->name (uri->path uri)))
+
+(define (path->name path)
+  (path-strip-directory path))
 )

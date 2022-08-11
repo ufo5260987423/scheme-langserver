@@ -7,7 +7,9 @@
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver analyse virtual-file-system))
 
 (test-begin "init-virtual-file-system")
-    (test-equal #t (lambda(n) (equal? n "scheme-langserver.sls")) (map node-name (node-children (init-virtual-file-system "." '() folder-or-scheme-file?)))
+    (test-equal "scheme-langserver.sls" 
+        (find (lambda(n) (equal? n "scheme-langserver.sls")) 
+        (map node-name (node-children (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

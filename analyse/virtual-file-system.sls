@@ -23,24 +23,30 @@
     (mutable children)
   ))
 
-(define (init-virtual-file-system path parent filter)
-  (if (filter path)
-    (let* ([name (uri->name (path->uri path))] 
+(define (init-virtual-file-system path parent my-filter)
+  (if (my-filter path)
+    (let* ([name (path->name path)] 
           [folder? (file-directory? path)]
-          [children (if (folder?) (directory-list path) '())]
-          [node (make-node path (uri->name (path->uri path)) parent folder? '())])
-      (if folder?
-        (node-children-set!  node (map (lambda(p) 
-              (init-virtual-file-system (string-append path "/" p) node filter)) children)))
-      node)))
+          [node (make-node path name parent folder? '())]
+          [children (if folder?
+              (map 
+                (lambda(p) 
+                  (init-virtual-file-system 
+                    (string-append path (list->string (list (directory-separator))) p) 
+                    node 
+                    my-filter)) 
+                (directory-list path))
+              '())])
+      (node-children-set! node (filter (lambda(p) (not (null? p))) children))
+      node)
+    '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
     #t
-    (not (null? (memq #t
-      (map 
-        (lambda (suffix) (string-suffix? path suffix)) 
-        '(".sps" ".sls" ".scm" ".ss")))))))
+    (find (lambda(t) (or t #f))
+      (map (lambda (suffix) (string-suffix? suffix path)) 
+      '(".sps" ".sls" ".scm" ".ss")))))
 )
