@@ -21,7 +21,7 @@
 (define unknown-error-code -32001)
 
 ;; Defined by JSON RPC
-(define parser-error -32700)
+(define parse-error -32700)
 
 ;; Defined by LSP protocol
 (define request-cancelled -32800)

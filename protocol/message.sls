@@ -40,15 +40,6 @@
         (immutable method)
         (immutable params)))
 
-(define parse-error -32700)
-(define invalid-request -32600)
-(define method-not-found -32601)
-(define invalid-params -32602)
-(define internal-error -32603)
-(define server-error-start -32099)
-(define server-error-end -32000)
-(define server-not-initialized -32002)
-(define unknown-error-code -32001)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (read-message server)
     (let* (
@@ -69,7 +60,8 @@
             (loop 
                 (read-line port) 
                 (let* (
-                        [i (string-index line #\:)]
+                        [c (with-input-from-string ":" (lambda() (read-char)))]
+                        [i (string-index line c)]
                         [key (string-take line i)]
                         [value (string-drop line (+ i 2))])
                     (hashtable-set! header-hashtable key value)

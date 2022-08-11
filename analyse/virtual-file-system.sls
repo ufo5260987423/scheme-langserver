@@ -10,7 +10,7 @@
   (import 
     (chezscheme) 
     (scheme-langserver util path)
-    (srfi :13 strings))
+    (only (srfi :13 strings) string-suffix?))
 
 (define-record-type node 
   (fields
@@ -20,16 +20,18 @@
     (immutable name)
     (immutable parent)
     (immutable folder?)
-    (immutable children)
+    (mutable children)
   ))
 
-(define (init-virtual-file-system path parent-node filter)
+(define (init-virtual-file-system path parent filter)
   (if (filter path)
     (let* ([name (uri->name (path->uri path))] 
           [folder? (file-directory? path)]
           [children (if (folder?) (directory-list path) '())]
           [node (make-node path (uri->name (path->uri path)) parent folder? '())])
-      (node-children-set! node (map (lambda(p) (init-virtual-file-system (string-append path p) node)) children))
+      (if folder?
+        (node-children-set!  node (map (lambda(p) 
+              (init-virtual-file-system (string-append path "/" p) node filter)) children)))
       node)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,8 +39,8 @@
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
     #t
-    (apply or 
+    (not (null? (memq #t
       (map 
         (lambda (suffix) (string-suffix? path suffix)) 
-        '(".sps" ".sls" ".scm" ".ss")))))
+        '(".sps" ".sls" ".scm" ".ss")))))))
 )

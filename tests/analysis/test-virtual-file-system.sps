@@ -4,7 +4,7 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) (scheme-langserver analysis virtual-file-system))
+(import (rnrs (6)) (srfi :64 testing) (scheme-langserver analyse virtual-file-system))
 
 (test-begin "init-virtual-file-system")
     (test-equal #t (lambda(n) (equal? n "scheme-langserver.sls")) (map node-name (node-children (init-virtual-file-system "." '() folder-or-scheme-file?)))
