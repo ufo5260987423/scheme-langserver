@@ -1,5 +1,5 @@
 (library (scheme-langserver analyse index)
-  (export init-index)
+  (export init-index-node)
   (import (rnrs) )
 
 (define-record-type index-node
@@ -7,15 +7,18 @@
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
   ;; 有个root-uri属性
     (immutable document)
-    (immutable start)
-    (immutable end)
-    (immutable content)
     (immutable parent)
     (immutable children)
+    (immutable start)
+    (immutable end)
   ))
 
-(define (init-index root-path)
-  (make-index root-path))
+; (define (init-index-node document parent tree)
+;   (let ([text (document-text document)]
+;       [node (make-index-node document parent '())]
+;       )
+;       )
+;   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (string->list text)
