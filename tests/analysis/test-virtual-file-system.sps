@@ -9,7 +9,7 @@
 (test-begin "init-virtual-file-system")
     (test-equal "scheme-langserver.sls" 
         (find (lambda(n) (equal? n "scheme-langserver.sls")) 
-        (map node-name (node-children (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)))))
+        (map file-node-name (file-node-children (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

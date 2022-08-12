@@ -1,18 +1,19 @@
 (library (scheme-langserver analyse virtual-file-system)
   (export 
-    node-children
-    node-folder?
-    node-parent
-    node-name
-    node-path
+    file-node?
+    file-node-children
+    file-node-folder?
+    file-node-parent
+    file-node-name
+    file-node-path
     init-virtual-file-system 
     folder-or-scheme-file?)
   (import 
     (chezscheme) 
     (scheme-langserver util path)
-    (only (srfi :13 strings) string-suffix?))
+    (only (srfi :13 strings) string-prefix? string-suffix?))
 
-(define-record-type node 
+(define-record-type file-node 
   (fields
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
   ;; 有个root-uri属性
@@ -27,7 +28,7 @@
   (if (my-filter path)
     (let* ([name (path->name path)] 
           [folder? (file-directory? path)]
-          [node (make-node path name parent folder? '())]
+          [node (make-file-node path name parent folder? '())]
           [children (if folder?
               (map 
                 (lambda(p) 
@@ -37,11 +38,20 @@
                     my-filter)) 
                 (directory-list path))
               '())])
-      (node-children-set! node (filter (lambda(p) (not (null? p))) children))
+      (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
       node)
     '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (walk to-path from-node)
+  (if from-node
+    (let ([current-path (file-node-path from-node)])
+      (if (string-prefix? current-path to-path)
+        (if (equal? to-path current-path)
+          from-node
+          (walk to-path 
+            (find (lambda (child) (string-suffix? (file-node-path child) to-path)) 
+              (file-node-children from-node))))))))
 
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
