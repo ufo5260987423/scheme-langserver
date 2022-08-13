@@ -23,11 +23,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (string->list text)
   (with-input-from-string text
-    (lambda(port)
+    (lambda()
       (let loop (
           [result '()]
-          [datum (read port)])
-        (if (eof-object? datum))
-          (loop (append result datum) (read port))
-          (append result datum)))))
+          [datum (read)])
+        (if (eof-object? datum)
+          (loop (append result datum) (read))
+          (append result datum))))))
 )
