@@ -12,6 +12,7 @@
     (immutable start)
     (immutable end)
     ; chez scheme read.ss rd-token and more please refer
+    ; read.ss 1767->get annotations,yes!
     ; (get-datum/annotations (open-string-input-port "'(1 2 3)") (source-file-descriptor "/home/ufo/1.ss" 1) 0)
     (immutable datum/annotations)
   ))
