@@ -11,7 +11,7 @@
     (immutable children)
     (immutable start)
     (immutable end)
-    ; chez scheme syntax.ss rd-token and more please refer
+    ; chez scheme read.ss rd-token and more please refer
     ; (get-datum/annotations (open-string-input-port "'(1 2 3)") (source-file-descriptor "/home/ufo/1.ss" 1) 0)
     (immutable datum/annotations)
   ))
