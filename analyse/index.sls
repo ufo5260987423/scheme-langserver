@@ -11,7 +11,14 @@
     (immutable children)
     (immutable start)
     (immutable end)
-    ; (get-datum/annotations (open-string-input-port "'(1 2 3)") (make-source-file-descriptor "1.ss" (open-file-input-port "/home/ufo/1.ss")) 0)
+    ; (define e
+    ; (let-values (
+    ;     [(a b ) 
+    ;       (get-datum/annotations (open-string-input-port "(quote (1 2 3))") 
+    ;       (make-source-file-descriptor "1.ss" (open-file-input-port "/home/ufo/1.ss")) 0)])
+    ;     a
+    ; ))
+    ; (annotation-expression e)
     (immutable datum/annotations)
   ))
 
