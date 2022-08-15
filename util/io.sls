@@ -42,4 +42,14 @@
                     ((char=? #\newline c) (eat p #\return) (list->string (reverse line)))
                     ((char=? #\return c) (eat p #\newline) (list->string (reverse line)))
                     (else (loop (read-char p) (cons c line))))))))
+
+(define (read-string path)
+    (let ((eat (lambda (p c)
+            (if (and (not (eof-object? (peek-char p))) (char=? (peek-char p) c))
+                (read-char p)))))
+        (let ((p (if (null? port) (current-input-port) (car port))))
+            (let loop ((c (read-char p)) (line '()))
+                (cond 
+                    ((eof-object? c) (if (null? line) c (list->string (reverse line))))
+                    (else (loop (read-char p) (cons c line))))))))
 )

@@ -1,6 +1,8 @@
 (library (scheme-langserver analyse index)
   (export init-index-node)
-  (import (rnrs) )
+  (import 
+    (chezscheme) 
+    (scheme-langserver uti io))
 
 (define-record-type index-node
   (fileds
@@ -11,14 +13,6 @@
     (immutable children)
     (immutable start)
     (immutable end)
-    ; (define e
-    ; (let-values (
-    ;     [(a b ) 
-    ;       (get-datum/annotations (open-string-input-port "(quote (1 2 3))") 
-    ;       (make-source-file-descriptor "1.ss" (open-file-input-port "/home/ufo/1.ss")) 0)])
-    ;     a
-    ; ))
-    ; (annotation-expression e)
     (immutable datum/annotations)
   ))
 
@@ -30,13 +24,17 @@
 ;   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (string->list text)
-  (with-input-from-string text
-    (lambda()
-      (let loop (
-          [result '()]
-          [datum (read)])
-        (if (eof-object? datum)
-          (loop (append result datum) (read))
-          (append result datum))))))
+    ; (define e
+    ; (let-values (
+    ;     [(a b ) 
+    ;       (get-datum/annotations (open-string-input-port "(quote (1 2 3))") 
+    ;       (make-source-file-descriptor "1.ss" (open-file-input-port "/home/ufo/1.ss")) 0)])
+    ;     a
+    ; ))
+    ; (annotation-expression e)
+(define (source-file->annotation path)
+  (let-values 
+    ([(ann end-pos)
+      (get-datum/annotations (read-string path) (make-source-file-descriptor path (open-file-input-port path) 0))])
+    ann))
 )
