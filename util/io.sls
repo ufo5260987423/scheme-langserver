@@ -44,9 +44,7 @@
                     (else (loop (read-char p) (cons c line))))))))
 
 (define (read-string path)
-    (let ((eat (lambda (p c)
-            (if (and (not (eof-object? (peek-char p))) (char=? (peek-char p) c))
-                (read-char p)))))
+    (call-with-input-file path
         (let ((p (if (null? port) (current-input-port) (car port))))
             (let loop ((c (read-char p)) (line '()))
                 (cond 
