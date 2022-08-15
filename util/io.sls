@@ -1,19 +1,23 @@
 (library (scheme-langserver util io)
-    (export read-line write-line)
+    (export 
+        read-lines 
+        write-lines
+
+        read-string
+        write-string
+        )
     (import (rnrs) )
 
 (define (write-lines lines path)
     (if (not (null? lines))
-        (call-with-output-file 
-            path
+        (call-with-output-file path
             (lambda(port)
                 (let loop ((lines lines))
                     (write-string (car lines) port)
                     (if (not (null? (cdr lines)))
                         (begin 
                             (write-string "\n" port)
-                            (loop (cdr lines))))))
-        '(replace))))
+                            (loop (cdr lines)))))))))
 
 (define (write-string s port)
     (let loop ((l (string->list s)))
@@ -45,9 +49,9 @@
 
 (define (read-string path)
     (call-with-input-file path
-        (let ((p (if (null? port) (current-input-port) (car port))))
-            (let loop ((c (read-char p)) (line '()))
+        (lambda (port)
+            (let loop ((c (read-char port)) (line '()))
                 (cond 
                     ((eof-object? c) (if (null? line) c (list->string (reverse line))))
-                    (else (loop (read-char p) (cons c line))))))))
+                    (else (loop (read-char port) (cons c line))))))))
 )
