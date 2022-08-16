@@ -1,4 +1,4 @@
-(library (scheme-langserver protocol message)
+(library (scheme-langserver protocol method)
   (export 
     textDocument/hover
     textDocument/completion

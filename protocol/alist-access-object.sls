@@ -1,4 +1,4 @@
-(library (scheme-langserver protocol message)
+(library (scheme-langserver protocol alist-access-object)
   (export 
     position-line
     position-character
@@ -45,10 +45,10 @@
     (immutable related-info)))
 
 (define (alist->position alist)
-  (make-postion (assq 'line alist) (assq 'character alist)))
+  (make-position (assq 'line alist) (assq 'character alist)))
 
 (define (position->alist instance)
-  (make-alist 'line (postion-line instance) 'character (postion-character instance)))
+  (make-alist 'line (position-line instance) 'character (position-character instance)))
 
 (define (alist->range alist)
   (make-range (assq 'start alist) (assq 'end alist)))
@@ -64,12 +64,6 @@
 
 (define (text-edit->alist-with-newText instance)
   (make-alist 'range (range->alist (text-edit-range instance)) 'newText (text-edit-text instance)))
-
-(define (alist->location alist)
-  (make-location (assq 'uri alist) (alist->range (assq 'range alist))))
-
-(define (location->alist instance)
-  (make-alist 'uri (location-uri instance) 'range (range->alist (location-range instance))))
 
 (define (alist->location alist)
   (make-location (assq 'uri alist) (alist->range (assq 'range alist))))
@@ -94,7 +88,7 @@
     (assq 'code alist) (assq 'source alist) (assq 'message alist) (assq 'relatedInfo alist)))
 
 (define (diagnostic->alist instance)
-  (make-alist 'range (range->alist (diagnostic-range instance)) 'severity (diagnostic-severtiy instance) 
+  (make-alist 'range (range->alist (diagnostic-range instance)) 'severity (diagnostic-severity instance) 
       'code (diagnostic-code instance) 'source (diagnostic-source instance)
       'message (diagnostic-message instance) 'relatedInfo (diagnostic-related-info instance)))
 )

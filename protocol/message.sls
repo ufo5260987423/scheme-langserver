@@ -21,11 +21,12 @@
     send-notification)
   (import 
     (chezscheme) 
+    (scheme-langserver)
     (scheme-langserver util json)
     (scheme-langserver util association)
     (scheme-langserver util io)
     (scheme-langserver protocol alist-access-object)
-    (srfi :13 strings))
+    (only (srfi :13 strings) string-index string-take string-drop ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type response
