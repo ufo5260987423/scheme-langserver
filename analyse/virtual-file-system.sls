@@ -1,5 +1,6 @@
 (library (scheme-langserver analyse virtual-file-system)
   (export 
+    file-node
     file-node?
     file-node-children
     file-node-folder?
@@ -10,6 +11,8 @@
     folder-or-scheme-file?)
   (import 
     (chezscheme) 
+    (scheme-langserver analyse document)
+    (scheme-langserver analyse index)
     (scheme-langserver util path)
     (only (srfi :13 strings) string-prefix? string-suffix?))
 
@@ -22,6 +25,8 @@
     (immutable parent)
     (immutable folder?)
     (mutable children)
+    (mutable document)
+    (mutable index)
   ))
 
 (define (init-virtual-file-system path parent my-filter)
@@ -43,15 +48,6 @@
     '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (walk to-path from-node)
-  (if from-node
-    (let ([current-path (file-node-path from-node)])
-      (if (string-prefix? current-path to-path)
-        (if (equal? to-path current-path)
-          from-node
-          (walk to-path 
-            (find (lambda (child) (string-suffix? (file-node-path child) to-path)) 
-              (file-node-children from-node))))))))
 
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 

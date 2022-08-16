@@ -8,7 +8,6 @@
   (fileds
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
   ;; 有个root-uri属性
-    (immutable document)
     (immutable parent)
     (immutable children)
     (immutable start)
