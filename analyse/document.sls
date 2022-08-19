@@ -1,11 +1,13 @@
 (library (scheme-langserver analyse document)
   (export 
-    collect-document-libraries
-    init-document)
+    make-document
+    document?
+    document-uri
+    document-text)
   (import (rnrs) )
 
 (define-record-type document 
-  (fileds 
+  (fields 
     (immutable uri)
     (mutable text)))
 )

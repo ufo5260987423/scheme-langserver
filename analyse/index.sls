@@ -2,7 +2,7 @@
   (export init-index-node)
   (import 
     (chezscheme) 
-    (scheme-langserver uti io))
+    (scheme-langserver util io))
 
 (define-record-type index-node
   (fileds
