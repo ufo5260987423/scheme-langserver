@@ -14,29 +14,16 @@
     (scheme-langserver protocol message)
     (scheme-langserver util association))
 
-(define-record-type server
-    (fields 
-        (immutable input-port)
-        (immutable output-port)
-        (immutable thread-pool)
-        ;;for output-port
-        (immutable mutex)
-        ; (immutable condition)
-        (mutable document-hashtable)
-        (mutable shutdown?))
-        (mutable index)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Processes a request. This procedure should always return a response
-(define (process-request server request)
+(define (process-request server-instance request)
   (let([method (request-method request)]
         [id (request-id request)]
         [params (request-params request)])
     (match method
       ["initialize"
-       (initialize server id params)]
+       (initialize server-instance id params)]
       ["shutdown"
-       (shutdown server id)]
+       (shutdown server-instance id)]
       ;; text document 
       ["textDocument/hover"
        (text-document/hover id params)]
@@ -93,16 +80,16 @@
     ; connection.onRequest(lsp.SemanticTokensRangeRequest.type, server.semanticTokensRange.bind(server));
 
 ;; not reply client!
-(define (process-notification server request)
+(define (process-notification server-instance request)
   (let([method (request-method request)]
         [id (request-id request)]
         [params (request-params request)])
     (match method
       ["exit"
-        (if (null? (server-mutex server))
-          (exit  (if (server-shutdown? server) 1 0))
-          (with-mutex (server-mutex server)
-            (exit  (if (server-shutdown? server) 1 0))))]
+        (if (null? (server-mutex server-instance))
+          (exit  (if (server-shutdown? server-instance) 1 0))
+          (with-mutex (server-mutex server-instance)
+            (exit  (if (server-shutdown? server-instance) 1 0))))]
       ; ["textDocument/didOpen"
       ;   (text-document/did-open! server params)]
       ; ["textDocument/didClose"
@@ -116,7 +103,7 @@
       [_ (void)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (initialize server id params)
+(define (initialize server-instance id params)
   (let* (
         [root-path (uri->path (assq-ref 'rootUri params))]
         [client-capabilities (assq-ref 'capabilities params)]
@@ -147,40 +134,40 @@
               )]
         ; [workspace-configuration (make-alist 'workspaceFolders (make-alist))]
         )
-    (with-mutex (server-mutex server)
-      (server-index-set! server (init-index root-path)))
+    (with-mutex (server-mutex server-instance)
+      (server-index-set! server-instance (init-index root-path)))
       ;;todo start server 
     (success-response id (make-alist 'capabilities server-capabilities))))
 
-(define (shutdown server id)
+(define (shutdown server-instance id)
 ;;todo: kill server
-  (with-mutex (server-mutex server)
-    (server-shutdown-set! server #t)
-    (thread-pool-stop (server-thread-pool server))
+  (with-mutex (server-mutex server-instance)
+    (server-shutdown-set! server-instance #t)
+    (thread-pool-stop (server-thread-pool server-instance))
     (success-response id '())))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (process-message server message)
+(define (process-message server-instance message)
   (cond 
   ;;notification do not require response
-    ([(null? (request-id message))] (process-notification server message))
-    (else (send-message server (process-request server message)))))
+    ([(null? (request-id message))] (process-notification server-instance message))
+    (else (send-message server-instance (process-request server-instance message)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
         [() (init-server (current-input-port) (current-output-port))]
         [(input-port output-port) 
-          (let ([server 
+          (let ([server-instance 
                   (if (threaded?)
                     (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) (make-condition) (make-eq-hashtable) #f '())
                     (make-server input-port output-port '() '() '() (make-eq-hashtable) #f '()) ])
-            (let loop ([message (read-message server)])
+            (let loop ([message (read-message server-instance)])
             ;;log
               (pretty-print message)
-              (if (null? (server-thread-pool))
-                (process-message server message)
-                (thread-pool-add-job (lambda() (process-message server message))))
-              (loop (read-message server)))
+              (if (null? (server-thread-pool server-instance))
+                (process-message server-instance message)
+                (thread-pool-add-job (lambda() (process-message server-instance message))))
+              (loop (read-message server-instance)))
             (newline)
             (newline)
             (display "bye")
