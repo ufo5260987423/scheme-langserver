@@ -1,6 +1,14 @@
 (library (scheme-langserver analyse index)
   (export 
     init-index-node
+    index-node?
+    index-node-parent
+    index-node-children
+    index-node-children-set!
+    index-node-start
+    index-node-end
+    index-node-datum/annotations
+
     source-file->annotation)
   (import 
     (chezscheme) 
@@ -20,12 +28,12 @@
 (define (init-index-node parent datum/annotations)
   (let* ([source (annotation-source datum/annotations)]
         [node (make-index-node parent '() (source-object-bfp source) (source-object-efp source) datum/annotations)]
-        [expression (annotation-expression datum/annotations)]
-        [children 
-          (if (list? expression) 
-            (map (lambda (e) (init-index-node node e)) expression) 
-            '())])
-    (index-node-children-set! node children)
+        [expression (annotation-expression datum/annotations)])
+    (index-node-children-set! 
+      node 
+      (if (list? expression)
+        (map (lambda(e) (init-index-node node e)) expression)
+        '()))
     node))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
