@@ -32,7 +32,12 @@
     (index-node-children-set! 
       node 
       (if (list? expression)
-        (map (lambda(e) (init-index-node node e)) expression)
+        (map 
+          (lambda(e) 
+            (if (annotation? e)
+              (init-index-node node e)
+              '()))
+          expression)
         '()))
     node))
 
