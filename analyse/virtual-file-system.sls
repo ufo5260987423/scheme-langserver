@@ -35,7 +35,7 @@
     (let* ([name (path->name path)] 
           [folder? (file-directory? path)]
           [document (if folder? '() (make-document (path->uri path) (read-string path)))]
-          [index (if folder? '() (init-index '() (source-file->annotation (document-text document))))]
+          [index (if folder? '() (init-index-node '() (source-file->annotation (document-text document))))]
           [node (make-file-node path name parent folder? '() document '())]
           [children (if folder?
               (map 

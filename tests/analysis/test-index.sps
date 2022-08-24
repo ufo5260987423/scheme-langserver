@@ -7,7 +7,12 @@
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver analyse index))
 
 (test-begin "index-test")
-    (test-equal '() (init-index '() (source-file->annotation "./util/io.sls")))
+    (test-equal 'library 
+        (annotation-stripped 
+            (car 
+                (annotation-expression 
+                (index-node-datum/annotations
+                    (init-index-node '() (source-file->annotation "./util/io.sls")))))))
 (test-end)
 
 
