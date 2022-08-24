@@ -1,6 +1,6 @@
 (library (scheme-langserver analyse index)
   (export 
-    init-index-node
+    init-index
     index-node?
     index-node-parent
     index-node-children
@@ -25,7 +25,7 @@
     (immutable datum/annotations)
   ))
 
-(define (init-index-node parent datum/annotations)
+(define (init-index parent datum/annotations)
   (let* ([source (annotation-source datum/annotations)]
         [node (make-index-node parent '() (source-object-bfp source) (source-object-efp source) datum/annotations)]
         [expression (annotation-expression datum/annotations)])
@@ -35,7 +35,7 @@
         (map 
           (lambda(e) 
             (if (annotation? e)
-              (init-index-node node e)
+              (init-index node e)
               '()))
           expression)
         '()))

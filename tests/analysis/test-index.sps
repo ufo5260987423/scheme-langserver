@@ -6,13 +6,9 @@
 
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver analyse index))
 
-(let ([a-list '((b . 2) (a . 1))])
-    (test-begin "make-alist")
-        (test-equal a-list (make-alist 'b 2 'a 1))
-    (test-end)
-    (test-begin "assq-ref")
-        (test-equal 1 (assq-ref 'a a-list))
-    (test-end))
+(test-begin "index-test")
+    (test-equal '() (init-index '() (source-file->annotation "./util/io.sls")))
+(test-end)
 
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
