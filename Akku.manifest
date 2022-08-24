@@ -3,7 +3,7 @@
 
 (akku-package ("scheme-langserver" "1.0.0-alpha.0")
   (synopsis "I did not edit Akku.manifest")
-  (authors "Guy Q. Schemer")
+  (authors "WANG Zheng")
   (license "MIT")
   (depends ((chibi pathname) "^0.9.0")
            ("ufo-match" "^1.0.0-alpha.0")
