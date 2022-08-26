@@ -1,13 +1,30 @@
 (library (scheme-langserver analyse document)
   (export 
-    make-document
+    init-document
     document?
     document-uri
-    document-text)
-  (import (rnrs) )
+    document-file-node
+    document-text
+    document-index-node
+    document-text-set!
+    document-index-node-set!)
+  (import (rnrs)
+    (scheme-langserver util io)
+    (scheme-langserver util path)
+    (scheme-langserver analyse index))
 
 (define-record-type document 
   (fields 
     (immutable uri)
-    (mutable text)))
+    (immutable file-node)
+    (mutable text)
+    (mutable index-node)))
+
+(define (init-document uri file-node)
+  (let ([path (uri->path uri)])
+    (make-document 
+      uri 
+      file-node 
+      (read-string path) 
+      (init-index-node '() (source-file->annotation path)))))
 )
