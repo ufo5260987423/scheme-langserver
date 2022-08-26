@@ -3,7 +3,6 @@
     init-document
     document?
     document-uri
-    document-file-node
     document-text
     document-index-node
     document-text-set!
@@ -16,15 +15,13 @@
 (define-record-type document 
   (fields 
     (immutable uri)
-    (immutable file-node)
     (mutable text)
     (mutable index-node)))
 
-(define (init-document uri file-node)
+(define (init-document uri)
   (let ([path (uri->path uri)])
     (make-document 
       uri 
-      file-node 
       (read-string path) 
       (init-index-node '() (source-file->annotation path)))))
 )

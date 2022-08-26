@@ -34,10 +34,9 @@
      ;; as a UNC path. If it begins with file:///, it's translated to an MS-DOS
      ;; path. (https://en.wikipedia.org/wiki/File_URI_scheme#Windows_2)
      (cond
-       [(string-prefix? uri "file:////") (substring uri 0 7)]
-       [(string-prefix? uri "file:///") (substring uri 0 8)]
-       [else (string-append "//" (substring uri 0 7))])]
-    [else (substring uri 0 7)]))
+       [(string-prefix? "file:////" uri) (string-drop uri 8)]
+       [(string-prefix? "file:///" uri) (string-drop uri 7)])]
+    [else (string-drop uri 7)]))
 
 (define (uri-is-path? str)
   (string-prefix? str "file://"))
