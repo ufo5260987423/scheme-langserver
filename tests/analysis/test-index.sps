@@ -15,5 +15,11 @@
                     (init-index-node '() (source-file->annotation "./util/io.sls")))))))
 (test-end)
 
+(test-begin "pick-test")
+    (test-equal 'library 
+        (annotation-stripped 
+            (index-node-datum/annotations 
+            (car (pick (init-index-node '() (source-file->annotation "./util/path.sls")) 0 8)))))
+(test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
