@@ -13,6 +13,7 @@
     (chezscheme) 
     (scheme-langserver analyse document)
     (scheme-langserver util path)
+    (scheme-langserver util try)
     (only (srfi :13 strings) string-prefix? string-suffix?))
 
 (define-record-type file-node 
@@ -31,7 +32,12 @@
   (if (my-filter path)
     (let* ([name (path->name path)] 
           [folder? (file-directory? path)]
-          [document (if folder? '() (init-document (path->uri path)))]
+          [document (if folder? '() 
+              (try
+                (init-document (path->uri path))
+                ;;todo diagnostic
+                (except e
+                  [else '()])))]
           [node (make-file-node path name parent folder? '() document)]
           [children (if folder?
               (map 
