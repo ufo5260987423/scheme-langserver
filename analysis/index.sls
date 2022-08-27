@@ -8,12 +8,23 @@
     index-node-end
     index-node-datum/annotations
 
+    index-node-available-references
+    index-node-available-references-set!
+    index-node-current-references
+    index-node-current-references-set!
+
+    identifier-reference?
+    make-identifier-reference
+    index-node-available-references-extend
+
     source-file->annotation
     pick)
   (import 
     (chezscheme) 
-    (scheme-langserver util io))
+    (scheme-langserver util io)
+    (scheme-langserver analysis identifier reference))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node
   (fields
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
@@ -23,11 +34,14 @@
     (immutable start)
     (immutable end)
     (immutable datum/annotations)
+
+    (mutable available-references)
+    (mutable current-references)
   ))
 
 (define (init-index-node parent datum/annotations)
   (let* ([source (annotation-source datum/annotations)]
-        [node (make-index-node parent '() (source-object-bfp source) (source-object-efp source) datum/annotations)]
+        [node (make-index-node parent '() (source-object-bfp source) (source-object-efp source) datum/annotations '() '())]
         [expression (annotation-expression datum/annotations)])
     (index-node-children-set! 
       node 
@@ -40,7 +54,6 @@
           expression)
         '()))
     node))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define source-file->annotation
   (case-lambda

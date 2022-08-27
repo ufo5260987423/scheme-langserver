@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis virtual-file-system document)
+(library (scheme-langserver virtual-file-system document)
   (export 
     init-document
     document?
@@ -10,7 +10,7 @@
   (import (rnrs)
     (scheme-langserver util io)
     (scheme-langserver util path)
-    (scheme-langserver analyse index))
+    (scheme-langserver analysis index))
 
 (define-record-type document 
   (fields 

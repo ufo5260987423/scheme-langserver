@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis virtual-file-system file-node)
+(library (scheme-langserver virtual-file-system file-node)
   (export 
     file-node
     file-node?
@@ -8,10 +8,12 @@
     file-node-name
     file-node-path
     init-virtual-file-system 
-    folder-or-scheme-file?)
+
+    folder-or-scheme-file?
+    walk-find)
   (import 
     (chezscheme) 
-    (scheme-langserver analyse virtual-file-system document)
+    (scheme-langserver virtual-file-system document)
     (scheme-langserver util path)
     (scheme-langserver util try)
     (only (srfi :13 strings) string-prefix? string-suffix?))
@@ -53,11 +55,20 @@
     '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
     #t
     (find (lambda(t) (or t #f))
       (map (lambda (suffix) (string-suffix? suffix path)) 
       '(".sps" ".sls" ".scm" ".ss")))))
+
+(define (walk-find node path)
+  (if (equal? (file-node-path node) path)
+    `(,node)
+    (if (string-preffix? (file-node-path node) path)
+      (apply append 
+        (map 
+          (lambda (new-node) 
+            (walk-find new-node path)) (file-node-children node) ))
+      '())))
 )
