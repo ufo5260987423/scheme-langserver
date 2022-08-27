@@ -4,7 +4,6 @@
     index-node?
     index-node-parent
     index-node-children
-    index-node-children-set!
     index-node-start
     index-node-end
     index-node-datum/annotations

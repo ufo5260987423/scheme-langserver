@@ -18,6 +18,8 @@ TODO:
 4. Cross-platform Parallel indexing.
 5. Macro expanding.
 6. Code eval.
+7. Code diagnostic.
+8. Fully r6rs Compability.
 
 # Test
 > bash test.sh
