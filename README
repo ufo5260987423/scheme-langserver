@@ -1,17 +1,23 @@
 # Overview
 
-This package is a language server protocol implementation.
+This package is a language server protocol implementation helping coding. It provides completion and will provide many other functionalities. These functionalities are established on the basis of static code analysis and distinguished from Geiser and many other coding plugins. For example, Geiser can only complete top-level binding identifiers and these do not include local bindings.
 
 This package is published with Akku(https://akkuscm.org/), which is a language package manager for Scheme. 
 
 This package has been tested with Chez Scheme versions 9.4 and 9.5.
 
-This is for ☭.
+This is for ☭. Coders of all countries, unite!
 
+# Feature
 
-# Compare to Geiser
+1. Top-level identifiers binding completion.
+2. Local identifiers binding completion.
 
-Geiser is an Emacs plugin helping lisp coding. It provides eval, completion, macro expand and many other features. However, these functionalities are not established on the basis of static code analyse. For example, Geiser can only complete top-level binding identifiers and these do not include local bindings.
+TODO: 
+3. File modification notification and corresponding index changing.
+4. Cross-platform Parallel indexing.
+5. Macro expanding.
+6. Code eval.
 
 # Test
 > bash test.sh
