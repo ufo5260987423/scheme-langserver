@@ -4,7 +4,7 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) (scheme-langserver analyse index))
+(import (rnrs (6)) (srfi :64 testing) (scheme-langserver analysis index))
 
 (test-begin "index-test")
     (test-equal 'library 
