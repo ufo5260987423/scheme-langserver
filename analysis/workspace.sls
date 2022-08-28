@@ -19,9 +19,11 @@
 (define-record-type workspace
   (fields
     (immutable file-node)
-    (mutable source-linkage-node)))
+    (mutable source-node)))
 
-(define (init-workspace file-node)
-  (let ([workspace-instance (make-workspace file-node (init-virtual-source-file-system file-node))])
+(define (init-workspace path)
+  (let* ([file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
+        [workspace-instance (make-workspace file-node (init-virtual-source-file-system file-node))])
+    workspace-instance
   ))
 )

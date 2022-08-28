@@ -28,6 +28,7 @@
         (let* ([document-instance (file-node-document file-node)]
             [index-node-instance (document-index-node document-instance)]
             [expression (annotation-stripped (index-node-datum/annotations index-node-instance))])
+            ;;rule
           (match expression 
             [('library (name **1) rest ... ) (generate name root-source-file-node file-node)])))]))
 
