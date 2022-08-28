@@ -10,7 +10,8 @@
     pick
     walk-find
     walk-library
-    generate)
+    generate
+    folder-or-scheme-file?)
   (import 
     (ufo-match)
     (chezscheme) 
@@ -73,7 +74,7 @@
   (case-lambda 
     [(file-node) 
       (if (null? (file-node-parent file-node))
-        (init-library-node file-node (make-library-node '() '() file-node))
+        (init-library-node file-node (make-library-node '() '() file-node '()))
         (init-library-node (file-node-parent file-node)))]
     [(file-node root-library-node) 
       (if (file-node-folder? file-node)
@@ -168,20 +169,20 @@
 
 (define (generate list-instance library-node virtual-file-node)
   (if (null? list-instance)
-    (library-node-file-nodes-set! library-node (append (library-node-file-nodes node) `(,virtual-file-node)))
+    (library-node-file-nodes-set! library-node (append (library-node-file-nodes library-node) `(,virtual-file-node)))
     (let* ([head (car list-instance)]
           [rest (cdr list-instance)]
           [children (find 
               (lambda(child-node) (equal? head (library-node-name child-node))) 
               (library-node-children library-node))]
           [child-node (if (null? children)
-              (make-library-node head library-node '())
+              (make-library-node head library-node '() '())
               (car children))])
       (if (null? children)
         (begin
           (library-node-children-set! 
-            node 
-            (append (library-node-children node) child-node))
-          (generate list-instance node virtual-file-node))
+            library-node 
+            (append (library-node-children library-node) child-node))
+          (generate list-instance library-node virtual-file-node))
         (generate rest child-node virtual-file-node)))))
 )
