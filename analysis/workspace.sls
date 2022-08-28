@@ -1,20 +1,20 @@
 (library (scheme-langserver analysis workspace)
   (export init-workspace)
   (import 
-    (chezscheme) 
     (ufo-match)
-    (scheme-langserver analysis index)
+    (chezscheme) 
+    (only (srfi :13 strings) string-prefix? string-suffix?)
+
+    (scheme-langserver util path)
+    (scheme-langserver util try)
+    (scheme-langserver util io)
+
+    ; (scheme-langserver analysis identifier reference)
+
+    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
-
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis virtual-source-file-system)
-    )
-
-(define-record-type source-linkage-node 
-  (immutable parent)
-  (immutable children)
-)
+    (scheme-langserver virtual-file-system library-node))
 
 (define-record-type workspace
   (fields
@@ -23,7 +23,154 @@
 
 (define (init-workspace path)
   (let* ([file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
-        [workspace-instance (make-workspace file-node (init-virtual-source-file-system file-node))])
+        [workspace-instance (make-workspace file-node (init-library-node file-node))])
     workspace-instance
   ))
+
+(define (init-virtual-file-system path parent my-filter)
+  (if (my-filter path)
+    (let* ([name (path->name path)] 
+          [folder? (file-directory? path)]
+          [document (if folder? '() 
+              (try
+                (init-document (path->uri path))
+                ;;todo diagnostic
+                (except e
+                  [else '()])))]
+          [node (make-file-node path name parent folder? '() document)]
+          [children (if folder?
+              (map 
+                (lambda(p) 
+                  (init-virtual-file-system 
+                    (string-append path (list->string (list (directory-separator))) p) 
+                    node 
+                    my-filter)) 
+                (directory-list path))
+              '())])
+      (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
+      node)
+    '()))
+
+(define (init-document uri)
+  (let ([path (uri->path uri)])
+    (make-document 
+      uri 
+      (read-string path) 
+      (init-index-node '() (source-file->annotation path)))))
+
+(define init-library-node
+  (case-lambda 
+    [(file-node) 
+      (if (null? (file-node-parent file-node))
+        (init-library-node file-node (make-library-node '() '() file-node))
+        (init-library-node (file-node-parent file-node)))]
+    [(file-node root-library-node) 
+      (if (file-node-folder? file-node)
+        (map 
+          (lambda (child-node) (init-library-node child-node root-library-node))
+          (file-node-children file-node))
+        (let* ([document-instance (file-node-document file-node)]
+            [index-node-instance (document-index-node document-instance)]
+            [expression (annotation-stripped (index-node-datum/annotations index-node-instance))])
+            ;;rule
+          (match expression 
+            [('library (name **1) rest ... ) (generate name root-library-node file-node)])))]))
+
+(define (init-index-node parent datum/annotations)
+  (let* ([source (annotation-source datum/annotations)]
+        [node (make-index-node parent '() (source-object-bfp source) (source-object-efp source) datum/annotations '() '())]
+        [expression (annotation-expression datum/annotations)])
+    (index-node-children-set! 
+      node 
+      (if (list? expression)
+        (map 
+          (lambda(e) 
+            (if (annotation? e)
+              (init-index-node node e)
+              '()))
+          expression)
+        '()))
+    node))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define source-file->annotation
+  (case-lambda
+    ([path] (source-file->annotation (read-string path) path))
+    ([source path]
+      (let-values 
+        ([(ann end-pos)
+          (get-datum/annotations 
+            (open-string-input-port source) 
+            (make-source-file-descriptor path (open-file-input-port path)) 0)])
+        ann))))
+
+(define pick
+  (case-lambda 
+    ([node start-position end-position] 
+      (let ([pick-with-range (lambda (node-new) (pick node-new start-position end-position))])
+        (cond
+          ((and 
+              (<= start-position (index-node-start node))
+              (>= end-position (index-node-end node)))
+            `(,node))
+          (else (apply append (map pick-with-range (index-node-children node)))))))
+    ([node position] 
+        (let ([in? (and 
+              (<= position (index-node-end node))
+              (>= position (index-node-start node)))]
+              [has-children? (not (null? (index-node-children node)))]
+              [pick-with-position (lambda (node-new) (pick node-new position))])
+          (cond
+            [(and in? has-children?) (apply append (map pick-with-position (index-node-children node)))] 
+            [(and in? (not has-children?)) `(,node)] 
+            [else '()] )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (folder-or-scheme-file? path)
+  (if (file-directory? path) 
+    #t
+    (find (lambda(t) (or t #f))
+      (map (lambda (suffix) (string-suffix? suffix path)) 
+      '(".sps" ".sls" ".scm" ".ss")))))
+
+(define (walk-find node path)
+  (if (equal? (file-node-path node) path)
+    `(,node)
+    (if (string-prefix? (file-node-path node) path)
+      (apply append 
+        (map 
+          (lambda (new-node) 
+            (walk-find new-node path)) (file-node-children node) ))
+      '())))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (walk-library list-instance node)
+  (if (null? list-instance)
+    node
+    (let* ([head (car list-instance)]
+          [rest (cdr list-instance)]
+          [children (find 
+              (lambda(child-node) (equal? head (library-node-name child-node))) 
+              (library-node-children node))])
+      (if (null? children)
+        '()
+        (walk-library rest (car children))))))
+
+(define (generate list-instance library-node virtual-file-node)
+  (if (null? list-instance)
+    (library-node-file-nodes-set! library-node (append (library-node-file-nodes node) `(,virtual-file-node)))
+    (let* ([head (car list-instance)]
+          [rest (cdr list-instance)]
+          [children (find 
+              (lambda(child-node) (equal? head (library-node-name child-node))) 
+              (library-node-children library-node))]
+          [child-node (if (null? children)
+              (make-library-node head library-node '())
+              (car children))])
+      (if (null? children)
+        (begin
+          (library-node-children-set! 
+            node 
+            (append (library-node-children node) child-node))
+          (generate list-instance node virtual-file-node))
+        (generate rest child-node virtual-file-node)))))
 )

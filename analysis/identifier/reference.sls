@@ -3,7 +3,7 @@
   (import 
     (chezscheme) 
     (ufo-match)
-    (scheme-langserver analysis index)
+    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
     )
