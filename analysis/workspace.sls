@@ -1,5 +1,16 @@
 (library (scheme-langserver analysis workspace)
-  (export init-workspace)
+  (export 
+    init-workspace
+    init-virtual-file-system
+    init-library-node
+    init-index-node
+    init-document
+
+    source-file->annotation
+    pick
+    walk-find
+    walk-library
+    generate)
   (import 
     (ufo-match)
     (chezscheme) 
