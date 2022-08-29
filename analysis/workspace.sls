@@ -6,6 +6,12 @@
     init-index-node
     init-document
 
+    workspace?
+    workspace-file-node
+    workspace-file-node-set!
+    workspace-library-node
+    workspace-library-node-set!
+
     source-file->annotation
     pick
     walk-file
@@ -30,8 +36,8 @@
 
 (define-record-type workspace
   (fields
-    (immutable file-node)
-    (mutable source-node)))
+    (mutable file-node)
+    (mutable library-node)))
 
 (define (init-workspace path)
   (let* ([root-file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
