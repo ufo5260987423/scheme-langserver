@@ -26,12 +26,9 @@
 (test-end)
 
 (test-begin "init-library-node")
-    ; (let* ( [root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
-    ;         [root-library-node (init-library-node root-file-node)])
-    ; )
     (let* ( [root-file-node (init-virtual-file-system "./util/" '() folder-or-scheme-file?)]
             [root-library-node (init-library-node root-file-node)])
-    )
+        (test-equal 'scheme-langserver (library-node-name (car (library-node-children root-library-node)))))
 (test-end)
 
 (test-begin "pick-test")

@@ -8,9 +8,9 @@
 
     source-file->annotation
     pick
-    walk-find
+    walk-file
     walk-library
-    generate
+    generate-library-node
     folder-or-scheme-file?)
   (import 
     (ufo-match)
@@ -84,7 +84,7 @@
                   [expression (annotation-stripped (index-node-datum/annotations index-node-instance))])
             ;;rule
               (match expression 
-                [('library (name **1) rest ... ) (generate name root-library-node file-node)]
+                [('library (name **1) rest ... ) (generate-library-node name root-library-node file-node)]
                 [else '()])))))
       root-library-node]))
 
@@ -136,38 +136,14 @@
             [(and in? (not has-children?)) `(,node)] 
             [else '()] )))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
     #t
-    (find (lambda(t) (or t #f))
+    (find (lambda (t) (or t #f))
       (map (lambda (suffix) (string-suffix? suffix path)) 
       '(".sps" ".sls" ".scm" ".ss")))))
 
-(define (walk-find node path)
-  (if (equal? (file-node-path node) path)
-    `(,node)
-    (if (string-prefix? (file-node-path node) path)
-      (apply append 
-        (map 
-          (lambda (new-node) 
-            (walk-find new-node path)) (file-node-children node) ))
-      '())))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (walk-library list-instance node)
-  (if (null? list-instance)
-    node
-    (let* ([head (car list-instance)]
-          [rest (cdr list-instance)]
-          [children (find 
-              (lambda(child-node) (equal? head (library-node-name child-node))) 
-              (library-node-children node))])
-      (if children
-        (walk-library rest (car children))
-        '()))))
-
-(define (generate list-instance library-node virtual-file-node)
+(define (generate-library-node list-instance library-node virtual-file-node)
   (if (null? list-instance)
     (begin
       (library-node-file-nodes-set! library-node (append (library-node-file-nodes library-node) `(,virtual-file-node)))
@@ -177,7 +153,7 @@
           [child (find 
               (lambda (child-node) (equal? head (library-node-name child-node))) 
               (library-node-children library-node))])
-      (generate 
+      (generate-library-node
         rest 
         (if child
           child
@@ -186,4 +162,27 @@
               (append (library-node-children library-node) `(,child)))
             child))
         virtual-file-node))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (walk-file node path)
+  (if (equal? (file-node-path node) path)
+    `(,node)
+    (if (string-prefix? (file-node-path node) path)
+      (apply append 
+        (map 
+          (lambda (new-node) 
+            (walk-file new-node path)) (file-node-children node) ))
+      '())))
+
+(define (walk-library list-instance current-library-node)
+  (if (null? list-instance)
+    current-library-node
+    (let* ([head (car list-instance)]
+          [rest (cdr list-instance)]
+          [children (find 
+              (lambda (child-node) (equal? head (library-node-name child-node))) 
+              (library-node-children current-library-node))])
+      (if children
+        (walk-library rest children)
+        '()))))
 )
