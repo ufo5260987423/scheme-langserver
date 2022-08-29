@@ -14,9 +14,9 @@
     (immutable document)
     (immutable index-node)))
 
-(define (find-availabe-references-for current-index-node)
+(define (find-available-references-for current-index-node)
   (if (not (null? (index-node-parent current-index-node)))
     (append 
-      (index-node-parent-import-in-this-node current-index-node) 
-      (find-available-reference-for (index-node-parent current-index-node)))))
+      (index-node-references-import-in-this-node current-index-node) 
+      (find-available-references-for (index-node-parent current-index-node)))))
 )

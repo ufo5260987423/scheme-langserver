@@ -49,11 +49,12 @@
 
 (define (init-references file-node)
   (if (file-node-folder? file-node)
-    (map init-reference (file-node-children file-node))
+    (map init-references (file-node-children file-node))
     (let* ([document (file-node-document file-node)]
-          [index-node (document-index-node)])
+          [index-node (document-index-node document)])
       (if (not (null? index-node))
       ;;todo
+      '()
       ))))
 
 (define (init-virtual-file-system path parent my-filter)
