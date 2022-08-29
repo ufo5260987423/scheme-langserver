@@ -7,6 +7,7 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver analysis workspace))
 
 (test-begin "init-virtual-file-system")
@@ -15,13 +16,22 @@
         (map file-node-name (file-node-children (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)))))
 (test-end)
 
-(test-begin "index-test")
+(test-begin "init-index-node")
     (test-equal 'library 
         (annotation-stripped 
             (car 
                 (annotation-expression 
                 (index-node-datum/annotations
                     (init-index-node '() (source-file->annotation "./util/io.sls")))))))
+(test-end)
+
+(test-begin "init-library-node")
+    ; (let* ( [root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
+    ;         [root-library-node (init-library-node root-file-node)])
+    ; )
+    (let* ( [root-file-node (init-virtual-file-system "./util/" '() folder-or-scheme-file?)]
+            [root-library-node (init-library-node root-file-node)])
+    )
 (test-end)
 
 (test-begin "pick-test")

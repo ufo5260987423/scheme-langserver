@@ -1,6 +1,7 @@
 (library (scheme-langserver virtual-file-system library-node)
   (export 
     make-library-node
+    library-node?
     library-node-name
     library-node-parent
     library-node-file-nodes
