@@ -5,6 +5,7 @@
     init-library-node
     init-index-node
     init-document
+    init-references
 
     workspace?
     workspace-file-node
@@ -27,7 +28,7 @@
     (scheme-langserver util try)
     (scheme-langserver util io)
 
-    ; (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -41,9 +42,19 @@
 
 (define (init-workspace path)
   (let* ([root-file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
-        [workspace-instance (make-workspace root-file-node (init-library-node root-file-node))])
-    workspace-instance
+        [root-library-node (init-library-node root-file-node)])
+        (init-references root-file-node)
+        (make-workspace root-file-node root-library-node)
   ))
+
+(define (init-references file-node)
+  (if (file-node-folder? file-node)
+    (map init-reference (file-node-children file-node))
+    (let* ([document (file-node-document file-node)]
+          [index-node (document-index-node)])
+      (if (not (null? index-node))
+      ;;todo
+      ))))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)

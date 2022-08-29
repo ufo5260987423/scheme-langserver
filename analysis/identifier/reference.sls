@@ -1,41 +1,22 @@
 (library (scheme-langserver analysis identifier reference)
-  (export init-workspace)
+  (export 
+    find-available-references-for
+
+    make-identifier-reference
+    identifier-reference-document
+    identifier-reference-index-node)
   (import 
-    (chezscheme) 
-    (ufo-match)
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node)
-    )
+    (rnrs)
+    (scheme-langserver virtual-file-system index-node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
   (fields
     (immutable document)
-    (immutable reference-index-node)))
+    (immutable index-node)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define init-references 
-  (case-lambda
-    [(index-file-node) 
-      (init-references index-file-node 
-        (document-index 
-          (file-node-document index-file-node)))]
-    [(index-file-node index-node) 
-      (let* loop ([current-file-node index-file-node]
-              [parent (file-node-parent current-file-node)])
-        (if (null? parent)
-          (init-references current-file-node index-file-node index)
-          (loop parent (file-node-parent parent))))]
-    [(file-system-node index-file-node index-node)
-      (let loop ( [available-references-count (length (index-node-available-references index-node))])
-        (index-node-available-references-extend index-node)
-      )
-    ]
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (index-available-references-extend index-node)
-  (index-node-available-references-set! 
-    index-node 
-    (append '() (index-node-available-references index-node))))
+(define (find-availabe-references-for current-index-node)
+  (if (not (null? (index-node-parent current-index-node)))
+    (append 
+      (index-node-parent-import-in-this-node current-index-node) 
+      (find-available-reference-for (index-node-parent current-index-node)))))
 )

@@ -9,10 +9,10 @@
 
     index-node-children
     index-node-children-set!
-    index-node-available-references
-    index-node-available-references-set!
-    index-node-current-references
-    index-node-current-references-set!)
+    index-node-references-export-to-other-node
+    index-node-references-export-to-other-node-set!
+    index-node-references-import-in-this-node
+    index-node-references-import-in-this-node-set!)
   (import (rnrs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,6 +24,6 @@
     (immutable datum/annotations)
 
     (mutable children)
-    (mutable available-references)
-    (mutable current-references)))
+    (mutable references-export-to-other-node)
+    (mutable references-import-in-this-node)))
 )
