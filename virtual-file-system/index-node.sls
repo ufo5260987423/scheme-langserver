@@ -12,7 +12,9 @@
     index-node-references-export-to-other-node
     index-node-references-export-to-other-node-set!
     index-node-references-import-in-this-node
-    index-node-references-import-in-this-node-set!)
+    index-node-references-import-in-this-node-set!
+    index-node-excluded-references
+    index-node-excluded-references-set!)
   (import (rnrs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -25,5 +27,6 @@
 
     (mutable children)
     (mutable references-export-to-other-node)
-    (mutable references-import-in-this-node)))
+    (mutable references-import-in-this-node)
+    (mutable excluded-references)))
 )
