@@ -23,7 +23,7 @@
         ;   (lambda (child-node) (library-define-process root-file-node document child-node))
         ;   (index-node-children index-node))
         '()])
-      index-node))
+    index-node))
 
 (define (match-define root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
