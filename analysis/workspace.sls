@@ -72,7 +72,11 @@
               (map 
                 (lambda(p) 
                   (init-virtual-file-system 
-                    (string-append path (list->string (list (directory-separator))) p) 
+                    (string-append path 
+                      (if (string-suffix? path (list->string (list (directory-separator))) )
+                        ""
+                        (list->string (list (directory-separator))))
+                      p) 
                     node 
                     my-filter)) 
                 (directory-list path))
@@ -188,8 +192,8 @@
     (if (string-prefix? (file-node-path node) path)
       (apply append 
         (map 
-          (lambda (new-node) 
-            (walk-file new-node path)) (file-node-children node) ))
+          (lambda (new-node) (walk-file new-node path)) 
+          (file-node-children node) ))
       '())))
 
 (define (walk-library list-instance current-library-node)
