@@ -6,6 +6,7 @@
 
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver analysis workspace)
+    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules library-define)
 
     (scheme-langserver virtual-file-system index-node)
@@ -18,16 +19,15 @@
             [target-file-node (car (walk-file root-file-node "./util/io.sls"))]
             [document (file-node-document target-file-node)]
             [index-node (document-index-node document)])
-        (library-define-process root-file-node document index-node)
-        ; (test-equal 'scheme-langserver (library-node-name (car (library-node-children root-library-node))))
-        )
+            (test-equal #t
+                (not (null? 
+                    (find 
+                        (lambda (reference) 
+                            (equal? 'read-line 
+                                (annotation-stripped 
+                                    (index-node-datum/annotations 
+                                        (identifier-reference-index-node reference)))))
+                        (index-node-references-import-in-this-node 
+                            (library-define-process root-file-node document index-node)))))))
 (test-end)
-
-(test-begin "pick-test")
-    (test-equal 'library 
-        (annotation-stripped 
-            (index-node-datum/annotations 
-            (car (pick (init-index-node '() (source-file->annotation "./util/path.sls")) 0 8)))))
-(test-end)
-
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
