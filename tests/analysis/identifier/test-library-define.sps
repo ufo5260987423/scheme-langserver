@@ -15,7 +15,7 @@
 
 (test-begin "library-define-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() folder-or-scheme-file?)]
-            [target-file-node (walk-file root-file-node "./util/io.sls")]
+            [target-file-node (car (walk-file root-file-node "./util/io.sls"))]
             [document (file-node-document target-file-node)]
             [index-node (document-index-node document)])
         (library-define-process root-file-node document index-node)
