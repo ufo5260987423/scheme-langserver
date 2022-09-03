@@ -15,14 +15,11 @@
 
     source-file->annotation
     pick
-    walk-file
-    walk-library
-    generate-library-node
-    folder-or-scheme-file?)
+    generate-library-node)
   (import 
     (ufo-match)
     (chezscheme) 
-    (only (srfi :13 strings) string-prefix? string-suffix?)
+    (only (srfi :13 strings) string-suffix?)
 
     (scheme-langserver util path)
     (scheme-langserver util try)
@@ -158,13 +155,6 @@
             [(and in? (not has-children?)) `(,node)] 
             [else '()] )))))
 
-(define (folder-or-scheme-file? path)
-  (if (file-directory? path) 
-    #t
-    (find (lambda (t) (or t #f))
-      (map (lambda (suffix) (string-suffix? suffix path)) 
-      '(".sps" ".sls" ".scm" ".ss")))))
-
 (define (generate-library-node list-instance library-node virtual-file-node)
   (if (null? list-instance)
     (begin
@@ -184,29 +174,4 @@
               (append (library-node-children library-node) `(,child)))
             child))
         virtual-file-node))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (walk-file node path)
-  (if (equal? (file-node-path node) path)
-    `(,node)
-    (if (string-prefix? (file-node-path node) path)
-      (let ([result (map 
-              (lambda (new-node) (walk-file new-node path)) 
-              (file-node-children node))])
-        (if (null? result)
-          '()
-          (apply append result)))
-      '())))
-
-(define (walk-library list-instance current-library-node)
-  (if (null? list-instance)
-    current-library-node
-    (let* ([head (car list-instance)]
-          [rest (cdr list-instance)]
-          [children (find 
-              (lambda (child-node) (equal? head (library-node-name child-node))) 
-              (library-node-children current-library-node))])
-      (if children
-        (walk-library rest children)
-        '()))))
 )

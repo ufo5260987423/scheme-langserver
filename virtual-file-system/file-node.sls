@@ -10,8 +10,12 @@
     file-node-name
     file-node-path
     file-node-document-set!
-    file-node-document)
-  (import (rnrs))
+    file-node-document
+
+    walk-file
+    folder-or-scheme-file?)
+  (import (chezscheme)
+    (only (srfi :13 strings) string-prefix? string-suffix?))
 
 (define-record-type file-node 
   (fields
@@ -24,4 +28,23 @@
 
     (mutable children)
     (mutable document)))
+
+(define (walk-file node path)
+  (if (equal? (file-node-path node) path)
+    `(,node)
+    (if (string-prefix? (file-node-path node) path)
+      (let ([result (map 
+              (lambda (new-node) (walk-file new-node path)) 
+              (file-node-children node))])
+        (if (null? result)
+          '()
+          (apply append result)))
+      '())))
+
+(define (folder-or-scheme-file? path)
+  (if (file-directory? path) 
+    #t
+    (find (lambda (t) (or t #f))
+      (map (lambda (suffix) (string-suffix? suffix path)) 
+      '(".sps" ".sls" ".scm" ".ss")))))
 )

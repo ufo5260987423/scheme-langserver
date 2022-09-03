@@ -7,7 +7,8 @@
     library-node-file-nodes
     library-node-file-nodes-set!
     library-node-children
-    library-node-children-set!)
+    library-node-children-set!
+    walk-library)
   (import (rnrs)
     ; (chezscheme) 
     ; (ufo-match) 
@@ -22,4 +23,16 @@
     (immutable parent)
     (mutable children)
     (mutable file-nodes)))
+
+(define (walk-library list-instance current-library-node)
+  (if (null? list-instance)
+    current-library-node
+    (let* ([head (car list-instance)]
+          [rest (cdr list-instance)]
+          [child (find 
+              (lambda (child-node) (equal? head (library-node-name child-node))) 
+              (library-node-children current-library-node))])
+      (if child
+        (walk-library rest child)
+        '()))))
 )

@@ -31,11 +31,6 @@
         (test-equal 'scheme-langserver (library-node-name (car (library-node-children root-library-node)))))
 (test-end)
 
-(test-begin "walk-file")
-    (let* ( [root-file-node (init-virtual-file-system "./util/" '() folder-or-scheme-file?)])
-        (test-equal "io.sls" (file-node-name (walk-file root-file-node "./util/io.sls")))
-(test-end)
-
 (test-begin "pick-test")
     (test-equal 'library 
         (annotation-stripped 
