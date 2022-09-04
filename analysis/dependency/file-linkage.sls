@@ -31,7 +31,7 @@
 
 (define (init-maps current-library-node id->path-map path->id-map)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
-    (if (and file-nodes (pair? file-nodes))
+    (if (pair? file-nodes)
       (begin
         (hashtable-set! path->id-map (file-node-path (car file-nodes)) (hashtable-size path->id-map))
         (hashtable-set! id->path-map (hashtable-size id->path-map) (file-node-path (car file-nodes)))
@@ -39,8 +39,9 @@
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
 (define (matrix-take matrix n m)
-  (let ([rows-number (sqrt (vector-length matrix))])
-    (vector-ref matrix (+ (* n rows-number) m))))
+  (if (and n m)
+    (let ([rows-number (sqrt (vector-length matrix))])
+      (vector-ref matrix (+ (* n rows-number) m)))))
 
 (define (matrix-set! matrix n m value)
   (if (and n m)
@@ -49,7 +50,7 @@
 
 (define (init-matrix current-library-node root-library-node path->id-map matrix)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
-    (if (and file-nodes (pair? file-nodes))
+    (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
             [path (file-node-path file-node)]
             [imported-libraries (library-import-process (document-index-node (file-node-document file-node)))])

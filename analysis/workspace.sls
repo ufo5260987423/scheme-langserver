@@ -170,7 +170,7 @@
         (if child
           child
           (let ([child (make-library-node head library-node '() '())])
-            (library-node-children-set!  library-node 
+            (library-node-children-set! library-node 
               (append (library-node-children library-node) `(,child)))
             child))
         virtual-file-node))))
