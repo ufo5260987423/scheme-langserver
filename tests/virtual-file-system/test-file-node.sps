@@ -10,7 +10,7 @@
 
 (test-begin "walk-file")
     (let* ( [root-file-node (init-virtual-file-system "./util/" '() folder-or-scheme-file?)])
-        (test-equal "io.sls" (file-node-name (car (walk-file root-file-node "./util/io.sls")))))
+        (test-equal "io.sls" (file-node-name (walk-file root-file-node "./util/io.sls"))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

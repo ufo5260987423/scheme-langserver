@@ -31,14 +31,13 @@
 
 (define (walk-file node path)
   (if (equal? (file-node-path node) path)
-    `(,node)
+    node
     (if (string-prefix? (file-node-path node) path)
-      (let ([result (map 
+      (let* ([result (map 
               (lambda (new-node) (walk-file new-node path)) 
-              (file-node-children node))])
-        (if (null? result)
-          '()
-          (apply append result)))
+              (file-node-children node))]
+            [child (find (lambda (child-node) (not (null? child-node))) result)])
+        (if child child '()))
       '())))
 
 (define (folder-or-scheme-file? path)
