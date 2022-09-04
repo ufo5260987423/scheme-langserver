@@ -70,7 +70,7 @@
                 (lambda(p) 
                   (init-virtual-file-system 
                     (string-append path 
-                      (if (string-suffix? path (list->string (list (directory-separator))) )
+                      (if (string-suffix? (list->string (list (directory-separator))) path)
                         ""
                         (list->string (list (directory-separator))))
                       p) 
