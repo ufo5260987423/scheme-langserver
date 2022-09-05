@@ -11,10 +11,11 @@
 
 (test-begin "init-linkage-matrix")
     (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
-            [root-library-node (init-library-node root-file-node)])
-        ; (test-equal "io.sls" (file-node-name (walk-file root-file-node "./util/io.sls")))
-        (apply + (init-linkage-matrix root-library-node))
-    )
+            [root-library-node (init-library-node root-file-node)]
+            [file-linkage (init-file-linkage root-library-node)]
+            [from-path (string-append (current-directory) "/analysis/workspace.sls")]
+            [to-path (string-append (current-directory) "/util/io.sls")])
+        (test-equal 1 (file-linkage-take file-linkage from-path to-path)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
