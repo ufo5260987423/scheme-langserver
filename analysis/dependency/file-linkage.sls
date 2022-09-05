@@ -54,15 +54,15 @@
       (let* ([file-node (car file-nodes)]
             [path (file-node-path file-node)]
             [imported-libraries (library-import-process (document-index-node (file-node-document file-node)))])
-        (map  (lambda (imported-library-path) 
+        (map (lambda (imported-library-path) 
                 (matrix-set! matrix 
                   (hashtable-ref path->id-map path #f) 
                   (hashtable-ref path->id-map imported-library-path #f) 
                   1))
                 ;;todo diagnostic
-              (map (lambda (imporeted-library) (walk-library imporeted-library root-library-node)) imported-libraries))
+          (map (lambda (imporeted-library) (walk-library imporeted-library root-library-node)) imported-libraries))
         (loop (cdr file-nodes)))))
   (map  (lambda (node) 
           (init-matrix node root-library-node path->id-map matrix)) 
-        (library-node-children current-library-node)))
+    (library-node-children current-library-node)))
 )

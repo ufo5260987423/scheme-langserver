@@ -11,30 +11,34 @@
     (scheme-langserver virtual-file-system file-node))
 
 (define (library-import-process index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-    (match expression
-      [('library _ **1 ) 
-        (map match-import (index-node-children index-node))]
-      [else 
-        '()])))
+  (apply append 
+    (filter 
+      (lambda (item) (not (null? item)))
+      (let* ([ann (index-node-datum/annotations index-node)]
+          [expression (annotation-stripped ann)])
+        (match expression
+          [('library _ **1 ) (map match-import (index-node-children index-node))]
+          [else '()])))))
 
 (define (match-import index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
+  (filter 
+    (lambda (item) (not (null? item)))
+    (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
-    (match expression
-      [('import dummy **1 ) 
-        (map match-clause (index-node-children index-node))]
-      [else #f])))
+      (match expression
+        [('import dummy **1 ) (map match-clause (index-node-children index-node))]
+        [else '()]))))
 
 (define (match-clause index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
+  (filter 
+    (lambda (item) (not (null? item)))
+    (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
-    (match expression 
-      [('only (identifier **1) _ ...) identifier]
-      [('except (identifier **1) _ ...) identifier]
-      [('prefix (identifier **1) _ ...) identifier]
-      [('rename (identifier **1) _ ...) identifier]
-      [(identifier **1) identifier]
-      [else '()])))
+      (match expression 
+        [('only (identifier **1) _ ...) identifier]
+        [('except (identifier **1) _ ...) identifier]
+        [('prefix (identifier **1) _ ...) identifier]
+        [('rename (identifier **1) _ ...) identifier]
+        [(identifier **1) identifier]
+        [else '()]))))
 )
