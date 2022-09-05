@@ -13,7 +13,7 @@
     (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
             [root-library-node (init-library-node root-file-node)])
         ; (test-equal "io.sls" (file-node-name (walk-file root-file-node "./util/io.sls")))
-        (init-linkage-matrix root-library-node)
+        (apply + (init-linkage-matrix root-library-node))
     )
 (test-end)
 
