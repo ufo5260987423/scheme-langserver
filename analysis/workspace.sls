@@ -26,6 +26,7 @@
     (scheme-langserver util io)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -35,13 +36,15 @@
 (define-record-type workspace
   (fields
     (mutable file-node)
-    (mutable library-node)))
+    (mutable library-node)
+    (mutable file-linkage)))
 
 (define (init-workspace path)
   (let* ([root-file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
-        [root-library-node (init-library-node root-file-node)])
+        [root-library-node (init-library-node root-file-node)]
+        [file-linkage (init-file-linkage root-library-node)]
+        [workspace (make-workspace root-file-node root-library-node file-linkage)])
         (init-references root-file-node)
-        (make-workspace root-file-node root-library-node)
   ))
 
 (define (init-references file-node)
