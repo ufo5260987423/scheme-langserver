@@ -1312,5 +1312,6 @@
   record-type-name record-type-symbol)]
     [(equal? list-instance '(scheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
   record-field-mutator record-type-descriptor record-type-field-decls record-type-field-names 
-  record-type-name record-type-symbol)]))
+  record-type-name record-type-symbol)]
+    [else '()]))
 )
