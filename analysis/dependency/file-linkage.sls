@@ -6,7 +6,8 @@
     file-linkage-id->path-map
     file-linkage-matrix
     file-linkage-take
-    file-linkage-set!)
+    file-linkage-set!
+    file-linkage-head)
   (import 
     (rnrs)
     (scheme-langserver analysis dependency rules library-import)
@@ -42,11 +43,37 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
-(define (file-linkage-take linkage from to)
-  (matrix-take 
-    (file-linkage-matrix linkage) 
-    (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
-    (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
+(define (file-linkage-head linkage)
+  (let* ([matrix (file-linkage-matrix linkage)]
+      [not-merged-vector (generate-vector (sqrt (vector-length matrix)))])
+    (let loop ([i 0])
+      (if (< i (vector-length matrix))
+        (if (not (zero? (vector-ref matrix i)))
+          (let ([n_m (decode matrix i)])
+            (vector-set! not-merged-vector (cadr n_m) (car n_m))
+            (loop (+ i 1)))
+          (map 
+            (lambda (id) (hashtable-ref (file-linkage-id->path-map linkage) id #f))
+            (eliminate-duplicates (vector->list (merge not-merged-vector)))))))))
+
+(define file-linkage-take 
+  (case-lambda 
+    [(linkage from to) 
+      (matrix-take 
+        (file-linkage-matrix linkage) 
+        (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
+        (hashtable-ref (file-linkage-path->id-map linkage) to #f))]
+    [(linkage from)
+      (let* ([matrix (file-linkage-matrix linkage)]
+          [rows-count (sqrt (vector-length matrix))]
+          [row-id (hashtable-ref (file-linkage-path->id-map linkage) from #f)])
+        (let loop ([result '()])
+          (if (< (length result) rows-count)
+            (loop 
+              (if (zero? (matrix-take matrix row-id (length result)))
+                result
+                (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) (length result) #f)))))
+            result)))]))
 
 (define (file-linkage-set! linkage from to)
   (matrix-set!
@@ -116,4 +143,29 @@
               (append path `(,m)))
             (loop (+ 1 m)))
           '()))]))
+
+(define merge 
+  (case-lambda 
+    [(not-merged-vector) 
+      (vector-map 
+        (lambda (i) (merge not-merged-vector i)) 
+        (generate-vector (vector-length not-merged-vector)))]
+    [(not-merged-vector i)
+      (if (= i (vector-ref not-merged-vector i))
+        i
+        (let ([pre-set (merge not-merged-vector (vector-ref not-merged-vector i))])
+          (vector-set! not-merged-vector i pre-set)
+          pre-set))]))
+
+(define (generate-vector max)
+  (let ([result (make-vector max)])
+    (let loop ([i 1])
+      (vector-set! result i i))
+    result))
+
+(define (eliminate-duplicates l)
+  (cond 
+    [(null? l) l]
+    [(member (car l) (cdr l)) (eliminate-duplicates (cdr l))]
+    [else (cons (car l) (eliminate-duplicates (cdr l)))]))
 )

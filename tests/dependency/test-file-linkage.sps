@@ -15,7 +15,9 @@
             [file-linkage (init-file-linkage root-library-node)]
             [from-path (string-append (current-directory) "/analysis/workspace.sls")]
             [to-path (string-append (current-directory) "/util/io.sls")])
-        (test-equal 1 (file-linkage-take file-linkage from-path to-path)))
+        (test-equal 1 (file-linkage-take file-linkage from-path to-path))
+        ; (test-equal '(1 0) (file-linkage-head file-linkage))
+        )
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
