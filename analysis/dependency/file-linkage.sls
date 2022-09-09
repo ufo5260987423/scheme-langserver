@@ -28,6 +28,9 @@
     (init-maps root-library-node id->path-map path->id-map)
     (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
       (init-matrix root-library-node root-library-node path->id-map matrix)
+      (let ([cycle (find-cycle matrix)])
+        (if (not (null? cycle))
+          (display (map (lambda (id) (hashtable-ref id->path-map cycle #f)) cycle))))
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -51,16 +54,21 @@
     (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
     (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (encode rows-number n m)
+  (+ (* n rows-number) m))
+
+(define (decode rows-number i)
+  (let* ([n (floor (/ i rows-number))]
+      [m (- i (encode rows-number n 0))])
+    `(,n ,m)))
 
 (define (matrix-take matrix n m)
   (if (and n m)
-    (let ([rows-number (sqrt (vector-length matrix))])
-      (vector-ref matrix (+ (* n rows-number) m)))))
+    (vector-ref matrix (encode (sqrt (vector-length matrix)) n m))))
 
 (define (matrix-set! matrix n m)
   (if (and n m)
-    (let ([rows-number (sqrt (vector-length matrix))])
-      (vector-set! matrix (+ (* n rows-number) m) 1))))
+    (vector-set! matrix (encode (sqrt (vector-length matrix)) n m) 1)))
 
 (define (init-matrix current-library-node root-library-node path->id-map matrix)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
@@ -86,4 +94,26 @@
   (map  (lambda (node) 
           (init-matrix node root-library-node path->id-map matrix)) 
     (library-node-children current-library-node)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define find-cycle
+  (case-lambda 
+    [(matrix) (find-cycle matrix (sqrt (vector-length matrix)))]
+    [(matrix node-count) 
+      (let loop ([n 0]) 
+        (if (< n node-count)
+          (let ([result (find-cycle matrix (make-vector node-count) n '())])
+            (if (null? result)
+              (loop (+ 1 n))
+              result))
+          '()))]
+    [(matrix visited n path) 
+      (vector-set! visited n 1)
+      (let loop ([m 0])
+        (if (< m (vector-length visited))
+          (if (not (zero? (matrix-take matrix n m)))
+            (if (zero? (vector-ref visited m))
+              (find-cycle matrix visited m (append path `(,n)))
+              (append path `(,m)))
+            (loop (+ 1 m)))
+          '()))]))
 )
