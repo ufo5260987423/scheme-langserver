@@ -45,16 +45,16 @@
 
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]
-      [not-merged-vector (generate-vector (sqrt (vector-length matrix)))])
-    (let loop ([i 0])
-      (if (< i (vector-length matrix))
-        (if (not (zero? (vector-ref matrix i)))
-          (let ([n_m (decode matrix i)])
-            (vector-set! not-merged-vector (cadr n_m) (car n_m))
-            (loop (+ i 1)))
-          (map 
-            (lambda (id) (hashtable-ref (file-linkage-id->path-map linkage) id #f))
-            (eliminate-duplicates (vector->list (merge not-merged-vector)))))))))
+      [rows-count (sqrt (vector-length matrix))]
+      [id->path-map (file-linkage-id->path-map linkage)])
+    (let loop ([n 0][m 0][middle 0][result '()])
+      (if (< n rows-count)
+        (if (< m rows-count)
+          (loop n (+ 1 m) (+ middle (matrix-take matrix n m)) result)
+          (loop (+ 1 n) 0 0 (append result (if (zero? middle) `(,n) '()))))
+        (map 
+          (lambda (id) (hashtable-ref id->path-map id #f))
+          result)))))
 
 (define file-linkage-take 
   (case-lambda 
@@ -144,28 +144,28 @@
             (loop (+ 1 m)))
           '()))]))
 
-(define merge 
-  (case-lambda 
-    [(not-merged-vector) 
-      (vector-map 
-        (lambda (i) (merge not-merged-vector i)) 
-        (generate-vector (vector-length not-merged-vector)))]
-    [(not-merged-vector i)
-      (if (= i (vector-ref not-merged-vector i))
-        i
-        (let ([pre-set (merge not-merged-vector (vector-ref not-merged-vector i))])
-          (vector-set! not-merged-vector i pre-set)
-          pre-set))]))
+; (define merge 
+;   (case-lambda 
+;     [(not-merged-vector) 
+;       (vector-map 
+;         (lambda (i) (merge not-merged-vector i)) 
+;         (generate-vector (vector-length not-merged-vector)))]
+;     [(not-merged-vector i)
+;       (if (= i (vector-ref not-merged-vector i))
+;         i
+;         (let ([pre-set (merge not-merged-vector (vector-ref not-merged-vector i))])
+;           (vector-set! not-merged-vector i pre-set)
+;           pre-set))]))
 
-(define (generate-vector max)
-  (let ([result (make-vector max)])
-    (let loop ([i 1])
-      (vector-set! result i i))
-    result))
+; (define (generate-vector max)
+;   (let ([result (make-vector max)])
+;     (let loop ([i 1])
+;       (vector-set! result i i))
+;     result))
 
-(define (eliminate-duplicates l)
-  (cond 
-    [(null? l) l]
-    [(member (car l) (cdr l)) (eliminate-duplicates (cdr l))]
-    [else (cons (car l) (eliminate-duplicates (cdr l)))]))
+; (define (eliminate-duplicates l)
+;   (cond 
+;     [(null? l) l]
+;     [(member (car l) (cdr l)) (eliminate-duplicates (cdr l))]
+;     [else (cons (car l) (eliminate-duplicates (cdr l)))]))
 )
