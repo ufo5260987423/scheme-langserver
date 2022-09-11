@@ -47,6 +47,11 @@
         (init-references root-file-node)
   ))
 
+;; head -[linkage]->files
+;; for single file
+;; import 
+;; init define let ...
+;; export
 (define (init-references file-node)
   (if (file-node-folder? file-node)
     (map init-references (file-node-children file-node))
