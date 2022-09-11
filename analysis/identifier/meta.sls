@@ -3,8 +3,9 @@
   (import (rnrs))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
-  (cond
-    [(equal? list-instance '(rnrs)) '( &assertion &condition &error &i/o &i/o-decoding
+   (map (lambda (identifier) (make-identifier-reference identifier '() '() list-instance))
+   (cond
+      [(equal? list-instance '(rnrs)) '( &assertion &condition &error &i/o &i/o-decoding
  &i/o-encoding &i/o-file-already-exists
  &i/o-file-does-not-exist &i/o-file-is-read-only
  &i/o-file-protection &i/o-filename &i/o-invalid-position
@@ -188,10 +189,10 @@
  vector-map vector-ref vector-set! vector-sort vector-sort!
  vector? violation? warning? when who-condition?
  with-exception-handler with-syntax write write-char zero?)]
-    [(equal? list-instance '(scheme)) '(symbol-hashtable-update! r6rs:dynamic-wind trace-define
- \x2D;1+ 
- \x31;+ 
- \x31;- 
+      [(equal? list-instance '(scheme)) '(\x31;+
+\x31;
+\x2D;1+
+fxlogand symbol-hashtable-update! r6rs:dynamic-wind trace-define
  mutable-string? assert textual-port-input-count
  property-list make-parameter compile-library logbit0 logbit1
  make-i/o-file-does-not-exist-error pretty-line-length
@@ -259,8 +260,11 @@
  i/o-error? bytevector sub1 binary-port? time
  unregister-guardian nonnegative? flinteger?
  set-top-level-value! date-zone-name foreign-entry
- syntax->l    available-references-for make-identifier-reference
-    identifier-reference-documentfxdiv0 source-object-column file-position
+ syntax->list load-program &syntax let-values fxnonpositive?
+ sort when port-position bytevector-uint-ref sqrt
+ pretty-standard-indent void bytevector-s16-native-ref
+ scheme-environment r6rs:char<? r6rs:char=? r6rs:char>?
+ &message fxdiv0 source-object-column file-position
  open-output-string bytevector-ieee-double-set! unget-u8
  with-source-path expand exists define-top-level-value
  append! collect-rendezvous path-last current-date
@@ -327,8 +331,7 @@
  with-implicit top-level-mutable? source-object-bfp
  quasisyntax flabs string-length bytevector-s32-native-ref
  sstats-gc-real ratnum? char-downcase iconv-codec
- char-upper-case? input-port-ready? source-object-efp 
- fxlogand interaction-environment sstats-print random
+ char-upper-case? input-port-ready? source-object-efp - interaction-environment sstats-print random
  gensym->unique-string fldiv flcos bytevector-length
  input-port? <= => >= r6rs:standard-input-port
  subtract-duration! object-counts compile flexp
@@ -363,11 +366,12 @@
  vector-sort! fxsrl merge utf-8-codec command-line-arguments
  make-vector list* read-token bwp-object? fxxor list?
  visit-compiled-from-port div0-and-mod0 pair? mkdir
- set-time-second! collect-notify mutex? bytevector-u56-set!
- remove-foreign-entry library-exports ieee-environment
- eol-style compile-to-port block-read isqrt syntax-violation
- list-tail set-sstats-bytes! environment? transcoded-port
- logor undefined-violation? ftype-guardian prefix
+ set-time-second! collect-notify self-evaluating-vectors
+ mutex? bytevector-u56-set! remove-foreign-entry
+ library-exports ieee-environment eol-style compile-to-port
+ block-read isqrt syntax-violation list-tail
+ set-sstats-bytes! environment? transcoded-port logor
+ undefined-violation? ftype-guardian prefix
  bitwise-rotate-bit-field binary-port-input-buffer
  make-thread-parameter mutable fxlogtest
  r6rs:with-output-to-file source-table? mutable-bytevector?
@@ -636,8 +640,9 @@
  bytevector? read-char symbol? reset-maximum-memory-bytes!
  bytevector-ieee-double-native-ref equal-hash
  with-input-from-file bignum? trace-do i/o-port-error?
- exact->inexact bytevector-s48-ref record-constructor)]
-    [(equal? list-instance '(chezscheme)) '(symbol-hashtable-update! r6rs:dynamic-wind trace-define
+ exact->inexact bytevector-s48-ref record-constructor
+ )]
+      [(equal? list-instance '(chezscheme)) '(symbol-hashtable-update! r6rs:dynamic-wind trace-define
  \x31;+
  \x31;- 
  \x2D;1+ 
@@ -1089,7 +1094,7 @@
  bytevector-ieee-double-native-ref equal-hash
  with-input-from-file bignum? trace-do i/o-port-error?
  exact->inexact bytevector-s48-ref record-constructor)]
-    [(equal? list-instance '(rnrs condition)) '(&assertion &condition &error &implementation-restriction
+      [(equal? list-instance '(rnrs condition)) '(&assertion &condition &error &implementation-restriction
  &irritants &lexical &message &non-continuable &serious
  &syntax &undefined &violation &warning &who
  assertion-violation? condition condition-accessor
@@ -1107,7 +1112,7 @@
  simple-conditions syntax-violation-form
  syntax-violation-subform syntax-violation?
  undefined-violation? violation? warning? who-condition?)]
-    [(equal? list-instance '(rnrs files)) '(&i/o &i/o-file-already-exists &i/o-file-does-not-exist
+      [(equal? list-instance '(rnrs files)) '(&i/o &i/o-file-already-exists &i/o-file-does-not-exist
  &i/o-file-is-read-only &i/o-file-protection &i/o-filename
  &i/o-invalid-position &i/o-port &i/o-read &i/o-write
  i/o-error-filename i/o-error-port i/o-error-position
@@ -1121,7 +1126,7 @@
  make-i/o-invalid-position-error make-i/o-port-error
  make-i/o-read-error make-i/o-write-error delete-file
  file-exists?)]
-    [(equal? list-instance '(rnrs base)) '(* + - ... / => _ abs acos and angle append apply asin assert
+      [(equal? list-instance '(rnrs base)) '(* + - ... / => _ abs acos and angle append apply asin assert
  assertion-violation atan begin boolean=? boolean? caaaar
  caaadr caaar caadar caaddr caadr caar cadaar cadadr cadar
  caddar cadddr caddr cadr call-with-current-continuation
@@ -1149,14 +1154,14 @@
  unquote unquote-splicing values vector vector->list
  vector-fill! vector-for-each vector-length vector-map
  vector-ref vector-set! vector? zero?)]
-    [(equal? list-instance '(rnrs syntax-case)) '(... _ bound-identifier=? datum->syntax free-identifier=?
+      [(equal? list-instance '(rnrs syntax-case)) '(... _ bound-identifier=? datum->syntax free-identifier=?
      generate-temporaries identifier? make-variable-transformer
      quasisyntax syntax syntax->datum syntax-case
      syntax-violation unsyntax unsyntax-splicing with-syntax)]
-    [(equal? list-instance '(rnrs exception)) '(=> else guard raise raise-continuable with-exception-handler)]
-    [(equal? list-instance '(rnrs lists)) '(assoc assp assq assv cons* exists filter find fold-left
+      [(equal? list-instance '(rnrs exception)) '(=> else guard raise raise-continuable with-exception-handler)]
+      [(equal? list-instance '(rnrs lists)) '(assoc assp assq assv cons* exists filter find fold-left
   fold-right for-all member memp memq memv partition remove remp remq remv)]
-    [(equal? list-instance '(rnrs bytevectors)) '(bytevector->sint-list bytevector->u8-list
+      [(equal? list-instance '(rnrs bytevectors)) '(bytevector->sint-list bytevector->u8-list
  bytevector->uint-list bytevector-copy bytevector-copy!
  bytevector-fill! bytevector-ieee-double-native-ref
  bytevector-ieee-double-native-set!
@@ -1184,8 +1189,8 @@
  string->utf32 string->utf8 u8-list->bytevector
  uint-list->bytevector utf16->string utf32->string
  utf8->string)]
-    [(equal? list-instance '(rnrs control)) '(case-lambda do unless when)]
-    [(equal? list-instance '(rnrs unicode)) '(char-alphabetic? char-downcase char-foldcase
+      [(equal? list-instance '(rnrs control)) '(case-lambda do unless when)]
+      [(equal? list-instance '(rnrs unicode)) '(char-alphabetic? char-downcase char-foldcase
  char-general-category char-lower-case? char-numeric?
  char-title-case? char-titlecase char-upcase char-upper-case?
  char-whitespace? char-ci<=? char-ci<? char-ci=? char-ci>=?
@@ -1194,23 +1199,23 @@
  string-normalize-nfc string-normalize-nfd
  string-normalize-nfkc string-normalize-nfkd string-titlecase
  string-upcase)]
-    [(equal? list-instance '(rnrs enums)) '(define-enumeration enum-set->list
+      [(equal? list-instance '(rnrs enums)) '(define-enumeration enum-set->list
   enum-set-complement enum-set-constructor enum-set-difference enum-set-indexer enum-set-intersection
   enum-set-member?  enum-set-projection enum-set-subset?  enum-set-union enum-set-universe
   enum-set=?  make-enumeration)]
-    [(equal? list-instance '(rnrs r5rs)) '(delay exact->inexact force inexact->exact modulo
+      [(equal? list-instance '(rnrs r5rs)) '(delay exact->inexact force inexact->exact modulo
   null-environment quotient remainder scheme-report-environment)]
-    [(equal? list-instance '(rnrs eval)) '(environment eval)]
-    [(equal? list-instance '(rnrs hashtables)) '(equal-hash hashtable-clear! hashtable-contains?
+      [(equal? list-instance '(rnrs eval)) '(environment eval)]
+      [(equal? list-instance '(rnrs hashtables)) '(equal-hash hashtable-clear! hashtable-contains?
  hashtable-copy hashtable-delete!  hashtable-equivalence-function hashtable-hash-function
  hashtable-mutable? hashtable-ref hashtable-set!  hashtable-size hashtable-update! hashtable?
  make-eq-hashtable make-eqv-hashtable make-hashtable hashtable-entries hashtable-keys 
  string-ci-hash string-hash symbol-hash)]
-    [(equal? list-instance '(rnrs sorting)) '(list-sort vector-sort vector-sort!)]
-    [(equal? list-instance '(rnrs programs)) '(command-line exit)]
-    [(equal? list-instance '(rnrs mutable-pairs)) '(set-car! set-cdr!)]
-    [(equal? list-instance '(rnrs mutable-strings)) '(string-fill! string-set!)]
-    [(equal? list-instance '(rnrs io ports)) '(&i/o &i/o-decoding &i/o-encoding &i/o-file-already-exists
+      [(equal? list-instance '(rnrs sorting)) '(list-sort vector-sort vector-sort!)]
+      [(equal? list-instance '(rnrs programs)) '(command-line exit)]
+      [(equal? list-instance '(rnrs mutable-pairs)) '(set-car! set-cdr!)]
+      [(equal? list-instance '(rnrs mutable-strings)) '(string-fill! string-set!)]
+      [(equal? list-instance '(rnrs io ports)) '(&i/o &i/o-decoding &i/o-encoding &i/o-file-already-exists
  &i/o-file-does-not-exist &i/o-file-is-read-only
  &i/o-file-protection &i/o-filename &i/o-invalid-position
  &i/o-port &i/o-read &i/o-write binary-port? buffer-mode
@@ -1255,7 +1260,7 @@
  string->bytevector textual-port? transcoded-port
  transcoder-codec transcoder-eol-style
  transcoder-error-handling-mode utf-8-codec)]
-    [(equal? list-instance '(rnrs io simple)) '(&i/o &i/o-file-already-exists &i/o-file-does-not-exist
+      [(equal? list-instance '(rnrs io simple)) '(&i/o &i/o-file-already-exists &i/o-file-does-not-exist
  &i/o-file-is-read-only &i/o-file-protection &i/o-filename
  &i/o-invalid-position &i/o-port &i/o-read &i/o-write
  close-input-port close-output-port display eof-object
@@ -1276,7 +1281,7 @@
  current-output-port open-input-file open-output-file
  with-input-from-file with-output-to-file read read-char
  write write-char)]
-    [(equal? list-instance '(rnrs arithmetic flonums)) '(&no-infinities &no-nans fixnum->flonum fl* fl+ fl- fl/ fl<=?
+      [(equal? list-instance '(rnrs arithmetic flonums)) '(&no-infinities &no-nans fixnum->flonum fl* fl+ fl- fl/ fl<=?
  fl<? fl=? fl>=? fl>? flabs flacos flasin flatan flceiling
  flcos fldenominator fldiv fldiv-and-mod fldiv0
  fldiv0-and-mod0 fleven? flexp flexpt flfinite? flfloor
@@ -1285,13 +1290,13 @@
  flsin flsqrt fltan fltruncate flzero?
  make-no-infinities-violation make-no-nans-violation
  no-infinities-violation? no-nans-violation? real->flonum)]
-    [(equal? list-instance '(rnrs arithmetic bitwise)) '(bitwise-and bitwise-arithmetic-shift bitwise-arithmetic-shift-left
+      [(equal? list-instance '(rnrs arithmetic bitwise)) '(bitwise-and bitwise-arithmetic-shift bitwise-arithmetic-shift-left
   bitwise-arithmetic-shift-right bitwise-bit-count
   bitwise-bit-field bitwise-bit-set? bitwise-copy-bit
   bitwise-copy-bit-field bitwise-first-bit-set bitwise-if
   bitwise-ior bitwise-length bitwise-not
   bitwise-reverse-bit-field bitwise-rotate-bit-field bitwise-xor)]
-    [(equal? list-instance '(rnrs arithmetic fixnums)) '(fixnum-width fixnum? fx*/carry fx+/carry fx-/carry fx<=?
+      [(equal? list-instance '(rnrs arithmetic fixnums)) '(fixnum-width fixnum? fx*/carry fx+/carry fx-/carry fx<=?
  fx<? fx=? fx>=? fx>? fxand fxarithmetic-shift
  fxarithmetic-shift-left fxarithmetic-shift-right fxbit-count
  fxbit-field fxbit-set? fxcopy-bit fxcopy-bit-field fxdiv
@@ -1300,18 +1305,18 @@
  fxnot fxodd? fxpositive? fxreverse-bit-field
  fxrotate-bit-field fxxor fxzero? greatest-fixnum
  least-fixnum fx* fx+ fx-)]
-    [(equal? list-instance '(rnrs records syntactic)) '(define-record-type fields
+      [(equal? list-instance '(rnrs records syntactic)) '(define-record-type fields
   immutable mutable nongenerative opaque parent parent-rtd protocol record-constructor-descriptor
   record-type-descriptor sealed)]
-    [(equal? list-instance '(rnrs records procedure)) '(make-record-constructor-descriptor make-record-type-descriptor 
+      [(equal? list-instance '(rnrs records procedure)) '(make-record-constructor-descriptor make-record-type-descriptor 
     record-constructor record-accessor record-mutator record-predicate record-type-descriptor?)]
-    [(equal? list-instance '(rnrs records inspection)) '(record? record-field-mutable? record-rtd record-type-field-names
+      [(equal? list-instance '(rnrs records inspection)) '(record? record-field-mutable? record-rtd record-type-field-names
   record-type-generative? record-type-name record-type-opaque?  record-type-parent record-type-sealed? record-type-uid)]
-    [(equal? list-instance '(chezscheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
+      [(equal? list-instance '(chezscheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
   record-field-mutator record-type-descriptor record-type-field-decls record-type-field-names 
   record-type-name record-type-symbol)]
-    [(equal? list-instance '(scheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
+      [(equal? list-instance '(scheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
   record-field-mutator record-type-descriptor record-type-field-decls record-type-field-names 
   record-type-name record-type-symbol)]
-    [else '()]))
+      [else '()])))
 )

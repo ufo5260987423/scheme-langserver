@@ -11,8 +11,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
   (fields
+    (immutable identifier)
     (immutable document)
-    (immutable index-node)))
+    (immutable index-node)
+    (immutable libray-identifier)))
 
 (define (find-available-references-for current-index-node)
   (if (not (null? (index-node-parent current-index-node)))

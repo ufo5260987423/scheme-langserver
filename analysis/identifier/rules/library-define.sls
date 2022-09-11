@@ -14,9 +14,9 @@
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
-      [('library _ **1 ) 
+      [('library (library-identifiers **1) _ **1 ) 
         (map 
-          (lambda (child-node) (match-define root-file-node document child-node))
+          (lambda (child-node) (match-define root-file-node document library-identifiers child-node))
           (index-node-children index-node))]
       [else 
         ; (map 
@@ -25,14 +25,16 @@
         '()])
     index-node))
 
-(define (match-define root-file-node document index-node)
+(define (match-define root-file-node document library-identifiers index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
       [('define (identifier _ ... )_ ... ) 
-        (let ([reference (make-identifier-reference document (car (index-node-children (car (index-node-children index-node)))))])
-    (display (annotation-stripped (index-node-datum/annotations (identifier-reference-index-node reference))))
-    (display (newline))
+        (let ([reference (make-identifier-reference 
+                identifier 
+                document 
+                (car (index-node-children (car (index-node-children index-node)))) 
+                library-identifiers)])
           (index-node-references-export-to-other-node-set! 
             index-node
             (append 
@@ -44,7 +46,11 @@
               (index-node-references-import-in-this-node (index-node-parent index-node))
               `(,reference))))]
       [('define identifier _ ... ) 
-        (let ([reference (make-identifier-reference document (car (index-node-children index-node)))])
+        (let ([reference (make-identifier-reference 
+                identifier 
+                document 
+                (car (index-node-children index-node))
+                library-identifiers)])
           (index-node-references-export-to-other-node-set! 
             index-node
             (append 
