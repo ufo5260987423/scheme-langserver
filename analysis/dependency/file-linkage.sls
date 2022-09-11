@@ -31,7 +31,7 @@
       (init-matrix root-library-node root-library-node path->id-map matrix)
       (let ([cycle (find-cycle matrix)])
         (if (not (null? cycle))
-          (display (map (lambda (id) (hashtable-ref id->path-map cycle #f)) cycle))))
+          (display (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -126,23 +126,30 @@
   (case-lambda 
     [(matrix) (find-cycle matrix (sqrt (vector-length matrix)))]
     [(matrix node-count) 
-      (let loop ([n 0]) 
-        (if (< n node-count)
-          (let ([result (find-cycle matrix (make-vector node-count) n '())])
-            (if (null? result)
-              (loop (+ 1 n))
-              result))
-          '()))]
+      (let ([visited (make-vector node-count)])
+        (let loop ([n 0]) 
+          (if (< n node-count)
+            (let ([result (find-cycle matrix visited n '())])
+              (if (null? result)
+                (loop (+ 1 n))
+                result))
+            '())))]
     [(matrix visited n path) 
-      (vector-set! visited n 1)
-      (let loop ([m 0])
-        (if (< m (vector-length visited))
-          (if (not (zero? (matrix-take matrix n m)))
-            (if (zero? (vector-ref visited m))
-              (find-cycle matrix visited m (append path `(,n)))
-              (append path `(,m)))
-            (loop (+ 1 m)))
-          '()))]))
+      (if (zero? (vector-ref visited n))
+        (begin
+          (vector-set! visited n 1)
+          (let loop ([m 0])
+            (if (< m (vector-length visited))
+              (if (zero? (matrix-take matrix n m))
+                (loop (+ 1 m))
+                (begin
+                  (find-cycle matrix visited m (append path `(,n)))
+                  (loop (+ 1 m))))
+              '())))
+        (if (not (find (lambda (t) (= n t)) path))
+          '()
+          (append path `(,n)))
+        )]))
 
 ; (define merge 
 ;   (case-lambda 
