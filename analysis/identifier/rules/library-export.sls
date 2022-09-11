@@ -42,7 +42,7 @@
         [expression (annotation-stripped ann)])
     (match expression
       [('rename (internal-names external-names) **1) 
-        (let loop ([children-index-nodes (cdr (index-node-children index-node))]
+        (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
                 [internal-index-node (caar children-index-nodes)]
                 [external-index-node (cadar children-index-nodes)])
 

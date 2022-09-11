@@ -66,9 +66,40 @@
                 root-index-node 
                 (append 
                   (index-node-references-import-in-this-node root-index-node)
-                  (document-index-node (file-node-document (car candidate-file-nodes))
-                  )))
+                  ; (document-index-node (file-node-document (car candidate-file-nodes)))
+                  ))
             ]
             )]
-      [else #f])))
+      [else #f]))))
+
+(define (import-from-external-file root-index-node)
+  (let* ([ann (index-node-datum/annotations index-node)]
+        [expression (annotation-stripped ann)])
+    (match expression 
+      [('library _ **1 ) 
+        (map 
+          (lambda (child-node) (match-export child-node))
+          (index-node-children root-index-node))]
+      [else 
+        ; (map 
+        ;   (lambda (child-node) (library-define-process root-file-node document child-node))
+        ;   (index-node-children index-node))
+        '()])))
+
+(define (match-export index-node) 
+  (let* ([ann (index-node-datum/annotations index-node)]
+        [expression (annotation-stripped ann)])
+    (match expression
+      [('rename (internal-names external-names) **1) 
+        (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
+                [external-index-node (cadar children-index-nodes)]
+                [result '()])
+          (if (not (null? children-index-nodes))
+            (loop 
+              (cdr children-index-nodes)
+              (caar (cdr children-index-nodes))
+              (apply append result (index-node-references-export-to-other-node external-index-node)))))]
+
+      [(identifier) (index-node-references-import-in-this-node index-node)]
+      [else '()])))
 )
