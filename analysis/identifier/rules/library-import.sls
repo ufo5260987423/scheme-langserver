@@ -48,7 +48,6 @@
       [('only (library-identifier **1) _ ...) identifier]
       [('except (library-identifier **1) _ ...) identifier]
       [('prefix (library-identifier **1) _ ...) identifier]
-      [('rename (library-identifier **1) _ ...) identifier]
       [(library-identifier **1) 
         (let* ([candidate-file-nodes (library-node-file-nodes (walk-library library-identifier root-library-node))]
               [candidate-count (length candidate-file-nodes)])
@@ -57,18 +56,19 @@
               (if (null? (find-meta library-identifier))
                 (raise "Candidats not Exist")
                 (index-node-references-import-in-this-node-set! 
-                  (index-node-parent index-node) 
+                  root-index-node 
                   (append 
-                    (index-node-references-import-in-this-node (index-node-parent index-node))
+                    (index-node-references-import-in-this-node root-index-node)
                     (find-meta library-identifier))))]
             [(> candidate-count 1) (raise "Too many candidats")]
-          )
-          
-          (index-node-references-import-in-this-node-set! 
-            (index-node-parent index-node) 
-            (append 
-              (index-node-references-import-in-this-node (index-node-parent index-node))
-              `(,reference)))
-              )]
+            [(= candidate-count 1) 
+              (index-node-references-import-in-this-node-set! 
+                root-index-node 
+                (append 
+                  (index-node-references-import-in-this-node root-index-node)
+                  (document-index-node (file-node-document (car candidate-file-nodes))
+                  )))
+            ]
+            )]
       [else #f])))
 )
