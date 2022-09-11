@@ -43,11 +43,12 @@
 (define (match-clause root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)]
-        [root-index-node (document-index-node document)])
+        [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
       [('only (library-identifier **1) _ ...) identifier]
       [('except (library-identifier **1) _ ...) identifier]
       [('prefix (library-identifier **1) _ ...) identifier]
+      [('rename (library-identifier **1) _ ...) identifier]
       [(library-identifier **1) 
         (let* ([candidate-file-nodes (library-node-file-nodes (walk-library library-identifier root-library-node))]
               [candidate-count (length candidate-file-nodes)])
@@ -56,20 +57,17 @@
               (if (null? (find-meta library-identifier))
                 (raise "Candidats not Exist")
                 (index-node-references-import-in-this-node-set! 
-                  root-index-node 
+                  grand-parent-index-node 
                   (append 
-                    (index-node-references-import-in-this-node root-index-node)
+                    (index-node-references-import-in-this-node grand-parent-index-node)
                     (find-meta library-identifier))))]
             [(> candidate-count 1) (raise "Too many candidats")]
             [(= candidate-count 1) 
               (index-node-references-import-in-this-node-set! 
-                root-index-node 
-                (append 
-                  (index-node-references-import-in-this-node root-index-node)
-                  ; (document-index-node (file-node-document (car candidate-file-nodes)))
-                  ))
-            ]
-            )]
+                grand-parent-index-node 
+                (apply append 
+                  (index-node-references-import-in-this-node grand-parent-index-node)
+                  (import-from-external-file (document-index-node (file-node-document (car candidate-file-nodes))))))])]
       [else #f]))))
 
 (define (import-from-external-file root-index-node)
@@ -80,13 +78,21 @@
         (map 
           (lambda (child-node) (match-export child-node))
           (index-node-children root-index-node))]
-      [else 
-        ; (map 
-        ;   (lambda (child-node) (library-define-process root-file-node document child-node))
-        ;   (index-node-children index-node))
-        '()])))
+      [else '()])))
 
-(define (match-export index-node) 
+
+(define (match-export index-node)
+  (apply append '()
+    (let* ([ann (index-node-datum/annotations index-node)]
+        [expression (annotation-stripped ann)])
+      (match expression
+        [('export dummy **1 ) 
+          (map 
+            (lambda (child-node) (match-clause root-file-node document library-identifiers child-node)) 
+            (index-node-children index-node))]
+        [else '()]))))
+
+(define (match-clause index-node) 
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
@@ -94,12 +100,12 @@
         (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
                 [external-index-node (cadar children-index-nodes)]
                 [result '()])
-          (if (not (null? children-index-nodes))
+          (if (null? children-index-nodes)
+            result
             (loop 
               (cdr children-index-nodes)
               (caar (cdr children-index-nodes))
               (apply append result (index-node-references-export-to-other-node external-index-node)))))]
-
-      [(identifier) (index-node-references-import-in-this-node index-node)]
+      [(identifier) (index-node-references-export-to-other-node index-node)]
       [else '()])))
 )

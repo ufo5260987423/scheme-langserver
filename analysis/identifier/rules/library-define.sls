@@ -29,16 +29,16 @@
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
-      [('define (identifier _ ... )_ ... ) 
+      [('define (identifier _ ... ) _ ... ) 
         (let ([reference (make-identifier-reference 
                 identifier 
                 document 
-                (car (index-node-children (car (index-node-children index-node)))) 
+                (car (index-node-children (cadr (index-node-children index-node)))) 
                 library-identifiers)])
           (index-node-references-export-to-other-node-set! 
-            index-node
+            (identifier-reference-index-node reference)
             (append 
-              (index-node-references-export-to-other-node index-node)
+              (index-node-references-export-to-other-node (identifier-reference-index-node reference))
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             (index-node-parent index-node) 
@@ -49,12 +49,12 @@
         (let ([reference (make-identifier-reference 
                 identifier 
                 document 
-                (car (index-node-children index-node))
+                (cadr (index-node-children index-node))
                 library-identifiers)])
           (index-node-references-export-to-other-node-set! 
-            index-node
+            (identifier-reference-index-node reference)
             (append 
-              (index-node-references-export-to-other-node index-node)
+              (index-node-references-export-to-other-node (identifier-reference-index-node reference))
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             (index-node-parent index-node)

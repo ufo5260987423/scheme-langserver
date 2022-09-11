@@ -26,16 +26,14 @@
     index-node))
 
 (define (match-export root-file-node document library-identifiers index-node)
-  (filter 
-    (lambda (item) (not (null? item)))
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [('export dummy **1 ) 
-          (map 
-            (lambda (child-node) (match-clause root-file-node document library-identifiers child-node)) 
-            (index-node-children index-node))]
-        [else '()]))))
+  (let* ([ann (index-node-datum/annotations index-node)]
+      [expression (annotation-stripped ann)])
+    (match expression
+      [('export dummy **1 ) 
+        (map 
+          (lambda (child-node) (match-clause root-file-node document library-identifiers child-node)) 
+          (index-node-children index-node))]
+      [else '()])))
 
 (define (match-clause root-file-node document library-identifiers index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
@@ -46,22 +44,20 @@
                 [internal-index-node (caar children-index-nodes)]
                 [external-index-node (cadar children-index-nodes)])
 
-          (match-clause root-file-node document library-identifiers internal-index-node)
-
           (index-node-references-import-in-this-node-set! 
-            index-node
+            external-index-node
             (append 
-              (index-node-references-import-in-this-node index-node)
-              (index-node-references-import-in-this-node internal-index-node)))
+              (index-node-references-import-in-this-node external-index-node)
+              `(,(car (find-available-references-for internal-index-node)))))
 
           (index-node-references-export-to-other-node-set! 
-            index-node
+            external-index-node
             (append 
-              (index-node-references-export-to-other-node index-node)
+              (index-node-references-export-to-other-node external-index-node)
               `(,(make-indentifier-reference 
-                  (string->symbol (annotation-stripped (index-node-datum/annotation index-node)))
+                  (string->symbol (annotation-stripped (index-node-datum/annotation external-index-node)))
                   document
-                  index-node
+                  external-index-node
                   library-identifiers))))
 
           (if (not (null? children-index-nodes))
@@ -80,10 +76,10 @@
             [(zero? reference-count) '()]
             [(> reference-count 1) (raise "Multi-defined")]
             [(= reference-count 1) 
-              (index-node-references-import-in-this-node-set! 
+              (index-node-references-export-to-other-node-set! 
                 index-node
                 (append 
-                  (index-node-references-import-in-this-node index-node)
+                  (index-node-references-export-to-other-node index-node)
                   `(,(car references))))]))]
       [else #f])))
 )

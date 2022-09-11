@@ -17,8 +17,10 @@
     (immutable libray-identifier)))
 
 (define (find-available-references-for current-index-node)
-  (if (not (null? (index-node-parent current-index-node)))
-    (append 
-      (index-node-references-import-in-this-node current-index-node) 
-      (find-available-references-for (index-node-parent current-index-node)))))
+  (if (null? (index-node-references-import-in-this-node current-index-node))
+    (if (not (null? (index-node-parent current-index-node)))
+      (append 
+        (index-node-references-import-in-this-node current-index-node) 
+        (find-available-references-for (index-node-parent current-index-node))))
+    (index-node-references-import-in-this-node current-index-node)))
 )
