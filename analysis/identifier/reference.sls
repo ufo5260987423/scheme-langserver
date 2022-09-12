@@ -3,7 +3,9 @@
     find-available-references-for
 
     make-identifier-reference
+    identifier-reference-identifier
     identifier-reference-document
+    identifier-reference-library-identifier
     identifier-reference-index-node)
   (import 
     (rnrs)
@@ -14,7 +16,7 @@
     (immutable identifier)
     (immutable document)
     (immutable index-node)
-    (immutable libray-identifier)))
+    (immutable library-identifier)))
 
 (define find-available-references-for
   (case-lambda

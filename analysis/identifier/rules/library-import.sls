@@ -148,11 +148,11 @@
       (match expression
         [('export dummy **1 ) 
           (map 
-            (lambda (child-node) (match-clause root-file-node document library-identifiers child-node)) 
+            (lambda (child-node) (match-export-clause root-file-node document library-identifiers child-node)) 
             (index-node-children index-node))]
         [else '()]))))
 
-(define (match-clause index-node) 
+(define (match-export-clause index-node) 
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression

@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis meta)
   (export find-meta)
-  (import (rnrs))
+  (import (rnrs)
+     (scheme-langserver analysis identifier reference))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
    (map (lambda (identifier) (make-identifier-reference identifier '() '() list-instance))
