@@ -51,7 +51,7 @@
               (find-available-references-for 
                 internal-index-node 
                 (string->symbol 
-                  (annotation-stripped (index-node-datum/annotations internal-index-node)))))))
+                  (annotation-stripped (index-node-datum/annotations internal-index-node))))))
 
           (index-node-references-export-to-other-node-set! 
             external-index-node
