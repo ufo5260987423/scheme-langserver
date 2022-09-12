@@ -40,9 +40,9 @@
         [expression (annotation-stripped ann)])
     (match expression
       [('rename (internal-names external-names) **1) 
-        (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
-                [internal-index-node (caar children-index-nodes)]
-                [external-index-node (cadar children-index-nodes)])
+        (let loop ([children-index-nodes (cdr (index-node-children index-node))]
+                [internal-index-node (caar (cdr (index-node-children index-node)))]
+                [external-index-node (cadar (cdr (index-node-children index-node)))])
 
           (index-node-references-import-in-this-node-set! 
             external-index-node
@@ -57,8 +57,8 @@
             external-index-node
             (append 
               (index-node-references-export-to-other-node external-index-node)
-              `(,(make-indentifier-reference 
-                  (string->symbol (annotation-stripped (index-node-datum/annotation external-index-node)))
+              `(,(make-identifier-reference
+                  (string->symbol (annotation-stripped (index-node-datum/annotations external-index-node)))
                   document
                   external-index-node
                   library-identifiers))))

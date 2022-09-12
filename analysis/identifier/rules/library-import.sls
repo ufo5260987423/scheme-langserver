@@ -86,12 +86,12 @@
                   (find 
                     (lambda (reference) 
                       (equal? 
-                        (identifier-refernece-identifier reference) 
-                        (string->symbol (annotation-stripped (index-node-datum/anntations external-index-node)))))
-                    imporeted-references))])
-          (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
-                  [external-index-node (caar children-index-nodes)]
-                  [internal-index-node (cadar children-index-nodes)])
+                        (identifier-reference-identifier reference) 
+                        (string->symbol (annotation-stripped (index-node-datum/annotations external-index-node)))))
+                    imported-references))])
+          (let loop ([children-index-nodes (cdr (index-node-children index-node))]
+                  [external-index-node (caar (cdr (index-node-children index-node)))]
+                  [internal-index-node (cadar (cdr (index-node-children index-node)))])
 
             (index-node-references-import-in-this-node-set! 
               internal-index-node
@@ -103,8 +103,8 @@
               internal-index-node
               (append 
                 (index-node-references-export-to-other-node internal-index-node)
-                `(,(make-indentifier-reference 
-                    (string->symbol (annotation-stripped (index-node-datum/annotation internal-index-node)))
+                `(,(make-identifier-reference 
+                    (string->symbol (annotation-stripped (index-node-datum/annotations internal-index-node)))
                     document
                     internal-index-node
                     library-identifier))))
@@ -131,7 +131,7 @@
       [(= candidate-count 1) (import-from-external-file (document-index-node (file-node-document (car candidate-file-nodes))))])))
 
 (define (import-from-external-file root-index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
+  (let* ([ann (index-node-datum/annotations root-index-node)]
         [expression (annotation-stripped ann)])
     (match expression 
       [('library _ **1 ) 
@@ -148,7 +148,7 @@
       (match expression
         [('export dummy **1 ) 
           (map 
-            (lambda (child-node) (match-export-clause root-file-node document library-identifiers child-node)) 
+            (lambda (child-node) (match-export-clause child-node)) 
             (index-node-children index-node))]
         [else '()]))))
 
@@ -157,8 +157,8 @@
         [expression (annotation-stripped ann)])
     (match expression
       [('rename (internal-names external-names) **1) 
-        (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
-                [external-index-node (cadar children-index-nodes)]
+        (let loop ([children-index-nodes (cdr (index-node-children index-node))]
+                [external-index-node (cadar (cdr (index-node-children index-node)))]
                 [result '()])
           (if (null? children-index-nodes)
             result

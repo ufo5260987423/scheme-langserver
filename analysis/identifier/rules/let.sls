@@ -17,8 +17,7 @@
       [('let ((identifier no-use ... ) **1 ) _ ... ) 
         (let loop ([kv-nodes (index-node-children (car (index-node-children index-node)))]
                    [current-kv-node (car kv-nodes)]
-                   [current-key-identifier (annotation-stripped (index-node-datum/annotations current-key-node)) 
-                  ])
+                   [current-key-identifier (annotation-stripped (index-node-datum/annotations current-key-node)) ])
         )
         (map 
           (lambda (kv-node)
