@@ -48,7 +48,10 @@
             external-index-node
             (append 
               (index-node-references-import-in-this-node external-index-node)
-              `(,(car (find-available-references-for internal-index-node)))))
+              (find-available-references-for 
+                internal-index-node 
+                (string->symbol 
+                  (annotation-stripped (index-node-datum/annotations internal-index-node)))))))
 
           (index-node-references-export-to-other-node-set! 
             external-index-node
@@ -60,16 +63,13 @@
                   external-index-node
                   library-identifiers))))
 
-          (if (not (null? children-index-nodes))
+          (if (not (null? (cdr children-index-nodes)))
             (loop 
               (cdr children-index-nodes)
               (caar (cdr children-index-nodes))
               (cadar (cdr children-index-nodes)))))]
       [(identifier) 
-        (let* ([references 
-              (filter
-                (lambda (reference) (equal? identifier (identifier-reference-identifier reference))) 
-                (find-available-references-for index-node))]
+        (let* ([references (find-available-references-for index-node identifier)]
             [reference-count (length references)])
           (cond 
             ;todo

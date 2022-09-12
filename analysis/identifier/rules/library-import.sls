@@ -45,30 +45,90 @@
         [expression (annotation-stripped ann)]
         [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
-      [('only (library-identifier **1) _ ...) identifier]
-      [('except (library-identifier **1) _ ...) identifier]
-      [('prefix (library-identifier **1) _ ...) identifier]
-      [('rename (library-identifier **1) _ ...) identifier]
+      [('only (library-identifier **1) identifier **1) 
+        (index-node-references-import-in-this-node-set! 
+          grand-parent-index-node 
+          (append 
+            (index-node-references-import-in-this-node grand-parent-index-node)
+            (filter
+              (lambda (reference) 
+                (if (find (lambda(id) (equal? id (identifier-reference-identifier id))) identifier) #t #f))
+              (import-references root-library-node library-identifier))))]
+      [('except (library-identifier **1) identifier **1) 
+        (index-node-references-import-in-this-node-set! 
+          grand-parent-index-node 
+          (append 
+            (index-node-references-import-in-this-node grand-parent-index-node)
+            (filter
+              (lambda (reference) 
+                (if (find (lambda(id) (not (equal? id (identifier-reference-identifier id)))) identifier) #t #f))
+              (import-references root-library-node library-identifier))))]
+      [('prefix (library-identifier **1) prefix-id)
+        (let* ([imported-references (import-references root-library-node library-identifier)]
+              [prefixed-references 
+                (map 
+                  (lambda (reference) 
+                    (make-identifier-reference
+                      (string->symbol (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference))))
+                      (identifier-reference-document reference)
+                      (identifier-reference-index-node reference)
+                      (identifier-reference-library-identifier reference))) imported-references)])
+          ;;todo: add something to export-to-other-node for current-index-node?
+          (index-node-references-import-in-this-node-set! 
+            grand-parent-index-node 
+            (append 
+              (index-node-references-import-in-this-node grand-parent-index-node)
+              prefixed-references)))]
+      [('rename (library-identifier **1) (external-name internal-name) **1 ) 
+        (let* ([imported-references (import-references root-library-node library-identifier)]
+              [find-pre-reference 
+                (lambda (external-index-node)
+                  (find 
+                    (lambda (reference) 
+                      (equal? 
+                        (identifier-refernece-identifier reference) 
+                        (string->symbol (annotation-stripped (index-node-datum/anntations external-index-node)))))
+                    imporeted-references))])
+          (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
+                  [external-index-node (caar children-index-nodes)]
+                  [internal-index-node (cadar children-index-nodes)])
+
+            (index-node-references-import-in-this-node-set! 
+              internal-index-node
+              (append 
+                (index-node-references-import-in-this-node internal-index-node)
+                (list (find-pre-reference external-index-node))))
+
+            (index-node-references-export-to-other-node-set! 
+              internal-index-node
+              (append 
+                (index-node-references-export-to-other-node internal-index-node)
+                `(,(make-indentifier-reference 
+                    (string->symbol (annotation-stripped (index-node-datum/annotation internal-index-node)))
+                    document
+                    internal-index-node
+                    library-identifier))))
+
+            (if (not (null? (cdr children-index-nodes)))
+              (loop 
+                (cdr children-index-nodes)
+                (caar (cdr children-index-nodes))
+                (cadar (cdr children-index-nodes))))))]
       [(library-identifier **1) 
-        (let* ([candidate-file-nodes (library-node-file-nodes (walk-library library-identifier root-library-node))]
-              [candidate-count (length candidate-file-nodes)])
-          (cond
-            [(zero? candidate-count) 
-              (if (null? (find-meta library-identifier))
-                (raise "Candidats not Exist")
-                (index-node-references-import-in-this-node-set! 
-                  grand-parent-index-node 
-                  (append 
-                    (index-node-references-import-in-this-node grand-parent-index-node)
-                    (find-meta library-identifier))))]
-            [(> candidate-count 1) (raise "Too many candidats")]
-            [(= candidate-count 1) 
-              (index-node-references-import-in-this-node-set! 
-                grand-parent-index-node 
-                (apply append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
-                  (import-from-external-file (document-index-node (file-node-document (car candidate-file-nodes))))))])]
-      [else #f]))))
+        (index-node-references-import-in-this-node-set! 
+          grand-parent-index-node 
+          (apply append 
+            (index-node-references-import-in-this-node grand-parent-index-node)
+            (import-references root-library-node library-identifier)))]
+      [else #f])))
+
+(define (import-references root-library-node library-identifier )
+  (let* ([candidate-file-nodes (library-node-file-nodes (walk-library library-identifier root-library-node))]
+      [candidate-count (length candidate-file-nodes)])
+    (cond
+      [(zero? candidate-count) (find-meta library-identifier)]
+      [(> candidate-count 1) (raise "Too many candidats")]
+      [(= candidate-count 1) (import-from-external-file (document-index-node (file-node-document (car candidate-file-nodes))))])))
 
 (define (import-from-external-file root-index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
