@@ -28,6 +28,11 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
 
+    (scheme-langserver analysis identifier rules library-define)
+    (scheme-langserver analysis identifier rules library-export)
+    (scheme-langserver analysis identifier rules library-import)
+    (scheme-langserver analysis identifier rules let)
+
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
@@ -41,26 +46,25 @@
 
 (define (init-workspace path)
   (let* ([root-file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
-        [root-library-node (init-library-node root-file-node)]
-        [file-linkage (init-file-linkage root-library-node)]
-        [workspace (make-workspace root-file-node root-library-node file-linkage)])
-        (init-references root-file-node)
-  ))
+      [root-library-node (init-library-node root-file-node)]
+      [file-linkage (init-file-linkage root-library-node)])
+    (init-references root-file-node root-library-node file-linkage)
+    (make-workspace root-file-node root-library-node file-linkage)))
 
 ;; head -[linkage]->files
 ;; for single file
 ;; import 
 ;; init define let ...
 ;; export
-(define (init-references file-node)
-  (if (file-node-folder? file-node)
-    (map init-references (file-node-children file-node))
-    (let* ([document (file-node-document file-node)]
-          [index-node (document-index-node document)])
-      (if (not (null? index-node))
-      ;;todo
-      '()
-      ))))
+(define (init-references root-file-node root-library-node file-linkage)
+  (let* loop ([paths (get-init-reference-path file-linkage)])
+    (if (not (null? paths))
+      (let* ([current-file-node (walk-file root-file-node (car paths))]
+            [document (file-node-document current-file-node)]
+            [index-node (document-index-node document)]))
+        (import-process root-file-node root-library-node document index-node)
+        (library-define-process root-file-node document index-node)
+        (export-process root-file-node document index-node))))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)

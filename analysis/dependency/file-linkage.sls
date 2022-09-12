@@ -7,7 +7,9 @@
     file-linkage-matrix
     file-linkage-take
     file-linkage-set!
-    file-linkage-head)
+    file-linkage-head
+    
+    get-init-reference-path)
   (import 
     (rnrs)
     (scheme-langserver analysis dependency rules library-import)
@@ -43,6 +45,21 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
+(define (get-init-reference-path linkage)
+  (let* ([node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
+      [visited-ids (make-vector node-count)]
+      [matrix (file-linkage-matrix linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)])
+    (let* loop ([from-id 0] [path '()])
+      (if (< (length path) node-count)
+        (if (not (zero? (vector-ref visited-ids from-id)))
+          (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path)
+          (let ([to-ids (linkage-matrix-from matrix from-id)])
+            (if (= (length to-ids) (apply + (map (lambda (to-id) (vector-ref visited-ids to-id)) to-ids)))
+              (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) (append path `(,from-id)))
+              (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path))))
+        (map (lambda (id) (hashtable-ref id->path-map id #f)) path)))))
+
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
@@ -56,24 +73,49 @@
           (lambda (id) (hashtable-ref id->path-map id #f))
           result)))))
 
-(define file-linkage-take 
-  (case-lambda 
-    [(linkage from to) 
-      (matrix-take 
-        (file-linkage-matrix linkage) 
-        (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
-        (hashtable-ref (file-linkage-path->id-map linkage) to #f))]
-    [(linkage from)
-      (let* ([matrix (file-linkage-matrix linkage)]
-          [rows-count (sqrt (vector-length matrix))]
-          [row-id (hashtable-ref (file-linkage-path->id-map linkage) from #f)])
-        (let loop ([result '()])
-          (if (< (length result) rows-count)
-            (loop 
-              (if (zero? (matrix-take matrix row-id (length result)))
-                result
-                (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) (length result) #f)))))
-            result)))]))
+(define (linkage-matrix-from matrix from)
+  (let ([rows-count (sqrt (vector-length matrix))]
+        [row-id from])
+    (let loop ([column-id 0][result '()])
+      (if (< column-id rows-count)
+        (loop 
+          (+ 1 column-id)
+          (if (zero? (matrix-take matrix row-id column-id))
+            result
+            (append result `(,column-id))))
+        result))))
+
+(define (file-linkage-from linkage from)
+  (let* ([matrix (file-linkage-matrix linkage)]
+      [rows-count (sqrt (vector-length matrix))]
+      [row-id (hashtable-ref (file-linkage-path->id-map linkage) from #f)])
+    (let loop ([column-id 0][result '()])
+      (if (< column-id rows-count)
+        (loop 
+          (+ 1 column-id)
+          (if (zero? (matrix-take matrix row-id column-id))
+            result
+            (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f)))))
+        result))))
+
+(define (file-linkage-to linkage to)
+  (let* ([matrix (file-linkage-matrix linkage)]
+      [rows-count (sqrt (vector-length matrix))]
+      [column-id (hashtable-ref (file-linkage-path->id-map linkage) to #f)])
+    (let loop ([row-id 0][result '()])
+      (if (< row-id rows-count)
+        (loop 
+          (+ 1 row-id)
+          (if (zero? (matrix-take matrix row-id column-id))
+            result
+            (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f)))))
+        result))))
+
+(define (file-linkage-take linkage from to)
+  (matrix-take 
+    (file-linkage-matrix linkage) 
+    (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
+    (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
 
 (define (file-linkage-set! linkage from to)
   (matrix-set!
