@@ -50,7 +50,7 @@
       [visited-ids (make-vector node-count)]
       [matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)])
-    (let* loop ([from-id 0] [path '()])
+    (let loop ([from-id 0] [path '()])
       (if (< (length path) node-count)
         (if (not (zero? (vector-ref visited-ids from-id)))
           (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path)
