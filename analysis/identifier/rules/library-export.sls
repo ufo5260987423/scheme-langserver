@@ -39,35 +39,35 @@
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
-      ; [('rename (internal-names external-names) **1) 
-      ;   (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
-      ;           [internal-index-node (caar children-index-nodes)]
-      ;           [external-index-node (cadar children-index-nodes)])
+      [('rename (internal-names external-names) **1) 
+        (let* loop ([children-index-nodes (cdr (index-node-children index-node))]
+                [internal-index-node (caar children-index-nodes)]
+                [external-index-node (cadar children-index-nodes)])
 
-      ;     (index-node-references-import-in-this-node-set! 
-      ;       external-index-node
-      ;       (append 
-      ;         (index-node-references-import-in-this-node external-index-node)
-      ;         (find-available-references-for 
-      ;           internal-index-node 
-      ;           (string->symbol 
-      ;             (annotation-stripped (index-node-datum/annotations internal-index-node))))))
+          (index-node-references-import-in-this-node-set! 
+            external-index-node
+            (append 
+              (index-node-references-import-in-this-node external-index-node)
+              (find-available-references-for 
+                internal-index-node 
+                (string->symbol 
+                  (annotation-stripped (index-node-datum/annotations internal-index-node))))))
 
-      ;     (index-node-references-export-to-other-node-set! 
-      ;       external-index-node
-      ;       (append 
-      ;         (index-node-references-export-to-other-node external-index-node)
-      ;         `(,(make-indentifier-reference 
-      ;             (string->symbol (annotation-stripped (index-node-datum/annotation external-index-node)))
-      ;             document
-      ;             external-index-node
-      ;             library-identifiers))))
+          (index-node-references-export-to-other-node-set! 
+            external-index-node
+            (append 
+              (index-node-references-export-to-other-node external-index-node)
+              `(,(make-indentifier-reference 
+                  (string->symbol (annotation-stripped (index-node-datum/annotation external-index-node)))
+                  document
+                  external-index-node
+                  library-identifiers))))
 
-      ;     (if (not (null? (cdr children-index-nodes)))
-      ;       (loop 
-      ;         (cdr children-index-nodes)
-      ;         (caar (cdr children-index-nodes))
-      ;         (cadar (cdr children-index-nodes)))))]
+          (if (not (null? (cdr children-index-nodes)))
+            (loop 
+              (cdr children-index-nodes)
+              (caar (cdr children-index-nodes))
+              (cadar (cdr children-index-nodes)))))]
       [(identifier) 
         (let* ([references (find-available-references-for index-node identifier)]
             [reference-count (length references)])
