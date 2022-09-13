@@ -61,11 +61,12 @@
                 (loop (append include reference-list) (cdr rest)))))]
         [('letrec ((identifier no-use ... ) **1 ) _ ... ) 
           (guard-for 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
+          (let loop ([exclude '()]
+                [rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-                (loop (cdr rest)))))]
+                (loop (append exclude (process identifier-index-node index-node exclude document)) (cdr rest)))))]
         [('letrec* ((identifier no-use ... ) **1 ) _ ... ) 
           (guard-for 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([include '()] 
