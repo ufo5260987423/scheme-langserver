@@ -33,7 +33,7 @@
                     (process (car rest) index-node '() document)))
                 (loop '() (cdr rest)))))]
         [('letrec* ((identifier no-use ... ) **1 ) _ ... ) 
-          (guard-for 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (guard-for 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([exclude '()] 
                 [rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
