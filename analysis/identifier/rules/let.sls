@@ -15,40 +15,71 @@
         [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('let* ((identifier no-use ... ) **1 ) _ ... ) 
-          (guard-for 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let loop ([exclude '()] 
-                [rest (index-node-children (cadr (index-node-children index-node)))])
-            (if (not (null? rest))
-              (loop (append exclude (process (car rest) index-node exclude document)) (cdr rest))))]
+        [('let loop-identifier ((identifier no-use ... ) **1 ) _ ... ) 
+          (guard-for 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let ([loop-reference-list (process (cadr (index-node-children index-node)) index-node '() document)])
+            (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
+              (if (not (null? rest))
+                (let* ([identifier-parent-index-node (car rest)]
+                      [identifier-index-node (car (index-node-children identifier-parent-index-node))])
+                  (index-node-excluded-references-set! 
+                    identifier-parent-index-node
+                    (append 
+                      (index-node-excluded-references identifier-parent-index-node)
+                      (process identifier-index-node index-node loop-reference-list document)))
+                  (loop (cdr rest))))))]
         [('let ((identifier no-use ... ) **1 ) _ ... ) 
           (guard-for 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
-              (begin
+              (let* ([identifier-parent-index-node (car rest)]
+                    [identifier-index-node (car (index-node-children identifier-parent-index-node))])
                 (index-node-excluded-references-set! 
-                  (cadr (index-node-children index-node))
+                  identifier-parent-index-node
                   (append 
-                    (index-node-excluded-references (cadr (index-node-children index-node)))
-                    (process (car rest) index-node '() document)))
-                (loop '() (cdr rest)))))]
-        [('letrec* ((identifier no-use ... ) **1 ) _ ... ) 
-          (guard-for 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let loop ([exclude '()] 
+                    (index-node-excluded-references identifier-parent-index-node)
+                    (process identifier-index-node index-node '() document)))
+                (loop (cdr rest)))))]
+        [('let* ((identifier no-use ... ) **1 ) _ ... ) 
+          (guard-for 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let loop ([include '()] 
                 [rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
-              (loop (append exclude (process (car rest) index-node exclude document)) (cdr rest))))]
+              (let* ([identifier-parent-index-node (car rest)]
+                    [identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                    [reference-list (process identifier-index-node index-node '() document)])
+                (index-node-excluded-references-set! 
+                  identifier-parent-index-node
+                  (append 
+                    (index-node-excluded-references identifier-parent-index-node)
+                    reference-list))
+                (index-node-references-import-in-this-node-set! 
+                  identifier-parent-index-node
+                  (append 
+                    (index-node-references-import-in-this-node identifier-parent-index-node)
+                    include))
+                (loop (append include reference-list) (cdr rest)))))]
         [('letrec ((identifier no-use ... ) **1 ) _ ... ) 
           (guard-for 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
-              (begin
-                (index-node-excluded-references-set! 
-                  (cadr (index-node-children index-node))
+              (let* ([identifier-parent-index-node (car rest)]
+                    [identifier-index-node (car (index-node-children identifier-parent-index-node))])
+                (loop (cdr rest)))))]
+        [('letrec* ((identifier no-use ... ) **1 ) _ ... ) 
+          (guard-for 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let loop ([include '()] 
+                [rest (index-node-children (cadr (index-node-children index-node)))])
+            (if (not (null? rest))
+              (let* ([identifier-parent-index-node (car rest)]
+                    [identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                    [reference-list (process identifier-index-node index-node '() document)])
+                (index-node-references-import-in-this-node-set! 
+                  identifier-parent-index-node
                   (append 
-                    (index-node-excluded-references (cadr (index-node-children index-node)))
-                    (process (car rest) index-node '() document)))
-                (loop '() (cdr rest)))))]
+                    (index-node-references-import-in-this-node identifier-parent-index-node)
+                    include))
+                (loop (append include reference-list) (cdr rest)))))]
         [else '()])
       (except 
         [else '()]))))
