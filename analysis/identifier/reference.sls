@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier reference)
   (export 
     find-available-references-for
+    guard-for
 
     make-identifier-reference
     identifier-reference-identifier
@@ -18,13 +19,29 @@
     (immutable index-node)
     (immutable library-identifier)))
 
+(define (guard-for current-index-node identifier . rest)
+  (let ([candidates (find-available-references-for current-index-node identifier)])
+    (if (null? candidates)
+      (raise "no such identifier")
+      (let ([candidate (car candidates)])
+        (if (null? rest)
+          candidate
+          (if (find (lambda (r) (equal? r (identifier-reference-library-identifier candidate))) rest)
+            candidate
+            (raise "no such identifier")))))))
+
 (define find-available-references-for
   (case-lambda
     [(current-index-node)
       (if (not (null? (index-node-parent current-index-node)))
-        (append 
-          (index-node-references-import-in-this-node current-index-node) 
-          (find-available-references-for (index-node-parent current-index-node))))]
+        (filter
+          (lambda (reference)
+            (not (find 
+                  (lambda (er) (equal? (identifier-reference-identifier er) (identifier-reference-identifier reference)))
+                  (index-node-exclude-references current-index-node))))
+          (append 
+            (index-node-references-import-in-this-node current-index-node) 
+            (find-available-references-for (index-node-parent current-index-node)))))]
     [(current-index-node identifier)
       (let ([candiate-references (find-available-references-for current-index-node)])
         (filter
