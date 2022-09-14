@@ -29,6 +29,24 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
+        [('case-lambda [(identifier **1) _ ...] _ ... ) 
+          (guard-for 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let loop ([rest (cdr (index-node-children index-node))])
+            (if (not (null? rest))
+              (let* ([identifier-grand-parent-index-node (car rest)]
+                    [identifier-parent-index-node (car (index-node-children identifier-grand-parent-index-node))])
+                (let param-loop ([exclude '()]
+                      [params (index-node-children (identifier-parent-index-node))])
+                  (if (null? params)
+                    (index-node-excluded-references-set! 
+                      identifier-parent-index-node
+                      (append 
+                        (index-node-excluded-references identifier-parent-index-node)
+                        exclude))
+                    (param-loop 
+                      (append (private-process (car params) identifier-grand-parent-index-node '() document)) 
+                      (cdr params)))
+                (loop (cdr rest))))))]
         [else '()])
       (except c
         [else '()]))))

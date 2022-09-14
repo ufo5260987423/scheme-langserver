@@ -31,6 +31,7 @@
     (scheme-langserver analysis identifier rules library-define)
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
+    (scheme-langserver analysis identifier rules lambda)
     (scheme-langserver analysis identifier rules let)
 
     (scheme-langserver virtual-file-system index-node)

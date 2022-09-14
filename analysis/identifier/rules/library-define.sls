@@ -19,10 +19,9 @@
           (lambda (child-node) (match-define root-file-node document library-identifiers child-node))
           (index-node-children index-node))]
       [else 
-        ; (map 
-        ;   (lambda (child-node) (library-define-process root-file-node document child-node))
-        ;   (index-node-children index-node))
-        '()])
+        (map 
+          (lambda (child-node) (match-define root-file-node document '() child-node))
+          (index-node-children index-node))])
     index-node))
 
 (define (match-define root-file-node document library-identifiers index-node)

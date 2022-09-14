@@ -21,11 +21,7 @@
         (map 
           (lambda (child-node) (match-import root-file-node root-library-node document child-node))
           (index-node-children index-node))]
-      [else 
-        ; (map 
-        ;   (lambda (child-node) (library-define-process root-file-node document child-node))
-        ;   (index-node-children index-node))
-        '()])
+      [else '()])
     index-node))
 
 (define (match-import root-file-node root-library-node document index-node)
