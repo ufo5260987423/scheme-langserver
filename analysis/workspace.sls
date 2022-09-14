@@ -57,14 +57,14 @@
 ;; init define let ...
 ;; export
 (define (init-references root-file-node root-library-node file-linkage)
-  (let* loop ([paths (get-init-reference-path file-linkage)])
+  (let loop ([paths (get-init-reference-path file-linkage)])
     (if (not (null? paths))
       (let* ([current-file-node (walk-file root-file-node (car paths))]
             [document (file-node-document current-file-node)]
-            [index-node (document-index-node document)]))
+            [index-node (document-index-node document)])
         (import-process root-file-node root-library-node document index-node)
         (library-define-process root-file-node document index-node)
-        (export-process root-file-node document index-node))))
+        (export-process root-file-node document index-node)))))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)
