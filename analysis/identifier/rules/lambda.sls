@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis identifier rules lambda)
-  (export let-process)
+  (export lambda-process)
   (import 
     (chezscheme) 
     (ufo-match)
