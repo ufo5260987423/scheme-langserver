@@ -13,13 +13,15 @@ This is for ☭. Coders of all countries, unite!
 1. Top-level identifiers binding completion.
 2. Local identifiers binding completion.
 
-TODO: 
+## TODO: 
+
 3. File modification notification and corresponding index changing.
 4. Cross-platform Parallel indexing.
 5. Macro expanding.
 6. Code eval.
 7. Code diagnostic.
-8. Fully r6rs Compability.
+8. Fully r6rs compability.
+9. Add cross-language semantic supporting.
 
 # Test
 > bash test.sh
