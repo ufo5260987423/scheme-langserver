@@ -1,6 +1,7 @@
 (library (scheme-langserver util io)
     (export 
         read-lines 
+        read-line
         write-lines
 
         read-string

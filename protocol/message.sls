@@ -44,7 +44,7 @@
         (immutable mutex)
         ; (immutable condition)
         (mutable document-hashtable)
-        (mutable shutdown?))
+        (mutable shutdown?)
         (mutable index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,7 +76,7 @@
             [line (read-line port)]
             [header-hashtable (make-hashtable string-hash string=?)])
         (if (equal? line "")
-            head-hashtable
+            header-hashtable
             (loop 
                 (read-line port) 
                 (let* (
@@ -97,7 +97,7 @@
         (bytevector->string (get-bytevector-n port content-length) encoding)))
 
 (define (parse-content json-string)
-    (let [content-alist (read-json json-string)]
+    (let ([content-alist (read-json json-string)])
         (if (eq? (assq content-alist 'method) #f)
             (make-response
                 (assq content-alist 'id)
@@ -144,7 +144,7 @@
         [(server-instance request-id error-id error-message) (send-error server-instance request-id error-id error-message #f)]
         [(server-instance request-id error-id error-message data) 
             (let ([error
-                    `((code . ,errorId) (message . ,errorMessage) ,@(if (eq? data #f) '() `(data . ,data))) ])
+                    `((code . ,error-id) (message . ,error-message) ,@(if (eq? data #f) '() `(data . ,data))) ])
                 (send-message server-instance `((id . ,request-id) (error . ,error))))]))
 
 (define (send-result server-instance request-id result)

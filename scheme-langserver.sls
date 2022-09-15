@@ -160,7 +160,7 @@
           (let ([server-instance 
                   (if (threaded?)
                     (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) (make-condition) (make-eq-hashtable) #f '())
-                    (make-server input-port output-port '() '() '() (make-eq-hashtable) #f '()) ])
+                    (make-server input-port output-port '() '() '() (make-eq-hashtable) #f '())) ])
             (let loop ([message (read-message server-instance)])
             ;;log
               (pretty-print message)
