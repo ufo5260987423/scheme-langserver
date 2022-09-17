@@ -9,7 +9,6 @@
     (chezscheme) 
     (ufo-thread-pool) 
     (ufo-match) 
-    (srfi :13 strings)
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol message)
     (scheme-langserver util association))

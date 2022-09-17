@@ -5,6 +5,9 @@
     position?
     alist->position
     position->alist
+
+    alist->diagnostic
+    diagnostic->alist
     )
   (import (rnrs) (scheme-langserver util association))
 
@@ -84,11 +87,19 @@
 
 (define (alist->diagnostic alist)
   (make-diagnostic 
-    (alist->range (assq 'range alist)) (assq 'severity alist) (assq 'code alist) (assq 'source alist)
-    (assq 'code alist) (assq 'source alist) (assq 'message alist) (assq 'relatedInfo alist)))
+    (alist->range (assq 'range alist)) 
+    (assq 'severity alist) 
+    (assq 'code alist) 
+    (assq 'source alist)
+    (assq 'message alist) 
+    (assq 'relatedInfo alist)))
 
 (define (diagnostic->alist instance)
-  (make-alist 'range (range->alist (diagnostic-range instance)) 'severity (diagnostic-severity instance) 
-      'code (diagnostic-code instance) 'source (diagnostic-source instance)
-      'message (diagnostic-message instance) 'relatedInfo (diagnostic-related-info instance)))
+  (make-alist 
+    'range (range->alist (diagnostic-range instance)) 
+    'severity (diagnostic-severity instance) 
+    'code (diagnostic-code instance) 
+    'source (diagnostic-source instance)
+    'message (diagnostic-message instance) 
+    'relatedInfo (diagnostic-related-info instance)))
 )
