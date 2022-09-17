@@ -119,6 +119,8 @@
               'hoverProvider #t
               'definitionProvider #t
               'referencesProvider #t
+              ; 'workspaceSymbol #t
+              ; 'typeDefinitionProvider #t
               'completionProvider (make-alist 'triggerCharacters (list "("))
               ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
               'implementationProvider #t
@@ -130,6 +132,7 @@
               ; 'documentRangeFormattingProvider #t
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
               ; 'foldingRangeProvider #t
+              ; 'colorProvider #t
               ; 'workspace workspace-configuration
               )]
         ; [workspace-configuration (make-alist 'workspaceFolders (make-alist))]
