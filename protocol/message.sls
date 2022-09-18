@@ -27,6 +27,9 @@
     server-shutdown?-set!
     server-workspace
     server-workspace-set!
+    server-thread-pool
+
+    success-response
     )
   (import 
     (chezscheme) 

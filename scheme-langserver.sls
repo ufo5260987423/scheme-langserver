@@ -1,9 +1,5 @@
 (library (scheme-langserver)
   (export 
-    server-document-hashtable
-    server-mutex
-    server-output-port
-    server-input-port
     init-server)
   (import 
     (chezscheme) 
@@ -14,7 +10,8 @@
 
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol message)
-    (scheme-langserver util association))
+    (scheme-langserver util association)
+    (scheme-langserver util path))
 
 ;; Processes a request. This procedure should always return a response
 (define (process-request server-instance request)
@@ -103,7 +100,6 @@
         [client-capabilities (assq-ref 'capabilities params)]
         [renameProvider 
           (if (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
-            (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
             (make-alist 'prepareProvider #t)
             #t)]
         [sync-options (make-alist 
@@ -147,8 +143,8 @@
 (define (shutdown server-instance id)
 ;;todo: kill server
   (with-mutex (server-mutex server-instance)
-    (server-shutdown-set! server-instance #t)
-    (thread-pool-stop (server-thread-pool server-instance))
+    (server-shutdown?-set! server-instance #t)
+    (thread-pool-stop! (server-thread-pool server-instance))
     (success-response id '())))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (process-message server-instance message)
@@ -164,8 +160,8 @@
         [(input-port output-port) 
           (let ([server-instance 
                   (if (threaded?)
-                    (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) (make-condition) '() #f)
-                    (make-server input-port output-port '() '() '() '() #f)) ])
+                    (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) '() #f)
+                    (make-server input-port output-port '() '() '() #f)) ])
             (let loop ([message (read-message server-instance)])
             ;;log
               (pretty-print message)
