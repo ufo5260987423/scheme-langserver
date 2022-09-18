@@ -25,6 +25,8 @@
     server-mutex
     server-shutdown?
     server-shutdown?-set!
+    server-workspace
+    server-workspace-set!
     )
   (import 
     (chezscheme) 
@@ -43,9 +45,8 @@
         ;;for output-port
         (immutable mutex)
         ; (immutable condition)
-        (mutable document-hashtable)
-        (mutable shutdown?)
-        (mutable index)))
+        (mutable workspace)
+        (mutable shutdown?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type response
