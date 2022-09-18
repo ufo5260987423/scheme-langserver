@@ -1,6 +1,7 @@
 (library (scheme-langserver)
   (export 
-    init-server)
+    init-server
+    process-request)
   (import 
     (chezscheme) 
     (ufo-thread-pool) 
@@ -157,8 +158,7 @@
 (define init-server
     (case-lambda
         [() (init-server (current-input-port) (current-output-port) #f)]
-        [(input-port output-port) (init-server (current-input-port) (current-output-port) #f)]
-        [(input-port output-port threaded?) 
+        [(input-port output-port) 
           (let ([server-instance 
                   (if threaded?
                     (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) '() #f)

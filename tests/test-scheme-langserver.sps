@@ -16,7 +16,7 @@
 (test-begin "initialize and shutdown")
     (let* ([input-port (current-input-port) ]
             [output-port (current-output-port)]
-            [server-instance (init-server input-port output-port)]
+            [server-instance (make-server input-port output-port '() '() '() #f)]
             [initialize-bytevector (string->bytevector 
                     (generate-json (make-alist 'jsonrpc "2.0" 'id 0 'method "initialize" 'params 
                         (make-alist 'processId 0 'rootPath (current-directory) 
