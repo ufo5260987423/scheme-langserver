@@ -69,8 +69,6 @@
     (let* (
             [header-hashtable (read-headers (server-input-port server-instance))]
             [parsed-content (parse-content (read-content header-hashtable (server-input-port server-instance)))])
-        (display parsed-content) 
-        (display "\n")
         parsed-content))
 
 ;; header
@@ -95,10 +93,9 @@
   (string->number (hashtable-ref header-hashtable "Content-Length" string=?)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (read-content header-hashtable port)
-    (let (
-            [content-length (get-content-length header-hashtable)]
-            [encoding "uft-8"])
-        (bytevector->string (get-bytevector-n port content-length) encoding)))
+    (let ([utf8-transcoder (make-transcoder (utf-8-codec))]
+            [content-length (get-content-length header-hashtable)])
+        (bytevector->string (get-bytevector-n port content-length) utf8-transcoder)))
 
 (define (parse-content json-string)
     (let ([content-alist (read-json json-string)])
@@ -122,22 +119,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (send-message server-instance response-alist)
     (let* (
-            [json (generate-json response-alist)]
-            [body (string->bytevector json "utf-8")]
-            [header (string->bytevector 
-                        (string-append 
-                            "Content-Length: " (number->string (bytevector-length body)) "\r\n"
-                            "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n")
-                        "ascii")]
+            [body (generate-json response-alist)]
+            [utf8-transcoder (make-transcoder (utf-8-codec))]
+            [header (string-append 
+                        "Content-Length: " (number->string (bytevector-length body)) "\r\n"
+                        "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n")]
             [port (server-output-port server-instance)])
         (if (null? (server-mutex server-instance))
             (begin 
-                (put-bytevector port header)
-                (put-bytevector port body)
+                (write-string header port)
+                (write-string body port)
                 (flush-output-port port))
             (with-mutex (server-mutex server-instance)
-                (put-bytevector port header)
-                (put-bytevector port body)
+                (write-string header port)
+                (write-string body port)
                 (flush-output-port port)))))
 
 (define (send-notification server-instance method params)
