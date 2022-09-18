@@ -156,10 +156,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
-        [() (init-server (current-input-port) (current-output-port))]
-        [(input-port output-port) 
+        [() (init-server (current-input-port) (current-output-port) #f)]
+        [(input-port output-port) (init-server (current-input-port) (current-output-port) #f)]
+        [(input-port output-port threaded?) 
           (let ([server-instance 
-                  (if (threaded?)
+                  (if threaded?
                     (make-server input-port output-port (init-thread-pool 4 #t) (make-mutex) '() #f)
                     (make-server input-port output-port '() '() '() #f)) ])
             (let loop ([message (read-message server-instance)])
