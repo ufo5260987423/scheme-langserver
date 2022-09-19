@@ -6,7 +6,8 @@
 
         read-string
         write-string
-        )
+
+        read-port)
     (import (rnrs) )
 
 (define (write-lines lines path)
@@ -47,6 +48,12 @@
                     ((char=? #\newline c) (eat p #\return) (list->string (reverse line)))
                     ((char=? #\return c) (eat p #\newline) (list->string (reverse line)))
                     (else (loop (read-char p) (cons c line))))))))
+
+(define (read-port port)
+    (let loop ((c (read-char port)) (line '()))
+        (cond 
+            ((eof-object? c) (if (null? line) c (list->string (reverse line))))
+            (else (loop (read-char port) (cons c line))))))
 
 (define (read-string path)
     (call-with-input-file path

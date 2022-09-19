@@ -16,40 +16,38 @@
 
 ;; Processes a request. This procedure should always return a response
 (define (process-request server-instance request)
-  (let([method (request-method request)]
+  (let* ([method (request-method request)]
         [id (request-id request)]
-        [params (request-params request)])
-    (match method
-      ["initialize"
-       (initialize server-instance id params)]
-      ["shutdown"
-       (shutdown server-instance id)]
-      ;; text document 
-      ; ["textDocument/hover"
-      ;  (text-document/hover id params)]
-      ; ["textDocument/completion"
-      ;  (text-document/completion id params)]
-      ; ["textDocument/signatureHelp"
-      ;  (text-document/signatureHelp id params)]
-      ; ["textDocument/definition"
-      ;  (text-document/definition id params)]
-      ; ["textDocument/documentHighlight"
-      ;  (text-document/document-highlight id params)]
-      ; ["textDocument/references"
-      ;  (text-document/references id params)]
-      ; ["textDocument/documentSymbol"
-      ;  (text-document/document-symbol id params)]
-      ; ["textDocument/prepareRename"
-      ;  (text-document/prepareRename id params)]
-      ; ["textDocument/formatting"
-      ;  (text-document/formatting! id params)]
-      ; ["textDocument/rangeFormatting"
-      ;  (text-document/range-formatting! id params)]
-      ; ["textDocument/onTypeFormatting"
-      ;  (text-document/on-type-formatting! id params)]
-      [_
-       (pretty-print (string-append "invalid request for method " method " \n"))
-       (raise 'method-not-found)])))
+        [params (request-params request)]
+        [message (match method
+          ["initialize" (initialize server-instance id params)] 
+          ["shutdown" (shutdown server-instance id)]
+          ;; text document 
+          ; ["textDocument/hover"
+          ;  (text-document/hover id params)]
+          ; ["textDocument/completion"
+          ;  (text-document/completion id params)]
+          ; ["textDocument/signatureHelp"
+          ;  (text-document/signatureHelp id params)]
+          ; ["textDocument/definition"
+          ;  (text-document/definition id params)]
+          ; ["textDocument/documentHighlight"
+          ;  (text-document/document-highlight id params)]
+          ; ["textDocument/references"
+          ;  (text-document/references id params)]
+          ; ["textDocument/documentSymbol"
+          ;  (text-document/document-symbol id params)]
+          ; ["textDocument/prepareRename"
+          ;  (text-document/prepareRename id params)]
+          ; ["textDocument/formatting"
+          ;  (text-document/formatting! id params)]
+          ; ["textDocument/rangeFormatting"
+          ;  (text-document/range-formatting! id params)]
+          ; ["textDocument/onTypeFormatting"
+          ;  (text-document/on-type-formatting! id params)]
+          [_
+            (faile-response id method-not-found (string-append "invalid request for method " method " \n"))])])
+    (send-message server-instance message)))
   ; public static final string text_document_formatting = "textdocument/formatting";
 	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
 	; public static final string text_document_on_type_formatting = "textdocument/ontypeformatting";
@@ -136,24 +134,28 @@
               ; 'colorProvider #t
               ; 'workspace workspace-configuration
               )])
-    (with-mutex (server-mutex server-instance)
-      (server-workspace-set! server-instance (init-workspace root-path)))
+    (if (null? (server-mutex server-instance))
+      (server-workspace-set! server-instance (init-workspace root-path))
+      (with-mutex (server-mutex server-instance) 
+        (server-workspace-set! server-instance (init-workspace root-path))))
       ;;todo start server 
     (success-response id (make-alist 'capabilities server-capabilities))))
 
 (define (shutdown server-instance id)
 ;;todo: kill server
-  (with-mutex (server-mutex server-instance)
+  (if (null? (server-mutex server-instance))
     (server-shutdown?-set! server-instance #t)
+    (with-mutex (server-mutex server-instance)
+      (server-shutdown?-set! server-instance #t))
     (thread-pool-stop! (server-thread-pool server-instance))
     (success-response id '())))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (process-message server-instance message)
   (cond 
   ;;notification do not require response
     ([(null? (request-id message))] (process-notification server-instance message))
-    (else (send-message server-instance (process-request server-instance message)))))
-
+    (else (process-request server-instance message))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
