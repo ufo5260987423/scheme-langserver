@@ -159,7 +159,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
-        [() (init-server (current-input-port) (current-output-port) #f)]
+        [() (init-server (current-input-port) (current-output-port))]
         [(input-port output-port) 
           (let ([server-instance 
                   (if threaded?

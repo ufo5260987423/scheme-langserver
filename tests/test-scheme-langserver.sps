@@ -10,7 +10,7 @@
         [input-port (current-input-port)]
         [output-port (current-output-port)]
         [initialization-json (string-append
-    	"{\n" +
+    	"{\n" 
 		"    \"id\": \"1\",\n" 
 		"    \"method\": \"initialize\",\n" 
 		"    \"params\": {\n" 
