@@ -30,7 +30,7 @@
     server-thread-pool
 
     success-response
-    )
+    fail-response)
   (import 
     (chezscheme) 
     (scheme-langserver util json)
