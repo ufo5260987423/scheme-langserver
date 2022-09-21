@@ -146,9 +146,9 @@
   (if (null? (server-mutex server-instance))
     (server-shutdown?-set! server-instance #t)
     (with-mutex (server-mutex server-instance)
-      (server-shutdown?-set! server-instance #t))
+      (server-shutdown?-set! server-instance #t)))
     (thread-pool-stop! (server-thread-pool server-instance))
-    (success-response id '())))
+    (success-response id '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (process-message server-instance message)
