@@ -13,15 +13,15 @@
     	"{\n" 
 		"    \"id\": \"1\",\n" 
 		"    \"method\": \"initialize\",\n" 
-		"    \"params\": {\n" 
-		"        \"textDocument\": {\n" 
-		"            \"uri\": \"${file}\"\n" 
-		"        },\n" 
-		"        \"position\": {\n" 
-		"            \"line\": ${line},\n" 
-		"            \"character\": ${char}\n" 
-		"        }\n" 
-		"    },\n" 
+		; "    \"params\": {\n" 
+		; "        \"textDocument\": {\n" 
+		; "            \"uri\": \"${file}\"\n" 
+		; "        },\n" 
+		; "        \"position\": {\n" 
+		; "            \"line\": ${line},\n" 
+		; "            \"character\": ${char}\n" 
+		; "        }\n" 
+		; "    },\n" 
 		"    \"jsonrpc\": \"2.0\"\n" 
 		"}")]
         [header (string-append 
@@ -33,8 +33,8 @@
     (thread-pool-add-job thread-pool (lambda () (init-server input-port output-port)))
 
     (test-begin "init-stop test")
-        (write-string input-port header)
-        (write-string input-port initialization-json)
+        (write-string header input-port)
+        (write-string initialization-json input-port)
         (let ([result (read-port output-port)])
             (display result)
         )
