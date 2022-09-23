@@ -2,12 +2,10 @@
     (export 
         read-lines 
         read-line
-        write-lines
+        read-to-CRNL
 
         read-string
-        write-string
-
-        read-port)
+        write-string)
     (import (rnrs) )
 
 (define (write-lines lines path)
@@ -28,6 +26,19 @@
             (begin 
                 (write-char (car l) port)
                 (loop (cdr l))))))
+
+(define (read-to-CRNL port)
+    (let loop ([tail '()] 
+            [current-char (get-u8 port)])
+        (cond 
+            [(and 
+                (= (char->integer #\return ) current-char)
+                (= (char->integer #\newline) (lookahead-u8 port)))
+                (get-u8 port) ;; Consume \n
+                (bytevector->string (u8-list->bytevector (reverse tail)) "ascii")]
+            [(= (char->integer #\newline) (lookahead-u8 port))
+                (bytevector->string (u8-list->bytevector (reverse tail)) "ascii")]
+            [else (loop (cons current-char tail) (get-u8 port))])))
 
 (define (read-lines path)
     (call-with-input-file path

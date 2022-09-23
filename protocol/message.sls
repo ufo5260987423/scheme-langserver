@@ -75,12 +75,12 @@
 ;;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#headerPart
 (define (read-headers port)
     (let loop (
-            [line (read-line port)]
+            [line (read-to-CRNL port)]
             [header-hashtable (make-hashtable string-hash string=?)])
         (if (equal? line "")
             header-hashtable
             (loop 
-                (read-line port) 
+                (read-to-CRNL port) 
                 (let* (
                         [c (with-input-from-string ":" (lambda() (read-char)))]
                         [i (string-index line c)]
@@ -119,20 +119,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (send-message server-instance response-alist)
     (let* (
-            [body (generate-json response-alist)]
             [utf8-transcoder (make-transcoder (utf-8-codec))]
-            [header (string-append 
+            [body (string->bytevector (generate-json response-alist) utf8-transcoder)]
+            [header (string->bytevector (string-append 
                         "Content-Length: " (number->string (bytevector-length body)) "\r\n"
-                        "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n")]
+                        "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n") utf8-transcoder)]
             [port (server-output-port server-instance)])
         (if (null? (server-mutex server-instance))
             (begin 
-                (write-string header port)
-                (write-string body port)
+                (put-bytevector port header)
+                (put-bytevector port body )
+                ; (write-string header port)
+                ; (write-string body port)
                 (flush-output-port port))
             (with-mutex (server-mutex server-instance)
-                (write-string header port)
-                (write-string body port)
+                ; (write-string header port)
+                ; (write-string body port)
+                (put-bytevector port header)
+                (put-bytevector port body )
                 (flush-output-port port)))))
 
 (define (send-notification server-instance method params)
