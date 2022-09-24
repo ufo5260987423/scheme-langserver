@@ -119,11 +119,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (send-message server-instance response-alist)
     (let* (
-            [utf8-transcoder (make-transcoder (utf-8-codec))]
-            [body (string->bytevector (generate-json response-alist) utf8-transcoder)]
-            [header (string->bytevector (string-append 
+            [body (string->utf8 (generate-json response-alist))]
+            [header (string->utf8 (string-append 
                         "Content-Length: " (number->string (bytevector-length body)) "\r\n"
-                        "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n") utf8-transcoder)]
+                        "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n"))]
             [port (server-output-port server-instance)])
         (if (null? (server-mutex server-instance))
             (begin 
