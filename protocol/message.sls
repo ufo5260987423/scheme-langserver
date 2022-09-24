@@ -70,7 +70,10 @@
     (let* ( 
             [header-hashtable (read-headers (server-input-port server-instance))]
             [json-content (read-content header-hashtable (server-input-port server-instance))])
+        (display "read-message")
         (write-string json-content (server-log-port server-instance))
+        (newline)
+        (display "read-message")
         (parse-content json-content)))
 
 ;; header
@@ -95,15 +98,15 @@
 
 (define (parse-content json-string)
     (let ([content-alist (read-json json-string)])
-        (if (eq? (assq content-alist 'method) #f)
-            (make-response
-                (assq content-alist 'id)
-                (assq content-alist 'result)
-                (assq content-alist 'error))
+        (if (assq-ref 'method content-alist)
             (make-request
-                (assq content-alist 'id)
-                (assq content-alist 'method)
-                (assq content-alist 'params)))))
+                (assq-ref 'id content-alist)
+                (assq-ref 'method content-alist)
+                (assq-ref 'params content-alist))
+            (make-response
+                (assq-ref 'id content-alist)
+                (assq-ref 'result content-alist)
+                (assq-ref 'error content-alist)))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (success-response id result-alist)
   (make-alist 'jsonrpc "2.0" 'id id 'result result-alist))
