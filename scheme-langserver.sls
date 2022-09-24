@@ -97,10 +97,10 @@
   (let* (
         [root-path (uri->path (assq-ref 'rootUri params))]
         [client-capabilities (assq-ref 'capabilities params)]
-        ; [renameProvider 
-        ;   (if (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
-        ;     (make-alist 'prepareProvider #t)
-        ;     #t)]
+        [renameProvider 
+          (if (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
+            (make-alist 'prepareProvider #t)
+            #t)]
         [sync-options (make-alist 
               'openClose #t 
               ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
@@ -109,39 +109,39 @@
               'willSave #t 
               'willSaveWaitUntil #t)]
         [workspace-configuration (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
-        ; [server-capabilities (make-alist 
-        ;       ; 'textDocumentSync sync-options
-        ;       ; 'hoverProvider #t
-        ;       'definitionProvider #t
-        ;       'referencesProvider #t
-        ;       ; 'workspaceSymbol #t
-        ;       ; 'typeDefinitionProvider #t
-        ;       ; 'selectionRangeProvider #t
-        ;       ; 'callHierarchyProvider #t
-        ;       ; 'completionProvider (make-alist 'triggerCharacters (list "("))
-        ;       ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
-        ;       ; 'implementationProvider #t
-        ;       ; 'renameProvider renameProvider
-        ;       ; 'codeActionProvider #t
-        ;       ; 'documentHighlightProvider #t
-        ;       ; 'documentSymbolProvider #t
-        ;       ; 'documentLinkProvider #t
-        ;       ; 'documentFormattingProvider #t
-        ;       ; 'documentRangeFormattingProvider #t
-        ;       ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
-        ;       ; 'codeLensProvider #t
-        ;       ; 'foldingRangeProvider #t
-        ;       ; 'colorProvider #t
-        ;       ; 'workspace workspace-configuration
-        ;       )]
+        [server-capabilities (make-alist 
+              ; 'textDocumentSync sync-options
+              ; 'hoverProvider #t
+              'definitionProvider #t
+              'referencesProvider #t
+              ; 'workspaceSymbol #t
+              ; 'typeDefinitionProvider #t
+              ; 'selectionRangeProvider #t
+              ; 'callHierarchyProvider #t
+              ; 'completionProvider (make-alist 'triggerCharacters (list "("))
+              ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
+              ; 'implementationProvider #t
+              ; 'renameProvider renameProvider
+              ; 'codeActionProvider #t
+              ; 'documentHighlightProvider #t
+              ; 'documentSymbolProvider #t
+              ; 'documentLinkProvider #t
+              ; 'documentFormattingProvider #t
+              ; 'documentRangeFormattingProvider #t
+              ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
+              ; 'codeLensProvider #t
+              ; 'foldingRangeProvider #t
+              ; 'colorProvider #t
+              ; 'workspace workspace-configuration
+              )]
               )
     (do-log "init-workspace" server-instance) 
-    ; (if (null? (server-mutex server-instance))
-    ;   (server-workspace-set! server-instance (init-workspace root-path))
-    ;   (with-mutex (server-mutex server-instance) 
-    ;     (server-workspace-set! server-instance (init-workspace root-path))))
-    ;   ;;todo start server 
-    ; (success-response id (make-alist 'capabilities server-capabilities))
+    (pretty-print renameProvider)
+    (if (null? (server-mutex server-instance))
+      (server-workspace-set! server-instance (init-workspace root-path))
+      (with-mutex (server-mutex server-instance) 
+        (server-workspace-set! server-instance (init-workspace root-path))))
+    (success-response id (make-alist 'capabilities server-capabilities))
     ))
 
 (define (shutdown server-instance id)
