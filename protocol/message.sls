@@ -44,6 +44,7 @@
     (fields 
         (immutable input-port)
         (immutable output-port)
+        (immutable log-port)
         (immutable thread-pool)
         ;;for output-port
         (immutable mutex)
@@ -66,10 +67,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (read-message server-instance)
-    (let* (
+    (let* ( 
             [header-hashtable (read-headers (server-input-port server-instance))]
-            [parsed-content (parse-content (read-content header-hashtable (server-input-port server-instance)))])
-        parsed-content))
+            [json-content (read-content header-hashtable (server-input-port server-instance))])
+        (write-string json-content (server-log-port server-instance))
+        (parse-content json-content)))
 
 ;; header
 ;;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#headerPart
@@ -119,11 +121,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (send-message server-instance response-alist)
     (let* (
-            [body (string->utf8 (generate-json response-alist))]
+            [body-json (generate-json response-alist)]
+            [body (string->utf8 body-json)]
             [header (string->utf8 (string-append 
                         "Content-Length: " (number->string (bytevector-length body)) "\r\n"
                         "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n"))]
             [port (server-output-port server-instance)])
+        (write-string body-json (server-log-port server-instance))
         (if (null? (server-mutex server-instance))
             (begin 
                 (put-bytevector port header)

@@ -30,12 +30,15 @@
         "\r\n\r\n")]
 
         [input-port (open-bytevector-input-port (string->utf8 (string-append header initialization-json)))]
+        [log-port (open-file-output-port "~/scheme-langserver.log" (file-options append))]
         [output-port (standard-output-port)])
 
-    (call-with-port output-port
-        (lambda (p)
-            (thread-pool-add-job thread-pool (lambda () (init-server input-port p)))
-            (get-u8 p)))
+    ; (thread-pool-add-job thread-pool (lambda () 
+    (init-server input-port output-port log-port)
+    ; ))
+    ; (call-with-port output-port
+    ;     (lambda (p)
+    ;         (get-u8 p)))
 
     (thread-pool-stop! thread-pool))
 (test-end)
