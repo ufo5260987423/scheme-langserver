@@ -70,10 +70,7 @@
     (let* ( 
             [header-hashtable (read-headers (server-input-port server-instance))]
             [json-content (read-content header-hashtable (server-input-port server-instance))])
-        (display "read-message")
         (write-string json-content (server-log-port server-instance))
-        (newline)
-        (display "read-message")
         (parse-content json-content)))
 
 ;; header
