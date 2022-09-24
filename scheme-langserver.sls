@@ -170,7 +170,7 @@
               (pretty-print message)
               (if (null? (server-thread-pool server-instance))
                 (process-message server-instance message)
-                (thread-pool-add-job (lambda() (process-message server-instance message))))
+                (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-message server-instance message))))
               (loop (read-message server-instance)))
             (newline)
             (newline)
