@@ -20,10 +20,10 @@
   (do-log (request-method request) server-instance)
   (let* ([method (request-method request)]
         [id (request-id request)]
-        [params (request-params request)]
-        [message (match method
-          ["initialize" (initialize server-instance id params)] 
-          ["shutdown" (shutdown server-instance id)]
+        [params (request-params request)])
+    (match method
+      ["initialize" (send-message server-instance (initialize server-instance id params))] 
+      ["shutdown" (send-message server-instance (shutdown server-instance id))]
           ;; text document 
           ; ["textDocument/hover"
           ;  (text-document/hover id params)]
@@ -47,9 +47,7 @@
           ;  (text-document/range-formatting! id params)]
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
-          [_
-            (fail-response id method-not-found (string-append "invalid request for method " method " \n"))])])
-    (send-message server-instance message)))
+      [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))])))
   ; public static final string text_document_formatting = "textdocument/formatting";
 	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
 	; public static final string text_document_on_type_formatting = "textdocument/ontypeformatting";
@@ -96,14 +94,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
-  (pretty-print params)
   (let* (
         [root-path (uri->path (assq-ref 'rootUri params))]
         [client-capabilities (assq-ref 'capabilities params)]
-        [renameProvider 
-          (if (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
-            (make-alist 'prepareProvider #t)
-            #t)]
+        ; [renameProvider 
+        ;   (if (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
+        ;     (make-alist 'prepareProvider #t)
+        ;     #t)]
         [sync-options (make-alist 
               'openClose #t 
               ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
@@ -112,38 +109,40 @@
               'willSave #t 
               'willSaveWaitUntil #t)]
         [workspace-configuration (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
-        [server-capabilities (make-alist 
-              ; 'textDocumentSync sync-options
-              ; 'hoverProvider #t
-              'definitionProvider #t
-              'referencesProvider #t
-              ; 'workspaceSymbol #t
-              ; 'typeDefinitionProvider #t
-              ; 'selectionRangeProvider #t
-              ; 'callHierarchyProvider #t
-              ; 'completionProvider (make-alist 'triggerCharacters (list "("))
-              ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
-              ; 'implementationProvider #t
-              ; 'renameProvider renameProvider
-              ; 'codeActionProvider #t
-              ; 'documentHighlightProvider #t
-              ; 'documentSymbolProvider #t
-              ; 'documentLinkProvider #t
-              ; 'documentFormattingProvider #t
-              ; 'documentRangeFormattingProvider #t
-              ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
-              ; 'codeLensProvider #t
-              ; 'foldingRangeProvider #t
-              ; 'colorProvider #t
-              ; 'workspace workspace-configuration
-              )])
+        ; [server-capabilities (make-alist 
+        ;       ; 'textDocumentSync sync-options
+        ;       ; 'hoverProvider #t
+        ;       'definitionProvider #t
+        ;       'referencesProvider #t
+        ;       ; 'workspaceSymbol #t
+        ;       ; 'typeDefinitionProvider #t
+        ;       ; 'selectionRangeProvider #t
+        ;       ; 'callHierarchyProvider #t
+        ;       ; 'completionProvider (make-alist 'triggerCharacters (list "("))
+        ;       ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
+        ;       ; 'implementationProvider #t
+        ;       ; 'renameProvider renameProvider
+        ;       ; 'codeActionProvider #t
+        ;       ; 'documentHighlightProvider #t
+        ;       ; 'documentSymbolProvider #t
+        ;       ; 'documentLinkProvider #t
+        ;       ; 'documentFormattingProvider #t
+        ;       ; 'documentRangeFormattingProvider #t
+        ;       ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
+        ;       ; 'codeLensProvider #t
+        ;       ; 'foldingRangeProvider #t
+        ;       ; 'colorProvider #t
+        ;       ; 'workspace workspace-configuration
+        ;       )]
+              )
     (do-log "init-workspace" server-instance) 
-    (if (null? (server-mutex server-instance))
-      (server-workspace-set! server-instance (init-workspace root-path))
-      (with-mutex (server-mutex server-instance) 
-        (server-workspace-set! server-instance (init-workspace root-path))))
-      ;;todo start server 
-    (success-response id (make-alist 'capabilities server-capabilities))))
+    ; (if (null? (server-mutex server-instance))
+    ;   (server-workspace-set! server-instance (init-workspace root-path))
+    ;   (with-mutex (server-mutex server-instance) 
+    ;     (server-workspace-set! server-instance (init-workspace root-path))))
+    ;   ;;todo start server 
+    ; (success-response id (make-alist 'capabilities server-capabilities))
+    ))
 
 (define (shutdown server-instance id)
 ;;todo: kill server

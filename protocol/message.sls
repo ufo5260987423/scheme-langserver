@@ -103,9 +103,9 @@
 (define (parse-content json-string)
     (let ([content-alist (read-json json-string)])
         (make-request
-            (assq-ref 'id content-alist)
-            (assq-ref 'method content-alist)
-            (assq-ref 'params content-alist))))
+            (assq-ref content-alist 'id)
+            (assq-ref content-alist 'method)
+            (assq-ref content-alist 'params))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (success-response id result-alist)
   (make-alist 'jsonrpc "2.0" 'id id 'result result-alist))

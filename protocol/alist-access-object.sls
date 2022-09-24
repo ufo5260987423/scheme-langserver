@@ -48,19 +48,19 @@
     (immutable related-info)))
 
 (define (alist->position alist)
-  (make-position (assq-ref 'line alist) (assq-ref 'character alist)))
+  (make-position (assq-ref alist 'line) (assq-ref alist 'character)))
 
 (define (position->alist instance)
   (make-alist 'line (position-line instance) 'character (position-character instance)))
 
 (define (alist->range alist)
-  (make-range (assq-ref 'start alist) (assq-ref 'end alist)))
+  (make-range (assq-ref alist 'start) (assq-ref alist 'end)))
 
 (define (range->alist instance)
   (make-alist 'start (range-start instance) 'end (range-end instance)))
 
 (define (alist->text-edit alist)
-  (make-text-edit (alist->range (assq-ref 'range alist)) (assq-ref 'text alist)))
+  (make-text-edit (alist->range (assq-ref alist 'range)) (assq-ref alist 'text)))
 
 (define (text-edit->alist instance)
   (make-alist 'range (range->alist (text-edit-range instance)) 'text (text-edit-text instance)))
@@ -69,13 +69,13 @@
   (make-alist 'range (range->alist (text-edit-range instance)) 'newText (text-edit-text instance)))
 
 (define (alist->location alist)
-  (make-location (assq-ref 'uri alist) (alist->range (assq-ref 'range alist))))
+  (make-location (assq-ref alist 'uri) (alist->range (assq-ref alist 'range))))
 
 (define (location->alist instance)
   (make-alist 'uri (location-uri instance) 'range (range->alist (location-range instance))))
 
 (define (alist->text-document alist)
-  (make-text-document (assq-ref 'uri alist) (assq-ref 'languageId alist) (assq-ref 'version alist) (assq-ref 'text alist)))
+  (make-text-document (assq-ref alist 'uri) (assq-ref alist 'languageId) (assq-ref alist 'version) (assq-ref alist 'text)))
 
 (define (text-document->alist instance)
   (make-alist 'uri (text-document-uri instance) 'languageId (text-document-language-id instance) 'version (text-document-version instance) 'text (text-document-text instance)))
@@ -87,12 +87,12 @@
 
 (define (alist->diagnostic alist)
   (make-diagnostic 
-    (alist->range (assq-ref 'range alist)) 
-    (assq-ref 'severity alist) 
-    (assq-ref 'code alist) 
-    (assq-ref 'source alist)
-    (assq-ref 'message alist) 
-    (assq-ref 'relatedInfo alist)))
+    (alist->range (assq-ref alist 'range)) 
+    (assq-ref alist 'severity) 
+    (assq-ref alist 'code) 
+    (assq-ref alist 'source)
+    (assq-ref alist 'message) 
+    (assq-ref alist 'relatedInfo)))
 
 (define (diagnostic->alist instance)
   (make-alist 

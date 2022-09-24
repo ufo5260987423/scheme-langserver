@@ -2,7 +2,7 @@
     (export assq-ref assoc-ref assv-ref make-alist)
     (import (rnrs) )
 
-(define (assq-ref key alist)
+(define (assq-ref alist key)
     (let ((key-value-pair (assq key alist)))
         (if key-value-pair
             (if (pair? key-value-pair)
@@ -10,7 +10,7 @@
                 #f)
             #f)))
 
-(define (assv-ref key alist)
+(define (assv-ref alist key)
     (let ((key-value-pair (assv key alist)))
         (if key-value-pair
             (if (pair? key-value-pair)
@@ -18,7 +18,7 @@
                 #f)
             #f)))
 
-(define (assoc-ref key alist)
+(define (assoc-ref alist key)
     (let ((key-value-pair (assoc key alist)))
         (if key-value-pair
             (if (pair? key-value-pair)

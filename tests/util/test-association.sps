@@ -11,7 +11,7 @@
         (test-equal a-list (make-alist 'b 2 'a 1))
     (test-end)
     (test-begin "assq-ref")
-        (test-equal 1 (assq-ref 'a a-list))
+        (test-equal 1 (assq-ref a-list 'a))
     (test-end))
 
 
