@@ -6,21 +6,37 @@
 
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
 
+; (define init-msg
+;   (hasheq 'jsonrpc "2.0"
+;           'id 0
+;           'method "initialize"
+;           'params (hasheq 'processId (getpid)
+;                           'rootPath "/home/conor/racket-langserver/"
+;                           'rootUri "file:///home/conor/racket-langserver/"
+;                           'capabilities (hasheq))))
+
+; (define shutdown-msg
+;   (hasheq 'jsonrpc "2.0"
+;           'id 1
+;           'method "shutdown"))
+
+; (define exit-notf
+;   (hasheq 'jsonrpc "2.0"
+;           'method "exit"))
+
+
 (test-begin "init test")
 (let* ([thread-pool (init-thread-pool 1)]
         [initialization-json (string-append
     	"{\n" 
 		"    \"id\": \"1\",\n" 
 		"    \"method\": \"initialize\",\n" 
-		; "    \"params\": {\n" 
-		; "        \"textDocument\": {\n" 
-		; "            \"uri\": \"${file}\"\n" 
-		; "        },\n" 
-		; "        \"position\": {\n" 
-		; "            \"line\": ${line},\n" 
-		; "            \"character\": ${char}\n" 
-		; "        }\n" 
-		; "    },\n" 
+		"    \"params\": {\n" 
+		"        \"processId\": 1,\n"
+		"        \"rootPath\": \"" (current-directory) "\",\n"
+		"        \"rootUri\": \"file:///" (current-directory) "\",\n"
+		"        \"capabilities\": {}\n"
+		"    },\n" 
 		"    \"jsonrpc\": \"2.0\"\n" 
 		"}")]
         [header (string-append 

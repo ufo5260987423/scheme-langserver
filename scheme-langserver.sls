@@ -16,6 +16,8 @@
 
 ;; Processes a request. This procedure should always return a response
 (define (process-request server-instance request)
+  (do-log "process-request" server-instance)
+  (do-log (request-method request) server-instance)
   (let* ([method (request-method request)]
         [id (request-id request)]
         [params (request-params request)]
@@ -70,30 +72,31 @@
 	; public static final string selection_range = "textdocument/selectionrange";
 
 ;; not reply client!
-(define (process-notification server-instance request)
-  (let([method (request-method request)]
-        [id (request-id request)]
-        [params (request-params request)])
-    (match method
-      ["exit"
-        (if (null? (server-mutex server-instance))
-          (exit  (if (server-shutdown? server-instance) 1 0))
-          (with-mutex (server-mutex server-instance)
-            (exit  (if (server-shutdown? server-instance) 1 0))))]
-      ; ["textDocument/didOpen"
-      ;   (text-document/did-open! server params)]
-      ; ["textDocument/didClose"
-      ;   (text-document/did-close! params)]
-      ; ["textDocument/didChange"
-      ;   (text-document/did-change! params)]
-      ; ["textDocument/didSave"
-      ;  (text-document/didSave id params)]
-      ; ["textDocument/rename"
-      ;  (text-document/rename id params)]
-      [_ (void)])))
+; (define (process-notification server-instance request)
+;   (let([method (request-method request)]
+;         [id (request-id request)]
+;         [params (request-params request)])
+;     (match method
+;       ["exit"
+;         (if (null? (server-mutex server-instance))
+;           (exit  (if (server-shutdown? server-instance) 1 0))
+;           (with-mutex (server-mutex server-instance)
+;             (exit  (if (server-shutdown? server-instance) 1 0))))]
+;       ; ["textDocument/didOpen"
+;       ;   (text-document/did-open! server params)]
+;       ; ["textDocument/didClose"
+;       ;   (text-document/did-close! params)]
+;       ; ["textDocument/didChange"
+;       ;   (text-document/did-change! params)]
+;       ; ["textDocument/didSave"
+;       ;  (text-document/didSave id params)]
+;       ; ["textDocument/rename"
+;       ;  (text-document/rename id params)]
+;       [_ (void)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
+  (pretty-print params)
   (let* (
         [root-path (uri->path (assq-ref 'rootUri params))]
         [client-capabilities (assq-ref 'capabilities params)]
@@ -134,6 +137,7 @@
               ; 'colorProvider #t
               ; 'workspace workspace-configuration
               )])
+    (do-log "init-workspace" server-instance) 
     (if (null? (server-mutex server-instance))
       (server-workspace-set! server-instance (init-workspace root-path))
       (with-mutex (server-mutex server-instance) 
@@ -151,12 +155,6 @@
     (success-response id '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (process-message server-instance message)
-  (cond 
-  ;;notification do not require response
-    ([(null? (request-id message))] (process-notification server-instance message))
-    (else (process-request server-instance message))))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
         [() (init-server (standard-input-port) (standard-output-port) (current-output-port))]
@@ -167,8 +165,8 @@
                     (make-server input-port output-port log-port '() '() '() #f)) ])
             (let loop ([message (read-message server-instance)])
               (if (null? (server-thread-pool server-instance))
-                (process-message server-instance message)
-                (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-message server-instance message))))
+                (process-request server-instance message)
+                (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-request server-instance message))))
               (loop (read-message server-instance)))
             (newline)
             (newline)

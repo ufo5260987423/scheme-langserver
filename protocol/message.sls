@@ -70,6 +70,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (do-log message server-instance)
     (put-string (server-log-port server-instance) message)
+    (put-string (server-log-port server-instance) "\n")
     (flush-output-port (server-log-port server-instance)))
 
 (define (read-message server-instance)
@@ -101,15 +102,10 @@
 
 (define (parse-content json-string)
     (let ([content-alist (read-json json-string)])
-        (if (assq-ref 'method content-alist)
-            (make-request
-                (assq-ref 'id content-alist)
-                (assq-ref 'method content-alist)
-                (assq-ref 'params content-alist))
-            (make-response
-                (assq-ref 'id content-alist)
-                (assq-ref 'result content-alist)
-                (assq-ref 'error content-alist)))))
+        (make-request
+            (assq-ref 'id content-alist)
+            (assq-ref 'method content-alist)
+            (assq-ref 'params content-alist))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (success-response id result-alist)
   (make-alist 'jsonrpc "2.0" 'id id 'result result-alist))
