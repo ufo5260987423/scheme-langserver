@@ -166,8 +166,6 @@
                     (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
                     (make-server input-port output-port log-port '() '() '() #f)) ])
             (let loop ([message (read-message server-instance)])
-            ;;log
-              (pretty-print message)
               (if (null? (server-thread-pool server-instance))
                 (process-message server-instance message)
                 (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-message server-instance message))))

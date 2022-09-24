@@ -29,6 +29,8 @@
     server-workspace-set!
     server-thread-pool
 
+    do-log
+
     success-response
     fail-response)
   (import 
@@ -66,11 +68,15 @@
         (immutable params)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (do-log message server-instance)
+    (put-string (server-log-port server-instance) message)
+    (flush-output-port (server-log-port server-instance)))
+
 (define (read-message server-instance)
     (let* ( 
             [header-hashtable (read-headers (server-input-port server-instance))]
             [json-content (read-content header-hashtable (server-input-port server-instance))])
-        (write-string json-content (server-log-port server-instance))
+        (do-log json-content server-instance)
         (parse-content json-content)))
 
 ;; header
@@ -123,7 +129,7 @@
             [port (server-output-port server-instance)])
         (display "send-message")
         (newline)
-        (write-string body-json (server-log-port server-instance))
+        (do-log body-json server-instance)
         (if (null? (server-mutex server-instance))
             (begin 
                 (put-bytevector port header)

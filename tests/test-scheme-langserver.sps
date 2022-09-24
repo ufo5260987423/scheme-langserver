@@ -30,7 +30,7 @@
         "\r\n\r\n")]
 
         [input-port (open-bytevector-input-port (string->utf8 (string-append header initialization-json)))]
-        [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) (buffer-mode block) (make-transcoder (utf-8-codec)))]
+        [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
         [output-port (standard-output-port)])
 
     ; (thread-pool-add-job thread-pool (lambda () 
