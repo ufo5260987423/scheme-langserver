@@ -36,7 +36,7 @@
                 (= (char->integer #\newline) (lookahead-u8 port)))
                 (get-u8 port) ;; Consume \n
                 (utf8->string (u8-list->bytevector (reverse tail)) )]
-            [(= (char->integer #\newline) (lookahead-u8 port))
+            [(= (char->integer #\newline) current-char)
                 (utf8->string (u8-list->bytevector (reverse tail)) )]
             [else (loop (cons current-char tail) (get-u8 port))])))
 
