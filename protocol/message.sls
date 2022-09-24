@@ -81,18 +81,12 @@
             [header-hashtable (make-hashtable string-hash string=?)])
         (if (equal? line "")
             header-hashtable
-            (loop 
-                (read-to-CRNL port) 
-                (let* (
-                        [c (with-input-from-string ":" (lambda() (read-char)))]
-                        [i (string-index line c)]
-                        [key (string-take line i)]
-                        [value (string-drop line (+ i 2))])
-                    (hashtable-set! header-hashtable key value)
-                    header-hashtable)))))
+            (let* ( [i (string-index line #\:)])
+                (if i (hashtable-set! header-hashtable (string-take line i) (string-drop line (+ i 2))))
+                (loop (read-to-CRNL port) header-hashtable)))))
 
 (define (get-content-length header-hashtable)
-  (string->number (hashtable-ref header-hashtable "Content-Length" string=?)))
+    (string->number (hashtable-ref header-hashtable "Content-Length" string=?)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (read-content header-hashtable port)
     (let ([utf8-transcoder (make-transcoder (utf-8-codec))]
