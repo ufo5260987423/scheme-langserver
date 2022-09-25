@@ -26,8 +26,7 @@
 
 
 (test-begin "init test")
-(let* ([thread-pool (init-thread-pool 1)]
-        [initialization-json (string-append
+(let* ( [initialization-json (string-append
     	"{\n" 
 		"    \"id\": \"1\",\n" 
 		"    \"method\": \"initialize\",\n" 
@@ -47,11 +46,10 @@
 
         [input-port (open-bytevector-input-port (string->utf8 (string-append header initialization-json)))]
         [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
-        [output-port (standard-output-port)])
+        ; [output-port (standard-output-port)]
+        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)])
 
-    ; (thread-pool-add-job thread-pool (lambda () 
     (init-server input-port output-port log-port)
-    ; ))
     ; (call-with-port output-port
     ;     (lambda (p)
     ;         (get-u8 p)))

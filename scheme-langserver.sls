@@ -95,12 +95,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
   (let* (
-        [root-path (uri->path (assq-ref 'rootUri params))]
-        [client-capabilities (assq-ref 'capabilities params)]
-        [renameProvider 
-          (if (assq-ref 'prepareSupport (assq-ref 'rename (assq-ref 'textDocumet params)))
-            (make-alist 'prepareProvider #t)
-            #t)]
+        [root-path (uri->path (assq-ref params 'rootUri))]
+        [client-capabilities (assq-ref params 'capabilities)]
+        ; [renameProvider 
+        ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
+        ;     (make-alist 'prepareProvider #t)
+        ;     #t)]
         [sync-options (make-alist 
               'openClose #t 
               ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
@@ -136,7 +136,6 @@
               )]
               )
     (do-log "init-workspace" server-instance) 
-    (pretty-print renameProvider)
     (if (null? (server-mutex server-instance))
       (server-workspace-set! server-instance (init-workspace root-path))
       (with-mutex (server-mutex server-instance) 

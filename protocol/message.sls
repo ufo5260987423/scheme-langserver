@@ -116,6 +116,7 @@
         ([id code message data] (make-alist 'jsonrpc "2.0" 'id id 'error (make-alist 'code code 'message message 'data data)))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (send-message server-instance response-alist)
+    (do-log "send-message" server-instance)
     (let* (
             [body-json (generate-json response-alist)]
             [body (string->utf8 body-json)]
