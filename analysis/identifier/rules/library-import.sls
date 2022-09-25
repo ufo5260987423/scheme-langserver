@@ -48,7 +48,7 @@
             (index-node-references-import-in-this-node grand-parent-index-node)
             (filter
               (lambda (reference) 
-                (if (find (lambda(id) (equal? id (identifier-reference-identifier id))) identifier) #t #f))
+                (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) identifier) #t #f))
               (import-references root-library-node library-identifier))))]
       [('except (library-identifier **1) identifier **1) 
         (index-node-references-import-in-this-node-set! 
@@ -57,7 +57,7 @@
             (index-node-references-import-in-this-node grand-parent-index-node)
             (filter
               (lambda (reference) 
-                (if (find (lambda(id) (not (equal? id (identifier-reference-identifier id)))) identifier) #t #f))
+                (if (find (lambda(id) (not (equal? id (identifier-reference-identifier reference)))) identifier) #t #f))
               (import-references root-library-node library-identifier))))]
       [('prefix (library-identifier **1) prefix-id)
         (let* ([imported-references (import-references root-library-node library-identifier)]
@@ -68,7 +68,8 @@
                       (string->symbol (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference))))
                       (identifier-reference-document reference)
                       (identifier-reference-index-node reference)
-                      (identifier-reference-library-identifier reference))) imported-references)])
+                      (identifier-reference-library-identifier reference))) 
+                  imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
           (index-node-references-import-in-this-node-set! 
             grand-parent-index-node 
@@ -119,7 +120,8 @@
       [else #f])))
 
 (define (import-references root-library-node library-identifier )
-  (let* ([candidate-file-nodes (library-node-file-nodes (walk-library library-identifier root-library-node))]
+  (let* ([library-node (walk-library library-identifier root-library-node)]
+      [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node)) ]
       [candidate-count (length candidate-file-nodes)])
     (cond
       [(zero? candidate-count) (find-meta library-identifier)]
