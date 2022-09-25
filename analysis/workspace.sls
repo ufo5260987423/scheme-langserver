@@ -69,8 +69,8 @@
 
 (define (walk-and-process root-file-node document index-node)
   (library-define-process root-file-node document index-node)
-  (let-process root-file-node document index-node)
-  (lambda-process root-file-node document index-node)
+  ; (let-process root-file-node document index-node)
+  ; (lambda-process root-file-node document index-node)
   (map (lambda (child-index-node) (walk-and-process root-file-node document child-index-node)) (index-node-children index-node)))
 
 (define (init-virtual-file-system path parent my-filter)
@@ -133,12 +133,14 @@
     (index-node-children-set! 
       node 
       (if (list? expression)
-        (map 
-          (lambda(e) 
-            (if (annotation? e)
-              (init-index-node node e)
-              '()))
-          expression)
+        (filter 
+          (lambda (item) (not (null? item)))
+          (map 
+            (lambda(e) 
+              (if (annotation? e)
+                (init-index-node node e)
+                '()))
+            expression))
         '()))
     node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

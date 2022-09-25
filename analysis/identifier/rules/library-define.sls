@@ -25,6 +25,8 @@
     index-node))
 
 (define (match-define root-file-node document library-identifiers index-node)
+  (if (null? index-node)
+    (display (document-uri document)))
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
