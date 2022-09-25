@@ -124,8 +124,6 @@
                         "Content-Length: " (number->string (bytevector-length body)) "\r\n"
                         "Content-Type: application/vscode-jsonrpc; charset=utf-8\r\n\r\n"))]
             [port (server-output-port server-instance)])
-        (display "send-message")
-        (newline)
         (do-log body-json server-instance)
         (if (null? (server-mutex server-instance))
             (begin 
