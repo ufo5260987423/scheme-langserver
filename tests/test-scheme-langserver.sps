@@ -25,7 +25,7 @@
 ;           'method "exit"))
 
 
-(test-begin "init test")
+(test-begin "init-stop test")
 (let* ( [shutdown-json (string-append
     	"{\n" 
 		"    \"id\": \"2\",\n" 
@@ -59,14 +59,9 @@
         [input-port (open-bytevector-input-port (string->utf8 (string-append init-header initialization-json shutdown-header shutdown-json)))]
         [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
         ; [output-port (standard-output-port)]
-        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-        [server-instance (init-server input-port output-port log-port #f)])
-
-    ; (call-with-port output-port
-    ;     (lambda (p)
-    ;         (get-u8 p)))
-
-    (thread-pool-stop! (server-thread-pool server-instance))
+        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)])
+        (init-server input-port output-port log-port #f)
+        (test-equal 1 1)
     )
 (test-end)
 

@@ -148,11 +148,11 @@
 ;;todo: kill server
   (if (null? (server-mutex server-instance))
     (server-shutdown?-set! server-instance #t)
-    (with-mutex (server-mutex server-instance)
-      (server-shutdown?-set! server-instance #t)))
-    (thread-pool-stop! (server-thread-pool server-instance))
+    (begin
+      (thread-pool-stop! (server-thread-pool server-instance))
+      (with-mutex (server-mutex server-instance)
+        (server-shutdown?-set! server-instance #t))))
     (success-response id '()))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
