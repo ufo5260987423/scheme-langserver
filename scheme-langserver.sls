@@ -5,6 +5,7 @@
   (import 
     (chezscheme) 
     (ufo-thread-pool) 
+    (ufo-thread-pool util try) 
     (ufo-match) 
 
     (scheme-langserver analysis workspace)
@@ -160,13 +161,16 @@
                       (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
                       (make-server input-port output-port log-port '() '() '() #f)) 
                     (make-server input-port output-port log-port '() '() '() #f))])
-            (let loop ([message (read-message server-instance)])
-              (if (null? (server-thread-pool server-instance))
-                (process-request server-instance message)
-                (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-request server-instance message))))
-              (loop (read-message server-instance)))
+            (try
+              (let loop ([message (read-message server-instance)])
+                (if (null? (server-thread-pool server-instance))
+                  (process-request server-instance message)
+                  (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-request server-instance message))))
+                (loop (read-message server-instance)))
+              (except c 
+                [else 
+                  (do-log (string-append "error: " (format (condition-message c) (condition-irritants c))) server-instance)
+                  (shutdown server-instance -1)]))
             (newline)
-            (newline)
-            (display "bye")
-            (newline))]))
+            (display "bye"))]))
 )
