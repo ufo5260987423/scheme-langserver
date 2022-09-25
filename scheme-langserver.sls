@@ -16,8 +16,6 @@
 
 ;; Processes a request. This procedure should always return a response
 (define (process-request server-instance request)
-  (do-log "process-request" server-instance)
-  (do-log (request-method request) server-instance)
   (let* ([method (request-method request)]
         [id (request-id request)]
         [params (request-params request)])
@@ -135,8 +133,6 @@
               ; 'workspace workspace-configuration
               )]
               )
-    (do-log "init-workspace" server-instance) 
-    (do-log root-path server-instance) 
     (if (null? (server-mutex server-instance))
       (server-workspace-set! server-instance (init-workspace root-path))
       (with-mutex (server-mutex server-instance) 

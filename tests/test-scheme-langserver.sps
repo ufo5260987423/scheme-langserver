@@ -6,25 +6,6 @@
 
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
 
-; (define init-msg
-;   (hasheq 'jsonrpc "2.0"
-;           'id 0
-;           'method "initialize"
-;           'params (hasheq 'processId (getpid)
-;                           'rootPath "/home/conor/racket-langserver/"
-;                           'rootUri "file:///home/conor/racket-langserver/"
-;                           'capabilities (hasheq))))
-
-; (define shutdown-msg
-;   (hasheq 'jsonrpc "2.0"
-;           'id 1
-;           'method "shutdown"))
-
-; (define exit-notf
-;   (hasheq 'jsonrpc "2.0"
-;           'method "exit"))
-
-
 (test-begin "init-stop test")
 (let* ( [shutdown-json (string-append
     	"{\n" 
@@ -33,7 +14,7 @@
 		"    \"jsonrpc\": \"2.0\"\n" 
 		"}")]
         [shutdown-header (string-append 
-        "GET /example.http HTTP/1.1\r\n"
+        ; "GET /example.http HTTP/1.1\r\n"
         "Content-Length: "
         (number->string (bytevector-length (string->utf8 shutdown-json)))
         "\r\n\r\n")]
@@ -51,7 +32,7 @@
 		"    \"jsonrpc\": \"2.0\"\n" 
 		"}")]
         [init-header (string-append 
-        "GET /example.http HTTP/1.1\r\n"
+        ; "GET /example.http HTTP/1.1\r\n"
         "Content-Length: "
         (number->string (bytevector-length (string->utf8 initialization-json)))
         "\r\n\r\n")]

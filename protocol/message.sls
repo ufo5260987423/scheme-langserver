@@ -77,6 +77,7 @@
     (let* ( 
             [header-hashtable (read-headers (server-input-port server-instance))]
             [json-content (read-content header-hashtable (server-input-port server-instance))])
+        (do-log "read-message" server-instance)
         (do-log json-content server-instance)
         (parse-content json-content)))
 
