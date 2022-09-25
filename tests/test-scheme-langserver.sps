@@ -33,7 +33,7 @@
 		"    \"params\": {\n" 
 		"        \"processId\": 1,\n"
 		"        \"rootPath\": \"" (current-directory) "\",\n"
-		"        \"rootUri\": \"file:///" (current-directory) "\",\n"
+		"        \"rootUri\": \"file://" (current-directory) "\",\n"
 		"        \"capabilities\": {}\n"
 		"    },\n" 
 		"    \"jsonrpc\": \"2.0\"\n" 
@@ -49,7 +49,7 @@
         ; [output-port (standard-output-port)]
         [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)])
 
-    (init-server input-port output-port log-port)
+    (init-server input-port output-port log-port #f)
     ; (call-with-port output-port
     ;     (lambda (p)
     ;         (get-u8 p)))

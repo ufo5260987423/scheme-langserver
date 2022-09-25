@@ -136,6 +136,7 @@
               )]
               )
     (do-log "init-workspace" server-instance) 
+    (do-log root-path server-instance) 
     (if (null? (server-mutex server-instance))
       (server-workspace-set! server-instance (init-workspace root-path))
       (with-mutex (server-mutex server-instance) 
@@ -155,12 +156,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
-        [() (init-server (standard-input-port) (standard-output-port) (current-output-port))]
-        [(input-port output-port log-port) 
+        [() (init-server (standard-input-port) (standard-output-port) (current-output-port) #f)]
+        [(input-port output-port log-port enable-multi-thread?) 
           (let ([server-instance 
-                  (if threaded?
-                    (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
-                    (make-server input-port output-port log-port '() '() '() #f)) ])
+                  (if enable-multi-thread?
+                    (if threaded?
+                      (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
+                      (make-server input-port output-port log-port '() '() '() #f)) 
+                    (make-server input-port output-port log-port '() '() '() #f))])
             (let loop ([message (read-message server-instance)])
               (if (null? (server-thread-pool server-instance))
                 (process-request server-instance message)
