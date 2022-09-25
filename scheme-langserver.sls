@@ -96,20 +96,20 @@
   (let* (
         [root-path (uri->path (assq-ref params 'rootUri))]
         [client-capabilities (assq-ref params 'capabilities)]
+        [textDocument (assq-ref params 'textDocument)]
         ; [renameProvider 
         ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
         ;     (make-alist 'prepareProvider #t)
         ;     #t)]
-        [sync-options (make-alist 
+        [workspace-configuration-body (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
+
+        [text-document-body (make-alist 
               'openClose #t 
               ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
               ;; Incremental=2
-              'change 2
-              'willSave #t 
-              'willSaveWaitUntil #t)]
-        [workspace-configuration (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
+              'change 2)]
         [server-capabilities (make-alist 
-              ; 'textDocumentSync sync-options
+              'textDocumentSync text-document-body
               ; 'hoverProvider #t
               'definitionProvider #t
               'referencesProvider #t
