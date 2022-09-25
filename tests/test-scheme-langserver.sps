@@ -26,7 +26,19 @@
 
 
 (test-begin "init test")
-(let* ( [initialization-json (string-append
+(let* ( [shutdown-json (string-append
+    	"{\n" 
+		"    \"id\": \"2\",\n" 
+		"    \"method\": \"shutdown\",\n" 
+		"    \"jsonrpc\": \"2.0\"\n" 
+		"}")]
+        [shutdown-header (string-append 
+        "GET /example.http HTTP/1.1\r\n"
+        "Content-Length: "
+        (number->string (bytevector-length (string->utf8 shutdown-json)))
+        "\r\n\r\n")]
+
+        [initialization-json (string-append
     	"{\n" 
 		"    \"id\": \"1\",\n" 
 		"    \"method\": \"initialize\",\n" 
@@ -38,23 +50,24 @@
 		"    },\n" 
 		"    \"jsonrpc\": \"2.0\"\n" 
 		"}")]
-        [header (string-append 
+        [init-header (string-append 
         "GET /example.http HTTP/1.1\r\n"
         "Content-Length: "
         (number->string (bytevector-length (string->utf8 initialization-json)))
         "\r\n\r\n")]
 
-        [input-port (open-bytevector-input-port (string->utf8 (string-append header initialization-json)))]
+        [input-port (open-bytevector-input-port (string->utf8 (string-append init-header initialization-json shutdown-header shutdown-json)))]
         [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
         ; [output-port (standard-output-port)]
-        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)])
+        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
+        [server-instance (init-server input-port output-port log-port #f)])
 
-    (init-server input-port output-port log-port #f)
     ; (call-with-port output-port
     ;     (lambda (p)
     ;         (get-u8 p)))
 
-    (thread-pool-stop! thread-pool))
+    (thread-pool-stop! (server-thread-pool server-instance))
+    )
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
