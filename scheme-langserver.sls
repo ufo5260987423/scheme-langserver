@@ -51,7 +51,7 @@
           ;  (text-document/range-formatting! id params)]
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
-          [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))]))))
+        [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))]))))
   ; public static final string text_document_formatting = "textdocument/formatting";
 	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
 	; public static final string text_document_on_type_formatting = "textdocument/ontypeformatting";
