@@ -20,9 +20,14 @@
   (let* ([method (request-method request)]
         [id (request-id request)]
         [params (request-params request)])
-    (match method
-      ["initialize" (send-message server-instance (initialize server-instance id params))] 
-      ["shutdown" (send-message server-instance (shutdown server-instance id))]
+    (if 
+      (and 
+        (server-shutdown? server-instance)
+        (not (equal? "initialize" method)))
+      (fail-response id server-not-initialized "not initialized")
+      (match method
+        ["initialize" (send-message server-instance (initialize server-instance id params))] 
+        ["shutdown" (send-message server-instance (shutdown server-instance id))]
           ;; text document 
           ; ["textDocument/hover"
           ;  (text-document/hover id params)]
@@ -46,7 +51,7 @@
           ;  (text-document/range-formatting! id params)]
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
-      [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))])))
+          [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))]))))
   ; public static final string text_document_formatting = "textdocument/formatting";
 	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
 	; public static final string text_document_on_type_formatting = "textdocument/ontypeformatting";
