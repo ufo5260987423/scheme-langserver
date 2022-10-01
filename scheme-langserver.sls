@@ -12,6 +12,8 @@
 
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol message)
+    (scheme-langserver protocol apis completion)
+
     (scheme-langserver util association)
     (scheme-langserver util path))
 
@@ -31,8 +33,7 @@
           ;; text document 
           ; ["textDocument/hover"
           ;  (text-document/hover id params)]
-          ; ["textDocument/completion"
-          ;  (text-document/completion id params)]
+        ["textDocument/completion" (send-message (completion id params))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
           ; ["textDocument/definition"

@@ -6,7 +6,7 @@
 
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
 
-(test-begin "init-stop test")
+(test-begin "completion test")
 (let* ( [shutdown-json (read-string "./tests/resources/shutdown.json") ]
         [shutdown-header (string-append 
         ; "GET /example.http HTTP/1.1\r\n"

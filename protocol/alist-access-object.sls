@@ -8,6 +8,11 @@
 
     alist->diagnostic
     diagnostic->alist
+
+    text-document-text
+    text-document-uri
+    text-document-language-id
+    text-document-version
     )
   (import (rnrs) (scheme-langserver util association))
 

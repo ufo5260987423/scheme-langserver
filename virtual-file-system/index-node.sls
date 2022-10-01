@@ -1,5 +1,7 @@
 (library (scheme-langserver virtual-file-system index-node)
   (export 
+    pick-index-node-by
+
     make-index-node
     index-node?
     index-node-parent
@@ -31,7 +33,7 @@
     (mutable excluded-references)))
 
 (define (pick-index-node-by index-node postion)
-  (if (and (<= (index-node-start index-node) postion) (> (index-node-end postion)))
+  (if (and (<= (index-node-start index-node) postion) (> (index-node-end postion) postion))
     (let loop ([children (index-node-children index-node)])
       (if (null? children)
         '()
