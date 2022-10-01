@@ -17,7 +17,7 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
 
-    (only (srfi :13 strings) string-prefix?))
+    (only (srfi :13 strings) string-prefix? string-index))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionParams
 (define (completion workspace params)
@@ -48,7 +48,7 @@
           (if (string-index text #\newline (+ 1 current-line-start-position))
             (string-index text #\newline (+ 1 current-line-start-position))
             -1)]
-          [maybe-result (+ current-position (position-character position))])
+          [maybe-result (+ current-line-start-position (position-character position))])
       (cond
         [(and (= current-line (position-line position)) (< maybe-result next-line-start-position)) 
           maybe-result]

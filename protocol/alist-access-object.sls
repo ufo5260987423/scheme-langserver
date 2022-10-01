@@ -9,6 +9,7 @@
     alist->diagnostic
     diagnostic->alist
 
+    alist->text-document
     text-document-text
     text-document-uri
     text-document-language-id
