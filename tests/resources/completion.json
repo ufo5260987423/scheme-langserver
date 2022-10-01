@@ -1,0 +1,14 @@
+{
+    "id": "3",
+    "method": "textDocument/completion",
+    "params": {
+        "textDocument" : {
+            "uri" : "file://~a/util/io.sls"
+        },
+        "postion" : {
+            "line": 5,
+            "character": 0 
+        }
+    },
+    "jsonrpc": "2.0"
+}

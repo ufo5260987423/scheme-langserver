@@ -15,7 +15,7 @@
 
     (only (srfi :13 strings) string-prefix?))
 
-;; Completion Request
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionParams
 (define (completion workspace params)
 ;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
