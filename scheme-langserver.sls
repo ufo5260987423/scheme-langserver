@@ -21,7 +21,8 @@
 (define (process-request server-instance request)
   (let* ([method (request-method request)]
         [id (request-id request)]
-        [params (request-params request)])
+        [params (request-params request)]
+        [workspace (server-workspace server-instance)])
     (if 
       (and 
         (server-shutdown? server-instance)
@@ -33,7 +34,7 @@
           ;; text document 
           ; ["textDocument/hover"
           ;  (text-document/hover id params)]
-        ["textDocument/completion" (send-message (completion id params))]
+        ["textDocument/completion" (send-message (completion workspace params))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
           ; ["textDocument/definition"
@@ -175,7 +176,8 @@
                 (loop (read-message server-instance)))
               (except c 
                 [else 
-                  (do-log (string-append "error: " (format (condition-message c) (condition-irritants c))) server-instance)
+                  (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
+                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
                   (shutdown server-instance -1)]))
             (newline)
             (display "bye"))]))

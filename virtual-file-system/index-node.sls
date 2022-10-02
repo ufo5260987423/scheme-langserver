@@ -32,12 +32,12 @@
     (mutable references-import-in-this-node)
     (mutable excluded-references)))
 
-(define (pick-index-node-by index-node postion)
-  (if (and (<= (index-node-start index-node) postion) (> (index-node-end postion) postion))
+(define (pick-index-node-by index-node position)
+  (if (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position))
     (let loop ([children (index-node-children index-node)])
       (if (null? children)
-        '()
-        (let ([result (pick-index-node-by (car children) postion)])
+        index-node
+        (let ([result (pick-index-node-by (car children) position)])
           (if (null? result)
             (loop (cdr children))
             result))))

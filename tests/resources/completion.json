@@ -5,7 +5,7 @@
         "textDocument" : {
             "uri" : "file://~a/util/io.sls"
         },
-        "postion" : {
+        "position" : {
             "line": 5,
             "character": 0 
         }

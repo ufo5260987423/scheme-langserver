@@ -24,19 +24,28 @@
 ;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [position (alist->position (assq-ref params 'position))]
-      [file-node (walk-file (workspace-file-node workspace) (text-document-uri text-document))]
+      [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
       [index-node (document-index-node document)]
       [target-index-node (pick-index-node-by index-node (text+position->int (document-text document) position))]
-      [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) "")]
-      [candidate-references 
-        (sort
-          (lambda (a b) (natural-order-compare (symbol->string (identifier-reference-identifier a)) (symbol->string (identifier-reference-identifier b))))
-          (filter 
-            (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
-            (find-available-references-for target-index-node)))])
+      [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) "")])
     ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
-    (map identifier-reference->completion-item-alist candidate-references)))
+    ; (pretty-print
+    ;     (filter 
+    ;       (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
+    ;       (find-available-references-for target-index-node)))
+    (pretty-print (index-node-datum/annotations (index-node-parent target-index-node)))
+    (pretty-print (index-node-references-import-in-this-node (index-node-parent target-index-node)))
+    (pretty-print (index-node-references-export-to-other-node (index-node-parent target-index-node)))
+    (pretty-print (find-available-references-for target-index-node))
+    (map 
+      identifier-reference->completion-item-alist 
+      (sort
+        (lambda (a b) (natural-order-compare (symbol->string (identifier-reference-identifier a)) (symbol->string (identifier-reference-identifier b))))
+        (filter 
+          (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
+          (find-available-references-for target-index-node)))
+          )))
 
 (define (identifier-reference->completion-item-alist reference)
   (make-alist 'label (symbol->string (identifier-reference-identifier reference))))

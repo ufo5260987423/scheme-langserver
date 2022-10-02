@@ -33,7 +33,8 @@
 (define find-available-references-for
   (case-lambda
     [(current-index-node)
-      (if (not (null? (index-node-parent current-index-node)))
+      (if (null? (index-node-parent current-index-node))
+        (index-node-references-import-in-this-node current-index-node) 
         (filter
           (lambda (reference)
             (not (find 
