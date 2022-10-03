@@ -34,11 +34,10 @@
     ;     (filter 
     ;       (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
     ;       (find-available-references-for target-index-node)))
-    ;;todo: to fix
-    (pretty-print (index-node-datum/annotations (index-node-parent target-index-node)))
-    (pretty-print (index-node-references-import-in-this-node (index-node-parent target-index-node)))
-    (pretty-print (index-node-references-export-to-other-node (index-node-parent target-index-node)))
-    (pretty-print (find-available-references-for target-index-node))
+    ; (pretty-print (index-node-datum/annotations (index-node-parent target-index-node)))
+    ; (pretty-print (index-node-references-import-in-this-node (index-node-parent target-index-node)))
+    ; (pretty-print (index-node-references-export-to-other-node (index-node-parent target-index-node)))
+    ; (pretty-print (find-available-references-for target-index-node))
     (map 
       identifier-reference->completion-item-alist 
       (sort

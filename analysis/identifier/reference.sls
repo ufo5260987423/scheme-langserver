@@ -33,16 +33,16 @@
 (define find-available-references-for
   (case-lambda
     [(current-index-node)
-      (if (null? (index-node-parent current-index-node))
-        (index-node-references-import-in-this-node current-index-node) 
         (filter
           (lambda (reference)
             (not (find 
                   (lambda (er) (equal? (identifier-reference-identifier er) (identifier-reference-identifier reference)))
                   (index-node-excluded-references current-index-node))))
-          (append 
+          (if (null? (index-node-parent current-index-node))
             (index-node-references-import-in-this-node current-index-node) 
-            (find-available-references-for (index-node-parent current-index-node)))))]
+            (append 
+              (index-node-references-import-in-this-node current-index-node) 
+              (find-available-references-for (index-node-parent current-index-node)))))]
     [(current-index-node identifier)
       (let ([candiate-references (find-available-references-for current-index-node)])
         (filter

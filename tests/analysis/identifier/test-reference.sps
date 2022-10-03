@@ -17,9 +17,9 @@
             [root-file-node (workspace-file-node workspace-instance)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/io.sls"))]
             [index-node (document-index-node (file-node-document target-file-node))])
-        (test #t (not (null? 
+        (test-equal #f (null? 
             (find-available-references-for index-node)
-        )))
+        ))
     )
 (test-end)
 
