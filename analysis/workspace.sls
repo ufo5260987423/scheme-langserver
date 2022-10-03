@@ -65,13 +65,17 @@
             [index-node (document-index-node document)])
         (import-process root-file-node root-library-node document index-node)
         (walk-and-process root-file-node document index-node)
-        (export-process root-file-node document index-node)))))
+        (export-process root-file-node document index-node)
+        ))))
 
 (define (walk-and-process root-file-node document index-node)
   (library-define-process root-file-node document index-node)
   (let-process root-file-node document index-node)
   (lambda-process root-file-node document index-node)
-  (map (lambda (child-index-node) (walk-and-process root-file-node document child-index-node)) (index-node-children index-node)))
+  (map 
+    (lambda (child-index-node) 
+      (walk-and-process root-file-node document child-index-node)) 
+    (index-node-children index-node)))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)

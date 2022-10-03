@@ -119,14 +119,15 @@
             (import-references root-library-node library-identifier)))]
       [else #f])))
 
-(define (import-references root-library-node library-identifier )
+(define (import-references root-library-node library-identifier)
   (let* ([library-node (walk-library library-identifier root-library-node)]
-      [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node)) ]
-      [candidate-count (length candidate-file-nodes)])
-    (cond
-      [(zero? candidate-count) (find-meta library-identifier)]
-      [(> candidate-count 1) (raise "Too many candidats")]
-      [(= candidate-count 1) (import-from-external-file (document-index-node (file-node-document (car candidate-file-nodes))))])))
+      [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node))])
+    (if (null? candidate-file-nodes)
+      (find-meta library-identifier)
+      (map 
+        (lambda(n)
+          (import-from-external-file (document-index-node (file-node-document n))))
+        candidate-file-nodes))))
 
 (define (import-from-external-file root-index-node)
   (let* ([ann (index-node-datum/annotations root-index-node)]

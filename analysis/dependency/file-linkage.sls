@@ -8,6 +8,7 @@
     file-linkage-take
     file-linkage-set!
     file-linkage-head
+    file-linkage-to
     
     get-init-reference-path)
   (import 

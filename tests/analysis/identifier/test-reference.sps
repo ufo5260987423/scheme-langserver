@@ -18,9 +18,9 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/io.sls"))]
             [index-node (document-index-node (file-node-document target-file-node))])
         ; (test-equal #f (null? 
-        ;     (find-available-references-for index-node)
+            (find-available-references-for index-node)
         ; ))
-        (display 112)
+        ; (display 112)
     )
 (test-end)
 

@@ -27,4 +27,19 @@
         (test-equal target-path (find (lambda (p) (equal? target-path p)) paths)))
 (test-end)
 
+(test-begin "file-linkage-to")
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
+            [root-library-node (init-library-node root-file-node)]
+            [file-linkage (init-file-linkage root-library-node)]
+            [to-path (string-append (current-directory) "/protocol/error-code.sls")]
+            [paths (file-linkage-to file-linkage to-path)])
+        (test-equal 
+            (string-append (current-directory) "/scheme-langserver.sls")
+            (car paths))
+        (test-equal 
+            (string-append (current-directory) "/.akku/lib/scheme-langserver.chezscheme.sls")
+            (cadr paths))
+        (test-equal 2 (length paths)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
