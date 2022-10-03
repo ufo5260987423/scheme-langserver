@@ -18,4 +18,13 @@
         (test-equal 1 (file-linkage-take file-linkage from-path to-path)))
 (test-end)
 
+(test-begin "get-init-inference-path")
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
+            [root-library-node (init-library-node root-file-node)]
+            [file-linkage (init-file-linkage root-library-node)]
+            [paths (get-init-reference-path file-linkage)]
+            [target-path (string-append (current-directory) "/protocol/error-code.sls")])
+        (test-equal target-path (find (lambda (p) (equal? target-path p)) paths)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
