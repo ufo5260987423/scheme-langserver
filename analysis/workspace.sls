@@ -74,6 +74,7 @@
         (import-process root-file-node root-library-node document index-node)
         (walk-and-process root-file-node document index-node)
         (export-process root-file-node document index-node)
+        (loop (cdr paths))
         ))))
 
 (define (walk-and-process root-file-node document index-node)
