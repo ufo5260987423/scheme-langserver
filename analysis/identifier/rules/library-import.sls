@@ -65,7 +65,7 @@
                 (map 
                   (lambda (reference) 
                     (make-identifier-reference
-                      (string->symbol (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference))))
+                      (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference)))
                       (identifier-reference-document reference)
                       (identifier-reference-index-node reference)
                       (identifier-reference-library-identifier reference))) 
@@ -84,11 +84,11 @@
                     (lambda (reference) 
                       (equal? 
                         (identifier-reference-identifier reference) 
-                        (string->symbol (annotation-stripped (index-node-datum/annotations external-index-node)))))
+                        (annotation-stripped (index-node-datum/annotations external-index-node))))
                     imported-references))])
-          (let loop ([children-index-nodes (cdr (index-node-children index-node))]
-                  [external-index-node (caar (cdr (index-node-children index-node)))]
-                  [internal-index-node (cadar (cdr (index-node-children index-node)))])
+          (let loop ([children-index-nodes (cddr (index-node-children index-node))]
+                  [external-index-node (car (index-node-children (caddr (index-node-children index-node))))]
+                  [internal-index-node (cadr (index-node-children (caddr (index-node-children index-node))))])
 
             (index-node-references-import-in-this-node-set! 
               internal-index-node
@@ -101,7 +101,7 @@
               (append 
                 (index-node-references-export-to-other-node internal-index-node)
                 `(,(make-identifier-reference 
-                    (string->symbol (annotation-stripped (index-node-datum/annotations internal-index-node)))
+                    (annotation-stripped (index-node-datum/annotations internal-index-node))
                     document
                     internal-index-node
                     library-identifier))))
@@ -109,8 +109,8 @@
             (if (not (null? (cdr children-index-nodes)))
               (loop 
                 (cdr children-index-nodes)
-                (caar (cdr children-index-nodes))
-                (cadar (cdr children-index-nodes))))))]
+                (car (index-node-children (cadr children-index-nodes)))
+                (cadr (index-node-children (cadr children-index-nodes)))))))]
       [(library-identifier **1) 
         (index-node-references-import-in-this-node-set! 
           grand-parent-index-node 
