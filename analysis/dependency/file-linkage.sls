@@ -190,11 +190,11 @@
                 (let ([result (find-cycle matrix visited m (append path `(,n)))])
                   (if (null? result)
                     (loop (+ 1 m))
-                    result)))
+                    (append path result))))
               '())))
-        ; (if (find (lambda (t) (= n t)) path)
+        (if (find (lambda (t) (= n t)) path)
           (append path `(,n))
-          ; '())
+          '())
         )]))
 
 ; (define merge 
