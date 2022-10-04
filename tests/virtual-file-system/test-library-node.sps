@@ -7,10 +7,11 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system library-node)
+    (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace))
 
 (test-begin "walk-library")
-    (let* ( [root-file-node (init-virtual-file-system "./util/" '() folder-or-scheme-file?)]
+    (let* ( [root-file-node (init-virtual-file-system "./util/" '() akku-acceptable-file?)]
             [root-library-node (init-library-node root-file-node)])
         (test-equal "io.sls"
             (file-node-name (car (library-node-file-nodes 

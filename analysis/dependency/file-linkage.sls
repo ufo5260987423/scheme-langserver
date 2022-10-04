@@ -34,7 +34,7 @@
       (init-matrix root-library-node root-library-node path->id-map matrix)
       (let ([cycle (find-cycle matrix)])
         (if (not (null? cycle))
-          (display (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
+          (raise (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -57,7 +57,9 @@
           (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path)
           (let ([to-ids (linkage-matrix-from matrix from-id)])
             (if (= (length to-ids) (apply + (map (lambda (to-id) (vector-ref visited-ids to-id)) to-ids)))
-              (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) (append path `(,from-id)))
+              (begin
+                (vector-set! visited-ids from-id 1)
+                (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) (append path `(,from-id))))
               (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path))))
         (map (lambda (id) (hashtable-ref id->path-map id #f)) path)))))
 
@@ -185,13 +187,14 @@
             (if (< m (vector-length visited))
               (if (zero? (matrix-take matrix n m))
                 (loop (+ 1 m))
-                (begin
-                  (find-cycle matrix visited m (append path `(,n)))
-                  (loop (+ 1 m))))
+                (let ([result (find-cycle matrix visited m (append path `(,n)))])
+                  (if (null? result)
+                    (loop (+ 1 m))
+                    result)))
               '())))
-        (if (not (find (lambda (t) (= n t)) path))
-          '()
-          (append path `(,n)))
+        ; (if (find (lambda (t) (= n t)) path)
+          (append path `(,n))
+          ; '())
         )]))
 
 ; (define merge 

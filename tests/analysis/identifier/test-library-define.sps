@@ -8,6 +8,7 @@
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules library-define)
+    (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system file-node)
@@ -15,7 +16,7 @@
 
 
 (test-begin "library-define-process")
-    (let* ( [root-file-node (init-virtual-file-system "./util" '() folder-or-scheme-file?)]
+    (let* ( [root-file-node (init-virtual-file-system "./util" '() akku-acceptable-file?)]
             [target-file-node (walk-file root-file-node "./util/io.sls")]
             [document (file-node-document target-file-node)]
             [index-node (document-index-node document)])

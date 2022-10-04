@@ -9,13 +9,7 @@
     library-node-children
     library-node-children-set!
     walk-library)
-  (import (rnrs)
-    ; (chezscheme) 
-    ; (ufo-match) 
-    ; (scheme-langserver virtual-file-system file-node)
-    ; (scheme-langserver virtual-file-system document)
-    ; (scheme-langserver util io)
-    )
+  (import (rnrs))
 
 (define-record-type library-node 
   (fields

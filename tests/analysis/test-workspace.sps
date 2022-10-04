@@ -8,12 +8,14 @@
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system library-node)
+
+    (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace))
 
 (test-begin "init-virtual-file-system")
     (test-equal "scheme-langserver.sls" 
         (find (lambda(n) (equal? n "scheme-langserver.sls")) 
-        (map file-node-name (file-node-children (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)))))
+        (map file-node-name (file-node-children (init-virtual-file-system (current-directory) '() akku-acceptable-file?)))))
 (test-end)
 
 (test-begin "init-index-node")
@@ -26,7 +28,7 @@
 (test-end)
 
 (test-begin "init-library-node")
-    (let* ( [root-file-node (init-virtual-file-system "./util/" '() folder-or-scheme-file?)]
+    (let* ( [root-file-node (init-virtual-file-system "./util/" '() akku-acceptable-file?)]
             [root-library-node (init-library-node root-file-node)])
         (test-equal 'scheme-langserver (library-node-name (car (library-node-children root-library-node)))))
 (test-end)

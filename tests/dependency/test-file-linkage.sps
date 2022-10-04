@@ -7,10 +7,11 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver analysis workspace)
+    (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis dependency file-linkage))
 
 (test-begin "init-linkage-matrix")
-    (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() akku-acceptable-file?)]
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (init-file-linkage root-library-node)]
             [from-path (string-append (current-directory) "/analysis/workspace.sls")]
@@ -19,7 +20,7 @@
 (test-end)
 
 (test-begin "get-init-inference-path")
-    (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() akku-acceptable-file?)]
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (init-file-linkage root-library-node)]
             [paths (get-init-reference-path file-linkage)]
@@ -28,7 +29,7 @@
 (test-end)
 
 (test-begin "file-linkage-to")
-    (let* ([root-file-node (init-virtual-file-system (current-directory) '() folder-or-scheme-file?)]
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() akku-acceptable-file?)]
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (init-file-linkage root-library-node)]
             [to-path (string-append (current-directory) "/protocol/error-code.sls")]

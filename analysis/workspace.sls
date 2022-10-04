@@ -34,6 +34,8 @@
     (scheme-langserver analysis identifier rules lambda)
     (scheme-langserver analysis identifier rules let)
 
+    (scheme-langserver analysis package-manager akku)
+
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
@@ -45,12 +47,18 @@
     (mutable library-node)
     (mutable file-linkage)))
 
-(define (init-workspace path)
-  (let* ([root-file-node (init-virtual-file-system path '() folder-or-scheme-file?)]
-      [root-library-node (init-library-node root-file-node)]
-      [file-linkage (init-file-linkage root-library-node)])
-    (init-references root-file-node root-library-node file-linkage)
-    (make-workspace root-file-node root-library-node file-linkage)))
+(define init-workspace
+  (case-lambda 
+    [(path) (init-workspace path 'akku)]
+    [(path identifier) 
+      (cond 
+        [(equal? 'akku identifier) 
+          (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
+              [root-library-node (init-library-node root-file-node)]
+              [file-linkage (init-file-linkage root-library-node)])
+            (init-references root-file-node root-library-node file-linkage)
+            (make-workspace root-file-node root-library-node file-linkage))]
+      )]))
 
 ;; head -[linkage]->files
 ;; for single file
