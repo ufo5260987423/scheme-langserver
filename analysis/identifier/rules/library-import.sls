@@ -114,7 +114,7 @@
       [(library-identifier **1) 
         (index-node-references-import-in-this-node-set! 
           grand-parent-index-node 
-          (apply append 
+          (append 
             (index-node-references-import-in-this-node grand-parent-index-node)
             (import-references root-library-node library-identifier)))]
       [else #f])))
