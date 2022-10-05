@@ -12,13 +12,11 @@
 
 (define (library-import-process index-node)
   (apply append 
-    (filter 
-      (lambda (item) (not (null? item)))
-      (let* ([ann (index-node-datum/annotations index-node)]
-          [expression (annotation-stripped ann)])
-        (match expression
-          [('library _ **1 ) (map match-import (index-node-children index-node))]
-          [else '()])))))
+    (let* ([ann (index-node-datum/annotations index-node)]
+        [expression (annotation-stripped ann)])
+      (match expression
+        [('library _ **1 ) (map match-import (index-node-children index-node))]
+        [else '()]))))
 
 (define (match-import index-node)
   (filter 

@@ -9,7 +9,7 @@
     identifier-reference-library-identifier
     identifier-reference-index-node)
   (import 
-    (rnrs)
+    (chezscheme)
     (scheme-langserver virtual-file-system index-node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
@@ -33,6 +33,8 @@
 (define find-available-references-for
   (case-lambda
     [(current-index-node)
+    (display "3")
+    (newline)
         (filter
           (lambda (reference)
             (not (find 
@@ -44,9 +46,18 @@
               (index-node-references-import-in-this-node current-index-node) 
               (find-available-references-for (index-node-parent current-index-node)))))]
     [(current-index-node identifier)
-      (let ([candiate-references (find-available-references-for current-index-node)])
+    (display "4")
+    (newline)
+      (let ([candidate-references (find-available-references-for current-index-node)])
+    (display "5")
+    (newline)
+    (display (length candidate-references)) 
+    (newline)
+    (if (pair? candidate-references)
+      (display (identifier-reference? (car candidate-references))))
+    (newline)
         (filter
           (lambda (reference)
             (equal? identifier (identifier-reference-identifier reference)))
-          candiate-references))]))
+          candidate-references))]))
 )

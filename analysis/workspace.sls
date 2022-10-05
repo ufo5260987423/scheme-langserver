@@ -71,9 +71,17 @@
       (let* ([current-file-node (walk-file root-file-node (car paths))]
             [document (file-node-document current-file-node)]
             [index-node (document-index-node document)])
+        (display "aaa")
+        (newline)
         (import-process root-file-node root-library-node document index-node)
+        (display "bbb")
+        (newline)
         (walk-and-process root-file-node document index-node)
+        (display "ccc")
+        (newline)
         (export-process root-file-node document index-node)
+        (display "ddd")
+        (newline)
         (loop (cdr paths))
         ))))
 

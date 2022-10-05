@@ -16,13 +16,14 @@ This is for ☭. Coders of all countries, unite!
 
 ## TODO: 
 
-3. File modification notification and corresponding index changing.
-4. Cross-platform Parallel indexing.
-5. Macro expanding.
-6. Code eval.
-7. Code diagnostic.
-8. Fully r6rs compability.
-9. Add cross-language semantic supporting.
+4. Fully compatible with r6rs standard.
+5. File modification notification and corresponding index changing.
+6. Cross-platform Parallel indexing.
+7. Macro expanding.
+8. Code eval.
+9. Code diagnostic.
+10. Fully r6rs compability.
+11. Add cross-language semantic supporting.
 
 # Test
 > bash test.sh
