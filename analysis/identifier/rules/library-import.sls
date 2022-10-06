@@ -51,6 +51,7 @@
     (pretty-print expression)
     (match expression
       [('only (library-identifier **1) identifier **1) 
+    (pretty-print "only")
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
             [imported-references 
@@ -68,9 +69,9 @@
                     imported-references)])
 
               (index-node-references-import-in-this-node-set! 
-                current-identifier
+                current-index-node
                 (append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
+                  (index-node-references-import-in-this-node current-index-node)
                   current-references))
               
               (index-node-references-import-in-this-node-set! 
@@ -87,6 +88,7 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('except (library-identifier **1) identifier **1) 
+    (pretty-print "except")
         (index-node-references-import-in-this-node-set! 
           grand-parent-index-node 
           (append 
@@ -113,9 +115,9 @@
                     imported-references)])
 
               (index-node-references-import-in-this-node-set! 
-                current-identifier
+                current-index-node
                 (append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
+                  (index-node-references-import-in-this-node current-index-node)
                   current-references))
               (loop 
                 (cdr importion-index-node) 
@@ -125,6 +127,7 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('prefix (library-identifier **1) prefix-id)
+    (pretty-print "prefix")
         (let* ([imported-references (import-references root-library-node library-identifier)]
             [prefixed-references 
               (map 
@@ -142,6 +145,7 @@
               (index-node-references-import-in-this-node grand-parent-index-node)
               prefixed-references)))]
       [('rename (library-identifier **1) (external-name internal-name) **1 ) 
+    (pretty-print "rename")
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -197,6 +201,7 @@
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('alias (library-identifier **1) (external-name internal-name) **1 ) 
+    (pretty-print "alias")
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -258,6 +263,7 @@
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [(library-identifier **1) 
+    (pretty-print "ok???")
         (index-node-references-import-in-this-node-set! 
           grand-parent-index-node 
           (append 
