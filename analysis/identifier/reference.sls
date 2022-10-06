@@ -3,6 +3,7 @@
     find-available-references-for
     guard-for
 
+    identifier-reference?
     make-identifier-reference
     identifier-reference-identifier
     identifier-reference-document

@@ -71,11 +71,13 @@
       (let* ([current-file-node (walk-file root-file-node (car paths))]
             [document (file-node-document current-file-node)]
             [index-node (document-index-node document)])
+        (pretty-print (car paths))
         (display "aaa")
         (newline)
         (import-process root-file-node root-library-node document index-node)
         (display "bbb")
         (newline)
+        (pretty-print (map identifier-reference? (index-node-references-import-in-this-node index-node)))
         (walk-and-process root-file-node document index-node)
         (display "ccc")
         (newline)
