@@ -38,14 +38,13 @@
     ; (pretty-print (index-node-references-import-in-this-node (index-node-parent target-index-node)))
     ; (pretty-print (index-node-references-export-to-other-node (index-node-parent target-index-node)))
     ; (pretty-print (find-available-references-for target-index-node))
-    (map 
+    (list->vector (map 
       identifier-reference->completion-item-alist 
       (sort
         (lambda (a b) (natural-order-compare (symbol->string (identifier-reference-identifier a)) (symbol->string (identifier-reference-identifier b))))
         (filter 
           (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
-          (find-available-references-for target-index-node)))
-          )))
+          (find-available-references-for target-index-node)))))))
 
 (define (identifier-reference->completion-item-alist reference)
   (make-alist 'label (symbol->string (identifier-reference-identifier reference))))

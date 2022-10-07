@@ -34,7 +34,7 @@
           ;; text document 
           ; ["textDocument/hover"
           ;  (text-document/hover id params)]
-        ["textDocument/completion" (send-message (completion workspace params))]
+        ["textDocument/completion" (send-message server-instance (completion workspace params))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
           ; ["textDocument/definition"
