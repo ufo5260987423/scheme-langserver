@@ -57,6 +57,8 @@
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)])
             (init-references root-file-node root-library-node file-linkage)
+        (display "eee")
+        (newline)
             (make-workspace root-file-node root-library-node file-linkage))]
       )]))
 
@@ -77,7 +79,6 @@
         (import-process root-file-node root-library-node document index-node)
         (display "bbb")
         (newline)
-        (pretty-print (map identifier-reference? (index-node-references-import-in-this-node index-node)))
         (walk-and-process root-file-node document index-node)
         (display "ccc")
         (newline)
