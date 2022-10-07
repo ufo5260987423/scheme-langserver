@@ -57,8 +57,8 @@
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)])
             (init-references root-file-node root-library-node file-linkage)
-        (display "eee")
-        (newline)
+        ; (display "eee")
+        ; (newline)
             (make-workspace root-file-node root-library-node file-linkage))]
       )]))
 
@@ -74,17 +74,17 @@
             [document (file-node-document current-file-node)]
             [index-node (document-index-node document)])
         (pretty-print (car paths))
-        (display "aaa")
-        (newline)
+        ; (display "aaa")
+        ; (newline)
         (import-process root-file-node root-library-node document index-node)
-        (display "bbb")
-        (newline)
+        ; (display "bbb")
+        ; (newline)
         (walk-and-process root-file-node document index-node)
-        (display "ccc")
-        (newline)
+        ; (display "ccc")
+        ; (newline)
         (export-process root-file-node document index-node)
-        (display "ddd")
-        (newline)
+        ; (display "ddd")
+        ; (newline)
         (loop (cdr paths))
         ))))
 
