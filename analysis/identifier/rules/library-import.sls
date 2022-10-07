@@ -25,6 +25,9 @@
     (display "import-process")
     (newline)
     (pretty-print (map identifier-reference? (index-node-references-import-in-this-node index-node)))
+    (display "import-process-end")
+    (newline)
+
     index-node))
 
 (define (filter-empty-list list-instance)
@@ -49,9 +52,21 @@
         [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (pretty-print "match-clause")
     (pretty-print expression)
+    (pretty-print (map identifier-reference? (index-node-references-import-in-this-node grand-parent-index-node)))
     (match expression
       [('only (library-identifier **1) identifier **1) 
     (pretty-print "only")
+    (let ([a (import-references root-library-node library-identifier)])
+    (pretty-print "only 0")
+      (if (not (null? a))
+        (begin
+          (pretty-print (map identifier-reference? a))
+          (pretty-print (list? (car a)))
+          (pretty-print (index-node? (car a)))
+        )
+      )
+    )
+    (pretty-print "only 0.1")
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
             [imported-references 
@@ -59,6 +74,7 @@
                 (lambda (reference) 
                   (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) identifier) #t #f))
                 (import-references root-library-node library-identifier))])
+    (pretty-print "only 1")
           (if (not (null? importion-index-node))
             (let* ([current-index-node (car importion-index-node)]
                 [current-identifier (car identifiers)]
@@ -68,6 +84,7 @@
                       (equal? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
 
+    (pretty-print "only 2")
               (index-node-references-import-in-this-node-set! 
                 current-index-node
                 (append 
@@ -79,6 +96,9 @@
                 (append 
                   (index-node-references-import-in-this-node grand-parent-index-node)
                   current-references))
+
+              (pretty-print "only-inner")
+              (pretty-print (map identifier-reference? (index-node-references-import-in-this-node grand-parent-index-node)))
 
               (loop 
                 (cdr importion-index-node) 
@@ -268,7 +288,7 @@
           grand-parent-index-node 
           (append 
             (index-node-references-import-in-this-node grand-parent-index-node)
-            (import-references root-library-node library-identifier)))]
+            (filter identifier-reference? (import-references root-library-node library-identifier))))]
       [else '()])))
 
 (define (import-references root-library-node library-identifier)
@@ -276,47 +296,45 @@
       [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node))])
     (if (null? candidate-file-nodes)
       (find-meta library-identifier)
-      (map 
+      (apply append (map 
         (lambda(n)
           (import-from-external-file (document-index-node (file-node-document n))))
-        candidate-file-nodes))))
+        candidate-file-nodes)))))
 
 (define (import-from-external-file root-index-node)
   (let* ([ann (index-node-datum/annotations root-index-node)]
         [expression (annotation-stripped ann)])
     (match expression 
       [('library _ **1 ) 
-        (map 
+        (apply append (map 
           (lambda (child-node) (match-export child-node))
-          (index-node-children root-index-node))]
+          (cddr (index-node-children root-index-node))))]
       [else '()])))
 
 
 (define (match-export index-node)
-  (apply append '()
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [('export dummy **1 ) 
+  (let* ([ann (index-node-datum/annotations index-node)]
+      [expression (annotation-stripped ann)])
+    (match expression
+      [('export dummy **1 ) 
+        (apply append 
           (map 
             (lambda (child-node) (match-export-clause child-node)) 
-            (index-node-children index-node))]
-        [else '()]))))
+            (cdr (index-node-children index-node))))]
+      [else '()])))
 
 (define (match-export-clause index-node) 
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
       [('rename (internal-names external-names) **1) 
-        (let loop ([children-index-nodes (cdr (index-node-children index-node))]
-                [external-index-node (cadar (cdr (index-node-children index-node)))]
-                [result '()])
-          (if (null? children-index-nodes)
+        (let loop ([exportion-nodes (cdr (index-node-children index-node))]
+            [result '()])
+          (if (null? exportion-nodes)
             result
             (loop 
-              (cdr children-index-nodes)
-              (caar (cdr children-index-nodes))
-              (apply append result (index-node-references-export-to-other-node external-index-node)))))]
-      [(identifier) (index-node-references-export-to-other-node index-node)]
+              (cdr exportion-nodes)
+              (append result (index-node-references-export-to-other-node (cadr (index-node-children (car exportion-nodes))))))))]
+      [identifier (index-node-references-export-to-other-node index-node)]
       [else '()])))
 )

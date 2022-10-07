@@ -76,7 +76,7 @@
               (cdr children-index-nodes)
               (car (index-node-children (cadr children-index-nodes)))
               (cadr (index-node-children (cadr children-index-nodes))))))]
-      [(identifier) 
+      [identifier
     (display "2")
     (newline)
         (let* ([references (find-available-references-for index-node identifier)]
@@ -92,6 +92,7 @@
                 index-node
                 (append 
                   (index-node-references-export-to-other-node index-node)
-                  `(,(car references))))]))]
-      [else #f])))
+                  `(,(car references))))
+                  ]))]
+      [else '()])))
 )

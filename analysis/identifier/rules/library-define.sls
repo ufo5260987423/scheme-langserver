@@ -25,8 +25,6 @@
     index-node))
 
 (define (match-define root-file-node document library-identifiers index-node)
-  (if (null? index-node)
-    (display (document-uri document)))
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
@@ -62,5 +60,5 @@
             (append 
               (index-node-references-import-in-this-node (index-node-parent index-node))
               `(,reference))))]
-      [else #f])))
+      [else '()])))
 )
