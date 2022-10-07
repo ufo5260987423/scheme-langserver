@@ -50,8 +50,6 @@
                 document 
                 (cadr (index-node-children index-node))
                 library-identifiers)])
-        (pretty-print "match-define2")
-        (pretty-print (identifier-reference-identifier reference))
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
             (append 
