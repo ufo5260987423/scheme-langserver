@@ -28,7 +28,7 @@
   (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
     (match expression
-      [('define (identifier _ ... ) _ ... ) 
+      [('define (identifier dummy0 ... ) dummy1 ... ) 
         (let ([reference (make-identifier-reference 
                 identifier 
                 document 
@@ -44,12 +44,14 @@
             (append 
               (index-node-references-import-in-this-node (index-node-parent index-node))
               `(,reference))))]
-      [('define identifier _ ... ) 
+      [('define identifier dummy ... ) 
         (let ([reference (make-identifier-reference 
-                identifier 
+                (car* identifier)
                 document 
                 (cadr (index-node-children index-node))
                 library-identifiers)])
+        (pretty-print "match-define2")
+        (pretty-print (identifier-reference-identifier reference))
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
             (append 
@@ -61,4 +63,9 @@
               (index-node-references-import-in-this-node (index-node-parent index-node))
               `(,reference))))]
       [else '()])))
+
+(define (car* pair)
+  (if (pair? pair)
+    (car* (car pair))
+    pair))
 )
