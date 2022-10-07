@@ -73,7 +73,7 @@
       (let* ([current-file-node (walk-file root-file-node (car paths))]
             [document (file-node-document current-file-node)]
             [index-node (document-index-node document)])
-        (pretty-print (car paths))
+        ; (pretty-print (car paths))
         ; (display "aaa")
         ; (newline)
         (import-process root-file-node root-library-node document index-node)
