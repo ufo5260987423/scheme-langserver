@@ -1,7 +1,6 @@
 (library (scheme-langserver)
   (export 
-    init-server
-    process-request)
+    init-server)
   (import 
     (chezscheme) 
     (ufo-thread-pool) 
@@ -144,7 +143,7 @@
     (if (null? (server-mutex server-instance))
       (server-workspace-set! server-instance (init-workspace root-path))
       (with-mutex (server-mutex server-instance) 
-        (if (null? server-workspace server-instance)
+        (if (null? (server-workspace server-instance))
           (server-workspace-set! server-instance (init-workspace root-path #t))
           (fail-response id server-error-start "server has been initialized"))))
     (success-response id (make-alist 'capabilities server-capabilities))))

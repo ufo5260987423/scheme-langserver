@@ -50,7 +50,7 @@
     (mutable file-node)
     (mutable library-node)
     (mutable file-linkage)
-    (immutable mutax)))
+    (immutable mutex)))
 
 (define init-workspace
   (case-lambda 
@@ -100,17 +100,18 @@
 ;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text)
   (let* ([linkage (workspace-file-linkage workspace-instance)]
-      [root-library-node (workspace-file-node workspace)]
+      [root-library-node (workspace-file-node workspace-instance)]
+      [root-file-node (workspace-file-node workspace-instance)]
       [target-document (file-node-document target-file-node)]
       [target-path (file-node-path target-file-node)]
       [reference-path-to (get-reference-path-to linkage target-path)]
-      [new-index-node (init-index-node '() (source-file->annotation text path))])
+      [new-index-node (init-index-node '() (source-file->annotation text target-path))])
 
     (document-text-set! target-document text)
     (document-index-node-set! target-document new-index-node)
 
     (let* ([new-imported-file-paths (get-imported-libraries-from-index-node new-index-node)]
-        [duplicated? (filter (lambda (path) (filter (lambda (to) (equal? to path)) refernece-path-to)) new-imporeted-file-paths)])
+        [duplicated? (filter (lambda (path) (filter (lambda (to) (equal? to path)) reference-path-to)) new-imported-file-paths)])
       (if duplicated?
         (raise "cycle detected")
         (init-references root-file-node root-library-node target-path)))))

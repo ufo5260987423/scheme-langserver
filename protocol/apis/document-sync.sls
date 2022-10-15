@@ -32,20 +32,20 @@
       (if (not (equal? text (document-text document)))
         (if mutex
           (with-mutex mutex 
-            (refresh-workspace-for workspace-instance file-node text))
-          (refresh-workspace-for workspace-instance file-node text)))))
+            (refresh-workspace-for workspace file-node text))
+          (refresh-workspace-for workspace file-node text)))))
 
 (define (did-close workspace params)
 ;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [text (text-document-text text-document)])
-      (refresh-workspace-for workspace-instance file-node text)))
+      (refresh-workspace-for workspace file-node text)))
 
 (define (did-change workspace params)
 ;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [text (text-document-text text-document)])
-      (refresh-workspace-for workspace-instance file-node text)))
+      (refresh-workspace-for workspace file-node text)))
 )
