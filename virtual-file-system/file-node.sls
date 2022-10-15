@@ -17,10 +17,10 @@
   (import (chezscheme)
     (only (srfi :13 strings) string-prefix? string-suffix?))
 
+;;todo: add file change notify
 (define-record-type file-node 
   (fields
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
-  ;; 有个root-uri属性
     (immutable path)
     (immutable name)
     (immutable parent)

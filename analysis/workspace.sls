@@ -12,6 +12,10 @@
     workspace-file-node-set!
     workspace-library-node
     workspace-library-node-set!
+    ;;todo: replace with scheduler
+    workspace-mutex
+
+    refresh-workspace-for
 
     source-file->annotation
     pick
@@ -45,21 +49,24 @@
   (fields
     (mutable file-node)
     (mutable library-node)
-    (mutable file-linkage)))
+    (mutable file-linkage)
+    (immutable mutax)))
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku)]
-    [(path identifier) 
+    [(path) (init-workspace path #f 'akku )]
+    [(path threaded?) (init-workspace path threaded? 'akku )]
+    [(path threaded? identifier) 
       (cond 
         [(equal? 'akku identifier) 
           (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
               [root-library-node (init-library-node root-file-node)]
-              [file-linkage (init-file-linkage root-library-node)])
-            (init-references root-file-node root-library-node file-linkage)
+              [file-linkage (init-file-linkage root-library-node)]
+              [paths (get-init-reference-path file-linkage)])
+            (init-references root-file-node root-library-node paths)
         ; (display "eee")
         ; (newline)
-            (make-workspace root-file-node root-library-node file-linkage))]
+            (make-workspace root-file-node root-library-node file-linkage (if threaded? (make-mutex) '())))]
       )]))
 
 ;; head -[linkage]->files
@@ -67,12 +74,13 @@
 ;; import 
 ;; init define let ...
 ;; export
-(define (init-references root-file-node root-library-node file-linkage)
-  (let loop ([paths (get-init-reference-path file-linkage)])
+(define (init-references root-file-node root-library-node target-paths)
+  (let loop ([paths target-paths])
     (if (not (null? paths))
       (let* ([current-file-node (walk-file root-file-node (car paths))]
             [document (file-node-document current-file-node)]
             [index-node (document-index-node document)])
+        (clear-references-for index-node)
         ; (pretty-print (car paths))
         ; (display "aaa")
         ; (newline)
@@ -85,8 +93,28 @@
         (export-process root-file-node document index-node)
         ; (display "ddd")
         ; (newline)
-        (loop (cdr paths))
-        ))))
+        (loop (cdr paths))))))
+
+;; target-file-node<-[linkage]-other-file-nodes
+;; add read/write-lock to above model
+;; add file-change-notification
+(define (refresh-workspace-for workspace-instance target-file-node text)
+  (let* ([linkage (workspace-file-linkage workspace-instance)]
+      [root-library-node (workspace-file-node workspace)]
+      [target-document (file-node-document target-file-node)]
+      [target-path (file-node-path target-file-node)]
+      [reference-path-to (get-reference-path-to linkage target-path)]
+      [new-index-node (init-index-node '() (source-file->annotation text path))])
+
+    (document-text-set! target-document text)
+    (document-index-node-set! target-document new-index-node)
+
+    (let* ([new-imported-file-paths (get-imported-libraries-from-index-node new-index-node)]
+        [duplicated? (filter (lambda (path) (filter (lambda (to) (equal? to path)) refernece-path-to)) new-imporeted-file-paths)])
+      (if duplicated?
+        (raise "cycle detected")
+        (init-references root-file-node root-library-node target-path)))))
+
 
 (define (walk-and-process root-file-node document index-node)
   (library-define-process root-file-node document index-node)

@@ -24,6 +24,7 @@ This is for ☭. Coders of all countries, unite!
 9. Code diagnostic.
 10. Fully r6rs compability.
 11. Add cross-language semantic supporting.
+12. File-change notification to improve workspace refreshing.
 
 # Test
 > bash test.sh

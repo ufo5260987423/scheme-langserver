@@ -16,7 +16,9 @@
     index-node-references-import-in-this-node
     index-node-references-import-in-this-node-set!
     index-node-excluded-references
-    index-node-excluded-references-set!)
+    index-node-excluded-references-set!
+
+    clear-referneces-for)
   (import (rnrs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,6 +33,11 @@
     (mutable references-export-to-other-node)
     (mutable references-import-in-this-node)
     (mutable excluded-references)))
+
+(define (clear-references-for index-node)
+  (index-node-references-export-to-other-node-set! index-node '())
+  (index-node-references-import-in-this-node-set! index-node '())
+  (map clear-references (index-node-children index-node)))
 
 (define (pick-index-node-by index-node position)
   (if (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position))

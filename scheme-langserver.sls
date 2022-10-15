@@ -13,6 +13,7 @@
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol message)
     (scheme-langserver protocol apis completion)
+    (scheme-langserver protocol apis document-sync)
 
     (scheme-langserver util association)
     (scheme-langserver util path))
@@ -31,6 +32,11 @@
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
+
+        ["textDocument/didOpen" (did-open params)]
+        ["textDocument/didClose" (did-close params)]
+        ["textDocument/didChange" (did-change params)]
+
           ;; text document 
           ; ["textDocument/hover"
           ;  (text-document/hover id params)]
@@ -86,12 +92,6 @@
 ;           (exit  (if (server-shutdown? server-instance) 1 0))
 ;           (with-mutex (server-mutex server-instance)
 ;             (exit  (if (server-shutdown? server-instance) 1 0))))]
-;       ; ["textDocument/didOpen"
-;       ;   (text-document/did-open! server params)]
-;       ; ["textDocument/didClose"
-;       ;   (text-document/did-close! params)]
-;       ; ["textDocument/didChange"
-;       ;   (text-document/did-change! params)]
 ;       ; ["textDocument/didSave"
 ;       ;  (text-document/didSave id params)]
 ;       ; ["textDocument/rename"
@@ -144,9 +144,10 @@
     (if (null? (server-mutex server-instance))
       (server-workspace-set! server-instance (init-workspace root-path))
       (with-mutex (server-mutex server-instance) 
-        (server-workspace-set! server-instance (init-workspace root-path))))
-    (success-response id (make-alist 'capabilities server-capabilities))
-    ))
+        (if (null? server-workspace server-instance)
+          (server-workspace-set! server-instance (init-workspace root-path #t))
+          (fail-response id server-error-start "server has been initialized"))))
+    (success-response id (make-alist 'capabilities server-capabilities))))
 
 (define (shutdown server-instance id)
 ;;todo: kill server

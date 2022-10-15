@@ -9,6 +9,11 @@
     file-linkage-set!
     file-linkage-head
     file-linkage-to
+
+    get-reference-path-to
+    get-reference-path-from
+
+    get-imported-libraries-from-index-node 
     
     get-init-reference-path)
   (import 
@@ -46,6 +51,20 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
+(define (get-reference-path-to linkage to-node)
+  (let* ([matrix (file-linkage-matrix linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [path->id-map (file-linkage-path->id-map linkage)]
+      [to-node-id (hashtable-ref path->id-map (file-node-path to-node) #f)])
+    (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix to-node-id))))
+
+(define (get-reference-path-from linkage from-node)
+  (let* ([matrix (file-linkage-matrix linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [path->id-map (file-linkage-path->id-map linkage)]
+      [from-node-id (hashtable-ref path->id-map (file-node-path from-node) #f)])
+    (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix from-node-id))))
+
 (define (get-init-reference-path linkage)
   (let* ([node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
       [visited-ids (make-vector node-count)]
@@ -76,6 +95,26 @@
           (lambda (id) (hashtable-ref id->path-map id #f))
           result)))))
 
+(define (linkage-matrix-from-recursive matrix from)
+  (let ([head (linkage-matrix-from matrix from)])
+    (apply append head (map (lambda (item) (linkage-matrix-from-recursive matrix item)) head))))
+
+(define (linkage-matrix-to-recursive matrix to)
+  (let ([head (linkage-matrix-to matrix to)])
+    (apply append head (map (lambda (item) (linkage-matrix-to-recursive matrix item)) head))))
+
+(define (linkage-matrix-to matrix to)
+  (let ([rows-count (sqrt (vector-length matrix))]
+        [column-id to])
+    (let loop ([row-id 0][result '()])
+      (if (< row-id rows-count)
+        (loop 
+          (+ 1 column-id)
+          (if (zero? (matrix-take matrix row-id column-id))
+            result
+            (append result `(,row-id))))
+        result))))
+        
 (define (linkage-matrix-from matrix from)
   (let ([rows-count (sqrt (vector-length matrix))]
         [row-id from])
@@ -142,20 +181,22 @@
   (if (and n m)
     (vector-set! matrix (encode (sqrt (vector-length matrix)) n m) 1)))
 
+(define (get-imported-libraries-from-index-node root-library-node index-node)
+  (apply append 
+    (map 
+      (lambda (l) (map file-node-path (library-node-file-nodes l)))
+      (filter (lambda (l) 
+          (if (null? l) #f (not (null? (library-node-file-nodes l)))))
+        (map 
+          (lambda (id) (walk-library id root-library-node))
+          (library-import-process index-node))))))
+
 (define (init-matrix current-library-node root-library-node path->id-map matrix)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
     (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
             [path (file-node-path file-node)]
-            [imported-libraries 
-              (apply append 
-                (map 
-                  (lambda (l) (map file-node-path (library-node-file-nodes l)))
-                  (filter (lambda (l) 
-                    (if (null? l) #f (not (null? (library-node-file-nodes l)))))
-                    (map 
-                      (lambda (id) (walk-library id root-library-node))
-                      (library-import-process (document-index-node (file-node-document file-node)))))))])
+            [imported-libraries (get-imported-libraries-from-index-node root-library-node (document-index-node (file-node-document file-node)))])
         (map (lambda (imported-library-path) 
                 (if (not (null? imported-library-path))
                   (matrix-set! matrix 
