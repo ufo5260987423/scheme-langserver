@@ -58,6 +58,9 @@
           ;  (text-document/range-formatting! id params)]
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
+          ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
+          ; ["workspace/didChangeWatchedFiles"
+          ;  (??? id params)]
         [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))]))))
   ; public static final string text_document_formatting = "textdocument/formatting";
 	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
