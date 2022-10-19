@@ -39,7 +39,7 @@
       (init-matrix root-library-node root-library-node path->id-map matrix)
       (let ([cycle (find-cycle matrix)])
         (if (not (null? cycle))
-          (raise (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
+          (raise-continuable (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -65,6 +65,7 @@
       [from-node-id (hashtable-ref path->id-map (file-node-path from-node) #f)])
     (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix from-node-id))))
 
+;; this procedure won't be trouble with graph cycle
 (define (get-init-reference-path linkage)
   (let* ([node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
       [visited-ids (make-vector node-count)]
