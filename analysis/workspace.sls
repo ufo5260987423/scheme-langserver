@@ -110,12 +110,9 @@
     (document-text-set! target-document text)
     (document-index-node-set! target-document new-index-node)
 
-    (let* ([new-imported-file-paths (get-imported-libraries-from-index-node new-index-node)]
-        [duplicated? (filter (lambda (path) (filter (lambda (to) (equal? to path)) reference-path-to)) new-imported-file-paths)])
-      (if duplicated?
-        (raise "cycle detected")
-        (init-references root-file-node root-library-node target-path)))))
-
+    (let* ([new-imported-file-paths (get-imported-libraries-from-index-node new-index-node)])
+        ; [duplicated? (filter (lambda (path) (filter (lambda (to) (equal? to path)) reference-path-to)) new-imported-file-paths)]
+        (init-references root-file-node root-library-node target-path))))
 
 (define (walk-and-process root-file-node document index-node)
   (library-define-process root-file-node document index-node)
