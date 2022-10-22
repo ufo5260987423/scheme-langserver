@@ -101,9 +101,11 @@
 (define (refresh-workspace-for workspace-instance target-file-node text)
   (let* ([linkage (workspace-file-linkage workspace-instance)]
       [root-file-node (workspace-file-node workspace-instance)]
+      [root-library-node (workspace-library-node workspace-instance)]
       [target-document (file-node-document target-file-node)]
+      [target-path (uri->path (document-uri target-document))]
       [new-index-node (init-index-node '() (source-file->annotation text target-path))]
-      [path (refresh-file-linkage&get-refresh-path linkage target-file-node new-index-node)])
+      [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-node)])
     (document-text-set! target-document text)
     (document-index-node-set! target-document new-index-node)
     (init-references root-file-node root-library-node path)))

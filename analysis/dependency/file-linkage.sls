@@ -38,9 +38,9 @@
     (init-maps root-library-node id->path-map path->id-map)
     (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
       (init-matrix root-library-node root-library-node path->id-map matrix)
-      (let ([cycle (find-cycle matrix)])
-        (if (not (null? cycle))
-          (raise-continuable (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
+      ; (let ([cycle (find-cycle matrix)])
+      ;   (if (not (null? cycle))
+      ;     (raise-continuable (map (lambda (id) (hashtable-ref id->path-map id #f)) cycle))))
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -52,17 +52,18 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
-(define (refresh-file-linkage&get-refresh-path linkage file-node new-index-node)
+(define (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node)
   (let* ([path (file-node-path file-node)]
       [path->id-map (file-linkage-path->id-map linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
+      [old-node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
       [id (if (hashtable-ref path->id-map path #f)
         (hashtable-ref path->id-map path #f)
         (begin
-          (hashtable-set! path->id-map path node-count)
-          (hashtable-set! id->path-map node-count path)
+          (hashtable-set! path->id-map path old-node-count)
+          (hashtable-set! id->path-map old-node-count path)
           (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
-          node-count))]
+          old-node-count))]
       [reference-id-to (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)]
       [matrix (file-linkage-matrix linkage)]
       [target-document (file-node-document file-node)]
@@ -73,10 +74,10 @@
       [new-imported-file-ids
         (map 
           (lambda(p) (hashtable-ref path->id-map path #f)) 
-          (get-imported-libraries-from-index-node new-index-node))])
-    (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imporeted-file-ids)
+          (get-imported-libraries-from-index-node root-library-node new-index-node))])
+    (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
     (map (lambda(column-id) (matrix-set! matrix id column-id 1)) new-imported-file-ids)
-    `(,id ,@refernece-id-to)))
+    `(,id ,@reference-id-to)))
 
 (define (matrix-expand-0 target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]
@@ -84,10 +85,10 @@
       [current-length (vector-length result)])
     (let loop ([index 0])
       (if (< index current-length)
-        (let* ([indexes (decode node-count i)]
+        (let* ([indexes (decode node-count index)]
             [row-id (car indexes)]
             [column-id (cadr indexes)])
-          (vector-set! result (if (or (= row-id node-count) (= column-id node-count)) (vector-ref target-matrix index) 0))
+          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) (vector-ref target-matrix index) 0))
           (loop (+ index 1)))
         result))))
 
@@ -160,7 +161,7 @@
             iterator))])
       (if (null? children)
         result
-        (loop (append result children) children))))))
+        (loop (append result children) children)))))
 
 (define (linkage-matrix-to matrix to)
   (let ([rows-count (sqrt (vector-length matrix))]
