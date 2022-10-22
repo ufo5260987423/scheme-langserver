@@ -15,6 +15,7 @@
 
     get-imported-libraries-from-index-node 
     
+    refresh-file-linkage&get-refresh-path
     get-init-reference-path)
   (import 
     (rnrs)
@@ -50,6 +51,45 @@
         (hashtable-set! id->path-map (hashtable-size id->path-map) (file-node-path (car file-nodes)))
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
+
+(define (refresh-file-linkage&get-refresh-path linkage file-node new-index-node)
+  (let* ([path (file-node-path file-node)]
+      [path->id-map (file-linkage-path->id-map linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [id (if (hashtable-ref path->id-map path #f)
+        (hashtable-ref path->id-map path #f)
+        (begin
+          (hashtable-set! path->id-map path node-count)
+          (hashtable-set! id->path-map node-count path)
+          (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
+          node-count))]
+      [reference-id-to (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)]
+      [matrix (file-linkage-matrix linkage)]
+      [target-document (file-node-document file-node)]
+      [old-imported-file-ids
+        (map 
+          (lambda(p) (hashtable-ref path->id-map path #f)) 
+          (get-reference-path-from linkage path))]
+      [new-imported-file-ids
+        (map 
+          (lambda(p) (hashtable-ref path->id-map path #f)) 
+          (get-imported-libraries-from-index-node new-index-node))])
+    (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imporeted-file-ids)
+    (map (lambda(column-id) (matrix-set! matrix id column-id 1)) new-imported-file-ids)
+    `(,id ,@refernece-id-to)))
+
+(define (matrix-expand-0 target-matrix)
+  (let* ([node-count (sqrt (vector-length target-matrix))]
+      [result (make-vector (* (+ 1 node-count) (+ 1 node-count)))]
+      [current-length (vector-length result)])
+    (let loop ([index 0])
+      (if (< index current-length)
+        (let* ([indexes (decode node-count i)]
+            [row-id (car indexes)]
+            [column-id (cadr indexes)])
+          (vector-set! result (if (or (= row-id node-count) (= column-id node-count)) (vector-ref target-matrix index) 0))
+          (loop (+ index 1)))
+        result))))
 
 (define (get-reference-path-to linkage to-node)
   (let* ([matrix (file-linkage-matrix linkage)]
@@ -97,12 +137,30 @@
           result)))))
 
 (define (linkage-matrix-from-recursive matrix from)
-  (let ([head (linkage-matrix-from matrix from)])
-    (apply append head (map (lambda (item) (linkage-matrix-from-recursive matrix item)) head))))
+  (let loop ([result `(,from)] [iterator `(,from)])
+    (let ([children 
+          (apply append (map 
+            (lambda (current-from)
+              (filter 
+                (lambda (id) (not (contain? result id)))
+                (linkage-matrix-from matrix current-from)))
+            iterator))])
+      (if (null? children)
+        result
+        (loop (append result children) children)))))
 
 (define (linkage-matrix-to-recursive matrix to)
-  (let ([head (linkage-matrix-to matrix to)])
-    (apply append head (map (lambda (item) (linkage-matrix-to-recursive matrix item)) head))))
+  (let loop ([result `(,to)] [iterator `(,to)])
+    (let ([children 
+          (apply append (map 
+            (lambda (current-to)
+              (filter 
+                (lambda (id) (not (contain? result id)))
+                (linkage-matrix-to matrix current-to)))
+            iterator))])
+      (if (null? children)
+        result
+        (loop (append result children) children))))))
 
 (define (linkage-matrix-to matrix to)
   (let ([rows-count (sqrt (vector-length matrix))]
@@ -178,9 +236,12 @@
   (if (and n m)
     (vector-ref matrix (encode (sqrt (vector-length matrix)) n m))))
 
-(define (matrix-set! matrix n m)
-  (if (and n m)
-    (vector-set! matrix (encode (sqrt (vector-length matrix)) n m) 1)))
+(define matrix-set! 
+  (case-lambda
+    [(matrix n m) (matrix-set! matrix n m 1)]
+    [(matrix n m value) 
+      (if (and n m)
+        (vector-set! matrix (encode (sqrt (vector-length matrix)) n m) value))]))
 
 (define (get-imported-libraries-from-index-node root-library-node index-node)
   (apply append 
@@ -238,29 +299,6 @@
           (append path `(,n))
           '())
         )]))
-
-; (define merge 
-;   (case-lambda 
-;     [(not-merged-vector) 
-;       (vector-map 
-;         (lambda (i) (merge not-merged-vector i)) 
-;         (generate-vector (vector-length not-merged-vector)))]
-;     [(not-merged-vector i)
-;       (if (= i (vector-ref not-merged-vector i))
-;         i
-;         (let ([pre-set (merge not-merged-vector (vector-ref not-merged-vector i))])
-;           (vector-set! not-merged-vector i pre-set)
-;           pre-set))]))
-
-; (define (generate-vector max)
-;   (let ([result (make-vector max)])
-;     (let loop ([i 1])
-;       (vector-set! result i i))
-;     result))
-
-; (define (eliminate-duplicates l)
-;   (cond 
-;     [(null? l) l]
-;     [(member (car l) (cdr l)) (eliminate-duplicates (cdr l))]
-;     [else (cons (car l) (eliminate-duplicates (cdr l)))]))
+(define (contain? list-instance item)
+  (if (filter (lambda(i) (equal? i item)) list-instance) #t #f))
 )
