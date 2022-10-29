@@ -32,9 +32,9 @@
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
 
-        ["textDocument/didOpen" (did-open params)]
-        ["textDocument/didClose" (did-close params)]
-        ["textDocument/didChange" (did-change params)]
+        ["textDocument/didOpen" (did-open workspace params)]
+        ["textdocument/didclose" (did-close workspace params)]
+        ["textDocument/didChange" (did-change workspace params)]
 
           ;; text document 
           ; ["textDocument/hover"

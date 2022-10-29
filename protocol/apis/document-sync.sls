@@ -25,7 +25,14 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization
 (define (did-open workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      [path (uri->path (text-document-uri text-document))]
+      [file-node 
+        (walk-file 
+          (workspace-file-node 
+            (if (null? (walk-file (workspace-file-node workspace) path))
+              (refresh-workspace workspace)
+              workspace)) 
+          path)]
       [document (file-node-document file-node)]
       [text (text-document-text text-document)]
       [mutex (workspace-mutex workspace)])

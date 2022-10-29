@@ -7,6 +7,8 @@
     init-document
     init-references
 
+    refresh-workspace
+
     workspace?
     workspace-file-node
     workspace-file-node-set!
@@ -50,7 +52,34 @@
     (mutable file-node)
     (mutable library-node)
     (mutable file-linkage)
-    (immutable mutex)))
+
+    (immutable mutex)
+    (immutable facet)))
+
+(define (refresh-workspace workspace-instance)
+  (let ([mutex (workspace-mutex workspace-instance)])
+    (if (null? mutex)
+      (let* ([path (file-node-path (workspace-file-node workspace-instance))]
+          [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
+          [root-library-node (init-library-node root-file-node)]
+          [file-linkage (init-file-linkage root-library-node)]
+          [paths (get-init-reference-path file-linkage)])
+        (init-references root-file-node root-library-node paths)
+        (workspace-file-node-set! workspace-instance root-file-node)
+        (workspace-library-node-set! workspace-instance root-library-node)
+        (workspace-file-linkage-set! workspace-instance file-linkage)
+        workspace-instance)
+      (with-mutex mutex
+        (let* ([path (file-node-path (workspace-file-node workspace-instance))]
+            [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
+            [root-library-node (init-library-node root-file-node)]
+            [file-linkage (init-file-linkage root-library-node)]
+            [paths (get-init-reference-path file-linkage)])
+          (init-references root-file-node root-library-node paths)
+          (workspace-file-node-set! workspace-instance root-file-node)
+          (workspace-library-node-set! workspace-instance root-library-node)
+          (workspace-file-linkage-set! workspace-instance file-linkage)
+          workspace-instance)))))
 
 (define init-workspace
   (case-lambda 
@@ -66,7 +95,7 @@
             (init-references root-file-node root-library-node paths)
         ; (display "eee")
         ; (newline)
-            (make-workspace root-file-node root-library-node file-linkage (if threaded? (make-mutex) '())))]
+            (make-workspace root-file-node root-library-node file-linkage (if threaded? (make-mutex) '()) identifier))]
       )]))
 
 ;; head -[linkage]->files
