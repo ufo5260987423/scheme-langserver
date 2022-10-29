@@ -14,7 +14,18 @@
     text-document-uri
     text-document-language-id
     text-document-version
-    )
+
+    alist->text-edit 
+    text-edit-range
+    text-edit-text
+
+    range-start
+    range-end
+
+    versioned-text-document-identifier-uri
+    versioned-text-document-identifier-version
+    alist->versioned-text-document-identifier 
+    versioned-text-document-identifier->alist)
   (import (rnrs) (scheme-langserver util association))
 
 (define-record-type position
@@ -44,6 +55,11 @@
     (immutable version)
     (immutable text)))
 
+(define-record-type versioned-text-document-identifier
+  (fields 
+    (immutable uri)
+    (immutable version)))
+
 (define-record-type diagnostic
   (fields 
     (immutable range)
@@ -52,6 +68,12 @@
     (immutable source)
     (immutable message)
     (immutable related-info)))
+
+(define (alist->versioned-text-document-identifier alist)
+  (make-versioned-text-document-identifier (assq-ref alist 'uri) (assq-ref alist 'version)))
+
+(define (versioned-text-document-identifier->alist instance)
+  (make-alist 'version (versioned-text-document-identifier-version instance) 'uri (versioned-text-document-identifier-uri instance)))
 
 (define (alist->position alist)
   (make-position (assq-ref alist 'line) (assq-ref alist 'character)))
