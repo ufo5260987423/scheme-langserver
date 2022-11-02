@@ -1,0 +1,21 @@
+{
+    "id": "4",
+    "method": "textDocument/didChange",
+    "params": {
+        "textDocument" : { 
+            "uri" : "file://~a/util/natural-order-compare.sls",
+            "version" : 2 
+        },
+        "contentChanges" : 
+            [
+                { 
+                    "range" : { 
+                        "start" : 33, 
+                        "end" : 35 
+                    }, 
+                    "text" : "ios" 
+                }
+            ]
+    },
+    "jsonrpc": "2.0"
+}

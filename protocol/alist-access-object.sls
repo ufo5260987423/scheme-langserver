@@ -88,7 +88,11 @@
   (make-alist 'start (range-start instance) 'end (range-end instance)))
 
 (define (alist->text-edit alist)
-  (make-text-edit (alist->range (assq-ref alist 'range)) (assq-ref alist 'text)))
+  (make-text-edit 
+    (if (null? (assq-ref alist 'range))
+      '()
+      (alist->range (assq-ref alist 'range)))
+    (assq-ref alist 'text)))
 
 (define (text-edit->alist instance)
   (make-alist 'range (range->alist (text-edit-range instance)) 'text (text-edit-text instance)))
