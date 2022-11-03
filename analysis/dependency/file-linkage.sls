@@ -18,7 +18,8 @@
     refresh-file-linkage&get-refresh-path
     get-init-reference-path)
   (import 
-    (rnrs)
+    ; (rnrs)
+    (chezscheme)
     (scheme-langserver analysis dependency rules library-import)
 
     (scheme-langserver virtual-file-system index-node)
@@ -92,18 +93,18 @@
           (loop (+ index 1)))
         result))))
 
-(define (get-reference-path-to linkage to-node)
+(define (get-reference-path-to linkage to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [path->id-map (file-linkage-path->id-map linkage)]
-      [to-node-id (hashtable-ref path->id-map (file-node-path to-node) #f)])
+      [to-node-id (hashtable-ref path->id-map to-path #f)])
     (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix to-node-id))))
 
-(define (get-reference-path-from linkage from-node)
+(define (get-reference-path-from linkage from-path)
   (let* ([matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [path->id-map (file-linkage-path->id-map linkage)]
-      [from-node-id (hashtable-ref path->id-map (file-node-path from-node) #f)])
+      [from-node-id (hashtable-ref path->id-map from-path #f)])
     (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix from-node-id))))
 
 ;; this procedure won't be trouble with graph cycle
@@ -169,7 +170,7 @@
     (let loop ([row-id 0][result '()])
       (if (< row-id rows-count)
         (loop 
-          (+ 1 column-id)
+          (+ 1 row-id)
           (if (zero? (matrix-take matrix row-id column-id))
             result
             (append result `(,row-id))))
