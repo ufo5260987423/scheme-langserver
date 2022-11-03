@@ -65,7 +65,7 @@
           (hashtable-set! id->path-map old-node-count path)
           (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
           old-node-count))]
-      [reference-id-to (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)]
+      [reference-id-to (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id))]
       [matrix (file-linkage-matrix linkage)]
       [target-document (file-node-document file-node)]
       [old-imported-file-ids

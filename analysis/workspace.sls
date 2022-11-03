@@ -104,7 +104,6 @@
 ;; init define let ...
 ;; export
 (define (init-references root-file-node root-library-node target-paths)
-  (pretty-print "init-references")
   (let loop ([paths target-paths])
     (if (not (null? paths))
       (let* ([current-file-node (walk-file root-file-node (car paths))]
