@@ -70,12 +70,6 @@
                   (cdr content-changes) 
                   (if (null? range)
                     temp-text
-                    (string-replace text temp-text (range-start range) (range-end range))))))))])
-    (if (null? mutex)
-      (body)
-      (with-mutex mutex
-        (body)))))
-
 ;;The actual content changes. The content changes describe single state
 ;;changes to the document. So if there are two content changes c1 (at
 ;;array index 0) and c2 (at array index 1) for a document in state S then
@@ -88,4 +82,10 @@
 ;;  receive them.
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
+                    (string-replace text temp-text (range-start range) (range-end range))))))))])
+    (if (null? mutex)
+      (body)
+      (with-mutex mutex
+        (body)))))
+
 )
