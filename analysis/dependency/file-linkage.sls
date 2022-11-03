@@ -78,7 +78,7 @@
           (get-imported-libraries-from-index-node root-library-node new-index-node))])
     (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
     (map (lambda(column-id) (matrix-set! matrix id column-id 1)) new-imported-file-ids)
-    `(,id ,@reference-id-to)))
+    (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,id ,@reference-id-to))))
 
 (define (matrix-expand-0 target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]

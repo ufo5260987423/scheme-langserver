@@ -20,7 +20,7 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
 
-    (only (srfi :13 strings) string-prefix? string-index string-replace))
+    (only (srfi :13 strings) string-replace))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization
 (define (did-open workspace params)
@@ -55,23 +55,27 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
-;;todo:get mutex
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
-      [mutex (workspace-mutex workspace)])
-    (let loop ([content-changes (map alist->text-edit (assq-ref params 'contentChanges))]
-        [text (document-text (file-node-document file-node))])
-      (if (null? content-changes)
-        (if (null? mutex)
-          (with-mutex mutex
-            (refresh-workspace-for workspace file-node text)))
-        (let* ([target (car content-changes)]
-            [range (text-edit-range target)]
-            [temp-text (text-edit-text target)])
-          (loop 
-            (loop (cdr content-changes) temp-text)
-            (if (null? range)
-              temp-text
+      [mutex (workspace-mutex workspace)]
+      [body (lambda() 
+          (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
+              [text (document-text (file-node-document file-node))])
+            (if (null? content-changes)
+              (refresh-workspace-for workspace file-node text)
+              (let* ([target (car content-changes)]
+                  [range (text-edit-range target)]
+                  [temp-text (text-edit-text target)])
+                (loop 
+                  (cdr content-changes) 
+                  (if (null? range)
+                    temp-text
+                    (string-replace text temp-text (range-start range) (range-end range))))))))])
+    (if (null? mutex)
+      (body)
+      (with-mutex mutex
+        (body)))))
+
 ;;The actual content changes. The content changes describe single state
 ;;changes to the document. So if there are two content changes c1 (at
 ;;array index 0) and c2 (at array index 1) for a document in state S then
@@ -84,5 +88,4 @@
 ;;  receive them.
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
-              (string-replace text temp-text (range-start range) (range-end range)))))))))
 )

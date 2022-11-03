@@ -104,6 +104,7 @@
 ;; init define let ...
 ;; export
 (define (init-references root-file-node root-library-node target-paths)
+  (pretty-print "init-references")
   (let loop ([paths target-paths])
     (if (not (null? paths))
       (let* ([current-file-node (walk-file root-file-node (car paths))]
@@ -137,7 +138,6 @@
       [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-node)])
     (document-text-set! target-document text)
     (document-index-node-set! target-document new-index-node)
-  (pretty-print "refresh 1")
     (init-references root-file-node root-library-node path)))
 
 (define (walk-and-process root-file-node document index-node)
