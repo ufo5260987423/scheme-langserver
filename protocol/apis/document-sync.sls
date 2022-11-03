@@ -43,7 +43,6 @@
             (refresh-workspace-for workspace file-node text))))))
 
 (define (did-close workspace params)
-;;todo:get mutex
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri versioned-text-document-identifier)))]
       [text (document-text (file-node-document file-node))]
