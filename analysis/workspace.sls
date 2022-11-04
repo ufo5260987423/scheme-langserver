@@ -129,15 +129,24 @@
 ;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text)
   (let* ([linkage (workspace-file-linkage workspace-instance)]
+      [old-library-identifier (get-library-identifier target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
       [root-library-node (workspace-library-node workspace-instance)]
+      [old-library-node (walk-library old-library-identifier root-library-node)]
       [target-document (file-node-document target-file-node)]
       [target-path (uri->path (document-uri target-document))]
       [new-index-node (init-index-node '() (source-file->annotation text target-path))]
       [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-node)])
     (document-text-set! target-document text)
     (document-index-node-set! target-document new-index-node)
-    (init-references root-file-node root-library-node path)))
+    (init-references root-file-node root-library-node path)
+    (library-node-file-nodes-set! 
+      old-library-node 
+      (filter 
+        (lambda (file-node)
+          (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
+        (library-node-file-nodes old-library-node)))
+    (init-library-node target-file-node root-library-node)))
 
 (define (walk-and-process root-file-node document index-node)
   (library-define-process root-file-node document index-node)
@@ -191,15 +200,18 @@
         (map 
           (lambda (child-node) (init-library-node child-node root-library-node))
           (file-node-children file-node))
-        (let ([document-instance (file-node-document file-node)])
-          (if (not (null? document-instance))
-            (let* ([index-node-instance (document-index-node document-instance)]
-                  [expression (annotation-stripped (index-node-datum/annotations index-node-instance))])
-            ;;rule
-              (match expression 
-                [('library (name **1) rest ... ) (generate-library-node name root-library-node file-node)]
-                [else '()])))))
+        (generate-library-node (get-library-identifier file-node) root-library-node file-node))
       root-library-node]))
+
+(define (get-library-identifier file-node)
+  (let ([document (file-node-document file-node)])
+    (if (null? document)
+      '()
+      (let* ([index (document-index-node document)]
+          [expression (annotation-stripped (index-node-datum/annotations index))])
+        (match expression 
+          [('library (name **1) rest ... ) name]
+          [else '()])))))
 
 (define (init-index-node parent datum/annotations)
   (let* ([source (annotation-source datum/annotations)]
