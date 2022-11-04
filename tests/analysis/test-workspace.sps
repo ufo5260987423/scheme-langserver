@@ -49,7 +49,6 @@
             workspace 
             target-file-node 
             "(library (scheme-langserver util natural-order-compare1)\n    (export natural-order-compare)\n    (import (rnrs) )\n\n(define natural-order-compare \n    (case-lambda \n        [(string-a string-b) (natural-order-compare string-a string-b 0 0)] \n        [(string-a string-b index-a index-b) \n            (let ([length-a (string-length string-a)] \n                    [length-b (string-length string-b)]) \n                (if (or (>= index-a length-a) \n                        (>= index-b length-b)) \n                    (< length-a length-b) \n                    (let ([char-a (string-ref string-a index-a)] \n                            [char-b (string-ref string-b index-b)]) \n                        (if (char=? char-a char-b) \n                            (natural-order-compare string-a string-b (+ 1 index-a) (+ 1 index-b)) \n                            (char<? char-a char-b)))))])) \n)")
-        (display (null? (walk-library '(scheme-langserver util natural-order-compare1) root-library-node)))
         (test-equal #f (null? (walk-library '(scheme-langserver util natural-order-compare1) root-library-node))))
 (test-end)
 
