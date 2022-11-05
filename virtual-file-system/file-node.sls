@@ -45,5 +45,8 @@
     #t
     (find (lambda (t) (or t #f))
       (map (lambda (suffix) (string-suffix? suffix path)) 
-      '(".sps" ".sls" ".scm" ".ss")))))
+      '(
+        ;;todo 
+        ; ".sps" 
+        ".sls" ".scm" ".ss")))))
 )

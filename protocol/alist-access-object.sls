@@ -19,14 +19,23 @@
     text-edit-range
     text-edit-text
 
+    make-range
     range-start
     range-end
+
+    text+position->int
+
+    location->alist
+    make-location
 
     versioned-text-document-identifier-uri
     versioned-text-document-identifier-version
     alist->versioned-text-document-identifier 
     versioned-text-document-identifier->alist)
-  (import (rnrs) (scheme-langserver util association))
+  (import 
+    (rnrs) 
+    (scheme-langserver util association)
+    (only (srfi :13 strings) string-index))
 
 (define-record-type position
   (fields 
@@ -68,6 +77,21 @@
     (immutable source)
     (immutable message)
     (immutable related-info)))
+
+(define (text+position->int text position)
+  (let loop ([current-line 0]
+      [current-line-start-position 0])
+    (let ([next-line-start-position 
+          (if (string-index text #\newline (+ 1 current-line-start-position))
+            (string-index text #\newline (+ 1 current-line-start-position))
+            -1)]
+          [maybe-result (+ current-line-start-position (position-character position))])
+      (cond
+        [(and (= current-line (position-line position)) (< maybe-result next-line-start-position)) 
+          maybe-result]
+        [(< current-line (position-line position)) 
+          (loop (+ 1 current-line) next-line-start-position)]
+        [else (raise 'position-out-of-range)]))))
 
 (define (alist->versioned-text-document-identifier alist)
   (make-versioned-text-document-identifier (assq-ref alist 'uri) (assq-ref alist 'version)))

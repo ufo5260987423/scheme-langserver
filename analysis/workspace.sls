@@ -161,12 +161,10 @@
   (if (my-filter path)
     (let* ([name (path->name path)] 
           [folder? (file-directory? path)]
-          [document (if folder? '() 
-              (try
-                (init-document (path->uri path))
-                ;;todo diagnostic
-                (except e
-                  [else '()])))]
+          [document 
+            (if folder? 
+              '() 
+              (init-document path))]
           [node (make-file-node path name parent folder? '() document)]
           [children (if folder?
               (map 
@@ -185,8 +183,8 @@
       node)
     '()))
 
-(define (init-document uri)
-  (let ([path (uri->path uri)])
+(define (init-document path)
+  (let ([uri (path->uri path)])
     (make-document 
       uri 
       (read-string path) 
@@ -235,12 +233,19 @@
   (case-lambda
     ([path] (source-file->annotation (read-string path) path))
     ([source path]
+  (try
       (let-values 
         ([(ann end-pos)
           (get-datum/annotations 
             (open-string-input-port source) 
             (make-source-file-descriptor path (open-file-input-port path)) 0)])
-        ann))))
+        ann)
+  (except e
+    [else 
+      (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
+      (pretty-print path)
+      '()]))
+        )))
 
 (define pick
   (case-lambda 

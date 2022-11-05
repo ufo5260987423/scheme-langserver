@@ -1,0 +1,14 @@
+{
+    "id": "7",
+    "method": "textDocument/definition",
+    "params": {
+        "position" : {
+            "line": 0,
+            "character": 0
+        },
+        "textDocument" : {
+            "uri" : "file://~a/util/natural-order-compare.sls"
+        }
+    },
+    "jsonrpc": "2.0"
+}

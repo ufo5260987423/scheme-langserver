@@ -12,6 +12,7 @@
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol message)
     (scheme-langserver protocol apis completion)
+    (scheme-langserver protocol apis definition)
     (scheme-langserver protocol apis document-sync)
 
     (scheme-langserver util association)
@@ -42,8 +43,7 @@
         ["textDocument/completion" (send-message server-instance (completion workspace params))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
-          ; ["textDocument/definition"
-          ;  (text-document/definition id params)]
+        ["textDocument/definition" (send-message server-instance (definition workspace params))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
           ; ["textDocument/references"

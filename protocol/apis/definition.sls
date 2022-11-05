@@ -1,5 +1,5 @@
-(library (scheme-langserver protocol apis completion)
-  (export completion)
+(library (scheme-langserver protocol apis definition)
+  (export definition)
   (import 
     (chezscheme) 
 
@@ -17,27 +17,34 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
 
-    (only (srfi :13 strings) string-prefix?))
+    (only (srfi :13 strings) string-prefix? string-index))
 
-; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionParams
-(define (completion workspace params)
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_definition
+; return 
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
+(define (definition workspace params)
 ;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
+      [uri (text-document-uri text-document)]
       [position (alist->position (assq-ref params 'position))]
+      [line (position-line position)]
+      [character (position-character position)]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
       [index-node (document-index-node document)]
       [target-index-node (pick-index-node-by index-node (text+position->int (document-text document) position))]
       [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) "")])
-    ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector (map 
-      identifier-reference->completion-item-alist 
-      (sort
-        (lambda (a b) (natural-order-compare (symbol->string (identifier-reference-identifier a)) (symbol->string (identifier-reference-identifier b))))
-        (filter 
-          (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
-          (find-available-references-for target-index-node)))))))
+      identifier-reference->location->alist 
+      (filter 
+        (lambda (candidate-reference) (equal? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
+        (find-available-references-for target-index-node))))))
 
-(define (identifier-reference->completion-item-alist reference)
-  (make-alist 'label (symbol->string (identifier-reference-identifier reference))))
+(define (identifier-reference->location->alist reference)
+  (location->alist
+    (make-location 
+      (document-uri (identifier-reference-document reference)) 
+      (make-range 
+        (source-object-bfp (annotation-source (identifier-reference-index-node reference))) 
+        (source-object-efp (annotation-source (identifier-reference-index-node reference)))))))
 )
