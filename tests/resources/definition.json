@@ -3,11 +3,11 @@
     "method": "textDocument/definition",
     "params": {
         "position" : {
-            "line": 0,
-            "character": 0
+            "line": 41,
+            "character": 29
         },
         "textDocument" : {
-            "uri" : "file://~a/util/natural-order-compare.sls"
+            "uri" : "file://~a/protocol/message.sls"
         }
     },
     "jsonrpc": "2.0"
