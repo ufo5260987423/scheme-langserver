@@ -18,8 +18,6 @@
     (scheme-langserver virtual-file-system file-node))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_definition
-; return 
-; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (definition workspace params)
 ;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
@@ -32,13 +30,19 @@
       [index-node (document-index-node document)]
       [target-index-node (pick-index-node-by index-node (text+position->int (document-text document) position))]
       [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) "")])
+    (pretty-print prefix)
+    (pretty-print "???")
     (list->vector (map 
       identifier-reference->location->alist 
       (filter 
-        (lambda (candidate-reference) (equal? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
+        (lambda (candidate-reference) 
+          (pretty-print (identifier-reference-identifier candidate-reference))
+          (equal? prefix (identifier-reference-identifier candidate-reference))) 
         (find-available-references-for target-index-node))))))
 
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)
+  (pretty-print (identifier-reference-document reference))
   (location->alist
     (make-location 
       (document-uri (identifier-reference-document reference)) 
