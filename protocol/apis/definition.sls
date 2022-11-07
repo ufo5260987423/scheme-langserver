@@ -30,13 +30,10 @@
       [index-node (document-index-node document)]
       [target-index-node (pick-index-node-by index-node (text+position->int (document-text document) position))]
       [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) "")])
-    (pretty-print prefix)
-    (pretty-print "???")
     (list->vector (map 
       identifier-reference->location->alist 
       (filter 
         (lambda (candidate-reference) 
-          (pretty-print (identifier-reference-identifier candidate-reference))
           (equal? prefix (identifier-reference-identifier candidate-reference))) 
         (find-available-references-for target-index-node))))))
 

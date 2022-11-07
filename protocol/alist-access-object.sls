@@ -33,7 +33,7 @@
     alist->versioned-text-document-identifier 
     versioned-text-document-identifier->alist)
   (import 
-    (rnrs) 
+    (chezscheme) 
     (scheme-langserver util association)
     (only (srfi :13 strings) string-index))
 
@@ -83,14 +83,14 @@
       [current-line-start-position 0])
     (let ([next-line-start-position 
           (if (string-index text #\newline current-line-start-position)
-            (string-index text #\newline current-line-start-position)
+            (+ 1 (string-index text #\newline current-line-start-position))
             -1)]
-          [maybe-result (+ 1 current-line-start-position (position-character position))])
+          [maybe-result (+ current-line-start-position (position-character position))])
       (cond
         [(and (= current-line (position-line position)) (< maybe-result next-line-start-position)) 
           maybe-result]
         [(< current-line (position-line position)) 
-          (loop (+ 1 current-line) (+ 1 next-line-start-position))]
+          (loop (+ 1 current-line) next-line-start-position)]
         [else (raise 'position-out-of-range)]))))
 
 (define (alist->versioned-text-document-identifier alist)
