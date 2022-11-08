@@ -3,11 +3,11 @@
     "method": "textDocument/definition",
     "params": {
         "position" : {
-            "line": 41,
-            "character": 29
+            "line": 93,
+            "character": 22
         },
         "textDocument" : {
-            "uri" : "file://~a/protocol/message.sls"
+            "uri" : "file://~a/analysis/workspace.sls"
         }
     },
     "jsonrpc": "2.0"

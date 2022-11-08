@@ -29,21 +29,17 @@
       [document (file-node-document file-node)]
       [index-node (document-index-node document)]
       [target-index-node (pick-index-node-by index-node (text+position->int (document-text document) position))]
-      [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) "")])
-    (list->vector (map 
-      identifier-reference->location->alist 
-      (filter 
-        (lambda (candidate-reference) 
-          (equal? prefix (identifier-reference-identifier candidate-reference))) 
-        (find-available-references-for target-index-node))))))
+      [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) )]
+      [available-reference (find-available-references-for target-index-node prefix)])
+    (list->vector 
+      (map identifier-reference->location->alist available-reference))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)
-  (pretty-print (identifier-reference-document reference))
   (location->alist
     (make-location 
       (document-uri (identifier-reference-document reference)) 
       (make-range 
-        (source-object-bfp (annotation-source (identifier-reference-index-node reference))) 
-        (source-object-efp (annotation-source (identifier-reference-index-node reference)))))))
+        (source-object-bfp (annotation-source (index-node-datum/annotations (identifier-reference-index-node reference))))
+        (source-object-efp (annotation-source (index-node-datum/annotations (identifier-reference-index-node reference))))))))
 )
