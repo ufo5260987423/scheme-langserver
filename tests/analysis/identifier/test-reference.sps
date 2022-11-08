@@ -28,4 +28,12 @@
         (test-equal #f (null? (filter (lambda (reference) (equal? 'get-init-reference-path (identifier-reference-identifier reference))) (find-available-references-for index-node)))))
 (test-end)
 
+(test-begin "export-import test")
+    (let* ([workspace-instance (init-workspace (current-directory))]
+            [root-file-node (workspace-file-node workspace-instance)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/path.sls"))]
+            [index-node (document-index-node (file-node-document target-file-node))])
+        (test-equal #f (null? (filter (lambda (reference) (equal? 'string-prefix? (identifier-reference-identifier reference))) (find-available-references-for index-node)))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

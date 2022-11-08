@@ -66,12 +66,18 @@
       [identifier
         (let* ([references (find-available-references-for index-node identifier)]
             [reference-count (length references)])
-          (if (zero? reference-count)
-            '()
-            (index-node-references-export-to-other-node-set! 
-              index-node
-              (append 
-                (index-node-references-export-to-other-node index-node)
+          (index-node-references-export-to-other-node-set! 
+            index-node
+            (append 
+              (index-node-references-export-to-other-node index-node)
+              (if (zero? reference-count)
+          ;; in srfi 13, library file using a self-made include/revolve procedure
+          ;; and in this case, replace '() with a special 
+                `(,(make-identifier-reference
+                  expression
+                  document
+                  index-node
+                  library-identifiers))
                 `(,(car references))))))]
       [else '()])))
 )
