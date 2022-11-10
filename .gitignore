@@ -3,6 +3,8 @@
 ### Example user template
 ./out
 
+.vscode
+.vscode/***
 # IntelliJ project files
 .idea
 *.iml
