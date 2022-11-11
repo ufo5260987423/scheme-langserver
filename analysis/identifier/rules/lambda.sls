@@ -18,7 +18,7 @@
     (try
       (match expression
         [('lambda (identifier **1) _ ... ) 
-          (guard-for 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (guard-for index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]

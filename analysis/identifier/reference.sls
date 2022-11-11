@@ -20,16 +20,16 @@
     (immutable index-node)
     (immutable library-identifier)))
 
-(define (guard-for current-index-node identifier . rest)
-  (let ([candidates (find-available-references-for current-index-node identifier)])
+(define (guard-for current-index-node target-identifier . library-identifier-rest)
+  (let ([candidates (find-available-references-for current-index-node target-identifier)])
     (if (null? candidates)
       (raise "no such identifier")
       (let ([candidate (car candidates)])
-        (if (null? rest)
+        (if (null? library-identifier-rest)
           candidate
-          (if (find (lambda (r) (equal? r (identifier-reference-library-identifier candidate))) rest)
+          (if (find (lambda (r) (equal? r (identifier-reference-library-identifier candidate))) library-identifier-rest)
             candidate
-            (raise "no such identifier")))))))
+            (raise "no such identifier for specific libraries")))))))
 
 (define find-available-references-for
   (case-lambda

@@ -17,8 +17,8 @@ Your donation will make this world better. Also, you can issue your advice and I
 This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 
 ## Features
-1. Top-level identifiers binding completion.
-2. Local identifiers binding completion.
+1. Top-level and local identifiers binding completion.
+2. Goto definition.
 3. Compatible with package manager: Akku.
 
 ## TODOs

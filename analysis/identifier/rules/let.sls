@@ -18,7 +18,7 @@
     (try
       (match expression
         [('let loop-identifier ((identifier no-use ... ) **1 ) _ ... ) 
-          (guard-for 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (guard-for index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([loop-reference-list (private-process (cadr (index-node-children index-node)) index-node '() document)])
             (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
               (if (not (null? rest))
