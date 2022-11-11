@@ -6,14 +6,10 @@
       uri->name
       path->name)
     (import 
-      ; (rnrs) 
-      ; (only (chezscheme) path-absolute? current-directory)
-      (only (chibi pathname) path-strip-directory)
       (chezscheme)
+      (only (chibi pathname) path-strip-directory)
       (scheme-langserver util environment) 
-      ; (only (scheme-langserver util environment) windows?)
-      (only (srfi :13 strings) string-prefix? string-suffix? string-drop)
-      )
+      (only (srfi :13 strings) string-prefix? string-suffix? string-drop))
 
 (define (path->uri path)
   (string-append
