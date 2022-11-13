@@ -18,9 +18,7 @@
     (let* ( [target-path (string-append (current-directory) "/.akku/lib/srfi/%3a13")]
             [root-file-node (init-virtual-file-system target-path '() akku-acceptable-file?)]
             [target-file-node (walk-file root-file-node (string-append target-path "/srfi-13.scm"))])
-        (pretty-print (annotation-expression (index-node-datum/annotations (document-index-node (file-node-document target-file-node)))))
-        (pretty-print (length (index-node-children (document-index-node (file-node-document target-file-node)))))
-        (test-equal #f (null? (docuent-index-node (file-node-document target-file-node)))))
+        (test-equal #f (null? (docuent-index-node-list (file-node-document target-file-node)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

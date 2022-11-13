@@ -19,7 +19,7 @@
     (let* ( [root-file-node (init-virtual-file-system "./util" '() akku-acceptable-file?)]
             [target-file-node (walk-file root-file-node "./util/io.sls")]
             [document (file-node-document target-file-node)]
-            [index-node (document-index-node document)])
+            [index-node (car (document-index-node-list document))])
             (test-equal #t
                 (not (null? 
                     (find 

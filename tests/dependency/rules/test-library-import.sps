@@ -15,7 +15,7 @@
 
 (test-begin "library-import-process")
     (let* ([root-file-node (init-virtual-file-system "./util/io.sls" '() akku-acceptable-file?)]
-            [root-index-node (document-index-node (file-node-document root-file-node))])
+            [root-index-node (car (document-index-node-list (file-node-document root-file-node)))])
         (test-equal '(rnrs) (car (library-import-process root-index-node))))
 (test-end)
 
