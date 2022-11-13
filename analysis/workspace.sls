@@ -235,7 +235,7 @@
         (try
           (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor 0)]) 
             (if (= position (port-position port))
-              result
+              (filter annotation? result)
               (loop (port-position port) (append result `(,ann)))))
           (except e
             [else 
