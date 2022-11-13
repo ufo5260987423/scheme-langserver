@@ -275,7 +275,10 @@
     (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
             [path (file-node-path file-node)]
-            [imported-libraries (get-library-identifier-list file-node)])
+            [imported-libraries 
+              (dedupe (apply append 
+                (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
+                  (document-index-node-list (file-node-document file-node)))))])
         (map (lambda (imported-library-path) 
                 (if (not (null? imported-library-path))
                   (matrix-set! matrix 
