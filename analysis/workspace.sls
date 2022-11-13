@@ -94,6 +94,8 @@
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)]
               [paths (get-init-reference-path file-linkage)])
+        ; (display "aaa")
+        ; (newline)
             (init-references root-file-node root-library-node paths)
         ; (display "eee")
         ; (newline)
@@ -115,9 +117,15 @@
         (map 
           (lambda (index-node)
             (clear-references-for index-node)
+          ; (pretty-print "bbb")
             (import-process root-file-node root-library-node document index-node)
+          ; (pretty-print "ccc")
             (walk-and-process root-file-node document index-node)
-            (export-process root-file-node document index-node))
+            (export-process root-file-node document index-node)
+          ; (pretty-print "ddd")
+            (document-reference-list-set! 
+              document 
+              (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
           index-node-list)
         (loop (cdr paths))))))
 

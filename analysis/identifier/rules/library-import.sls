@@ -263,19 +263,18 @@
 
 (define (import-references root-library-node library-identifier)
   (let* ([library-node (walk-library library-identifier root-library-node)]
-      [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node))])
+      [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node))]
+      [candidate-index-node-list (apply append (map document-index-node-list (map file-node-document candidate-file-nodes)))])
     (if (null? candidate-file-nodes)
       (find-meta library-identifier)
-      (apply append (map 
-        (lambda(n)
-          (map import-from-external-file 
-            (filter
-              (lambda (index-node)
-                (match (annotation-stripped (index-node-datum/annotations index-node))
-                  (['library (identifier **1) _ ... ] (equal? identifier library-identifier))
-                  (else #f)))
-              (document-index-node-list (file-node-document n)))))
-        candidate-file-nodes)))))
+      (apply append 
+        (map import-from-external-file 
+          (filter
+            (lambda (index-node)
+              (match (annotation-stripped (index-node-datum/annotations index-node))
+                (['library (identifier **1) _ ... ] (equal? identifier library-identifier))
+                (else #f)))
+            candidate-index-node-list))))))
 
 (define (import-from-external-file root-index-node)
   (let* ([ann (index-node-datum/annotations root-index-node)]
@@ -286,7 +285,6 @@
           (lambda (child-node) (match-export child-node))
           (cddr (index-node-children root-index-node))))]
       [else '()])))
-
 
 (define (match-export index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
