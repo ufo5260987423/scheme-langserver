@@ -19,7 +19,7 @@
 
     refresh-workspace-for
 
-    source-file->annotation
+    source-file->annotations
     pick
     generate-library-node)
   (import 
@@ -31,6 +31,8 @@
     (scheme-langserver util try)
     (scheme-langserver util io)
 
+    (scheme-langserver analysis util)
+    
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
 
@@ -108,20 +110,15 @@
     (if (not (null? paths))
       (let* ([current-file-node (walk-file root-file-node (car paths))]
             [document (file-node-document current-file-node)]
-            [index-node (document-index-node document)])
-        (clear-references-for index-node)
-        ; (pretty-print (car paths))
-        ; (display "aaa")
-        ; (newline)
-        (import-process root-file-node root-library-node document index-node)
-        ; (display "bbb")
-        ; (newline)
-        (walk-and-process root-file-node document index-node)
-        ; (display "ccc")
-        ; (newline)
-        (export-process root-file-node document index-node)
-        ; (display "ddd")
-        ; (newline)
+            [index-node-list (document-index-node-list document)])
+        (document-reference-list-set! document '())
+        (map 
+          (lambda (index-node)
+            (clear-references-for index-node)
+            (import-process root-file-node root-library-node document index-node)
+            (walk-and-process root-file-node document index-node)
+            (export-process root-file-node document index-node))
+          index-node-list)
         (loop (cdr paths))))))
 
 ;; target-file-node<-[linkage]-other-file-nodes
@@ -129,23 +126,29 @@
 ;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text)
   (let* ([linkage (workspace-file-linkage workspace-instance)]
-      [old-library-identifier (get-library-identifier target-file-node)]
+      [old-library-identifier-list (get-library-identifier-list target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
       [root-library-node (workspace-library-node workspace-instance)]
-      [old-library-node (walk-library old-library-identifier root-library-node)]
+      [old-library-node-list 
+        (filter (lambda (item) (not (null? item)))
+          (map (lambda (old-library-identifier) (walk-library old-library-identifier root-library-node))
+            old-library-identifier-list))]
       [target-document (file-node-document target-file-node)]
       [target-path (uri->path (document-uri target-document))]
-      [new-index-node (init-index-node '() (source-file->annotation text target-path))]
-      [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-node)])
+      [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))]
+      [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes)])
     (document-text-set! target-document text)
-    (document-index-node-set! target-document new-index-node)
+    (document-index-node-list-set! target-document new-index-nodes)
     (init-references root-file-node root-library-node path)
-    (library-node-file-nodes-set! 
-      old-library-node 
-      (filter 
-        (lambda (file-node)
-          (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
-        (library-node-file-nodes old-library-node)))
+    (map 
+      (lambda (old-library-node)
+        (library-node-file-nodes-set! 
+          old-library-node 
+          (filter 
+            (lambda (file-node)
+              (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
+            (library-node-file-nodes old-library-node))))
+      old-library-node-list)
     (init-library-node target-file-node root-library-node)))
 
 (define (walk-and-process root-file-node document index-node)
@@ -188,7 +191,8 @@
     (make-document 
       uri 
       (read-string path) 
-      (init-index-node '() (source-file->annotation path)))))
+      (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
+      '())))
 
 (define init-library-node
   (case-lambda 
@@ -198,18 +202,10 @@
         (map 
           (lambda (child-node) (init-library-node child-node root-library-node))
           (file-node-children file-node))
-        (generate-library-node (get-library-identifier file-node) root-library-node file-node))
+        (map 
+          (lambda (library-identifier) (generate-library-node library-identifier root-library-node file-node))
+          (get-library-identifier-list file-node)))
       root-library-node]))
-
-(define (get-library-identifier file-node)
-  (let ([document (file-node-document file-node)])
-    (if (null? document)
-      '()
-      (let* ([index (document-index-node document)]
-          [expression (annotation-stripped (index-node-datum/annotations index))])
-        (match expression 
-          [('library (name **1) rest ... ) name]
-          [else '()])))))
 
 (define (init-index-node parent datum/annotations)
   (let* ([source (annotation-source datum/annotations)]
@@ -229,23 +225,23 @@
         '()))
     node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define source-file->annotation
+(define source-file->annotations
   (case-lambda
-    ([path] (source-file->annotation (read-string path) path))
+    ([path] (source-file->annotations (read-string path) path))
     ([source path]
-  (try
-      (let-values 
-        ([(ann end-pos)
-          (get-datum/annotations 
-            (open-string-input-port source) 
-            (make-source-file-descriptor path (open-file-input-port path)) 0)])
-        ann)
-  (except e
-    [else 
-      (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
-      (pretty-print path)
-      '()]))
-        )))
+    (let ([port (open-string-input-port source)]
+        [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+      (let loop ([position (port-position port)][result '()])
+        (try
+          (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor 0)]) 
+            (if (= position (port-position port))
+              result
+              (loop (port-position port) (append result `(,ann)))))
+          (except e
+            [else 
+              (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
+              (pretty-print path)
+              '()])))))))
 
 (define pick
   (case-lambda 

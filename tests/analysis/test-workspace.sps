@@ -24,7 +24,7 @@
             (car 
                 (annotation-expression 
                 (index-node-datum/annotations
-                    (init-index-node '() (source-file->annotation "./util/io.sls")))))))
+                    (init-index-node '() (source-file->annotations "./util/io.sls")))))))
 (test-end)
 
 (test-begin "init-library-node")
@@ -37,7 +37,7 @@
     (test-equal 'library 
         (annotation-stripped 
             (index-node-datum/annotations 
-            (car (pick (init-index-node '() (source-file->annotation "./util/path.sls")) 0 8)))))
+            (car (pick (init-index-node '() (source-file->annotations "./util/path.sls")) 0 8)))))
 (test-end)
 
 (test-begin "refresh-workspace-for-test")

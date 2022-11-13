@@ -45,6 +45,7 @@
             (append 
               (index-node-references-import-in-this-node external-index-node)
               (find-available-references-for 
+                document
                 internal-index-node 
                 (annotation-stripped (index-node-datum/annotations internal-index-node)))))
 
@@ -64,7 +65,7 @@
               (car (index-node-children (cadr children-index-nodes)))
               (cadr (index-node-children (cadr children-index-nodes))))))]
       [identifier
-        (let* ([references (find-available-references-for index-node identifier)]
+        (let* ([references (find-available-references-for document index-node identifier)]
             [reference-count (length references)])
           (index-node-references-export-to-other-node-set! 
             index-node

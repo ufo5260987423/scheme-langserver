@@ -27,10 +27,10 @@
       [character (position-character position)]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
-      [index-node (document-index-node document)]
-      [target-index-node (pick-index-node-by index-node (text+position->int (document-text document) position))]
+      [index-node-list (document-index-node-list document)]
+      [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
       [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) )]
-      [available-reference (find-available-references-for target-index-node prefix)])
+      [available-reference (find-available-references-for document target-index-node prefix)])
     (list->vector 
       (map identifier-reference->location->alist available-reference))))
 

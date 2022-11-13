@@ -13,13 +13,15 @@
     get-reference-path-to
     get-reference-path-from
 
-    get-imported-libraries-from-index-node 
+    get-imported-libraries-from-index-node
     
     refresh-file-linkage&get-refresh-path
     get-init-reference-path)
   (import 
     ; (rnrs)
     (chezscheme)
+    (scheme-langserver analysis util)
+
     (scheme-langserver analysis dependency rules library-import)
 
     (scheme-langserver virtual-file-system index-node)
@@ -53,7 +55,7 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
-(define (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node)
+(define (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node-list)
   (let* ([path (file-node-path file-node)]
       [path->id-map (file-linkage-path->id-map linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
@@ -75,10 +77,23 @@
       [new-imported-file-ids
         (map 
           (lambda(p) (hashtable-ref path->id-map path #f)) 
-          (get-imported-libraries-from-index-node root-library-node new-index-node))])
+          (apply append 
+            (map 
+              (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
+              new-index-node-list)))])
     (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
-    (map (lambda(column-id) (matrix-set! matrix id column-id 1)) new-imported-file-ids)
+    (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
     (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,id ,@reference-id-to))))
+
+(define (dedupe e)
+  (if (null? e) 
+    '()
+    (cons 
+      (car e) 
+      (dedupe 
+        (filter 
+          (lambda (x) (not (equal? x (car e)))) 
+          (cdr e))))))
 
 (define (matrix-expand-0 target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]
@@ -260,7 +275,7 @@
     (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
             [path (file-node-path file-node)]
-            [imported-libraries (get-imported-libraries-from-index-node root-library-node (document-index-node (file-node-document file-node)))])
+            [imported-libraries (get-library-identifier-list file-node)])
         (map (lambda (imported-library-path) 
                 (if (not (null? imported-library-path))
                   (matrix-set! matrix 

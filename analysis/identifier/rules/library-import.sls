@@ -268,7 +268,13 @@
       (find-meta library-identifier)
       (apply append (map 
         (lambda(n)
-          (import-from-external-file (document-index-node (file-node-document n))))
+          (map import-from-external-file 
+            (filter
+              (lambda (index-node)
+                (match (annotation-stripped (index-node-datum/annotations index-node))
+                  (['library (identifier **1) _ ... ] (equal? identifier library-identifier))
+                  (else #f)))
+              (document-index-node-list (file-node-document n)))))
         candidate-file-nodes)))))
 
 (define (import-from-external-file root-index-node)
