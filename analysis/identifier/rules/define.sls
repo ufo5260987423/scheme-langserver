@@ -25,8 +25,8 @@
 
 (define (define-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [library-identifiers (get-nearest-ancestor-library-identifier index-node)]
-        [expression (annotation-stripped ann)])
+      [library-identifiers (get-nearest-ancestor-library-identifier index-node)]
+      [expression (annotation-stripped ann)])
     (match expression
       [('define (identifier dummy0 ... ) dummy1 ... ) 
         (let ([reference (make-identifier-reference 

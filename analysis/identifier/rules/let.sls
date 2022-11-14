@@ -14,7 +14,7 @@
 
 (define (let-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (try
       (match expression
         [('let loop-identifier ((identifier no-use ... ) **1 ) _ ... ) 
@@ -140,10 +140,10 @@
 
 (define (private-process index-node let-node exclude document )
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)]
-        [reference 
-          (make-identifier-reference
-            (string->symbol expression)
+      [expression (annotation-stripped ann)]
+      [reference 
+        (make-identifier-reference
+          (string->symbol expression)
           document
           index-node
           '())])

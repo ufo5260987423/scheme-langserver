@@ -15,7 +15,7 @@
 
 (define (import-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (match expression
       [('library _ **1 ) 
         (map 
@@ -42,8 +42,8 @@
 
 (define (match-clause root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)]
-        [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
+      [expression (annotation-stripped ann)]
+      [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
       [('only (library-identifier **1) identifier **1) 
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
@@ -278,7 +278,7 @@
 
 (define (import-from-external-file root-index-node)
   (let* ([ann (index-node-datum/annotations root-index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (match expression 
       [('library _ **1 ) 
         (apply append (map 
@@ -299,7 +299,7 @@
 
 (define (match-export-clause index-node) 
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (match expression
       [('rename (internal-names external-names) **1) 
         (let loop ([exportion-nodes (cdr (index-node-children index-node))]

@@ -12,7 +12,7 @@
 
 (define (export-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (match expression
       [('library (library-identifiers **1) _ **1 ) 
         (map 
@@ -33,7 +33,7 @@
 
 (define (match-clause root-file-node document library-identifiers index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (match expression
       [('rename (internal-names external-names) **1) 
         (let loop ([children-index-nodes (cdr (index-node-children index-node))]

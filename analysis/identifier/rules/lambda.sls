@@ -14,7 +14,7 @@
 
 (define (lambda-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)])
     (try
       (match expression
         [('lambda (identifier **1) _ ... ) 
@@ -53,8 +53,8 @@
 
 (define (private-process index-node lambda-node exclude document )
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)]
-        [reference 
+      [expression (annotation-stripped ann)]
+      [reference 
           (make-identifier-reference
             (string->symbol expression)
           document

@@ -16,10 +16,10 @@
 ;;todo more test
 (define (involve-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)]
-        [library-identifier (get-nearest-ancestor-library-identifier index-node)]
-        [parent-index-node (index-node-parent index-node)]
-        [current-absolute-path (uri->path (document-uri document))])
+      [expression (annotation-stripped ann)]
+      [library-identifier (get-nearest-ancestor-library-identifier index-node)]
+      [parent-index-node (index-node-parent index-node)]
+      [current-absolute-path (uri->path (document-uri document))])
     (match expression
       [('involve (? string? path)) 
         (guard-for index-node 'involve '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
