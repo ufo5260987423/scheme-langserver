@@ -79,6 +79,6 @@
                   document
                   index-node
                   library-identifiers))
-                `(,(car references))))))]
+                references))))]
       [else '()])))
 )
