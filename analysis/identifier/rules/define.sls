@@ -1,8 +1,10 @@
 (library (scheme-langserver analysis identifier rules library-define)
-  (export library-define-process)
+  (export define-process)
   (import 
     (chezscheme) 
     (ufo-match)
+
+    (scheme-langserver analysis util)
 
     (scheme-langserver analysis identifier reference)
 
@@ -10,19 +12,20 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (library-define-process root-file-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-    (match expression
-      [('library (library-identifiers **1) _ **1 ) 
-        (map 
-          (lambda (child-node) (match-define root-file-node document library-identifiers child-node))
-          (index-node-children index-node))]
-      [else '()])
-    index-node))
+; (define (library-define-process root-file-node document index-node)
+;   (let* ([ann (index-node-datum/annotations index-node)]
+;         [expression (annotation-stripped ann)])
+;     (match expression
+;       [('library (library-identifiers **1) _ **1 ) 
+;         (map 
+;           (lambda (child-node) (match-define root-file-node document library-identifiers child-node))
+;           (index-node-children index-node))]
+;       [else '()])
+;     index-node))
 
-(define (match-define root-file-node document library-identifiers index-node)
+(define (define-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
+        [library-identifiers (get-nearest-ancestor-library-identifier index-node)]
         [expression (annotation-stripped ann)])
     (match expression
       [('define (identifier dummy0 ... ) dummy1 ... ) 

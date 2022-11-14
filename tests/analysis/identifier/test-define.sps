@@ -15,11 +15,12 @@
     (scheme-langserver virtual-file-system document))
 
 
-(test-begin "library-define-process")
+(test-begin "library-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() akku-acceptable-file?)]
             [target-file-node (walk-file root-file-node "./util/io.sls")]
             [document (file-node-document target-file-node)]
             [index-node (car (document-index-node-list document))])
+            (map (lambda (node) (define-process root-file-node document node)) (index-node-children index-node))
             (test-equal #t
                 (not (null? 
                     (find 
@@ -28,7 +29,6 @@
                                 (annotation-stripped 
                                     (index-node-datum/annotations 
                                         (identifier-reference-index-node reference)))))
-                        (index-node-references-import-in-this-node 
-                            (library-define-process root-file-node document index-node)))))))
+                        (index-node-references-import-in-this-node index-node))))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

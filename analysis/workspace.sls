@@ -160,11 +160,15 @@
       old-library-node-list)
     (init-library-node target-file-node root-library-node)))
 
+;; rules must be run as ordered
 (define (walk-and-process root-file-node document index-node)
-  (library-define-process root-file-node document index-node)
+  ;;1
+  (define-process root-file-node document index-node)
+  ;;2
   (let-process root-file-node document index-node)
   (lambda-process root-file-node document index-node)
   (involve-process root-file-node document index-node)
+
   (map 
     (lambda (child-index-node) 
       (walk-and-process root-file-node document child-index-node)) 
