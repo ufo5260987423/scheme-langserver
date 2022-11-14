@@ -40,6 +40,6 @@
     (make-location 
       (document-uri (identifier-reference-document reference)) 
       (make-range 
-        (source-object-bfp (annotation-source (index-node-datum/annotations (identifier-reference-index-node reference))))
-        (source-object-efp (annotation-source (index-node-datum/annotations (identifier-reference-index-node reference))))))))
+        (index-node-start (identifier-reference-index-node reference))
+        (index-node-end (identifier-reference-index-node reference))))))
 )
