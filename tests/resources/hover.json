@@ -1,0 +1,14 @@
+{
+    "id": "8",
+    "method": "textDocument/hover",
+    "params": {
+        "position" : {
+            "line": 64,
+            "character": 22
+        },
+        "textDocument" : {
+            "uri" : "file://~a/analysis/workspace.sls"
+        }
+    },
+    "jsonrpc": "2.0"
+}
