@@ -21,7 +21,7 @@
      (let ((pwd (current-directory)))
        (if (equal? path ".") ;; special case "." so at least that works
          pwd
-         (string-append pwd (directory-separator) path))))))
+         (string-append pwd "/" path))))))
 
 (define (uri->path uri)
   (cond

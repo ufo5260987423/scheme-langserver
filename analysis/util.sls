@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis util)
-  (export get-library-identifier-list)
+  (export 
+    get-library-identifier-list 
+    get-nearest-ancestor-library-identifier)
   (import 
     (chezscheme) 
     
@@ -23,4 +25,11 @@
                                 [('library (name **1) _ ... ) name]
                                 [else '()]))
                         index-node-list))))))
+
+(define (get-nearest-ancestor-library-identifier index-node)
+    (if (null? index-node)
+        '()
+        (match (annotation-stripped (index-node-datum/annotations index-node))
+            [('library (name **1) _ ... ) name]
+            [else (get-nearest-ancestor-library-identifier (index-node-parent index-node))])))
 )

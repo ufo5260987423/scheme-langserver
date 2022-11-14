@@ -41,6 +41,7 @@
     (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis identifier rules lambda)
     (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier rules involve)
 
     (scheme-langserver analysis package-manager akku)
 
@@ -163,6 +164,7 @@
   (library-define-process root-file-node document index-node)
   (let-process root-file-node document index-node)
   (lambda-process root-file-node document index-node)
+  (involve-process root-file-node document index-node)
   (map 
     (lambda (child-index-node) 
       (walk-and-process root-file-node document child-index-node)) 
