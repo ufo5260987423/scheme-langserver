@@ -17,7 +17,7 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('let loop-identifier ((identifier no-use ... ) **1 ) _ ... ) 
+        [('let (? symbol? loop-identifier) (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([loop-reference-list (private-process (cadr (index-node-children index-node)) index-node '() document)])
             (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
@@ -30,7 +30,7 @@
                       (index-node-excluded-references identifier-parent-index-node)
                       (private-process identifier-index-node index-node loop-reference-list document)))
                   (loop (cdr rest))))))]
-        [('let ((identifier no-use ... ) **1 ) _ ... ) 
+        [('let (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
@@ -42,7 +42,7 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
-        [('let-syntax ((identifier no-use ... ) **1 ) _ ... ) 
+        [('let-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'let-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
@@ -54,7 +54,7 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
-        [('let-values ((identifier no-use ... ) **1 ) _ ... ) 
+        [('let-values (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'let-values '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
@@ -66,7 +66,7 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
-        [('let* ((identifier no-use ... ) **1 ) _ ... ) 
+        [('let* (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([include '()] 
                 [rest (index-node-children (cadr (index-node-children index-node)))])
@@ -85,7 +85,7 @@
                     (index-node-references-import-in-this-node identifier-parent-index-node)
                     include))
                 (loop (append include reference-list) (cdr rest)))))]
-        [('let*-values ((identifier no-use ... ) **1 ) _ ... ) 
+        [('let*-values (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'let*-values '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([include '()] 
                 [rest (index-node-children (cadr (index-node-children index-node)))])
@@ -104,7 +104,7 @@
                     (index-node-references-import-in-this-node identifier-parent-index-node)
                     include))
                 (loop (append include reference-list) (cdr rest)))))]
-        [('letrec ((identifier no-use ... ) **1 ) _ ... ) 
+        [('letrec (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([exclude '()]
                 [rest (index-node-children (cadr (index-node-children index-node)))])
@@ -112,7 +112,7 @@
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))])
                 (loop (append exclude (private-process identifier-index-node index-node exclude document)) (cdr rest)))))]
-        [('letrec-syntax ((identifier no-use ... ) **1 ) _ ... ) 
+        [('letrec-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'letrec-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([exclude '()]
                 [rest (index-node-children (cadr (index-node-children index-node)))])
@@ -120,7 +120,7 @@
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))])
                 (loop (append exclude (private-process identifier-index-node index-node exclude document)) (cdr rest)))))]
-        [('letrec* ((identifier no-use ... ) **1 ) _ ... ) 
+        [('letrec* (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([include '()] 
                 [rest (index-node-children (cadr (index-node-children index-node)))])

@@ -17,7 +17,7 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('lambda (identifier **1) _ ... ) 
+        [('lambda ((? symbol? identifier) **1) _ ... ) 
           (guard-for index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
@@ -29,7 +29,7 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
-        [('case-lambda [(identifier **1) _ ...] _ ... ) 
+        [('case-lambda [_ ...] _ ... ) 
           (guard-for 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
             (if (not (null? rest))
@@ -53,30 +53,31 @@
 
 (define (private-process index-node lambda-node exclude document )
   (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [reference 
-          (make-identifier-reference
-            (string->symbol expression)
-          document
+      [expression (annotation-stripped ann)])
+    (if (symbol? expression)
+      (let ([reference 
+            (make-identifier-reference
+              expression
+              document
+              index-node
+              '())])
+        (index-node-references-export-to-other-node-set! 
           index-node
-          '())])
-    (index-node-references-export-to-other-node-set! 
-      index-node
-      (append 
-        (index-node-references-export-to-other-node index-node)
-          `(,reference)))
+          (append 
+            (index-node-references-export-to-other-node index-node)
+            `(,reference)))
 
-    (index-node-references-import-in-this-node-set! 
-      lambda-node
-      (append 
-        (index-node-references-import-in-this-node lambda-node)
-          `(,reference)))
+        (index-node-references-import-in-this-node-set! 
+          lambda-node
+          (append 
+            (index-node-references-import-in-this-node lambda-node)
+            `(,reference)))
 
-    (index-node-excluded-references-set! 
-      (index-node-parent index-node)
-      (append 
-        (index-node-excluded-references index-node)
-        exclude))
-
-    `(,reference)))
+        (index-node-excluded-references-set! 
+          (index-node-parent index-node)
+          (append 
+            (index-node-excluded-references index-node)
+            exclude))
+        `(,reference))
+      '())))
 )
