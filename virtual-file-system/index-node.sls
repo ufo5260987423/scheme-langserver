@@ -40,8 +40,11 @@
   (map clear-references-for (index-node-children index-node)))
 
 (define (pick-index-node-from index-node-list position)
-  (filter (lambda (item) (not (null? item)))
-    (map (lambda (index-node) (pick-index-node-by index-node position)) index-node-list)))
+  (let ([result (filter (lambda (item) (not (null? item)))
+        (map (lambda (index-node) (pick-index-node-by index-node position)) index-node-list))])
+    (if (null? result)
+      result
+      (car result))))
 
 (define (pick-index-node-by index-node position)
   (if (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position))
