@@ -20,18 +20,16 @@ This project is still in early development, so you may run into rough edges with
 1. Top-level and local identifiers binding completion.
 2. Goto definition.
 3. Compatible with package manager: Akku.
+4. File changes synchronizing and corresponding index changing.
 
 ## TODOs
 
-4. Fully compatible with r6rs standard.
-5. File modification notification and corresponding index changing.
+5. Fully compatible with r6rs standard.
 6. Cross-platform Parallel indexing.
 7. Macro expanding.
 8. Code eval.
 9. Code diagnostic.
-10. Fully r6rs compability.
-11. Add cross-language semantic supporting.
-12. File-change notification to improve workspace refreshing.
+10. Add cross-language semantic supporting.
 
 # Test
 > bash test.sh
