@@ -23,6 +23,7 @@
     (scheme-langserver analysis util)
 
     (scheme-langserver analysis dependency rules library-import)
+    (scheme-langserver analysis dependency rules involve)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -278,13 +279,25 @@
             [imported-libraries 
               (dedupe (apply append 
                 (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
+                  (document-index-node-list (file-node-document file-node)))))]
+            [involved-files 
+              (dedupe (apply append 
+                (map (lambda (index-node) (involve-process root-library-node (file-node-document file-node) index-node))
                   (document-index-node-list (file-node-document file-node)))))])
+
         (map (lambda (imported-library-path) 
                 (if (not (null? imported-library-path))
                   (matrix-set! matrix 
                     (hashtable-ref path->id-map path #f) 
                     (hashtable-ref path->id-map imported-library-path #f))))
-            imported-libraries)
+          imported-libraries)
+
+        (map (lambda (file-node) 
+                (matrix-set! matrix 
+                  (hashtable-ref path->id-map path #f) 
+                  (hashtable-ref path->id-map (file-node-path file-node) #f)))
+          involved-files)
+        
         (loop (cdr file-nodes)))))
   (map  (lambda (node) 
           (init-matrix node root-library-node path->id-map matrix)) 
