@@ -38,7 +38,8 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference)
-  (let* ([index-node (identifier-reference-index-node reference)]
+  (let* ([not-target-index-node (identifier-reference-index-node reference)]
+      [index-node (index-node-parent not-target-index-node)]
       [document (identifier-reference-document reference)]
       [text (document-text document)]
       [start-pos (index-node-start index-node)]
@@ -46,7 +47,7 @@
       [parent-index-node-end-list 
         (filter 
           (lambda (end-pos) (< end-pos start-pos))
-          (sort > (map index-node-end (index-node-parent index-node))))]
+          (sort > (map index-node-end (index-node-children (index-node-parent index-node)))))]
       [document-index-node-end-list 
         (filter 
           (lambda (end-pos) (< end-pos start-pos)) 

@@ -38,7 +38,7 @@
         ["textdocument/didclose" (did-close workspace params)]
         ["textDocument/didChange" (did-change workspace params)]
 
-        ["textDocument/hover" (send-message server-instance (hover id params))]
+        ["textDocument/hover" (send-message server-instance (hover workspace params))]
         ["textDocument/completion" (send-message server-instance (completion workspace params))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
