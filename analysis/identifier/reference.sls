@@ -21,8 +21,8 @@
     (immutable index-node)
     (immutable library-identifier)))
 
-(define (guard-for current-index-node target-identifier . library-identifier-rest)
-  (let ([candidates (find-available-references-for current-index-node target-identifier)])
+(define (guard-for document current-index-node target-identifier . library-identifier-rest)
+  (let ([candidates (find-available-references-for document current-index-node target-identifier)])
     (if (null? candidates)
       (raise "no such identifier")
       (let ([candidate (car candidates)])

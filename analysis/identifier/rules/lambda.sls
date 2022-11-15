@@ -18,7 +18,7 @@
     (try
       (match expression
         [('lambda ((? symbol? identifier) **1) _ ... ) 
-          (guard-for index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
@@ -29,8 +29,8 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
-        [('case-lambda [_ ...] _ ... ) 
-          (guard-for 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        [('case-lambda (_ ...) _ ... ) 
+          (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
             (if (not (null? rest))
               (let* ([identifier-grand-parent-index-node (car rest)]

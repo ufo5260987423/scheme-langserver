@@ -22,7 +22,7 @@
       [current-absolute-path (uri->path (document-uri document))])
     (match expression
       [('involve (? string? path)) 
-        (guard-for index-node 'involve '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        (guard-for document index-node 'involve '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         (let ([target-file-node 
               (cond
                 ; [(not (string? path)) '()]

@@ -36,6 +36,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
 
+    (scheme-langserver analysis identifier rules define-record-type)
     (scheme-langserver analysis identifier rules library-define)
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
@@ -164,6 +165,7 @@
 (define (walk-and-process root-file-node document index-node)
   ;;1
   (define-process root-file-node document index-node)
+  (define-record-type-process root-file-node document index-node)
   ;;2
   (let-process root-file-node document index-node)
   (lambda-process root-file-node document index-node)

@@ -20,12 +20,18 @@
       [target-parent-index-node (index-node-parent index-node)])
     (match expression
       [('define-record-type name-list) 
-        (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+      (pretty-print 1)
+        (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+      (pretty-print 2)
         (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))]
-      [('define-record-type (? symbol? name) (_ ...) **1 ) 
-        (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
-        (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
-        (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
+      ; [('define-record-type (? symbol? name) (_ ...) **1 ) 
+      ;   (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+      ;   (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
+      ;   (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
+      ; [('define-record-type ((? symbol? name) _ **1) (_ ...) **1 ) 
+      ;   (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+      ;   (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
+      ;   (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
       [else '()])))
 
 (define (process-define-record-type-tail document target-parent-index-node index-node-list name)
@@ -35,9 +41,9 @@
           [ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
         (match expression
-          [('fields _ **1) (process-fields-list document target-parent-index-node current-index-node name '())]
+          [('fields _ **1) (process-fields-list document target-parent-index-node index-node name '())]
           [('parent (? symbol? parent-name)) 
-            (let loop ([references (find-available-references-for document current-index-node parent-name)])
+            (let loop ([references (find-available-references-for document index-node parent-name)])
               (if (not (null? references))
                 (let* ([current-reference (car references)]
                     [binding-index-node (cadr (index-node-children index-node))]
@@ -50,11 +56,16 @@
                     [grand-parent-index-node (index-node-parent parent-index-node)]
                     [grand-parent-children-index-node (index-node-children grand-parent-index-node)])
                   (match parent-expression 
-                    [('define-record-type name-list dummy0 ... ('fields _ **1) dummy1 ...)
+                    [('define-record-type name-list ('fields _ **1) dummy1 ...)
                       (map 
                         (lambda (index-node-tmp)
                           (process-fields-list document target-parent-index-node index-node-tmp name binding-index-node))
                         (cddr parent-children-index-node))]
+                    ; [('define-record-type name-list dummy0 **1 ('fields _ **1) dummy1 ...)
+                    ;   (map 
+                    ;     (lambda (index-node-tmp)
+                    ;       (process-fields-list document target-parent-index-node index-node-tmp name binding-index-node))
+                    ;     (cddr parent-children-index-node))]
                     [else 
                       (map 
                         (lambda (index-node-tmp)
@@ -76,19 +87,19 @@
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
                 [set-index-node (if (null? binding-index-node) (caddr current-children) binding-index-node)]
-                [name-identifier-refernce
+                [name-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     name-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [get-identifier-refernce
+                [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [set-identifier-refernce
+                [set-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-set)))
                     document
@@ -119,19 +130,19 @@
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
                 [set-index-node name-index-node]
-                [name-identifier-refernce
+                [name-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     name-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [get-identifier-refernce
+                [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [set-identifier-refernce
+                [set-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name) "-set"))
                     document
@@ -162,19 +173,19 @@
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node name-index-node]
                 [set-index-node name-index-node]
-                [name-identifier-refernce
+                [name-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     name-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [get-identifier-refernce
+                [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name) "-get"))
                     document
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [set-identifier-refernce
+                [set-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name) "-set"))
                     document
@@ -204,13 +215,13 @@
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
-                [name-identifier-refernce
+                [name-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     name-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [get-identifier-refernce
+                [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
@@ -233,13 +244,13 @@
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node name-index-node]
-                [name-identifier-refernce
+                [name-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     name-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
-                [get-identifier-refernce
+                [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name) "-get"))
                     document
@@ -266,7 +277,7 @@
       [expression (annotation-stripped ann)])
     (match expression 
       [(? symbol? name) 
-        (let ([name-index-node index-node]
+        (let* ([name-index-node index-node]
             [constructor-index-node index-node]
             [predicator-index-node index-node]
             [name-identifier-reference
