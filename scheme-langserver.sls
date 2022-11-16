@@ -118,14 +118,14 @@
               'change 2)]
         [server-capabilities (make-alist 
               'textDocumentSync text-document-body
-              ; 'hoverProvider #t
+              'hoverProvider #t
               'definitionProvider #t
-              'referencesProvider #t
+              ; 'referencesProvider #t
               ; 'workspaceSymbol #t
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t
               ; 'callHierarchyProvider #t
-              ; 'completionProvider (make-alist 'triggerCharacters (list "("))
+              'completionProvider (make-alist 'triggerCharacters (list "("))
               ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
               ; 'implementationProvider #t
               ; 'renameProvider renameProvider
