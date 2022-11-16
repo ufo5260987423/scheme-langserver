@@ -12,6 +12,20 @@ Your donation will make this world better. Also, you can issue your advice and I
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
+# Setup
+## Installation 
+1. Install [Chez Scheme](https://cisco.github.io/ChezScheme/);
+2. Install [Akku](https://akkuscm.org/)；
+3. Clone scheme-langserver newest release code into {target-directory-path}/scheme-langserver;
+4. Run code as:
+```
+cd {target-directory-path}/scheme-langserver;
+akku install
+bash .akku/env
+echo '(compile-file "scheme-langserver.sls")'|scheme
+```
+## Configuration for [LunarVim](https://www.lunarvim.org/)
+
 # Status 
 
 This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.

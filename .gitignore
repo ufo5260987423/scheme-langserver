@@ -17,6 +17,8 @@ gen### JetBrains template
 *.akku
 *.sig
 
+*.so
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
