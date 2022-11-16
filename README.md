@@ -17,7 +17,14 @@ Your donation will make this world better. Also, you can issue your advice and I
 1. Install [Chez Scheme](https://cisco.github.io/ChezScheme/);
 2. Install [Akku](https://akkuscm.org/)；
 3. Clone scheme-langserver newest release code into {target-directory-path}/scheme-langserver;
-4. Run code as:
+4.  for Linux (Ubuntu)
+```
+cd {target-directory-path}/scheme-langserver;
+akku install
+bash .akku/env
+echo '(compile-file "scheme-langserver.sls")'|scheme
+```
+5.  for Windows
 ```
 cd {target-directory-path}/scheme-langserver;
 akku install
