@@ -25,6 +25,8 @@
     (scheme-langserver analysis dependency rules library-import)
     (scheme-langserver analysis dependency rules involve)
 
+    (scheme-langserver util dedupe)
+
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system library-node)
@@ -85,16 +87,6 @@
     (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
     (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
     (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,id ,@reference-id-to))))
-
-(define (dedupe e)
-  (if (null? e) 
-    '()
-    (cons 
-      (car e) 
-      (dedupe 
-        (filter 
-          (lambda (x) (not (equal? x (car e)))) 
-          (cdr e))))))
 
 (define (matrix-expand-0 target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]

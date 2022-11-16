@@ -14,6 +14,7 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util io)
+    (scheme-langserver util dedupe)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -34,7 +35,7 @@
       [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) )]
       [available-reference (find-available-references-for document target-index-node prefix)])
     (make-alist 'content (list->vector 
-      (map identifier-reference->hover available-reference)))))
+      (dedupe (map identifier-reference->hover available-reference))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference)
