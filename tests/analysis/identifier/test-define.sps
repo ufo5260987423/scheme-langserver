@@ -15,7 +15,7 @@
     (scheme-langserver virtual-file-system document))
 
 
-(test-begin "library-process")
+(test-begin "define-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() akku-acceptable-file?)]
             [target-file-node (walk-file root-file-node "./util/io.sls")]
             [document (file-node-document target-file-node)]
