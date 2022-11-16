@@ -25,11 +25,11 @@
           (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
           (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))]
         [('define-record-type (? symbol? name) (dummy ...) ... ) 
-          (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+          (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
           (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
           (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name) ]
         [('define-record-type ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
-          (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+          (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
           (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
           (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
         [else '()])
