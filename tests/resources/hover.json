@@ -3,7 +3,7 @@
     "method": "textDocument/hover",
     "params": {
         "position" : {
-            "line": 64,
+            "line": 65,
             "character": 22
         },
         "textDocument" : {
