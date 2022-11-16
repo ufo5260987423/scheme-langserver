@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver util path)
+    (scheme-langserver util try)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)
@@ -18,21 +19,22 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [target-parent-index-node (index-node-parent index-node)])
-    (match expression
-      [('define-record-type name-list) 
-      (pretty-print 1)
-        (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
-      (pretty-print 2)
-        (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))]
-      ; [('define-record-type (? symbol? name) (_ ...) **1 ) 
-      ;   (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
-      ;   (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
-      ;   (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
-      ; [('define-record-type ((? symbol? name) _ **1) (_ ...) **1 ) 
-      ;   (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
-      ;   (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
-      ;   (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
-      [else '()])))
+    (try
+      (match expression
+        [('define-record-type name-list) 
+          (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+          (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))]
+        ; [('define-record-type (? symbol? name) (_ ...) **1 ) 
+        ;   (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+        ;   (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
+        ;   (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
+        ; [('define-record-type ((? symbol? name) _ **1) (_ ...) **1 ) 
+        ;   (guard-for index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+        ;   (process-name-list document target-parent-index-node (cadr (index-node-children index-node)))
+        ;   (process-define-record-type-tail document target-parent-index-node (cddr (index-node-children index-node)) name)]
+        [else '()])
+      (except c
+        [else '()]))))
 
 (define (process-define-record-type-tail document target-parent-index-node index-node-list name)
   (let loop ([body index-node-list])
