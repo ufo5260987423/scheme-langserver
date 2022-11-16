@@ -162,6 +162,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
+        [(log-path) (init-server (standard-input-port) (standard-output-port) (open-file-output-port log-path (file-options replace)) #f)]
         [() (init-server (standard-input-port) (standard-output-port) (current-output-port) #f)]
         [(input-port output-port log-port enable-multi-thread?) 
           (let ([server-instance 
