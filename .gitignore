@@ -18,6 +18,11 @@ gen### JetBrains template
 *.sig
 
 *.so
+*.boot
+run
+run.chez
+run.generated.c
+run.wpo
 
 # User-specific stuff
 .idea/**/workspace.xml

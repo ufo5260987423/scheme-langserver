@@ -13,24 +13,27 @@ Your donation will make this world better. Also, you can issue your advice and I
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 # Setup
-## Installation 
-1. Install [Chez Scheme](https://cisco.github.io/ChezScheme/);
-2. Install [Akku](https://akkuscm.org/)；
-3. Clone scheme-langserver newest release code into {target-directory-path}/scheme-langserver;
-4.  for Linux (Ubuntu)
+## Pre-require
+1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
+>NOTE
+If you wanted to enable scheme-langserver's muti-thread features, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option.
+2. [Akku](https://akkuscm.org/)；
+3. [chez-exe](https://github.com/gwatt/chez-exe)；
+>NOTE
+[chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/ta6le`
+
+## Manually Installation and Run
+for Linux
 ```
-cd {target-directory-path}/scheme-langserver;
+git clone https://github.com/ufo5260987423/scheme-langserver
+cd scheme-langserver;
 akku install
 bash .akku/env
-echo '(compile-file "scheme-langserver.sls")'|scheme
+compile-chez-program run.ss
+./run path-to-logfile
 ```
-5.  for Windows
-```
-cd {target-directory-path}/scheme-langserver;
-akku install
-bash .akku/env
-echo '(compile-file "scheme-langserver.sls")'|scheme
-```
+TODO: for Windows
+
 ## Configuration for [LunarVim](https://www.lunarvim.org/)
 
 # Status 
