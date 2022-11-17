@@ -26,7 +26,7 @@ If you wanted to enable scheme-langserver's muti-thread feature, it would requir
 ### For Linux
 ```bash
 git clone https://github.com/ufo5260987423/scheme-langserver
-cd scheme-langserver;
+cd scheme-langserver
 akku install
 bash .akku/env
 compile-chez-program run.ss
