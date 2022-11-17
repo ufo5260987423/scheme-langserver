@@ -10,8 +10,14 @@
             [
                 { 
                     "range" : { 
-                        "start" : 33, 
-                        "end" : 35 
+                        "start" : {
+                            "line":0,
+                            "character":33
+                        }, 
+                        "end" : {
+                            "line":0,
+                            "character":35
+                        } 
                     }, 
                     "text" : "ios" 
                 }

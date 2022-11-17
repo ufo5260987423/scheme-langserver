@@ -77,12 +77,15 @@ This project is still in early development, so you may run into rough edges with
 
 ## TODOs
 
-5. Fully compatible with r6rs standard.
-6. Cross-platform Parallel indexing.
-7. Macro expanding.
-8. Code eval.
-9. Code diagnostic.
-10. Add cross-language semantic supporting.
+5. Renaming.
+7. Fully compatible with r6rs standard.
+8. Cross-platform Parallel indexing.
+9. Macro expanding.
+10. Code eval.
+11. Code diagnostic.
+12. Add cross-language semantic supporting.
+
+# Controbuting 
 
 # Test
 > bash test.sh

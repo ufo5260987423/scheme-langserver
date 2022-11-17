@@ -81,7 +81,9 @@
 ;;  receive them.
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
-                    (string-replace text temp-text (range-start range) (range-end range))))))))])
+                    (string-replace text temp-text 
+                      (text+position->int text (range-start range))
+                      (text+position->int text (range-end range)))))))))])
     (if (null? mutex)
       (body)
       (with-mutex mutex

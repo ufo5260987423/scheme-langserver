@@ -106,7 +106,7 @@
   (make-alist 'line (position-line instance) 'character (position-character instance)))
 
 (define (alist->range alist)
-  (make-range (assq-ref alist 'start) (assq-ref alist 'end)))
+  (make-range (alist->position (assq-ref alist 'start)) (alist->position (assq-ref alist 'end))))
 
 (define (range->alist instance)
   (make-alist 'start (range-start instance) 'end (range-end instance)))
