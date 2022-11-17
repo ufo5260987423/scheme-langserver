@@ -16,7 +16,7 @@ Your donation will make this world better. Also, you can issue your advice and I
 ## Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
-If you wanted to enable scheme-langserver's muti-thread features, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option.
+If you wanted to enable scheme-langserver's muti-thread feature, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. This uses chez scheme's FFI to call up the pipe() and poll() system calls, and therefore requires a UNIX-like operating system to function correctly.  It has been tested with linux and should work on the BSDs and on Mac OS X. If using OS X, the glibtool package will be required.
 2. [Akku](https://akkuscm.org/)；
 3. [chez-exe](https://github.com/gwatt/chez-exe)；
 >NOTE
