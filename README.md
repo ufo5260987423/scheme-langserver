@@ -13,7 +13,8 @@ Your donation will make this world better. Also, you can issue your advice and I
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 # Setup
-## Pre-require
+## Manually Installation 
+### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
 If you wanted to enable scheme-langserver's muti-thread feature, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. This uses chez scheme's FFI to call up the pipe() and poll() system calls, and therefore requires a UNIX-like operating system to function correctly.  It has been tested with linux and should work on the BSDs and on Mac OS X. If using OS X, the glibtool package will be required.
@@ -22,8 +23,7 @@ If you wanted to enable scheme-langserver's muti-thread feature, it would requir
 >NOTE
 [chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/ta6le`
 
-## Manually Installation and Run
-for Linux
+### For Linux
 ```
 git clone https://github.com/ufo5260987423/scheme-langserver
 cd scheme-langserver;
@@ -32,9 +32,11 @@ bash .akku/env
 compile-chez-program run.ss
 ./run path-to-logfile
 ```
-TODO: for Windows
+### TODO: for Windows
 
-## Configuration for [LunarVim](https://www.lunarvim.org/)
+## Configuration and Run ( for [LunarVim](https://www.lunarvim.org/) )
+
+## Configuration and Run ( for [VScode](https://code.visualstudio.com/) )
 
 # Status 
 

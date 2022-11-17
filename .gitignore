@@ -20,9 +20,9 @@ gen### JetBrains template
 *.so
 *.boot
 run
-run.chez
-run.generated.c
-run.wpo
+*.chez
+*.generated.c
+*.wpo
 
 # User-specific stuff
 .idea/**/workspace.xml
