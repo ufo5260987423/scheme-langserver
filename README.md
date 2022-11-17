@@ -21,7 +21,7 @@ If you wanted to enable scheme-langserver's muti-thread feature, it would requir
 2. [Akku](https://akkuscm.org/)；
 3. [chez-exe](https://github.com/gwatt/chez-exe)；
 >NOTE
-[chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/ta6le`
+[chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/{machine-type}`
 
 ### For Linux
 ```
