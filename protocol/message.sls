@@ -69,9 +69,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (do-log message server-instance)
-    (put-string (server-log-port server-instance) message)
-    (put-string (server-log-port server-instance) "\n")
-    (flush-output-port (server-log-port server-instance)))
+    (if (not (null? (server-log-port server-instance)))
+        (begin 
+            (put-string (server-log-port server-instance) message)
+            (put-string (server-log-port server-instance) "\n")
+            (flush-output-port (server-log-port server-instance)))))
 
 (define (read-message server-instance)
     (let* ( 

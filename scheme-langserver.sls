@@ -125,8 +125,8 @@
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t
               ; 'callHierarchyProvider #t
-              'completionProvider (make-alist 'triggerCharacters (list "("))
-              ; 'signatureHelpProvider (make-alist 'triggerCharacters (list " " ")" "]"))
+              'completionProvider (make-alist 'triggerCharacters (vector "("))
+              ; 'signatureHelpProvider (make-alist 'triggerCharacters (vector " " ")" "]"))
               ; 'implementationProvider #t
               ; 'renameProvider renameProvider
               ; 'codeActionProvider #t
@@ -135,7 +135,7 @@
               ; 'documentLinkProvider #t
               ; 'documentFormattingProvider #t
               ; 'documentRangeFormattingProvider #t
-              ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))
+              ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
               ; 'foldingRangeProvider #t
               ; 'colorProvider #t
@@ -162,8 +162,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
+        [() (init-server (standard-input-port) (standard-output-port) '() #f)]
         [(log-path) (init-server (standard-input-port) (standard-output-port) (open-file-output-port log-path (file-options replace)) #f)]
-        [() (init-server (standard-input-port) (standard-output-port) (current-output-port) #f)]
         [(input-port output-port log-port enable-multi-thread?) 
           (let ([server-instance 
                   (if enable-multi-thread?
