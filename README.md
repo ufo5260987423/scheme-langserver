@@ -13,7 +13,7 @@ Your donation will make this world better. Also, you can issue your advice and I
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 # Setup
-## Manually Installation 
+## Building
 ### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
@@ -34,9 +34,9 @@ compile-chez-program run.ss
 ```
 ### TODO: for Windows
 
-## Configuration and Run ( for [LunarVim](https://www.lunarvim.org/) )
+## Installation for [LunarVim](https://www.lunarvim.org/)
 
-## Configuration and Run ( for [VScode](https://code.visualstudio.com/) )
+## TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 # Status 
 
