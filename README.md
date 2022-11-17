@@ -24,7 +24,7 @@ If you wanted to enable scheme-langserver's muti-thread feature, it would requir
 [chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/{machine-type}`
 
 ### For Linux
-```
+```bash
 git clone https://github.com/ufo5260987423/scheme-langserver
 cd scheme-langserver;
 akku install
@@ -35,6 +35,33 @@ compile-chez-program run.ss
 ### TODO: for Windows
 
 ## Installation for [LunarVim](https://www.lunarvim.org/)
+In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
+
+But now, for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), we have to manually do some installation: after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+```lua
+local util = require 'lspconfig.util'
+local bin_name = '{path-to-run}'
+local cmd = { bin_name }
+
+return {
+  default_config = {
+    cmd = cmd,
+    filetypes = { 'scheme' },
+    root_dir = util.find_git_ancestor,
+    single_file_support = true,
+  },
+  docs = {
+    description = [[
+https://github.com/ufo5260987423/scheme-langserver
+`scheme-langserver`, a language server protocol implementation for scheme
+]]   ,
+  },
+}
+```
+Then configure your `~/.config/lvim/init.lua` and add following codes like:
+```lua
+require 'lspconfig'.scheme_langserver.setup {}
+```
 
 ## TODO: Installation for [VScode](https://code.visualstudio.com/)
 
