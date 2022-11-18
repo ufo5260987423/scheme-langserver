@@ -63,6 +63,12 @@ Then configure your `~/.config/lvim/init.lua` and add following codes like:
 require 'lspconfig'.scheme_langserver.setup {}
 ```
 
+>NOTE
+For LunarVim, default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/ftdetec/` is to add `sls.lua` file as following:
+```lua
+vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
+```
+
 ## TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 # Status 
@@ -79,6 +85,7 @@ This project is still in early development, so you may run into rough edges with
 ## TODOs
 
 5. Renaming.
+6. *-syntax(define-syntax, let-syntax, etc.) based identifier binding extension.
 7. Fully compatible with r6rs standard.
 8. Cross-platform Parallel indexing.
 9. Macro expanding.
