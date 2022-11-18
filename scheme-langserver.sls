@@ -39,34 +39,34 @@
           (try
             (did-open workspace params)
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code ))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
         ["textdocument/didclose" 
           (try
             (did-close workspace params)
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code ))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
         ["textDocument/didChange" 
           (try
             (did-change workspace params)
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code ))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
         ["textDocument/hover" 
           (try
             (send-message server-instance (success-response id (hover workspace params)))
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code ))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
         ["textDocument/completion" 
           (try
             (send-message server-instance (success-response id (completion workspace params)))
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code ))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
         ["textDocument/definition" 
           (try
             (send-message server-instance (success-response id (definition workspace params)))
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code ))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
           ; ["textDocument/references"
