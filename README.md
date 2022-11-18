@@ -79,9 +79,10 @@ This project is still in early development, so you may run into rough edges with
 1. Top-level and local identifiers binding completion.
 ![Top-level and local identifiers binding](./doc/figure/auto-completion.png "Top-level and local identifiers binding")
 2. Goto definition.
+![Goto Definition with telescope.nvim](./doc/figure/definition.png "Goto Definition with telescope.nvim")
 3. Compatible with package manager: Akku.
 4. File changes synchronizing and corresponding index changing.
-
+5. Hover.
 ## TODOs
 
 5. Renaming.
