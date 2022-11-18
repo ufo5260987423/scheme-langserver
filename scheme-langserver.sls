@@ -29,7 +29,7 @@
       (and 
         (server-shutdown? server-instance)
         (not (equal? "initialize" method)))
-      (send-message (fail-response id server-not-initialized "not initialized"))
+      (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
