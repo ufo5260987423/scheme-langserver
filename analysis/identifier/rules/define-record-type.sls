@@ -89,12 +89,6 @@
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
                 [set-index-node (if (null? binding-index-node) (caddr current-children) binding-index-node)]
-                [name-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name)))
-                    document
-                    name-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
                 [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
@@ -107,13 +101,6 @@
                     document
                     set-index-node
                     (get-nearest-ancestor-library-identifier index-node))])
-              (index-node-references-export-to-other-node-set!
-                name-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
-
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -132,12 +119,6 @@
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
                 [set-index-node name-index-node]
-                [name-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name)))
-                    document
-                    name-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
                 [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
@@ -150,13 +131,6 @@
                     document
                     set-index-node
                     (get-nearest-ancestor-library-identifier index-node))])
-              (index-node-references-export-to-other-node-set!
-                name-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
-
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -175,15 +149,9 @@
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node name-index-node]
                 [set-index-node name-index-node]
-                [name-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name)))
-                    document
-                    name-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
                 [get-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name) "-get"))
+                    (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node))]
@@ -193,13 +161,6 @@
                     document
                     set-index-node
                     (get-nearest-ancestor-library-identifier index-node))])
-              (index-node-references-export-to-other-node-set!
-                name-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
-
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -217,25 +178,12 @@
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
-                [name-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name)))
-                    document
-                    name-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
                 [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node))])
-              (index-node-references-export-to-other-node-set!
-                name-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
-
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -246,25 +194,12 @@
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
                 [get-index-node name-index-node]
-                [name-identifier-reference
+                [get-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
-                    name-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
-                [get-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name) "-get"))
-                    document
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node))])
-              (index-node-references-export-to-other-node-set!
-                name-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
-
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
