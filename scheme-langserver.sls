@@ -40,7 +40,7 @@
             (did-open workspace params)
             (except c
               [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
-        ["textdocument/didclose" 
+        ["textdocument/didClose" 
           (try
             (did-close workspace params)
             (except c

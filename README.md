@@ -71,6 +71,7 @@ This project is still in early development, so you may run into rough edges with
 
 ## Features
 1. Top-level and local identifiers binding completion.
+![Top-level identifiers binding](./doc/figure/top-level-auto-completion.png "Top-level identifiers binding")
 2. Goto definition.
 3. Compatible with package manager: Akku.
 4. File changes synchronizing and corresponding index changing.
