@@ -26,21 +26,19 @@
 (define (did-open workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [path (uri->path (text-document-uri text-document))]
+      [maybe (walk-file (workspace-file-node workspace) path)]
       [file-node 
-        (walk-file 
-          (workspace-file-node 
-            (if (null? (walk-file (workspace-file-node workspace) path))
-              (refresh-workspace workspace)
-              workspace)) 
-          path)]
-      [document (file-node-document file-node)]
+        (if (null? maybe)
+          (begin 
+            (refresh-workspace workspace)
+            (walk-file (workspace-file-node workspace) path))
+          maybe)]
       [text (text-document-text text-document)]
       [mutex (workspace-mutex workspace)])
-      (if (not (equal? text (document-text document)))
-        (if (null? mutex)
-          (refresh-workspace-for workspace file-node text)
-          (with-mutex mutex 
-            (refresh-workspace-for workspace file-node text))))))
+    (if (null? mutex)
+      (refresh-workspace-for workspace file-node text)
+      (with-mutex mutex 
+        (refresh-workspace-for workspace file-node text)))))
 
 (define (did-close workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
