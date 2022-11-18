@@ -5,6 +5,7 @@
     position?
     alist->position
     position->alist
+    make-position
 
     alist->diagnostic
     diagnostic->alist
