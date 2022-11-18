@@ -86,7 +86,29 @@ This project is still in early development, so you may run into rough edges with
 11. Code diagnostic.
 12. Add cross-language semantic supporting.
 
-# Controbuting 
+# Contributing 
+
+# Debug
+Following tips from [Building](#building), [Installation for Lunar Vim](#installation-for-lunarvim) and [Installation for VScode](#todo-installation-for-vscode), if anyone wants to do some developing and log something, it will be convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+```lua
+local util = require 'lspconfig.util'
+local bin_name = '{path-to-run}'
+local cmd = { bin_name ,"path-to-log-file"}
+
+return {
+  default_config = {
+    cmd = cmd,
+    filetypes = { 'scheme' },
+    root_dir = util.find_git_ancestor,
+    single_file_support = true,
+  },
+  docs = {
+    description = [[
+https://github.com/ufo5260987423/scheme-langserver
+`scheme-langserver`, a language server protocol implementation for scheme
+]]   ,
+  },
+}
 
 # Test
 > bash test.sh
