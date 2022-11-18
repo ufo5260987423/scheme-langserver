@@ -39,34 +39,34 @@
           (try
             (did-open workspace params)
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/didClose" 
           (try
             (did-close workspace params)
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/didChange" 
           (try
             (did-change workspace params)
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/hover" 
           (try
             (send-message server-instance (success-response id (hover workspace params)))
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/completion" 
           (try
             (send-message server-instance (success-response id (completion workspace params)))
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
         ["textDocument/definition" 
           (try
             (send-message server-instance (success-response id (definition workspace params)))
             (except c
-              [else (send-message server-instance (fail-response id unknown-error-code "unkown"))]))]
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
           ; ["textDocument/references"
