@@ -138,12 +138,12 @@
       (except c
         [else '()]))))
 
-(define (private-process index-node let-node exclude document )
+(define (private-process index-node let-node exclude document)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [reference 
         (make-identifier-reference
-          (string->symbol expression)
+          expression
           document
           index-node
           '())])

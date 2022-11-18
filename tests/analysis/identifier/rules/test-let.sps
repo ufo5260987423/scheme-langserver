@@ -8,6 +8,7 @@
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver protocol alist-access-object)
@@ -18,21 +19,21 @@
 
 
 (test-begin "let-process")
-    (let* ( [root-file-node (init-virtual-file-system "./util" '() akku-acceptable-file?)]
+    (let* ( [workspace (init-workspace "./util")]
+            [root-file-node (workspace-file-node workspace)]
             [target-file-node (walk-file root-file-node "./util/natural-order-compare.sls")]
             [document (file-node-document target-file-node)]
             ;; a let node
             [position (make-position 8 12)]
-            [to-check-position (make-position 10 16)]
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))]
-            [to-check-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) to-check-position))])
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
+            (import-process root-file-node (workspace-library-node workspace) document root-index-node)
             (let-process root-file-node document target-index-node)
             (test-equal #f
                 (not 
                     (find 
                         (lambda (reference) 
                             (equal? 'length-a (identifier-reference-identifier reference)))
-                        (index-node-references-import-in-this-node to-check-index-node)))))
+                        (index-node-references-import-in-this-node target-index-node)))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
