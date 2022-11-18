@@ -28,11 +28,13 @@
     (if 
       (and 
         (server-shutdown? server-instance)
-        (not (equal? "initialize" method)))
+        (not (equal? "initialize" method))
+        (not (equal? "exit" method)))
       (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
+        ["exit" '()] 
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
 
         ["textDocument/didOpen" 
