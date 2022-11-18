@@ -85,7 +85,7 @@ This project is still in early development, so you may run into rough edges with
 ## TODOs
 
 5. Renaming.
-6. *-syntax(define-syntax, let-syntax, etc.) based identifier binding extension.
+6. *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
 7. Fully compatible with r6rs standard.
 8. Cross-platform Parallel indexing.
 9. Macro expanding.
@@ -96,6 +96,7 @@ This project is still in early development, so you may run into rough edges with
 # Contributing 
 
 # Debug
+## Output Log
 Following tips from [Building](#building), [Installation for Lunar Vim](#installation-for-lunarvim) and [Installation for VScode](#todo-installation-for-vscode), if anyone wants to do some developing and log something, it will be convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'

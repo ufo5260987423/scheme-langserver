@@ -44,6 +44,6 @@
     (make-location 
       (document-uri (identifier-reference-document reference)) 
       (make-range 
-        (index-node-start (identifier-reference-index-node reference))
-        (index-node-end (identifier-reference-index-node reference))))))
+        (int+text->position (index-node-start (identifier-reference-index-node reference)) (document-text (identifier-reference-document reference)))
+        (int+text->position (index-node-end (identifier-reference-index-node reference)) (document-text (identifier-reference-document reference)))))))
 )

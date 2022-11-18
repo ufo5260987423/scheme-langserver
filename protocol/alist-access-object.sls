@@ -24,6 +24,7 @@
     range-start
     range-end
 
+    int+text->position
     text+position->int
 
     location->alist
@@ -79,6 +80,20 @@
     (immutable message)
     (immutable related-info)))
 
+(define (int+text->position bias text)
+  (let loop ([current-bias 0]
+        [current-line 0])
+    (let ([current-line-end-index 
+          (if (string-index text #\newline current-bias)
+            (+ 1 (string-index text #\newline current-bias))
+            -1)])
+      (cond
+        [(< current-line-end-index bias)
+          (loop current-line-end-index (+ 1 current-line))]
+        [(>= current-line-end-index bias) 
+          (make-position current-line (- bias current-bias))]
+        [else (raise 'position-out-of-range)]))))
+
 (define (text+position->int text position)
   (let loop ([current-line 0]
       [current-line-start-position 0])
@@ -110,7 +125,7 @@
   (make-range (alist->position (assq-ref alist 'start)) (alist->position (assq-ref alist 'end))))
 
 (define (range->alist instance)
-  (make-alist 'start (range-start instance) 'end (range-end instance)))
+  (make-alist 'start (position->alist (range-start instance)) 'end (position->alist (range-end instance))))
 
 (define (alist->text-edit alist)
   (make-text-edit 
