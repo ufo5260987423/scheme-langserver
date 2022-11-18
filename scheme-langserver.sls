@@ -29,20 +29,43 @@
       (and 
         (server-shutdown? server-instance)
         (not (equal? "initialize" method)))
-      (fail-response id server-not-initialized "not initialized")
+      (send-message (fail-response id server-not-initialized "not initialized"))
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
 
-        ["textDocument/didOpen" (did-open workspace params)]
-        ["textdocument/didclose" (did-close workspace params)]
-        ["textDocument/didChange" (did-change workspace params)]
-
-        ["textDocument/hover" (send-message server-instance (hover workspace params))]
-        ["textDocument/completion" (send-message server-instance (completion workspace params))]
+        ["textDocument/didOpen" 
+          (try
+            (did-open workspace params)
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code c))]))]
+        ["textdocument/didclose" 
+          (try
+            (did-close workspace params)
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code c))]))]
+        ["textDocument/didChange" 
+          (try
+            (did-change workspace params)
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code c))]))]
+        ["textDocument/hover" 
+          (try
+            (send-message server-instance (hover workspace params))
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code c))]))]
+        ["textDocument/completion" 
+          (try
+            (send-message server-instance (completion workspace params))
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code c))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
-        ["textDocument/definition" (send-message server-instance (definition workspace params))]
+        ["textDocument/definition" 
+          (try
+            (send-message server-instance (definition workspace params))
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code c))]))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
           ; ["textDocument/references"
@@ -60,7 +83,7 @@
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
           ; ["workspace/didChangeWatchedFiles"
           ;  (??? id params)]
-        [_ (fail-response id method-not-found (string-append "invalid request for method " method " \n"))]))))
+        [_ (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
   ; public static final string text_document_formatting = "textdocument/formatting";
 	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
 	; public static final string text_document_on_type_formatting = "textdocument/ontypeformatting";
