@@ -29,7 +29,11 @@
       [document (file-node-document file-node)]
       [index-node-list (document-index-node-list document)]
       [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
-      [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) )]
+      [prefix 
+        (if target-index-node 
+          (if (null? (index-node-children target-index-node)) 
+            (annotation-expression (index-node-datum/annotations target-index-node)) 
+            ""))]
       [available-reference (find-available-references-for document target-index-node prefix)])
     (list->vector 
       (map identifier-reference->location->alist available-reference))))
