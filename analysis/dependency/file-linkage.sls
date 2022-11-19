@@ -58,18 +58,20 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
-(define (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node-list)
+(define (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node-list new-library-identifier-list)
   (let* ([path (file-node-path file-node)]
       [path->id-map (file-linkage-path->id-map linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [old-node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
       [id (if (hashtable-ref path->id-map path #f)
         (hashtable-ref path->id-map path #f)
-        (begin
-          (hashtable-set! path->id-map path old-node-count)
-          (hashtable-set! id->path-map old-node-count path)
-          (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
-          old-node-count))]
+        (if (null? new-library-identifier-list)
+          '()
+          (begin
+            (hashtable-set! path->id-map path old-node-count)
+            (hashtable-set! id->path-map old-node-count path)
+            (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
+            old-node-count)))]
       [reference-id-to (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id))]
       [matrix (file-linkage-matrix linkage)]
       [target-document (file-node-document file-node)]
@@ -84,9 +86,13 @@
             (map 
               (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
               new-index-node-list)))])
-    (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
-    (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
-    (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,id ,@reference-id-to))))
+    (if (null? id)
+      ;;todo shrink matrix
+      '()
+      (begin 
+        (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
+        (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
+        (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,id ,@reference-id-to))))))
 
 (define (matrix-expand-0 target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]
@@ -97,7 +103,7 @@
         (let* ([indexes (decode node-count index)]
             [row-id (car indexes)]
             [column-id (cadr indexes)])
-          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) (vector-ref target-matrix index) 0))
+          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) (matrix-take target-matrix row-id column-id) 0))
           (loop (+ index 1)))
         result))))
 

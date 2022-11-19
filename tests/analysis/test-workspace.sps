@@ -40,6 +40,10 @@
             (car (pick (init-index-node '() (car (source-file->annotations "./util/path.sls"))) 0 8)))))
 (test-end)
 
+(test-begin "read-ss-test")
+    (test-equal 2 (length (source-file->annotations "./run.ss")))
+(test-end)
+
 (test-begin "refresh-workspace-for-test")
     (let* ([workspace (init-workspace "./util/")]
             [root-file-node (workspace-file-node workspace)]

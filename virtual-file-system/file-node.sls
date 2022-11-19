@@ -43,7 +43,7 @@
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
     #t
-    (find (lambda (t) (or t #f))
+    (find (lambda (t) t)
       (map (lambda (suffix) (string-suffix? suffix path)) 
       '(
         ;;todo 

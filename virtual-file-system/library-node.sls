@@ -1,5 +1,7 @@
 (library (scheme-langserver virtual-file-system library-node)
   (export 
+    delete-library-node-from-tree
+
     make-library-node
     library-node?
     library-node-name
@@ -17,6 +19,13 @@
     (immutable parent)
     (mutable children)
     (mutable file-nodes)))
+(define (delete-library-node-from-tree current-library-node)
+  (library-node-children-set!
+    (library-node-parent current-library-node)
+    (filter 
+      (lambda (library-node)
+        (not (equal? library-node current-library-node)))
+      (library-node-children (library-node-parent current-library-node)))))
 
 (define (walk-library list-instance current-library-node)
   (if (null? list-instance)

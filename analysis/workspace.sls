@@ -145,11 +145,11 @@
             old-library-identifier-list))]
       [target-document (file-node-document target-file-node)]
       [target-path (uri->path (document-uri target-document))]
-      [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))]
-      [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes)])
+      [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
     (document-text-set! target-document text)
     (document-index-node-list-set! target-document new-index-nodes)
-    (init-references root-file-node root-library-node path)
+
+;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
     (map 
       (lambda (old-library-node)
         (library-node-file-nodes-set! 
@@ -157,9 +157,20 @@
           (filter 
             (lambda (file-node)
               (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
-            (library-node-file-nodes old-library-node))))
+            (library-node-file-nodes old-library-node)))
+        (if (and (null? (library-node-file-nodes old-library-node)) 
+            (null? (library-node-children old-library-node)))
+          (delete-library-node-from-tree old-library-node)))
       old-library-node-list)
-    (init-library-node target-file-node root-library-node)))
+;; END
+    (let ([new-library-identifier-list (get-library-identifier-list target-file-node)])
+      (map 
+        (lambda (library-identifier)
+          (if (walk-library library-identifier root-library-node)
+            (generate-library-node library-identifier root-library-node target-file-node)))
+        new-library-identifier-list)
+      (let ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
+        (init-references root-file-node root-library-node path)))))
 
 ;; rules must be run as ordered
 (define (walk-and-process root-file-node document index-node)
@@ -249,7 +260,7 @@
         [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
       (let loop ([position (port-position port)][result '()])
         (try
-          (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor 0)]) 
+          (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
             (if (= position (port-position port))
               (filter annotation? result)
               (loop (port-position port) (append result `(,ann)))))
