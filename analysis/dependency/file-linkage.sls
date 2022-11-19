@@ -72,16 +72,16 @@
             (hashtable-set! id->path-map old-node-count path)
             (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
             old-node-count)))]
-      [reference-id-to (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id))]
+      [reference-id-to (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)))]
       [matrix (file-linkage-matrix linkage)]
       [target-document (file-node-document file-node)]
       [old-imported-file-ids
         (map 
-          (lambda(p) (hashtable-ref path->id-map path #f)) 
+          (lambda(p) (hashtable-ref path->id-map p #f)) 
           (get-reference-path-from linkage path))]
       [new-imported-file-ids
         (map 
-          (lambda(p) (hashtable-ref path->id-map path #f)) 
+          (lambda(p) (hashtable-ref path->id-map p #f)) 
           (apply append 
             (map 
               (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
@@ -119,7 +119,9 @@
       [id->path-map (file-linkage-id->path-map linkage)]
       [path->id-map (file-linkage-path->id-map linkage)]
       [from-node-id (hashtable-ref path->id-map from-path #f)])
-    (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix from-node-id))))
+    (if from-node-id
+      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix from-node-id))
+      '())))
 
 ;; this procedure won't be trouble with graph cycle
 (define (get-init-reference-path linkage)
