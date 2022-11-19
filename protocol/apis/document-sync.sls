@@ -42,7 +42,7 @@
 
 (define (did-close workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
-      [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri versioned-text-document-identifier)))]
+      [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
       [text (document-text (file-node-document file-node))]
       [mutex (workspace-mutex workspace)])
     (if (null? mutex)

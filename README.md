@@ -118,6 +118,11 @@ https://github.com/ufo5260987423/scheme-langserver
 ]]   ,
   },
 }
+```
+## Recurring with Log 
+With above [output log](#output-log), you may use `tests/log-debug.sps` recurring bugs:
+1. Rename `{path-to-log}`(usually `~/scheme-langserver.log`) as `~/ready-for-analyse.log`;
+2. run `scheme --script tests/log-debug.sps`
 
 # Test
 > bash test.sh
