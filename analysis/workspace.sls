@@ -14,6 +14,7 @@
     workspace-file-node-set!
     workspace-library-node
     workspace-library-node-set!
+    workspace-file-linkage
     ;;todo: replace with scheduler
     workspace-mutex
 
