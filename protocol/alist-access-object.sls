@@ -80,33 +80,36 @@
     (immutable message)
     (immutable related-info)))
 
+(define (get-line-end-position text start-position)
+  (let ([NL (string-index text #\newline start-position)]
+      [RE (string-index text #\return start-position)])
+    (cond
+      [(and NL RE) (if (= 1 (abs (- NL RE))) (max NL RE))]
+      [NL NL]
+      [RE RE]
+      [else (string-length text)])))
+
 (define (int+text->position bias text)
   (let loop ([current-bias 0]
         [current-line 0])
-    (let ([current-line-end-index 
-          (if (string-index text #\newline current-bias)
-            (+ 1 (string-index text #\newline current-bias))
-            -1)])
+    (let ([current-line-end-index (get-line-end-position text current-bias)])
       (cond
+        [(< (string-length text) current-bias) (raise 'postion-out-of-range)]
         [(< current-line-end-index bias)
-          (loop current-line-end-index (+ 1 current-line))]
+          (loop (+ current-line-end-index 1) (+ 1 current-line))]
         [(>= current-line-end-index bias) 
           (make-position current-line (- bias current-bias))]
         [else (raise 'position-out-of-range)]))))
 
 (define (text+position->int text position)
-  (let loop ([current-line 0]
-      [current-line-start-position 0])
-    (let ([next-line-start-position 
-          (if (string-index text #\newline current-line-start-position)
-            (+ 1 (string-index text #\newline current-line-start-position))
-            -1)]
-          [maybe-result (+ current-line-start-position (position-character position))])
+  (let loop ([current-bias 0]
+      [current-line 0])
+    (let* ([current-line-end-position (get-line-end-position text current-bias)]
+        [maybe-result (+ current-bias (position-character position))])
       (cond
-        [(and (= current-line (position-line position)) (< maybe-result next-line-start-position)) 
-          maybe-result]
-        [(< current-line (position-line position)) 
-          (loop (+ 1 current-line) next-line-start-position)]
+        [(< (string-length text) current-bias) (raise 'postion-out-of-range)]
+        [(< current-line (position-line position)) (loop (+ 1 current-line-end-position) (+ 1 current-line))]
+        [(and (= current-line (position-line position)) (<= maybe-result current-line-end-position)) maybe-result]
         [else (raise 'position-out-of-range)]))))
 
 (define (alist->versioned-text-document-identifier alist)
