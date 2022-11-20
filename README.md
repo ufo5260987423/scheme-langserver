@@ -1,4 +1,4 @@
-# Overview
+# Scheme-langserver
 
 Implementing support like autocomplete, goto definition, or documentation on hover is a significant effort for programming. However, comparing to other language like java, python, javascript and c, language server protocol implementation for lisp language are just made in a vacuum. [Geiser](https://gitlab.com/emacs-geiser), [racket langserver](https://github.com/jeapostrophe/racket-langserver) and [swish-lint](https://github.com/becls/swish-lint) etc., their works are all based on `repl`(Read-Eval-Print Loop) or keyword tokenizer instead of programming. For example, if a programmer was coding on an unaccomplished project, in which the codes are not fully runnable, [Geiser](https://gitlab.com/emacs-geiser) or any others would only complete top-level binding identifiers listed by `environment-symbols` procedure (for [Chez](https://cisco.github.io/ChezScheme/)). Which means for local bindings and unaccomplished codes, though making effort for programming is supposed of the importance mostly, [Geiser](https://gitlab.com/emacs-geiser) and its counterparts help nothing. Familiar cases occur with goto definition and many other functionalities.
 
@@ -9,12 +9,11 @@ This package is a language server protocol implementation helping scheme program
 This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5.
 
 Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
-
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
-# Setup
-## Building
-### Pre-require
+## Setup
+### Building
+#### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
 If you wanted to enable scheme-langserver's muti-thread feature, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. This uses chez scheme's FFI to call up the pipe() and poll() system calls, and therefore requires a UNIX-like operating system to function correctly.  It has been tested with linux and should work on the BSDs and on Mac OS X. If using OS X, the glibtool package will be required.
@@ -23,7 +22,7 @@ If you wanted to enable scheme-langserver's muti-thread feature, it would requir
 >NOTE
 [chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/{machine-type}`
 
-### For Linux
+#### For Linux
 ```bash
 git clone https://github.com/ufo5260987423/scheme-langserver
 cd scheme-langserver
@@ -32,9 +31,9 @@ bash .akku/env
 compile-chez-program run.ss
 ./run path-to-logfile
 ```
-### TODO: for Windows
+#### TODO: for Windows
 
-## Installation for [LunarVim](https://www.lunarvim.org/)
+### Installation for [LunarVim](https://www.lunarvim.org/)
 In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
 
 But now, for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), we have to manually do some installation: after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
@@ -69,13 +68,13 @@ For LunarVim, default scheme file extension doesn't include ".SLS". A patch to `
 vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
 ```
 
-## TODO: Installation for [VScode](https://code.visualstudio.com/)
+### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
-# Status 
+## Status 
 
 This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 
-## Features
+### Features
 1. Top-level and local identifiers binding completion.
 ![Top-level and local identifiers binding](./doc/figure/auto-completion.png "Top-level and local identifiers binding")
 2. Goto definition.
@@ -83,7 +82,7 @@ This project is still in early development, so you may run into rough edges with
 3. Compatible with package manager: Akku.
 4. File changes synchronizing and corresponding index changing.
 5. Hover.
-## TODOs
+### TODOs
 
 5. Renaming.
 6. *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
@@ -94,10 +93,10 @@ This project is still in early development, so you may run into rough edges with
 11. Code diagnostic.
 12. Add cross-language semantic supporting.
 
-# Contributing 
+## TODO:Contributing 
 
-# Debug
-## Output Log
+## Debug
+### Output Log
 Following tips from [Building](#building), [Installation for Lunar Vim](#installation-for-lunarvim) and [Installation for VScode](#todo-installation-for-vscode), if anyone wants to do some developing and log something, it will be convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'
@@ -119,10 +118,13 @@ https://github.com/ufo5260987423/scheme-langserver
   },
 }
 ```
-## Recurring with Log 
+### Recurring with Log 
 With above [output log](#output-log), you may use `tests/log-debug.sps` recurring bugs:
 1. Rename `{path-to-log}`(usually `~/scheme-langserver.log`) as `~/ready-for-analyse.log`;
 2. run `scheme --script tests/log-debug.sps`
 
-# Test
-> bash test.sh
+## Test
+Almost all key procedures and APIs are tested. You can find out what I've done in `tests` directory or just run following command in `{scheme-langserver-root-directory}`
+``` bash
+bash test.sh
+```
