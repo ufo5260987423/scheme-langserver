@@ -17,16 +17,18 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('lambda ((? symbol? identifier) **1) _ ... ) 
+        [('lambda (identifier **1) _ ... ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
-              (let* ([identifier-parent-index-node (car rest)]
-                    [identifier-index-node (car (index-node-children identifier-parent-index-node))])
+              (let* ([identifier-index-node (car rest)]
+                  [identifier-index-node-parent (index-node-parent identifier-index-node)])
+              ; ([identifier-parent-index-node (car rest)]
+              ;       [identifier-index-node (car (index-node-children identifier-parent-index-node))])
                 (index-node-excluded-references-set! 
-                  identifier-parent-index-node
+                  identifier-index-node-parent
                   (append 
-                    (index-node-excluded-references identifier-parent-index-node)
+                    (index-node-excluded-references identifier-index-node-parent)
                     (private-process identifier-index-node index-node '() document)))
                 (loop (cdr rest)))))]
         [('case-lambda (_ ...) _ ... ) 
