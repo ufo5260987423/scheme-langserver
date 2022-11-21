@@ -23,32 +23,25 @@
             (if (not (null? rest))
               (let* ([identifier-index-node (car rest)]
                   [identifier-index-node-parent (index-node-parent identifier-index-node)])
-              ; ([identifier-parent-index-node (car rest)]
-              ;       [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-                (index-node-excluded-references-set! 
-                  identifier-index-node-parent
-                  (append 
-                    (index-node-excluded-references identifier-index-node-parent)
-                    (private-process identifier-index-node index-node '() document)))
+                (private-process identifier-index-node index-node '() document)
                 (loop (cdr rest)))))]
-        [('case-lambda (_ ...) _ ... ) 
+        [('case-lambda (dummy0 ...) dummy1 ... ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
             (if (not (null? rest))
-              (let* ([identifier-grand-parent-index-node (car rest)]
-                    [identifier-parent-index-node (car (index-node-children identifier-grand-parent-index-node))])
-                (let param-loop ([exclude '()]
-                      [params (index-node-children (identifier-parent-index-node))])
-                  (if (null? params)
-                    (index-node-excluded-references-set! 
-                      identifier-parent-index-node
-                      (append 
-                        (index-node-excluded-references identifier-parent-index-node)
-                        exclude))
-                    (param-loop 
-                      (append (private-process (car params) identifier-grand-parent-index-node '() document)) 
-                      (cdr params)))
-                (loop (cdr rest))))))]
+              (let* ([identifier-index-node-grand-parent (car rest)]
+                  [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
+                (match grand-parent-expression 
+                  [((param-identifier **1) body ...)
+                    (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))])
+                      (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children identifier-index-node-parent)])
+                        (if (null? param-identifier-index-node-list)
+                          (loop (cdr rest))
+                          (param-loop 
+                            (append exclude (private-process (car param-identifier-index-node-list) identifier-index-node-grand-parent exclude document)) 
+                            (cdr param-identifier-index-node-list)))))]
+                  [else '()]
+                ))))]
         [else '()])
       (except c
         [else '()]))))
@@ -79,7 +72,8 @@
           (index-node-parent index-node)
           (append 
             (index-node-excluded-references index-node)
-            exclude))
+            exclude
+            `(,reference)))
         `(,reference))
       '())))
 )

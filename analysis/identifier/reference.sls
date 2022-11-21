@@ -38,7 +38,7 @@
         (filter
           (lambda (reference)
             (not (find 
-                  (lambda (er) (equal? (identifier-reference-identifier er) (identifier-reference-identifier reference)))
+                  (lambda (er) (equal? er reference))
                   (index-node-excluded-references current-index-node))))
           (if (null? (index-node-parent current-index-node))
             (append (document-reference-list document) (index-node-references-import-in-this-node current-index-node))
