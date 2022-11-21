@@ -1,5 +1,5 @@
 {
-    "id": "7",
+    "id": "8",
     "method": "textDocument/references",
     "params": {
         "position" : {
