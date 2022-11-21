@@ -79,7 +79,6 @@
       [children (index-node-children index-node)])
     (match expression
       [(? predicate? maybe-symbol) 
-       (pretty-print 'process)
         (let ([result 
               (find 
                 (lambda (candidate-reference) 
