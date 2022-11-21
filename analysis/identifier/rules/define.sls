@@ -53,7 +53,7 @@
                         (index-node-references-export-to-other-node (identifier-reference-index-node dummy-reference))
                         `(,dummy-reference)))
                     (index-node-references-import-in-this-node-set!
-                      (index-node-parent index-node) 
+                      index-node
                       (append 
                         (index-node-references-import-in-this-node (index-node-parent index-node))
                         `(,dummy-reference)))
