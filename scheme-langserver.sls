@@ -11,6 +11,8 @@
 
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol message)
+
+    (scheme-langserver protocol apis references)
     (scheme-langserver protocol apis completion)
     (scheme-langserver protocol apis hover)
     (scheme-langserver protocol apis definition)
@@ -62,6 +64,11 @@
             (send-message server-instance (success-response id (completion workspace params)))
             (except c
               [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/references" 
+          (try
+            (send-message server-instance (success-response id (find-references workspace params)))
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
         ["textDocument/definition" 
@@ -71,8 +78,6 @@
               [else (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
-          ; ["textDocument/references"
-          ;  (text-document/references id params)]
           ; ["textDocument/documentSymbol"
           ;  (text-document/document-symbol id params)]
           ; ["textDocument/prepareRename"
@@ -146,7 +151,7 @@
               'textDocumentSync text-document-body
               'hoverProvider #t
               'definitionProvider #t
-              ; 'referencesProvider #t
+              'referencesProvider #t
               ; 'workspaceSymbol #t
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t

@@ -1,0 +1,14 @@
+{
+    "id": "7",
+    "method": "textDocument/references",
+    "params": {
+        "position" : {
+            "line": 65,
+            "character": 22
+        },
+        "textDocument" : {
+            "uri" : "file://~a/analysis/workspace.sls"
+        }
+    },
+    "jsonrpc": "2.0"
+}
