@@ -82,6 +82,7 @@ This project is still in early development, so you may run into rough edges with
 3. Compatible with package manager: Akku.
 4. File changes synchronizing and corresponding index changing.
 5. Hover.
+6. References.
 ### TODOs
 
 5. Renaming.
