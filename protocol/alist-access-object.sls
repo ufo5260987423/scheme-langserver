@@ -84,7 +84,7 @@
   (let ([NL (string-index text #\newline start-position)]
       [RE (string-index text #\return start-position)])
     (cond
-      [(and NL RE) (if (= 1 (abs (- NL RE))) (max NL RE))]
+      [(and NL RE) (if (= 1 (abs (- NL RE))) (max NL RE) (min NL RE))]
       [NL NL]
       [RE RE]
       [else (string-length text)])))

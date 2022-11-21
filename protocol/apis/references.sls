@@ -14,6 +14,7 @@
     (scheme-langserver util natural-order-compare)
     (scheme-langserver util association)
     (scheme-langserver util path) 
+    (scheme-langserver util dedupe) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
@@ -36,13 +37,23 @@
       [prefix 
         (if target-index-node 
           (if (null? (index-node-children target-index-node)) 
-            (symbol->string (annotation-expression (index-node-datum/annotations target-index-node)))
-            ""))])
-    (if (equal? "" prefix)
-      '#()
-      (let ([available-references (find-available-references-for document target-index-node prefix)]
-          [path-to-list (get-reference-path-to (workspace-file-linkage workspace) path)]
+            (annotation-expression (index-node-datum/annotations target-index-node))
+            #f))])
+    (if prefix
+      (let* ([available-references (find-available-references-for document target-index-node prefix)]
+          [origin-documents (dedupe (map identifier-reference-document available-references))]
+          [origin-uris (map document-uri origin-documents)]
+          [origin-paths (map uri->path origin-uris)]
+          [path-to-list 
+              (apply append(map 
+                (lambda (path)
+                  (get-reference-path-to 
+                    (workspace-file-linkage workspace) 
+                    path))
+                origin-paths))]
           [root-file-node (workspace-file-node workspace)]
+          [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
+          [target-documents (map file-node-document maybe-target-documents)]
           [predicate? 
             (lambda (maybe-symbol)
               (if (symbol? maybe-symbol)
@@ -50,12 +61,17 @@
                   (lambda (identifier) (equal? maybe-symbol identifier))
                   (map identifier-reference-identifier available-references))
                 #f))])
-        (list->vector (apply append (map 
-          (lambda (document) 
-            (apply append (map (lambda (index-node) 
-              (find-references-in document index-node))
-                (document-index-node-list document))))
-          (map (lambda(local-path) (file-node-document (walk-file root-file-node local-path))) path-to-list))))))))
+        (list->vector 
+          (map location->alist 
+            (apply append 
+              (map 
+                (lambda (document) 
+                  (apply append 
+                    (map 
+                      (lambda (index-node) (find-references-in document index-node available-references predicate?))
+                      (document-index-node-list document)))) 
+                target-documents)))))
+      '#())))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]
@@ -63,13 +79,14 @@
       [children (index-node-children index-node)])
     (match expression
       [(? predicate? maybe-symbol) 
+       (pretty-print 'process)
         (let ([result 
               (find 
                 (lambda (candidate-reference) 
                   (if (find (lambda (cr) (equal? cr candidate-reference)) available-references)
                     #t
                     #f))
-                (find-available-references-for document target-index-node maybe-symbol))])
+                (find-available-references-for document index-node maybe-symbol))])
           (if result
             `(,(make-location
               (document-uri document) 
@@ -81,5 +98,5 @@
         (if (null? children)
           '()
           (apply append
-            (map (lambda (child-index-node) (find-references-in document child-index-node available-references)) children)))])))
+            (map (lambda (child-index-node) (find-references-in document child-index-node available-references predicate?)) children)))])))
 )
