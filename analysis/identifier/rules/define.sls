@@ -44,7 +44,7 @@
                       dummy-expression
                       document
                       dummy-index-node
-                      library-identifiers)])
+                      '())])
                 (match dummy-expression
                   [(? symbol? dummy-identifier)
                     (index-node-references-export-to-other-node-set!
@@ -55,7 +55,7 @@
                     (index-node-references-import-in-this-node-set!
                       index-node
                       (append 
-                        (index-node-references-import-in-this-node (index-node-parent index-node))
+                        (index-node-references-import-in-this-node index-node)
                         `(,dummy-reference)))
 
                     (index-node-excluded-references-set! 
