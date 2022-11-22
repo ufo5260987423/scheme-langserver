@@ -45,15 +45,27 @@
             (append 
               (index-node-references-import-in-this-node current-index-node) 
               (find-available-references-for document (index-node-parent current-index-node)))))]
-    [(document current-index-node identifier)
-      (let ([tmp-result 
-          (filter
-            (lambda (reference)
-              (equal? identifier (identifier-reference-identifier reference)))
-            (index-node-references-import-in-this-node current-index-node))])
+    [(document current-index-node identifier) 
+      (find-available-references-for document current-index-node identifier '())]
+    [(document current-index-node identifier exclude)
+      (let* ([current-exclude (append exclude (index-node-excluded-references current-index-node))]
+          [tmp-result0
+            (filter
+              (lambda (reference)
+                (equal? identifier (identifier-reference-identifier reference)))
+              (index-node-references-import-in-this-node current-index-node))]
+          [tmp-result 
+            (filter
+              (lambda (reference)
+                (not 
+                  (find 
+                    (lambda (ex-reference)
+                      (equal? ex-reference reference))
+                    current-exclude)))
+              tmp-result0)])
         (if (null? tmp-result)
           (if (not (null? (index-node-parent current-index-node)))
-            (find-available-references-for document (index-node-parent current-index-node) identifier)
+            (find-available-references-for document (index-node-parent current-index-node) identifier current-exclude)
             '())
           tmp-result))]))
 )
