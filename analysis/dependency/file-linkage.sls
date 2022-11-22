@@ -8,6 +8,7 @@
     file-linkage-take
     file-linkage-set!
     file-linkage-head
+    file-linkage-from
     file-linkage-to
 
     get-reference-path-to
@@ -108,11 +109,15 @@
         result))))
 
 (define (get-reference-path-to linkage to-path)
+(pretty-print 'get-reference-path-to)
+(pretty-print to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [path->id-map (file-linkage-path->id-map linkage)]
       [to-node-id (hashtable-ref path->id-map to-path #f)])
-    (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix to-node-id))))
+    (if to-node-id
+      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix to-node-id))
+      '())))
 
 (define (get-reference-path-from linkage from-path)
   (let* ([matrix (file-linkage-matrix linkage)]
@@ -120,7 +125,7 @@
       [path->id-map (file-linkage-path->id-map linkage)]
       [from-node-id (hashtable-ref path->id-map from-path #f)])
     (if from-node-id
-      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix from-node-id))
+      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-from-recursive matrix from-node-id))
       '())))
 
 ;; this procedure won't be trouble with graph cycle
@@ -154,8 +159,8 @@
           (lambda (id) (hashtable-ref id->path-map id #f))
           result)))))
 
-(define (linkage-matrix-from-recursive matrix from)
-  (let loop ([result `(,from)] [iterator `(,from)])
+(define (linkage-matrix-from-recursive matrix from-id)
+  (let loop ([result `(,from-id)] [iterator `(,from-id)])
     (let ([children 
           (apply append (map 
             (lambda (current-from)
@@ -167,8 +172,9 @@
         result
         (loop (append result children) children)))))
 
-(define (linkage-matrix-to-recursive matrix to)
-  (let loop ([result `(,to)] [iterator `(,to)])
+(define (linkage-matrix-to-recursive matrix to-id)
+(pretty-print 'linkage-matrix-to-recursive)
+  (let loop ([result `(,to-id)] [iterator `(,to-id)])
     (let ([children 
           (apply append (map 
             (lambda (current-to)
@@ -180,9 +186,9 @@
         result
         (loop (append result children) children)))))
 
-(define (linkage-matrix-to matrix to)
+(define (linkage-matrix-to matrix to-id)
   (let ([rows-count (sqrt (vector-length matrix))]
-        [column-id to])
+        [column-id to-id])
     (let loop ([row-id 0][result '()])
       (if (< row-id rows-count)
         (loop 
@@ -192,9 +198,9 @@
             (append result `(,row-id))))
         result))))
         
-(define (linkage-matrix-from matrix from)
+(define (linkage-matrix-from matrix from-id)
   (let ([rows-count (sqrt (vector-length matrix))]
-        [row-id from])
+        [row-id from-id])
     (let loop ([column-id 0][result '()])
       (if (< column-id rows-count)
         (loop 
@@ -204,10 +210,12 @@
             (append result `(,column-id))))
         result))))
 
-(define (file-linkage-from linkage from)
+; from-path
+; row-id
+(define (file-linkage-from linkage from-path)
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
-      [row-id (hashtable-ref (file-linkage-path->id-map linkage) from #f)])
+      [row-id (hashtable-ref (file-linkage-path->id-map linkage) from-path #f)])
     (let loop ([column-id 0][result '()])
       (if (< column-id rows-count)
         (loop 
@@ -217,10 +225,12 @@
             (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f)))))
         result))))
 
-(define (file-linkage-to linkage to)
+; to-path
+; column-id
+(define (file-linkage-to linkage to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
-      [column-id (hashtable-ref (file-linkage-path->id-map linkage) to #f)])
+      [column-id (hashtable-ref (file-linkage-path->id-map linkage) to-path #f)])
     (let loop ([row-id 0][result '()])
       (if (< row-id rows-count)
         (loop 

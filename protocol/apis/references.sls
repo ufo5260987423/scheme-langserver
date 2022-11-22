@@ -47,7 +47,7 @@
           [path-to-list 
               (apply append(map 
                 (lambda (path)
-                  (get-reference-path-to 
+                  (file-linkage-to
                     (workspace-file-linkage workspace) 
                     path))
                 origin-paths))]
