@@ -109,8 +109,6 @@
         result))))
 
 (define (get-reference-path-to linkage to-path)
-(pretty-print 'get-reference-path-to)
-(pretty-print to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [path->id-map (file-linkage-path->id-map linkage)]
@@ -173,7 +171,6 @@
         (loop (append result children) children)))))
 
 (define (linkage-matrix-to-recursive matrix to-id)
-(pretty-print 'linkage-matrix-to-recursive)
   (let loop ([result `(,to-id)] [iterator `(,to-id)])
     (let ([children 
           (apply append (map 

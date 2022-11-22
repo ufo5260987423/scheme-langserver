@@ -5,8 +5,7 @@
 #!r6rs
 
 (import 
-    ; (rnrs (6)) 
-    (chezscheme) 
+    (rnrs (6)) 
     (srfi :64 testing) 
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
@@ -26,7 +25,6 @@
             [text (document-text document)]
             [index-node-list (document-index-node-list document)]
             [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text (make-position 155 5))))])
-        (pretty-print (map identifier-reference-identifier (index-node-references-import-in-this-node index-node)))
         (test-equal #f (null? (map identifier-reference-identifier (index-node-references-import-in-this-node index-node)))))
 (test-end)
 

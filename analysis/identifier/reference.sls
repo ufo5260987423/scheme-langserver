@@ -46,9 +46,14 @@
               (index-node-references-import-in-this-node current-index-node) 
               (find-available-references-for document (index-node-parent current-index-node)))))]
     [(document current-index-node identifier)
-      (let ([candidate-references (find-available-references-for document current-index-node)])
-        (filter
-          (lambda (reference)
-            (equal? identifier (identifier-reference-identifier reference)))
-          candidate-references))]))
+      (let ([tmp-result 
+          (filter
+            (lambda (reference)
+              (equal? identifier (identifier-reference-identifier reference)))
+            (index-node-references-import-in-this-node current-index-node))])
+        (if (null? tmp-result)
+          (if (not (null? (index-node-parent current-index-node)))
+            (find-available-references-for document (index-node-parent current-index-node) identifier)
+            '())
+          tmp-result))]))
 )
