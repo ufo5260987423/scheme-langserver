@@ -238,10 +238,10 @@
 (define (init-index-node parent datum/annotations)
   (let* ([source (annotation-source datum/annotations)]
         [node (make-index-node parent (source-object-bfp source) (source-object-efp source) datum/annotations '() '() '() '())]
-        [expression (annotation-expression datum/annotations)])
+        [annotation-list (annotation-expression datum/annotations)])
     (index-node-children-set! 
       node 
-      (if (list? expression)
+      (if (list? annotation-list)
         (filter 
           (lambda (item) (not (null? item)))
           (map 
@@ -249,7 +249,7 @@
               (if (annotation? e)
                 (init-index-node node e)
                 '()))
-            expression))
+            annotation-list))
         '()))
     node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -32,7 +32,7 @@
       [document (file-node-document file-node)]
       [index-node-list (document-index-node-list document)]
       [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
-      [prefix (if (null? (index-node-children target-index-node)) (annotation-expression (index-node-datum/annotations target-index-node)) )]
+      [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) )]
       [available-reference (find-available-references-for document target-index-node prefix)])
     (make-alist 'content (list->vector 
       (dedupe (map identifier-reference->hover available-reference))))))

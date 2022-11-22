@@ -32,7 +32,7 @@
       [prefix 
         (if target-index-node 
           (if (null? (index-node-children target-index-node)) 
-            (annotation-expression (index-node-datum/annotations target-index-node)) 
+            (annotation-stripped (index-node-datum/annotations target-index-node)) 
             ""))]
       [available-reference (find-available-references-for document target-index-node prefix)])
     (list->vector 

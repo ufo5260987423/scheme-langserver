@@ -33,7 +33,7 @@
       [prefix 
         (if target-index-node 
           (if (null? (index-node-children target-index-node)) 
-            (symbol->string (annotation-expression (index-node-datum/annotations target-index-node))) 
+            (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node))) 
             ""))])
     ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector (map 

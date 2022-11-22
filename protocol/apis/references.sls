@@ -37,7 +37,7 @@
       [prefix 
         (if target-index-node 
           (if (null? (index-node-children target-index-node)) 
-            (annotation-expression (index-node-datum/annotations target-index-node))
+            (annotation-stripped (index-node-datum/annotations target-index-node))
             #f))])
     (if prefix
       (let* ([available-references (find-available-references-for document target-index-node prefix)]
