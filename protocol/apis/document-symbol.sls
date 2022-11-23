@@ -42,11 +42,10 @@
   (let* ([document (identifier-reference-document identifier)]
       [text (document-text document)]
       [index-node (identifier-reference-index-node identifier)]
-      [name (symbol->strng (identifier-reference-identifier identifier))]
+      [name (symbol->string (identifier-reference-identifier identifier))]
       [start-position (text+position->int text (index-node-start index-node))]
       [end-position (text+position->int text (index-node-end index-node))]
-      [range (make-range start-postion end-postion)]
-      )
+      [range (make-range start-position end-position)])
     (make-document-symbol 
       name
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#symbolKind

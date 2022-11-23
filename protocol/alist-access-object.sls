@@ -33,7 +33,9 @@
     versioned-text-document-identifier-uri
     versioned-text-document-identifier-version
     alist->versioned-text-document-identifier 
-    versioned-text-document-identifier->alist)
+    versioned-text-document-identifier->alist
+
+    make-document-symbol)
   (import 
     (chezscheme) 
     (scheme-langserver util association)
@@ -124,7 +126,7 @@
     (assq-ref alist 'name) 
     (assq-ref alist 'kind) 
     (alist->range (assq-ref 'range))
-    (alist->selectionRange (assq-ref 'selectionRange))))
+    (alist->range (assq-ref 'selectionRange))))
 
 (define (document-symbol->alist document-symbol)
   (make-alist 
