@@ -83,6 +83,12 @@ This project is still in early development, so you may run into rough edges with
 4. File changes synchronizing and corresponding index changing.
 5. Hover.
 6. References.
+![Find references with telescope.nvim](./doc/figure/find-references.png "find-references with telescope.nvim")
+ >NOTE 
+ I made some configuration with `.config/lvim/config.lua` like following
+ ```lua
+ vim.keymap.set('n', 'gr', builtin.lsp_references, {})
+ ```
 ### TODOs
 
 5. Renaming.
