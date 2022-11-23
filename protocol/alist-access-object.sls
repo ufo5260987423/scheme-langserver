@@ -59,6 +59,13 @@
     (immutable uri)
     (immutable range)))
 
+(define-record-type document-symbol
+  (fields 
+    (immutable name)
+    (immutable kind)
+    (immutable range)
+    (immutable selectionRange)))
+
 (define-record-type text-document
   (fields 
     (immutable uri)
@@ -111,6 +118,20 @@
         [(< current-line (position-line position)) (loop (+ 1 current-line-end-position) (+ 1 current-line))]
         [(and (= current-line (position-line position)) (<= maybe-result current-line-end-position)) maybe-result]
         [else (raise 'position-out-of-range)]))))
+
+(define (alist->document-symbol alist)
+  (make-document-symbol 
+    (assq-ref alist 'name) 
+    (assq-ref alist 'kind) 
+    (alist->range (assq-ref 'range))
+    (alist->selectionRange (assq-ref 'selectionRange))))
+
+(define (document-symbol->alist document-symbol)
+  (make-alist 
+    'name (document-symbol-name document-symbol)
+    'kind (document-symbol-kind document-symbol)
+    'range (range->alist (document-symbol-range document-symbol))
+    'selectionRange (range->alist (document-symbol-selectionRange document-symbol))))
 
 (define (alist->versioned-text-document-identifier alist)
   (make-versioned-text-document-identifier (assq-ref alist 'uri) (assq-ref alist 'version)))
