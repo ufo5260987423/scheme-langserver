@@ -1,7 +1,7 @@
 #!r6rs ; -*- mode: scheme; coding: utf-8 -*-
 (import (akku format manifest))
 
-(akku-package ("scheme-langserver" "1.0.4")
+(akku-package ("scheme-langserver" "1.0.5")
   (synopsis "This package is a language server protocol implementation helping scheme programming.")
   (authors "WANG Zheng")
   (license "MIT")
