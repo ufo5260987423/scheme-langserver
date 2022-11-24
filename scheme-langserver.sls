@@ -17,6 +17,7 @@
     (scheme-langserver protocol apis hover)
     (scheme-langserver protocol apis definition)
     (scheme-langserver protocol apis document-sync)
+    (scheme-langserver protocol apis document-symbol)
 
     (scheme-langserver util association)
     (scheme-langserver util path))
@@ -78,8 +79,11 @@
               [else (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
-          ; ["textDocument/documentSymbol"
-          ;  (text-document/document-symbol id params)]
+        ["textDocument/documentSymbol" 
+          (try
+            (send-message server-instance (success-response id (document-symbol workspace params)))
+            (except c
+              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/formatting"
@@ -102,11 +106,8 @@
 	; public static final string workspace_symbol = "workspace/symbol";
 	; public static final string workspace_watched_files = "workspace/didchangewatchedfiles";
 	; public static final string document_symbol = "textdocument/documentsymbol";
-	; public static final string completion = "textdocument/completion";
 	; public static final string code_action = "textdocument/codeaction";
-	; public static final string definition = "textdocument/definition";
 	; public static final string typedefinition = "textdocument/typedefinition";
-	; public static final string references = "textdocument/references";
 	; public static final string document_highlight = "textdocument/documenthighlight";
 	; public static final string foldingrange = "textdocument/foldingrange";
 	; public static final string workspace_change_folders = "workspace/didchangeworkspacefolders";
@@ -162,7 +163,7 @@
               ; 'renameProvider renameProvider
               ; 'codeActionProvider #t
               ; 'documentHighlightProvider #t
-              ; 'documentSymbolProvider #t
+              'documentSymbolProvider #t
               ; 'documentLinkProvider #t
               ; 'documentFormattingProvider #t
               ; 'documentRangeFormattingProvider #t

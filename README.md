@@ -75,31 +75,36 @@ vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
 This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 
 ### Features
-1. Top-level and local identifiers binding completion.
-![Top-level and local identifiers binding](./doc/figure/auto-completion.png "Top-level and local identifiers binding")
-2. Goto definition.
-![Goto Definition with telescope.nvim](./doc/figure/definition.png "Goto Definition with telescope.nvim")
-3. Compatible with package manager: Akku.
-4. File changes synchronizing and corresponding index changing.
-5. Hover.
-6. References.
-![Find references with telescope.nvim](./doc/figure/find-references.png "find-references with telescope.nvim")
  >NOTE 
  I made some configuration with `.config/lvim/config.lua` like following
  ```lua
  vim.keymap.set('n', 'gr', builtin.lsp_references, {})
+ vim.keymap.set('n', 'gd', builtin.lsp_definitions, {})
  ```
+
+1. Top-level and local identifiers binding completion.
+![Top-level and local identifiers binding](./doc/figure/auto-completion.png "Top-level and local identifiers binding")
+2. Goto definition.
+![Goto definition with telescope.nvim](./doc/figure/definition.png "Goto Definition with telescope.nvim")
+3. Compatible with package manager: Akku.
+4. File changes synchronizing and corresponding index changing.
+5. Hover.
+6. References.
+![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
+7. Document symbol.
+![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 ### TODOs
 
-5. Renaming.
-6. *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
-7. Fully compatible with r6rs standard.
-8. Cross-platform Parallel indexing.
-9. Macro expanding.
-10. Code eval.
-11. Code diagnostic.
-12. Add cross-language semantic supporting.
-13. Self-made annotator.
+8. Renaming.
+9. *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
+10. Fully compatible with r6rs standard.
+11. Cross-platform Parallel indexing.
+12. Macro expanding.
+13. Code eval.
+14. Code diagnostic.
+15. Add cross-language semantic supporting.
+16. Self-made annotator.
+17. Type inference.
 
 ## TODO:Contributing 
 
