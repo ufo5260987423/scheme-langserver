@@ -35,7 +35,10 @@
             (map 
               index-node-references-import-in-this-node
               index-node-list)))]
-      [result-vector (list->vector (map identifier->document-symbol identifiers))])
+      [result-vector 
+        (list->vector 
+          (map document-symbol->alist 
+            (map identifier->document-symbol identifiers)))])
     result-vector))
 
 (define (identifier->document-symbol identifier)
@@ -43,8 +46,8 @@
       [text (document-text document)]
       [index-node (identifier-reference-index-node identifier)]
       [name (symbol->string (identifier-reference-identifier identifier))]
-      [start-position (text+position->int text (index-node-start index-node))]
-      [end-position (text+position->int text (index-node-end index-node))]
+      [start-position (int+text->position (index-node-start index-node) text)]
+      [end-position (int+text->position (index-node-end index-node) text)]
       [range (make-range start-position end-position)])
     (make-document-symbol 
       name

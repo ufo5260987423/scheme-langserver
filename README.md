@@ -85,14 +85,14 @@ This project is still in early development, so you may run into rough edges with
 1. Top-level and local identifiers binding completion.
 ![Top-level and local identifiers binding](./doc/figure/auto-completion.png "Top-level and local identifiers binding")
 2. Goto definition.
-![Goto Definition with telescope.nvim](./doc/figure/definition.png "Goto Definition with telescope.nvim")
+![Goto definition with telescope.nvim](./doc/figure/definition.png "Goto Definition with telescope.nvim")
 3. Compatible with package manager: Akku.
 4. File changes synchronizing and corresponding index changing.
 5. Hover.
 6. References.
-![Find references with telescope.nvim](./doc/figure/find-references.png "find-references with telescope.nvim")
-
+![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
+![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 ### TODOs
 
 8. Renaming.

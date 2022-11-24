@@ -35,6 +35,7 @@
     alist->versioned-text-document-identifier 
     versioned-text-document-identifier->alist
 
+    document-symbol->alist
     make-document-symbol)
   (import 
     (chezscheme) 
