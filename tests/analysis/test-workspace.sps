@@ -10,7 +10,8 @@
     (scheme-langserver virtual-file-system library-node)
 
     (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis workspace))
+    (scheme-langserver analysis workspace)
+    (scheme-langserver analysis tokenizer))
 
 (test-begin "init-virtual-file-system")
     (test-equal "scheme-langserver.sls" 
@@ -38,10 +39,6 @@
         (annotation-stripped 
             (index-node-datum/annotations 
             (car (pick (init-index-node '() (car (source-file->annotations "./util/path.sls"))) 0 8)))))
-(test-end)
-
-(test-begin "read-ss-test")
-    (test-equal 2 (length (source-file->annotations "./run.ss")))
 (test-end)
 
 (test-begin "refresh-workspace-for-test")

@@ -33,7 +33,7 @@ compile-chez-program run.ss
 ```
 #### TODO: for Windows
 
-### Installation for [LunarVim](https://www.lunarvim.org/)
+### Manual Installation for [LunarVim](https://www.lunarvim.org/)
 In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
 
 But now, for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), we have to manually do some installation: after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:

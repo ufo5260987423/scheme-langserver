@@ -20,7 +20,6 @@
 
     refresh-workspace-for
 
-    source-file->annotations
     pick
     generate-library-node)
   (import 
@@ -37,6 +36,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
 
+    (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier rules define-record-type)
     (scheme-langserver analysis identifier rules library-define)
     (scheme-langserver analysis identifier rules library-export)
@@ -253,24 +253,6 @@
         '()))
     node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define source-file->annotations
-  (case-lambda
-    ([path] (source-file->annotations (read-string path) path))
-    ([source path]
-    (let ([port (open-string-input-port source)]
-        [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
-      (let loop ([position (port-position port)][result '()])
-        (try
-          (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
-            (if (= position (port-position port))
-              (filter annotation? result)
-              (loop (port-position port) (append result `(,ann)))))
-          (except e
-            [else 
-              (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
-              (pretty-print path)
-              '()])))))))
-
 (define pick
   (case-lambda 
     ([node start-position end-position] 
