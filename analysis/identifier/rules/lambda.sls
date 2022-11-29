@@ -25,6 +25,9 @@
                   [identifier-index-node-parent (index-node-parent identifier-index-node)])
                 (private-process identifier-index-node index-node '() document)
                 (loop (cdr rest)))))]
+        [('lambda (? symbol? identifier) _ ... ) 
+          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (private-process (cadr (index-node-children index-node)) index-node '() document)]
         [('case-lambda (dummy0 ...) dummy1 ... ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
