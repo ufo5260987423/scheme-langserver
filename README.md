@@ -141,3 +141,7 @@ Almost all key procedures and APIs are tested. You can find out what I've done i
 ``` bash
 bash test.sh
 ```
+## Code Count
+```bash
+find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
+```
