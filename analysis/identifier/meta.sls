@@ -4,9 +4,45 @@
      (scheme-langserver analysis identifier reference))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
-   (map (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() list-instance (cadr identifier-pair)))
    (cond
-      [(equal? list-instance '(rnrs)) '(
+      [(equal? list-instance '(rnrs)) rnrs]
+      [(equal? list-instance '(scheme)) scheme] 
+      [(equal? list-instance '(chezscheme)) chezscheme]
+      [(equal? list-instance '(rnrs condition)) rnrs-condition]
+      [(equal? list-instance '(rnrs base)) rnrs-base]
+      [(equal? list-instance '(rnrs files)) rnrs-files]
+      [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
+      [(equal? list-instance '(rnrs exception)) rnrs-exception]
+      [(equal? list-instance '(rnrs lists)) rnrs-lists]
+      [(equal? list-instance '(rnrs bytevectors)) rnrs-bytevectors]
+      [(equal? list-instance '(rnrs control)) rnrs-control]
+      [(equal? list-instance '(rnrs unicode)) rnrs-unicode]
+      [(equal? list-instance '(rnrs enums)) rnrs-enums]
+      [(equal? list-instance '(rnrs r5rs)) rnrs-r5rs]
+      [(equal? list-instance '(rnrs eval)) rnrs-eval]
+      [(equal? list-instance '(rnrs hashtables)) rnrs-hashtables]
+      [(equal? list-instance '(rnrs sorting)) rnrs-sorting]
+      [(equal? list-instance '(rnrs programs)) rnrs-programs]
+      [(equal? list-instance '(rnrs mutable-pairs)) rnrs-mutable-pairs]
+      [(equal? list-instance '(rnrs mutable-strings)) rnrs-mutable-strings]
+      [(equal? list-instance '(rnrs io ports)) rnrs-io-ports]
+      [(equal? list-instance '(rnrs io simple)) rnrs-io-simple]
+      [(equal? list-instance '(rnrs arithmetic flonums)) rnrs-arithmetic-flonums]
+      [(equal? list-instance '(rnrs arithmetic bitwise)) rnrs-arithmetic-bitwise]
+      [(equal? list-instance '(rnrs arithmetic fixnums)) rnrs-arithmetic-fixnums]
+      [(equal? list-instance '(rnrs records syntactic)) rnrs-records-syntactic]
+      [(equal? list-instance '(rnrs records procedure)) rnrs-records-procedure]
+      [(equal? list-instance '(rnrs records inspection)) rnrs-records-inspection]
+      [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
+      [(equal? list-instance '(scheme csv7)) scheme-csv7]
+      [else '()]))
+
+(define (private-process library-instance list-instance)
+   (map 
+      (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance (cadr identifier-pair)))
+      list-instance))
+
+(define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)
 (&condition	syntax)
 (&error	syntax)
@@ -693,9 +729,9 @@
 (with-syntax	#f)
 (write	#f)
 (write-char	#f)
-(zero?	#f)
-)]
-      [(equal? list-instance '(scheme)) '(
+(zero?	#f))))
+
+(define scheme (private-process '(scheme) '(
 (+	procedure)
 ; (1+	procedure)
 (fxlogand	procedure)
@@ -2271,9 +2307,8 @@
 (i/o-port-error?	procedure)
 (exact->inexact	procedure)
 (bytevector-s48-ref	procedure)
-(record-constructor	procedure)
-)]
-      [(equal? list-instance '(chezscheme)) '(
+(record-constructor	procedure))))
+(define chezscheme (private-process '(chezscheme) '(
 (symbol-hashtable-update!	procedure)
 (r6rs:dynamic-wind	#f)
 (trace-define	syntax)
@@ -3854,9 +3889,9 @@
 (list-instance	#f)
 (rnrs	#f)
 (condition	procedure)
-(&assertion	syntax)
-)]
-      [(equal? list-instance '(rnrs condition)) '(
+(&assertion	syntax))))
+
+(define rnrs-condition (private-process '(rnrs condition) '(
 (&assertion	syntax)
 (&condition	syntax)
 (&error	syntax)
@@ -3907,9 +3942,9 @@
 (undefined-violation?	procedure)
 (violation?	procedure)
 (warning?	procedure)
-(who-condition?	procedure)
-)]
-      [(equal? list-instance '(rnrs files)) '(
+(who-condition?	procedure))))
+
+(define rnrs-files (private-process '(rnrs files) '(
 (&i/o	syntax)
 (&i/o-file-already-exists	syntax)
 (&i/o-file-does-not-exist	syntax)
@@ -3945,8 +3980,9 @@
 (make-i/o-write-error	procedure)
 (delete-file	procedure)
 (file-exists?	procedure)
-)]
-      [(equal? list-instance '(rnrs base)) '(
+)))
+
+(define rnrs-base (private-process '(rnrs base) '(
 (+	procedure)
 (*	procedure)
 (-	procedure)
@@ -4137,9 +4173,9 @@
 (vector-ref	procedure)
 (vector-set!	procedure)
 (vector?	procedure)
-(zero?	procedure)
-)]
-      [(equal? list-instance '(rnrs syntax-case)) '(
+(zero?	procedure))))
+
+(define rnrs-syntax-case (private-process '(rnrs syntax case) '(
 (...	syntax)
 (_	syntax)
 (bound-identifier=?	procedure)
@@ -4155,17 +4191,17 @@
 (syntax-violation	procedure)
 (unsyntax	syntax)
 (unsyntax-splicing	syntax)
-(with-syntax	syntax)
-)]
-      [(equal? list-instance '(rnrs exception)) '(
+(with-syntax	syntax))))
+
+(define rnrs-exception (private-process '(rnrs exception) '(
 (=>	syntax)
 (else	syntax)
 (guard	syntax)
 (raise	procedure)
 (raise-continuable	procedure)
-(with-exception-handler	procedure)
-)]
-      [(equal? list-instance '(rnrs lists)) '(
+(with-exception-handler	procedure))))
+
+(define rnrs-lists (private-process '(rnrs lists) '(
 (assoc	procedure)
 (assp	procedure)
 (assq	procedure)
@@ -4185,9 +4221,9 @@
 (remove	procedure)
 (remp	procedure)
 (remq	procedure)
-(remv	procedure)
-)]
-      [(equal? list-instance '(rnrs bytevectors)) '(
+(remv	procedure))))
+
+(define rnrs-bytevectors (private-process '(rnrs bytevectors) '(
 (bytevector->sint-list	procedure)
 (bytevector->u8-list	procedure)
 (bytevector->uint-list	procedure)
@@ -4248,15 +4284,15 @@
 (uint-list->bytevector	procedure)
 (utf16->string	procedure)
 (utf32->string	procedure)
-(utf8->string	procedure)
-)]
-      [(equal? list-instance '(rnrs control)) '(
+(utf8->string	procedure))))
+
+(define rnrs-control (private-process '(rnrs control) '(
 (case-lambda	syntax)
 (do	syntax)
 (unless	syntax)
-(when	syntax)
-)]
-      [(equal? list-instance '(rnrs unicode)) '(
+(when	syntax))))
+
+(define rnrs-unicode (private-process '(rnrs unicode) '(
 (char-alphabetic?	procedure)
 (char-downcase	procedure)
 (char-foldcase	procedure)
@@ -4285,9 +4321,9 @@
 (string-normalize-nfkc	procedure)
 (string-normalize-nfkd	procedure)
 (string-titlecase	procedure)
-(string-upcase	procedure)
-)]
-      [(equal? list-instance '(rnrs enums)) '(
+(string-upcase	procedure))))
+
+(define rnrs-enums (private-process '(rnrs enums) '(
 (define-enumeration	syntax)
 (enum-set->list	procedure)
 (enum-set-complement	procedure)
@@ -4301,9 +4337,9 @@
 (enum-set-union	procedure)
 (enum-set-universe	procedure)
 (enum-set=?	procedure)
-(make-enumeration	procedure)
-)]
-      [(equal? list-instance '(rnrs r5rs)) '(
+(make-enumeration	procedure))))
+
+(define rnrs-r5rs (private-process '(rnrs r5rs) '(
 (delay	syntax)
 (exact->inexact	procedure)
 (force	procedure)
@@ -4312,13 +4348,13 @@
 (null-environment	procedure)
 (quotient	procedure)
 (remainder	procedure)
-(scheme-report-environment	procedure)
-)]
-      [(equal? list-instance '(rnrs eval)) '(
+(scheme-report-environment	procedure))))
+
+(define rnrs-eval (private-process '(rnrs eval) '(
 (environment	procedure)
-(eval	procedure)
-)]
-      [(equal? list-instance '(rnrs hashtables)) '(
+(eval	procedure))))
+
+(define rnrs-hashtables (private-process '(rnrs hashtables) '(
 (equal-hash	procedure)
 (hashtable-clear!	procedure)
 (hashtable-contains?	procedure)
@@ -4339,26 +4375,28 @@
 (hashtable-keys	procedure)
 (string-ci-hash	procedure)
 (string-hash	procedure)
-(symbol-hash	procedure)
-)]
-      [(equal? list-instance '(rnrs sorting)) '(
+(symbol-hash	procedure))))
+
+(define rnrs-sorting (private-process '(rnrs sorting) '(
 (list-sort	procedure)
 (vector-sort	procedure)
 (vector-sort!	procedure)
-)]
-      [(equal? list-instance '(rnrs programs)) '(
+)))
+
+(define rnrs-programs (private-process '(rnrs programs) '(
 (command-line	global-param)
 (exit	procedure)
-)]
-      [(equal? list-instance '(rnrs mutable-pairs)) '(
+)))
+
+(define rnrs-mutable-pairs (private-process '(rnrs mutable pairs) '(
 (set-car!	procedure)
-(set-cdr!	procedure)
-)]
-      [(equal? list-instance '(rnrs mutable-strings)) '(
+(set-cdr!	procedure))))
+
+(define rnrs-mutable-strings (private-process '(rnrs mutable strings) '(
 (string-fill!	procedure)
-(string-set!	procedure)
-)]
-      [(equal? list-instance '(rnrs io ports)) '(
+(string-set!	procedure))))
+
+(define rnrs-io-ports (private-process '(rnrs io ports) '(
 (&i/o	syntax)
 (&i/o-decoding	syntax)
 (&i/o-encoding	syntax)
@@ -4471,9 +4509,9 @@
 (transcoder-codec	procedure)
 (transcoder-eol-style	procedure)
 (transcoder-error-handling-mode	procedure)
-(utf-8-codec	procedure)
-)]
-      [(equal? list-instance '(rnrs io simple)) '(
+(utf-8-codec	procedure))))
+
+(define rnrs-io-simple (private-process '(rnrs io simple) '(
 (&i/o	syntax)
 (&i/o-file-already-exists	syntax)
 (&i/o-file-does-not-exist	syntax)
@@ -4528,9 +4566,9 @@
 (read	procedure)
 (read-char	procedure)
 (write	procedure)
-(write-char	procedure)
-)]
-      [(equal? list-instance '(rnrs arithmetic flonums)) '(
+(write-char	procedure))))
+
+(define rnrs-arithmetic-flonums (private-process '(rnrs arithmetic flonums) '(
 (&no-infinities	syntax)
 (&no-nans	syntax)
 (fixnum->flonum	procedure)
@@ -4582,9 +4620,9 @@
 (make-no-nans-violation	procedure)
 (no-infinities-violation?	procedure)
 (no-nans-violation?	procedure)
-(real->flonum	procedure)
-)]
-      [(equal? list-instance '(rnrs arithmetic bitwise)) '(
+(real->flonum	procedure))))
+
+(define rnrs-arithmetic-bitwise (private-process '(rnrs arithmetic bitwise) '(
 (bitwise-and	procedure)
 (bitwise-arithmetic-shift	procedure)
 (bitwise-arithmetic-shift-left	procedure)
@@ -4601,9 +4639,9 @@
 (bitwise-not	procedure)
 (bitwise-reverse-bit-field	procedure)
 (bitwise-rotate-bit-field	procedure)
-(bitwise-xor	procedure)
-)]
-      [(equal? list-instance '(rnrs arithmetic fixnums)) '(
+(bitwise-xor	procedure))))
+
+(define rnrs-arithmetic-fixnums (private-process '(rnrs arithmetic fixnums) '(
 (fixnum-width	procedure)
 (fixnum?	procedure)
 (fx*/carry	procedure)
@@ -4648,9 +4686,9 @@
 (least-fixnum	procedure)
 (fx*	procedure)
 (fx+	procedure)
-(fx-	procedure)
-)]
-      [(equal? list-instance '(rnrs records syntactic)) '(
+(fx-	procedure))))
+
+(define rnrs-records-syntactic (private-process '(rnrs records syntactic) '(
 (define-record-type	syntax)
 (fields	syntax)
 (immutable	syntax)
@@ -4662,9 +4700,9 @@
 (protocol	syntax)
 (record-constructor-descriptor	syntax)
 (record-type-descriptor	procedure)
-(sealed	syntax)
-)]
-      [(equal? list-instance '(rnrs records procedure)) '(
+(sealed	syntax))))
+
+(define rnrs-records-procedure (private-process '(rnrs records procedure) '(
 (make-record-constructor-descriptor	procedure)
 (make-record-type-descriptor	procedure)
 (record-constructor	procedure)
@@ -4672,8 +4710,9 @@
 (record-mutator	procedure)
 (record-predicate	procedure)
 (record-type-descriptor?	procedure)
-)]
-      [(equal? list-instance '(rnrs records inspection)) '(
+)))
+
+(define rnrs-records-inspection (private-process '(rnrs records inspection) '(
 (record?	procedure)
 (record-field-mutable?	procedure)
 (record-rtd	procedure)
@@ -4684,8 +4723,9 @@
 (record-type-parent	procedure)
 (record-type-sealed?	procedure)
 (record-type-uid	procedure)
-)]
-      [(equal? list-instance '(chezscheme csv7)) '(
+)))
+
+(define chezscheme-csv7 (private-process '(chezscheme csv7) '(
 (record-field-accessible?	procedure)
 (record-field-accessor	procedure)
 (record-field-mutable?	procedure)
@@ -4695,8 +4735,9 @@
 (record-type-field-names	procedure)
 (record-type-name	procedure)
 (record-type-symbol	procedure)
-)]
-      [(equal? list-instance '(scheme csv7)) '(
+)))
+
+(define scheme-csv7 (private-process '(scheme csv7) '(
 (record-field-accessible?	procedure)
 (record-field-accessor	procedure)
 (record-field-mutable?	procedure)
@@ -4705,7 +4746,5 @@
 (record-type-field-decls	procedure)
 (record-type-field-names	procedure)
 (record-type-name	procedure)
-(record-type-symbol	procedure)
-)]
-      [else '()])))
+(record-type-symbol	procedure))))
 )
