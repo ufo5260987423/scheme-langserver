@@ -12,6 +12,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; procedure parameter variable
 (define (define-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [library-identifiers (get-nearest-ancestor-library-identifier index-node)]
@@ -24,7 +26,8 @@
                 identifier 
                 document 
                 (car key-index-nodes) 
-                library-identifiers)]
+                library-identifiers
+                'procedure)]
             [dummies (cdr key-index-nodes)])
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
@@ -44,7 +47,8 @@
                       dummy-expression
                       document
                       dummy-index-node
-                      '())])
+                      '()
+                      'parameter)])
                 (match dummy-expression
                   [(? symbol? dummy-identifier)
                     (index-node-references-export-to-other-node-set!
@@ -70,7 +74,8 @@
                 (car* identifier)
                 document 
                 (cadr (index-node-children index-node))
-                library-identifiers)])
+                library-identifiers
+                'variable)])
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
             (append 

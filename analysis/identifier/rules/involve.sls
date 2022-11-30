@@ -42,7 +42,8 @@
                             (identifier-reference-identifier reference)
                             (identifier-reference-document reference)
                             (identifier-reference-index-node reference)
-                            library-identifier))
+                            library-identifier
+                            (identifier-reference-type reference)))
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
                   parent-index-node

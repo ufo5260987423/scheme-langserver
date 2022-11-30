@@ -10,6 +10,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; pointer 
 (define (export-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
@@ -57,7 +59,8 @@
                   (annotation-stripped (index-node-datum/annotations external-index-node))
                   document
                   external-index-node
-                  library-identifiers))))
+                  library-identifiers
+                  'pointer))))
 
           (if (not (null? (cdr children-index-nodes)))
             (loop 
@@ -78,7 +81,8 @@
                   expression
                   document
                   index-node
-                  library-identifiers))
+                  library-identifiers
+                  'pointer))
                 references))))]
       [else '()])))
 )

@@ -12,6 +12,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; parameter 
 (define (lambda-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
@@ -58,7 +60,8 @@
               expression
               document
               index-node
-              '())])
+              '()
+              'parameter)])
         (index-node-references-export-to-other-node-set! 
           index-node
           (append 

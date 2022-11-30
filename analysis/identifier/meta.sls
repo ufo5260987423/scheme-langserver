@@ -4,1320 +4,4708 @@
      (scheme-langserver analysis identifier reference))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
-   (map (lambda (identifier) (make-identifier-reference identifier '() '() list-instance))
+   (map (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() list-instance (cadr identifier-pair)))
    (cond
-      [(equal? list-instance '(rnrs)) '( &assertion &condition &error &i/o &i/o-decoding
- &i/o-encoding &i/o-file-already-exists
- &i/o-file-does-not-exist &i/o-file-is-read-only
- &i/o-file-protection &i/o-filename &i/o-invalid-position
- &i/o-port &i/o-read &i/o-write &implementation-restriction
- &irritants &lexical &message &no-infinities &no-nans
- &non-continuable &serious &syntax &undefined &violation
- &warning &who * + - ... / => _ abs acos and angle append
- apply asin assert assertion-violation assertion-violation?
- assoc assp assq assv atan begin binary-port? bitwise-and
- bitwise-arithmetic-shift bitwise-arithmetic-shift-left
- bitwise-arithmetic-shift-right bitwise-bit-count
- bitwise-bit-field bitwise-bit-set? bitwise-copy-bit
- bitwise-copy-bit-field bitwise-first-bit-set bitwise-if
- bitwise-ior bitwise-length bitwise-not
- bitwise-reverse-bit-field bitwise-rotate-bit-field
- bitwise-xor boolean=? boolean? bound-identifier=?
- buffer-mode buffer-mode? bytevector->sint-list
- bytevector->string bytevector->u8-list bytevector->uint-list
- bytevector-copy bytevector-copy! bytevector-fill!
- bytevector-ieee-double-native-ref
- bytevector-ieee-double-native-set!
- bytevector-ieee-double-ref bytevector-ieee-double-set!
- bytevector-ieee-single-native-ref
- bytevector-ieee-single-native-set!
- bytevector-ieee-single-ref bytevector-ieee-single-set!
- bytevector-length bytevector-s16-native-ref
- bytevector-s16-native-set! bytevector-s16-ref
- bytevector-s16-set! bytevector-s32-native-ref
- bytevector-s32-native-set! bytevector-s32-ref
- bytevector-s32-set! bytevector-s64-native-ref
- bytevector-s64-native-set! bytevector-s64-ref
- bytevector-s64-set! bytevector-s8-ref bytevector-s8-set!
- bytevector-sint-ref bytevector-sint-set!
- bytevector-u16-native-ref bytevector-u16-native-set!
- bytevector-u16-ref bytevector-u16-set!
- bytevector-u32-native-ref bytevector-u32-native-set!
- bytevector-u32-ref bytevector-u32-set!
- bytevector-u64-native-ref bytevector-u64-native-set!
- bytevector-u64-ref bytevector-u64-set! bytevector-u8-ref
- bytevector-u8-set! bytevector-uint-ref bytevector-uint-set!
- bytevector=? bytevector? caaaar caaadr caaar caadar caaddr
- caadr caar cadaar cadadr cadar caddar cadddr caddr cadr
- call-with-bytevector-output-port
- call-with-current-continuation call-with-port
- call-with-string-output-port call-with-values call/cc car
- case-lambda cdaaar cdaadr cdaar cdadar cdaddr cdadr cdar
- cddaar cddadr cddar cdddar cddddr cdddr cddr cdr ceiling
- char->integer char-alphabetic? char-downcase char-foldcase
- char-general-category char-lower-case? char-numeric?
- char-title-case? char-titlecase char-upcase char-upper-case?
- char-whitespace? char? close-input-port close-output-port
- close-port complex? cond condition condition-accessor
- condition-irritants condition-message condition-predicate
- condition-who condition? cons cons* cos datum->syntax define
- define-condition-type define-enumeration define-record-type
- define-syntax denominator display div div-and-mod div0
- div0-and-mod0 do else endianness enum-set->list
- enum-set-complement enum-set-constructor enum-set-difference
- enum-set-indexer enum-set-intersection enum-set-member?
- enum-set-projection enum-set-subset? enum-set-union
- enum-set-universe enum-set=? eof-object eof-object?
- eol-style eq? equal-hash equal? eqv? error
- error-handling-mode error? even? exact exact-integer-sqrt
- exact? exists exp expt fields file-options filter find
- finite? fixnum->flonum fixnum-width fixnum? fl* fl+ fl- fl/
- fl<=? fl<? fl=? fl>=? fl>? flabs flacos flasin flatan
- flceiling flcos fldenominator fldiv fldiv-and-mod fldiv0
- fldiv0-and-mod0 fleven? flexp flexpt flfinite? flfloor
- flinfinite? flinteger? fllog flmax flmin flmod flmod0 flnan?
- flnegative? flnumerator flodd? flonum? floor flpositive?
- flround flsin flsqrt fltan fltruncate flzero? fold-left
- fold-right for-all for-each free-identifier=? fx*/carry
- fx+/carry fx-/carry fx<=? fx<? fx=? fx>=? fx>? fxand
- fxarithmetic-shift fxarithmetic-shift-left
- fxarithmetic-shift-right fxbit-count fxbit-field fxbit-set?
- fxcopy-bit fxcopy-bit-field fxdiv fxdiv-and-mod fxdiv0
- fxdiv0-and-mod0 fxeven? fxfirst-bit-set fxif fxior fxlength
- fxmax fxmin fxmod fxmod0 fxnegative? fxnot fxodd?
- fxpositive? fxreverse-bit-field fxrotate-bit-field fxxor
- fxzero? gcd generate-temporaries get-bytevector-all
- get-bytevector-n get-bytevector-n! get-bytevector-some
- get-char get-datum get-line get-string-all get-string-n
- get-string-n! get-u8 greatest-fixnum guard hashtable-clear!
- hashtable-contains? hashtable-copy hashtable-delete!
- hashtable-equivalence-function hashtable-hash-function
- hashtable-mutable? hashtable-ref hashtable-set!
- hashtable-size hashtable-update! hashtable?
- i/o-decoding-error? i/o-encoding-error-char
- i/o-encoding-error? i/o-error-filename i/o-error-port
- i/o-error-position i/o-error? i/o-file-already-exists-error?
- i/o-file-does-not-exist-error? i/o-file-is-read-only-error?
- i/o-file-protection-error? i/o-filename-error?
- i/o-invalid-position-error? i/o-port-error? i/o-read-error?
- i/o-write-error? identifier-syntax identifier? if imag-part
- immutable implementation-restriction-violation? inexact
- inexact? infinite? input-port? integer->char integer-valued?
- integer? irritants-condition? lambda latin-1-codec lcm
- least-fixnum length let let* let*-values let-syntax
- let-values letrec letrec* letrec-syntax lexical-violation?
- list list->string list->vector list-ref list-sort list-tail
- list? log lookahead-char lookahead-u8 magnitude
- make-assertion-violation make-bytevector
- make-custom-binary-input-port
- make-custom-binary-input/output-port
- make-custom-binary-output-port
- make-custom-textual-input-port
- make-custom-textual-input/output-port
- make-custom-textual-output-port make-enumeration
- make-eq-hashtable make-eqv-hashtable make-error
- make-hashtable make-i/o-decoding-error
- make-i/o-encoding-error make-i/o-error
- make-i/o-file-already-exists-error
- make-i/o-file-does-not-exist-error
- make-i/o-file-is-read-only-error
- make-i/o-file-protection-error make-i/o-filename-error
- make-i/o-invalid-position-error make-i/o-port-error
- make-i/o-read-error make-i/o-write-error
- make-implementation-restriction-violation
- make-irritants-condition make-lexical-violation
- make-message-condition make-no-infinities-violation
- make-no-nans-violation make-non-continuable-violation
- make-polar make-record-constructor-descriptor
- make-record-type-descriptor make-rectangular
- make-serious-condition make-string make-syntax-violation
- make-transcoder make-undefined-violation
- make-variable-transformer make-vector make-violation
- make-warning make-who-condition map max member memp memq
- memv message-condition? min mod mod0 mutable nan?
- native-endianness native-eol-style native-transcoder
- negative? newline no-infinities-violation?
- no-nans-violation? non-continuable-violation? nongenerative
- not null? number? numerator odd? opaque
- open-bytevector-input-port open-bytevector-output-port
- open-file-input-port open-file-input/output-port
- open-file-output-port open-string-input-port
- open-string-output-port or output-port-buffer-mode
- output-port? pair? parent parent-rtd partition peek-char
- port-eof? port-has-port-position?
- port-has-set-port-position!? port-position port-transcoder
- port? positive? procedure? protocol put-bytevector put-char
- put-datum put-string put-u8 quasiquote quasisyntax quote <
- <= = > >= call-with-input-file call-with-output-file case
- char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>? char<=?
- char<? char=? char>=? char>? command-line current-error-port
- current-input-port current-output-port delete-file
- dynamic-wind exit file-exists? flush-output-port fx* fx+ fx-
- hashtable-entries hashtable-keys number->string
- open-input-file open-output-file record-constructor record?
- standard-error-port standard-input-port standard-output-port
- string->number string-ci<=? string-ci<? string-ci=?
- string-ci>=? string-ci>? string<=? string<? string=?
- string>=? string>? syntax-rules utf-16-codec
- with-input-from-file with-output-to-file raise
- raise-continuable rational-valued? rational? rationalize
- read read-char real->flonum real-part real-valued? real?
- record-accessor record-constructor-descriptor
- record-field-mutable? record-mutator record-predicate
- record-rtd record-type-descriptor record-type-descriptor?
- record-type-field-names record-type-generative?
- record-type-name record-type-opaque? record-type-parent
- record-type-sealed? record-type-uid remove remp remq remv
- reverse round sealed serious-condition? set!
- set-port-position! simple-conditions sin
- sint-list->bytevector sqrt string string->bytevector
- string->list string->symbol string->utf16 string->utf32
- string->utf8 string-append string-ci-hash string-copy
- string-downcase string-foldcase string-for-each string-hash
- string-length string-normalize-nfc string-normalize-nfd
- string-normalize-nfkc string-normalize-nfkd string-ref
- string-titlecase string-upcase string? substring
- symbol->string symbol-hash symbol=? symbol? syntax
- syntax->datum syntax-case syntax-violation
- syntax-violation-form syntax-violation-subform
- syntax-violation? tan textual-port? transcoded-port
- transcoder-codec transcoder-eol-style
- transcoder-error-handling-mode truncate u8-list->bytevector
- uint-list->bytevector undefined-violation? unless unquote
- unquote-splicing unsyntax unsyntax-splicing utf-8-codec
- utf16->string utf32->string utf8->string values vector
- vector->list vector-fill! vector-for-each vector-length
- vector-map vector-ref vector-set! vector-sort vector-sort!
- vector? violation? warning? when who-condition?
- with-exception-handler with-syntax write write-char zero?)]
-      [(equal? list-instance '(scheme)) '(\x31;+
-\x31;
-\x2D;1+
-fxlogand symbol-hashtable-update! r6rs:dynamic-wind trace-define
- mutable-string? assert textual-port-input-count
- property-list make-parameter compile-library logbit0 logbit1
- make-i/o-file-does-not-exist-error pretty-line-length
- bytevector-s56-ref make-custom-binary-output-port logbit?
- virtual-register ftype-set! fields make-ftype-pointer
- make-source-object port-output-full? abs break-handler fl*
- library-directories fl+ set-binary-port-output-buffer! fl-
- fl/ port-output-index car fl< fl= and fl> cdr
- profile-line-number-color eq? bytevector-s64-ref fx* fx+ ash
- make-assertion-violation fx- gcd fx/ div box
- record-type-field-names flacos fx< fx= cos fx>
- string->symbol compile-whole-program bytevector-u16-set!
- for-each lcm exp map let max disable-interrupts min
- make-i/o-port-error log bytevector-compress string<=? mod
- fldiv0 expt-mod string>=? rec not flatan tan
- critical-section vector-length close-port
- set-textual-port-output-size! flasin binary-port-output-size
- sin make-object-finder engine-return current-expand
- console-input-port textual-port-input-index port-bol?
- &i/o-write filter datum->syntax no-infinities-violation?
- vector-for-each gensym fxvector-ref flpositive?
- bytevector-ieee-double-ref getenv eq-hashtable-delete!
- set-port-input-buffer! standard-error-port port-eof?
- make-input/output-port r6rs:char-ci<? set-port-output-index!
- r6rs:char-ci=? r6rs:char-ci>? who-condition?
- i/o-decoding-error? make-i/o-invalid-position-error
- bytevector-u24-set! flnan? add1 mutable-fxvector? flexpt
- flodd? imag-part reverse! top-level-program &source flmod0
- source-table-delete! &i/o-file-does-not-exist
- date-zone-offset caar foreign-callable-entry-point cfl*
- print-record cfl+ acos bytevector-u16-ref cadr cfl- cfl/
- fold-left compile-program-handler unsyntax-splicing fl<=
- open-process-ports fl<? fl=? fl>= fl>? cfl= port-name cdar
- output-port-buffer-mode logtest condition-irritants cddr
- case display-condition r5rs foreign-entry? fx1+ fx1-
- csv7:record-field-accessor cfl-real-part bytevector-u24-ref
- &lexical set-port-nonblocking! div0 transcoder-eol-style
- bitwise-first-bit-set pretty-one-line-limit foreign-alloc
- make-condition atan remove-hash-table! inexact? box? fx<=
- fx<? asin fx=? fx>= fx>? bytevector-u32-set!
- clear-output-port newline cond assp assq cons assv
- bytevector-u32-ref cosh hashtable-clear!
- keyboard-interrupt-handler find enum-set? string->utf16
- string->utf32 string-append else fxvector-length
- put-hash-table! ieee inexact->exact define-syntax
- i/o-file-does-not-exist-error? eqv? fllp r6rs:syntax-rules
- get-datum/annotations u8-list->bytevector eval flsqrt equal?
- flceiling bytevector-u40-ref print-vector-length let*
- bytevector-s64-native-set! cp0-outer-unroll-limit
- expression-editor implicit-exports nan? error-handling-mode
- exit fxif record-type-equal-procedure r6rs:char-ci<=? expt
- odd? fxcopy-bit port-has-port-nonblocking?? exact?
- r6rs:char-ci>=? transcoder-codec timer-interrupt-handler
- real-valued? iota top-level-value mod0 memp memq memv meta
- hashtable-hash-function syntax-violation-subform
- get-thread-id load datum->syntax-object list format
- bytevector-u40-set! internal-defines-as-letrec* error?
- bytevector-u64-native-ref default-exception-handler
- endianness port-file-descriptor utf-16-codec read except
- errorf set! bitwise-arithmetic-shift-right case-sensitive
- lambda substring-fill! quotient enum-set-complement
- violation? annotation? remp remq remv only make-guardian
- tanh undefined-variable-warnings box-cas! &error
- pretty-print path-extension buffer-mode? procedure? sinh
- i/o-error? bytevector sub1 binary-port? time
- unregister-guardian nonnegative? flinteger?
- set-top-level-value! date-zone-name foreign-entry
- syntax->list load-program &syntax let-values fxnonpositive?
- sort when port-position bytevector-uint-ref sqrt
- pretty-standard-indent void bytevector-s16-native-ref
- scheme-environment r6rs:char<? r6rs:char=? r6rs:char>?
- &message fxdiv0 source-object-column file-position
- open-output-string bytevector-ieee-double-set! unget-u8
- with-source-path expand exists define-top-level-value
- append! collect-rendezvous path-last current-date
- make-irritants-condition define-record-type char-numeric?
- display-statistics library-list open-bytevector-output-port
- string-normalize-nfc string-normalize-nfd export
- file-symbolic-link? fxodd? bytevector-u48-ref length
- make-custom-textual-input-port raise-continuable fxmod0
- annotation-stripped current-eval fasl-file
- set-sstats-gc-count! import path-rest set-virtual-register!
- put-string-some parameterize bytevector-u56-ref
- ftype-init-lock! cost-center-time immutable r6rs:char<=?
- r6rs:char>=? port-output-size expand-output
- collect-trip-bytes fxbit-field member path-root call/1cc
- unread-char bytevector-u64-ref char-ci<? char-ci=? char-ci>?
- collect-request-handler locked-object? null-environment
- cost-center-allocation-count i/o-encoding-error-char
- rationalize create-exception-state scheme-program letrec
- make-boot-file sstats-bytes fxbit-count
- open-file-input/output-port time-difference! merge!
- weak-cons string-ci<=? record-writer binary-port-input-size
- string-ci>=? hashtable-contains? trace-case-lambda
- vector-fill! trace-lambda fasl-read open-fd-input-port
- r6rs:call-with-output-file strip-fasl-file hashtable?
- write-char current-time record-case
- generate-inspector-information bytevector-s8-set!
- fluid-let-syntax apropos petite? interactive?
- source-file-descriptor? hashtable-equivalence-function
- r6rs:current-input-port ftype-spin-lock! let*-values
- open-input-output-file oblist bytevector-uint-set!
- open-fd-input/output-port subtract-duration
- hash-table-for-each char-title-case? set-sstats-gc-bytes!
- last-pair caaar caadr fxlength &i/o-read cadar logand caddr
- collections abort r6rs:call-with-input-file
- condition-predicate string-ci-hash fl<=? char-name
- enum-set-universe acosh fl>=? string->bytevector cdaar
- time-nanosecond cdadr symbol-hashtable-cell &non-continuable
- make-i/o-error compress-format begin cddar fxnegative?
- compile-file-message record? cdddr
- bytevector-ieee-double-native-set! logior &i/o-port
- symbol-hashtable-delete! foreign-address-name
- current-input-port condition-message lognot char-
- csv7:record-field-mutable? textual-port-input-buffer char?
- custom-port-buffer-size fxfirst-bit-set pariah
- make-variable-transformer alias date?
- set-binary-port-input-index! parent delete-file ftype-ref
- real-part hashtable-entries put-datum path-absolute? debug
- logxor bytevector-u32-native-set! angle open-source-file
- r6rs:file-exists? vector->immutable-vector define-structure
- delay flnonpositive? fxarithmetic-shift
- bytevector->uint-list datum fxvector->list enable-interrupts
- chmod console-output-port library-extensions
- call-with-current-continuation mutex-acquire
- bytevector->s8-list put-char real->flonum module
- source-condition? fx<=? modulo atanh immutable-bytevector?
- source-directories real-time profile-dump-data fx>=? collect
- ephemeron-cons call-with-port break display
- port-has-port-length? make-no-nans-violation apply asinh
- let-syntax csv7:record-type-symbol time-utc->date
- directory-separator atom? make-record-type
- symbol-hashtable-set! compile-whole-library cons*
- get-bytevector-some! date-nanosecond bitwise-bit-set?
- rational-valued? string-copy! r5rs-syntax string-fill! assoc
- with-implicit top-level-mutable? source-object-bfp
- quasisyntax flabs string-length bytevector-s32-native-ref
- sstats-gc-real ratnum? char-downcase iconv-codec
- char-upper-case? input-port-ready? source-object-efp - interaction-environment sstats-print random
- gensym->unique-string fldiv flcos bytevector-length
- input-port? <= => >= r6rs:standard-input-port
- subtract-duration! object-counts compile flexp
- current-memory-bytes fxlogior mark-port-closed! flmax
- string-ref profile-dump-html pretty-format &continuation
- flmin fllog source-object-sfd flmod identifier?
- current-directory pretty-maximum-lines profile-dump-list
- gensym-count fxlognot make-serious-condition
- binary-port-output-buffer fltan floor
- enable-cross-library-optimization
- make-custom-binary-input/output-port syntax-object->datum
- flsin irritants-condition? optimize-level
- library-search-handler i/o-file-already-exists-error? even?
- call-with-input-file fxlogbit0 make-lexical-violation
- fxlogbit1 fxvector-copy annotation-options force cd
- fxlogbit? port-input-size do bitwise-bit-field fxlogxor if
- exact top-level-syntax compile-to-file bytevector-copy error
- substring or scheme generate-procedure-source-information
- sealed source-table-ref record-accessor copy-environment
- opaque list-head default-record-equal-procedure fxabs rename
- bitwise-bit-count open-file-input-port
- make-i/o-file-is-read-only-error list-copy fxand
- library-version guard bytevector-u48-set! fxmodulo
- cost-center? fxdiv remove! open-string-output-port
- implementation-restriction-violation?
- port-has-set-port-position!? debug-level flnumerator
- register-signal-handler fxior fxmax integer? fxmin
- initial-bytes-allocated remove fxmod compile-library-handler
- define-property make-i/o-filename-error record-type-name
- trace-output-port fxnot fxvector-set! remprop
- record-hash-procedure call-with-values fxsll fxsra
- vector-sort! fxsrl merge utf-8-codec command-line-arguments
- make-vector list* read-token bwp-object? fxxor list?
- visit-compiled-from-port div0-and-mod0 pair? mkdir
- set-time-second! collect-notify self-evaluating-vectors
- mutex? bytevector-u56-set! remove-foreign-entry
- library-exports ieee-environment eol-style compile-to-port
- block-read isqrt syntax-violation list-tail
- set-sstats-bytes! environment? transcoded-port logor
- undefined-violation? ftype-guardian prefix
- bitwise-rotate-bit-field binary-port-input-buffer
- make-thread-parameter mutable fxlogtest
- r6rs:with-output-to-file source-table? mutable-bytevector?
- eof-object finite? bytevector-u64-native-set! real?
- list-sort bytevector-u8-set! profile-query-weight
- foreign-callable bytevector-ieee-single-set! raise
- eq-hashtable-ref trace-let put-u8 subset-mode for-all
- date-year-day time-second bytevector-u64-set! gensym?
- make-custom-textual-input/output-port remq! new-cafe
- make-ephemeron-eq-hashtable enum-set-indexer remv!
- scheme-version printf char-foldcase load-library
- make-i/o-encoding-error i/o-error-filename reverse magnitude
- number? condition-name compile-imported-libraries
- procedure-arity-mask flfloor reset time<? enum-set-union
- time=? time>? null? fresh-line set-port-input-index! ormap
- fleven? guardian? current-exception-state revisit
- fxdiv0-and-mod0 eval-when &implementation-restriction port?
- with-input-from-string bytevector->immutable-bytevector
- threaded? r6rs:hashtable-entries rational? values
- hashtable-ephemeron? with-output-to-string
- make-i/o-write-error i/o-file-is-read-only-error? sleep
- time? bound-identifier=? utf-16le-codec sc-expand
- foreign-sizeof source-file-descriptor-path condition-wait
- vector time-difference char->integer integer-valued?
- engine-block bitwise-and infinite? ftype-pointer=?
- make-sstats cp0-effort-limit getprop char-titlecase
- compress-level waiter-prompt-and-read round utf32->string
- date-and-time sort! bytevector->u8-list drop-prefix trace
- record-constructor-descriptor? syntax-violation-form
- vector-cas! get-char quote cpu-time port-nonblocking?
- make-string bitwise-ior record-field-mutable? unbox
- eq-hashtable-ephemeron? commonization-level date-dst?
- eval-syntax-expanders-when putenv subst enum-set=?
- bitwise-not string-truncate! r6rs:delete-file
- verify-loadability textual-port-input-size condition
- textual-port-output-size make-syntax-violation visit
- type-descriptor hash-table? generate-instruction-counts
- constructor flnegative? make-ephemeron-eqv-hashtable
- get-string-some! string-for-each bitwise-xor fold-right
- date-hour make-input-port condition-accessor string-ci<?
- string-ci=? string-ci>? record-type-hash-procedure
- i/o-filename-error? vector-copy format-condition?
- i/o-write-error? fxquotient boolean? bytevector-s16-set!
- enum-set-projection default-prompt-and-read
- bytevector-s16-native-set! pretty-initial-indent
- immutable-vector? zero? get-line ftype-pointer?
- bitwise-copy-bit transcript-cafe standard-input-port
- list->vector fxarithmetic-shift-right source-object?
- get-mode case-lambda &i/o-decoding make-source-table
- print-precision write subst! sstats-real
- bytevector-ieee-single-native-ref
- csv7:record-field-accessible? command-line record-type-uid
- enum-set-subset? make-undefined-violation greatest-fixnum
- r6rs:record? fxvector set-binary-port-input-size! fixnum?
- flonum? bytevector-uncompress substq flush-output-port
- substv string-copy file-regular? string-hash latin-1-codec
- bytevector-s24-set! date-year vector-set!
- compile-time-value? unless source-table-cell flfinite?
- directory-list port-output-buffer cfl-conjugate fltruncate
- transcript-off make-who-condition r6rs:utf-16-codec
- concatenate-object-files print-extended-identifiers
- positive? file-change-time hashtable-update! process
- &violation sstats-gc-cpu make-weak-eq-hashtable random-seed
- string<? string=? vector-sort time<=? string>?
- fxvector->immutable-fxvector set-sstats-gc-real!
- compile-script time>=? make-continuation-condition string
- locate-source-object-source condition-continuation
- syntax->datum record-mutator cost-center-instruction-count
- source-table-dump revisit-compiled-from-port profile
- r6rs:case char-ready? put-bytevector make-i/o-decoding-error
- bytevector-s32-set! top-level-syntax?
- make-custom-binary-input-port string-set! fx*/carry
- syntax-error exit-handler fldenominator
- current-locate-source-object-source gensym-prefix flround
- environment-symbols enum-set-member? i/o-read-error?
- maximum-memory-bytes fluid-let make-boot-header
- letrec-syntax textual-port-output-count
- r6rs:standard-output-port generate-covin-files record-rtd
- scheme-start cfl-magnitude-squared source-object-line
- set-time-nanosecond! default-record-hash-procedure
- profile-clear binary-port-input-count
- set-binary-port-output-size! unquote-splicing
- bitwise-copy-bit-field set-sstats-cpu! &i/o-encoding
- r6rs:eval source-table-set! syntax-case
- make-non-continuable-violation
- port-has-set-port-nonblocking!? set-timer fxnonnegative?
- csv7:record-type-field-decls fasl-compressed r6rs:exit
- bytevector-u16-native-ref import-only bytevector-s40-set!
- with-output-to-file truncate-file open-input-string
- load-shared-object &i/o-filename base-exception-handler
- file-buffer-size ftype-lock! source-table-size
- console-error-port file-options dynamic-wind
- port-has-port-position? bitwise-reverse-bit-field
- symbol-hashtable-contains? hashtable-cell syntax remainder
- hashtable-values fixnum-width flzero? &i/o-invalid-position
- source-condition-form textual-port-output-index list->string
- open-output-file immutable-fxvector? condition-who
- record-type-parent binary-port-input-index meta-cond
- ftype-locked-decr! hashtable-copy make-eq-hashtable run-cp0
- open-bytevector-input-port protocol system
- bytevector-sint-ref i/o-file-protection-error?
- flonum->fixnum fixnum->flonum syntax->annotation
- number->string thread? with-syntax r6rs:string-ci<=?
- uint-list->bytevector record-type-descriptor
- r6rs:string-ci>=? enable-object-counts hashtable-keys
- transcript-on condition? bitwise-if simple-conditions
- collect-generation-radix transcoder? truncate-port
- symbol-hashtable? put-string vector? sstats-cpu
- set-port-bol! make-fxvector maybe-compile-program
- bytevector-sint-set! trace-define-syntax
- profile-clear-database date-minute foreign-free
- hashtable-set! vector-map string-upcase enumerate
- r6rs:number->string fx+/carry set-port-eof!
- make-record-type-descriptor make-custom-textual-output-port
- vector-ref waiter-prompt-string open-file-output-port
- interpret fprintf standard-output-port r6rs:hashtable-keys
- continuation-condition? i/o-encoding-error? set-car!
- generate-temporaries hashtable-size make-output-port
- set-cdr! fxvector-fill! set-port-name! path-first list-ref
- compile-time-value-value add-prefix library-requirements
- hashtable-ref suppress-greeting close-input-port
- profile-load-data environment-mutable? foreign-set!
- print-brackets &serious &format make-eqv-hashtable
- apropos-list set-box! set-port-length! message-condition?
- denominator magnitude-squared csv7:record-type-field-names
- date->time-utc thread-condition? make-source-condition
- enum-set-intersection symbol-hashtable-ref list->fxvector
- bitwise-arithmetic-shift-left bytevector->sint-list
- set-sstats-real! copy-time put-source-table syntax-rules
- non-continuable-violation? date-day port-input-buffer
- bytevector-s64-native-ref ftype-locked-incr!
- r6rs:flush-output-port set-port-position! annotation-source
- directory-separator? invoke-library syntax-violation?
- call-with-output-file extend-syntax r6rs:string-ci<?
- r6rs:string-ci=? r6rs:string-ci>? binary-port-output-count
- eq-hashtable? r6rs:open-input-file fasl-strip-options
- current-transcoder virtual-register-count port-closed?
- bitwise-length import-notify delete-directory date-month
- nonpositive? display-string assertion-violation
- ftype-unlock! print-graph &condition define-top-level-syntax
- with-cost-center bytes-deallocated make-compile-time-value
- textual-port-output-buffer eq-hashtable-cell flnonnegative?
- make-bytevector make-implementation-restriction-violation
- immutable-box? fxdiv-and-mod r6rs:fx* r6rs:fx+ r6rs:fx-
- bytevector=? lock-object source-file-descriptor decode-float
- fxreverse-bit-field output-port? conjugate include
- parent-rtd mutable-vector? native-endianness compile-profile
- port-input-count exact-integer-sqrt warning
- scheme-version-number file-length foreign-procedure
- expand/optimize set-port-output-size!
- binary-port-output-index print-level date-second
- textual-port? cp0-score-limit file-directory? putprop
- ftype-pointer-address compile-program clear-input-port
- &assertion set-textual-port-input-index!
- compile-interpret-simple hashtable-cells
- collect-maximum-generation string-downcase
- make-source-file-descriptor bytevector-u32-native-ref
- i/o-invalid-position-error? i/o-error-port port-input-empty?
- mutex-release make-format-condition r6rs:string<?
- r6rs:string=? r6rs:string>? generate-profile-forms
- condition-signal top-level-bound? bitwise-arithmetic-shift
- get-bytevector-n pretty-file mutable-box?
- r6rs:current-output-port source-file-descriptor-checksum
- define-condition-type truncate char-upcase locate-source
- transcoder-error-handling-mode
- make-i/o-file-already-exists-error make-annotation
- eq-hashtable-set! port-input-index ftype-sizeof inexact
- get-string-n! print-radix path-parent fldiv-and-mod
- csv7:record-field-mutator bytevector-truncate!
- profile-release-counters unsyntax indirect-export
- char-lower-case? * + - / port-transcoder < = >
- port-has-set-port-length!? complex? file-modification-time
- port-handler make-no-infinities-violation open-input-file _
- ftype-&ref r6rs:current-error-port fork-thread symbol=?
- expand/optimize-output eof-object? sint-list->bytevector
- utf-16be-codec immutable-string? char-alphabetic?
- r6rs:open-output-file fxeven? get-bytevector-n! file-port?
- print-gensym default-library-search-handler
- string-normalize-nfkc string-normalize-nfkd sstats-gc-count
- reset-handler char-ci<=? eq-hashtable-update! box-immutable
- char-ci>=? current-make-source-object
- bytevector-u16-native-set! hashtable-delete!
- eq-hashtable-contains? set-binary-port-input-buffer!
- ftype-pointer-ftype buffer-mode bytevector-ieee-single-ref
- set-binary-port-output-index! profile-dump
- put-bytevector-some open-fd-output-port
- make-record-constructor-descriptor predicate scheme-script
- native-eol-style unget-char free-identifier=?
- current-error-port bytevector-ieee-single-native-set!
- get-source-table! least-fixnum condition-broadcast
- inspect/object sstats-gc-bytes no-nans-violation? call/cc
- utf8->string get-datum call-with-string-output-port
- library-requirements-options make-error
- csv7:record-type-name caaaar set-port-input-size!
- bytevector-s48-set! record-constructor-descriptor caaadr
- fx-/carry fxpositive? syntax->vector with-profile-tracker
- fxcopy-bit-field caadar define-ftype caaddr
- debug-on-exception substq! record-type-generative? substv!
- set-textual-port-input-buffer! compute-size cadaar cadadr
- define-record set-textual-port-output-index! time-type
- caddar cadddr mutex-name string->number &no-nans library
- machine-type add-duration! symbol->string
- get-bytevector-some fldiv0-and-mod0 vector->list port-length
- string->immutable-string fxlogor lookahead-u8
- set-port-output-buffer! library-object-filename
- file-access-time record-type-sealed? define-enumeration
- numerator annotation-option-set block-write get-string-n
- cdaaar string-foldcase unlock-object bytevector-s56-set!
- make-date cdaadr record-type-opaque? cdadar cdaddr
- get-process-id record-predicate &irritants cddaar &i/o
- ftype-pointer-null? cddadr r6rs:string->number cdddar
- csv7:record-type-descriptor cddddr utf16->string
- file-exists? r6rs:standard-error-port
- set-textual-port-output-buffer! make-cost-center
- bytevector-copy! bytevector-fill! maybe-compile-file
- cfl-imag-part bytevector-s8-ref foreign-callable-code-object
- close-output-port add-duration compile-file div-and-mod
- enum-set-difference set-sstats-gc-cpu! quasiquote
- make-hash-table inspect enum-set->list bytevector-s64-set!
- literal-identifier=? get-string-some fxremainder environment
- boolean=? release-minimum-generation
- set-textual-port-input-size! letrec* make-i/o-read-error
- r6rs:string<=? rename-file make-list vector-set-fixnum!
- symbol-hash make-i/o-file-protection-error
- &i/o-file-already-exists char<? char=? char>? r6rs:string>=?
- sstats? record-reader record-equal-procedure abort-handler
- bytevector-s16-ref r6rs:< r6rs:= s8-list->bytevector r6rs:>
- lookahead-char require-nongenerative-clause
- i/o-error-position &who weak-pair? reset-cost-center!
- generate-wpo-files &undefined bytevector-s24-ref
- ephemeron-pair? fl-make-rectangular make-polar
- fxarithmetic-shift-left generate-interrupt-trap make-mutex
- &i/o-file-is-read-only &warning assertion-violation?
- fxbit-set? make-time integer-length
- r6rs:with-input-from-file andmap make-message-condition
- call-with-bytevector-output-port assertion-violationf
- maybe-compile-library bytevector-s32-ref string?
- hashtable-weak? define compile-port make-violation
- serious-condition? debug-condition trace-print print-length
- sstats-difference bytevector-s40-ref date-week-day
- $primitive print-char-name char-general-category
- make-transcoder &no-infinities fxrotate-bit-field
- r6rs:command-line eq-hashtable-weak? bytes-allocated
- set-time-type! string->list char<=? bytevector-u8-ref
- generate-allocation-counts char>=?  ...
- make-weak-eqv-hashtable current-output-port
- lexical-violation? record-type-descriptor?
- with-interrupts-disabled with-mutex define-values
- get-output-string char-whitespace? get-hash-table
- integer->char ftype-pointer->sexpr string-titlecase
- make-hashtable waiter-write r6rs:<= r6rs:>=
- source-table-contains? fxzero? most-positive-fixnum
- enum-set-constructor native-transcoder untrace cflonum?
- nongenerative get-string-all unquote fxvector? fasl-write
- compute-composition peek-char scheme-report-environment
- make-engine string->utf8 make-warning port-file-compressed!
- append statistics partition with-exception-handler negative?
- flinfinite? r6rs:record-constructor annotation-expression
- ceiling bytevector->string foreign-ref hash-table-map
- make-rectangular bytevector-s32-native-set!
- heap-reserve-ratio make-enumeration profile-palette warning?
- open-string-input-port $system get-u8 warningf
- exclusive-cond port-output-count load-compiled-from-port
- most-negative-fixnum hashtable-mutable? print-unicode
- get-bytevector-all identifier-syntax &i/o-file-protection
- bytevector? read-char symbol? reset-maximum-memory-bytes!
- bytevector-ieee-double-native-ref equal-hash
- with-input-from-file bignum? trace-do i/o-port-error?
- exact->inexact bytevector-s48-ref record-constructor
- )]
-      [(equal? list-instance '(chezscheme)) '(symbol-hashtable-update! r6rs:dynamic-wind trace-define
- \x31;+
- \x31;- 
- \x2D;1+ 
- mutable-string? assert textual-port-input-count
- property-list make-parameter compile-library logbit0 logbit1
- make-i/o-file-does-not-exist-error pretty-line-length
- bytevector-s56-ref make-custom-binary-output-port logbit?
- virtual-register ftype-set! fields make-ftype-pointer
- make-source-object port-output-full? abs break-handler fl*
- library-directories fl+ set-binary-port-output-buffer! fl-
- fl/ port-output-index car fl< fl= and fl> cdr
- profile-line-number-color eq? bytevector-s64-ref fx* fx+ ash
- make-assertion-violation fx- gcd fx/ div box
- record-type-field-names flacos fx< fx= cos fx>
- string->symbol compile-whole-program bytevector-u16-set!
- for-each lcm exp map let max disable-interrupts min
- make-i/o-port-error log bytevector-compress string<=? mod
- fldiv0 expt-mod string>=? rec not flatan tan
- critical-section vector-length close-port
- set-textual-port-output-size! flasin binary-port-output-size
- sin make-object-finder engine-return current-expand
- console-input-port textual-port-input-index port-bol?
- &i/o-write filter datum->syntax no-infinities-violation?
- vector-for-each gensym fxvector-ref flpositive?
- bytevector-ieee-double-ref getenv eq-hashtable-delete!
- set-port-input-buffer! standard-error-port port-eof?
- make-input/output-port r6rs:char-ci<? set-port-output-index!
- r6rs:char-ci=? r6rs:char-ci>? who-condition?
- i/o-decoding-error? make-i/o-invalid-position-error
- bytevector-u24-set! flnan? add1 mutable-fxvector? flexpt
- flodd? imag-part reverse! top-level-program &source flmod0
- source-table-delete! &i/o-file-does-not-exist
- date-zone-offset caar foreign-callable-entry-point cfl*
- print-record cfl+ acos bytevector-u16-ref cadr cfl- cfl/
- fold-left compile-program-handler unsyntax-splicing fl<=
- open-process-ports fl<? fl=? fl>= fl>? cfl= port-name cdar
- output-port-buffer-mode logtest condition-irritants cddr
- case display-condition r5rs foreign-entry? fx1+ fx1-
- csv7:record-field-accessor cfl-real-part bytevector-u24-ref
- &lexical set-port-nonblocking! div0 transcoder-eol-style
- bitwise-first-bit-set pretty-one-line-limit foreign-alloc
- make-condition atan remove-hash-table! inexact? box? fx<=
- fx<? asin fx=? fx>= fx>? bytevector-u32-set!
- clear-output-port newline cond assp assq cons assv
- bytevector-u32-ref cosh hashtable-clear!
- keyboard-interrupt-handler find enum-set? string->utf16
- string->utf32 string-append else fxvector-length
- put-hash-table! ieee inexact->exact define-syntax
- i/o-file-does-not-exist-error? eqv? fllp r6rs:syntax-rules
- get-datum/annotations u8-list->bytevector eval flsqrt equal?
- flceiling bytevector-u40-ref print-vector-length let*
- bytevector-s64-native-set! cp0-outer-unroll-limit
- expression-editor implicit-exports nan? error-handling-mode
- exit fxif record-type-equal-procedure r6rs:char-ci<=? expt
- odd? fxcopy-bit port-has-port-nonblocking?? exact?
- r6rs:char-ci>=? transcoder-codec timer-interrupt-handler
- real-valued? iota top-level-value mod0 memp memq memv meta
- hashtable-hash-function syntax-violation-subform
- get-thread-id load datum->syntax-object list format
- bytevector-u40-set! internal-defines-as-letrec* error?
- bytevector-u64-native-ref default-exception-handler
- endianness port-file-descriptor utf-16-codec read except
- errorf set! bitwise-arithmetic-shift-right case-sensitive
- lambda substring-fill! quotient enum-set-complement
- violation? annotation? remp remq remv only make-guardian
- tanh undefined-variable-warnings box-cas! &error
- pretty-print path-extension buffer-mode? procedure? sinh
- i/o-error? bytevector sub1 binary-port? time
- unregister-guardian nonnegative? flinteger?
- set-top-level-value! date-zone-name foreign-entry
- syntax->list load-program &syntax let-values fxnonpositive?
- sort when port-position bytevector-uint-ref sqrt
- pretty-standard-indent void bytevector-s16-native-ref
- scheme-environment r6rs:char<? r6rs:char=? r6rs:char>?
- &message fxdiv0 source-object-column file-position
- open-output-string bytevector-ieee-double-set! unget-u8
- with-source-path expand exists define-top-level-value
- append! collect-rendezvous path-last current-date
- make-irritants-condition define-record-type char-numeric?
- display-statistics library-list open-bytevector-output-port
- string-normalize-nfc string-normalize-nfd export
- file-symbolic-link? fxodd? bytevector-u48-ref length
- make-custom-textual-input-port raise-continuable fxmod0
- annotation-stripped current-eval fasl-file
- set-sstats-gc-count! import path-rest set-virtual-register!
- put-string-some parameterize bytevector-u56-ref
- ftype-init-lock! cost-center-time immutable r6rs:char<=?
- r6rs:char>=? port-output-size expand-output
- collect-trip-bytes fxbit-field member path-root call/1cc
- unread-char bytevector-u64-ref char-ci<? char-ci=? char-ci>?
- collect-request-handler locked-object? null-environment
- cost-center-allocation-count i/o-encoding-error-char
- rationalize create-exception-state scheme-program letrec
- make-boot-file sstats-bytes fxbit-count
- open-file-input/output-port time-difference! merge!
- weak-cons string-ci<=? record-writer binary-port-input-size
- string-ci>=? hashtable-contains? trace-case-lambda
- vector-fill! trace-lambda fasl-read open-fd-input-port
- r6rs:call-with-output-file strip-fasl-file hashtable?
- write-char current-time record-case
- generate-inspector-information bytevector-s8-set!
- fluid-let-syntax apropos petite? interactive?
- source-file-descriptor? hashtable-equivalence-function
- r6rs:current-input-port ftype-spin-lock! let*-values
- open-input-output-file oblist bytevector-uint-set!
- open-fd-input/output-port subtract-duration
- hash-table-for-each char-title-case? set-sstats-gc-bytes!
- last-pair caaar caadr fxlength &i/o-read cadar logand caddr
- collections abort r6rs:call-with-input-file
- condition-predicate string-ci-hash fl<=? char-name
- enum-set-universe acosh fl>=? string->bytevector cdaar
- time-nanosecond cdadr symbol-hashtable-cell &non-continuable
- make-i/o-error compress-format begin cddar fxnegative?
- compile-file-message record? cdddr
- bytevector-ieee-double-native-set! logior &i/o-port
- symbol-hashtable-delete! foreign-address-name
- current-input-port condition-message lognot char-
- csv7:record-field-mutable? textual-port-input-buffer char?
- custom-port-buffer-size fxfirst-bit-set pariah
- make-variable-transformer alias date?
- set-binary-port-input-index! parent delete-file ftype-ref
- real-part hashtable-entries put-datum path-absolute? debug
- logxor bytevector-u32-native-set! angle open-source-file
- r6rs:file-exists? vector->immutable-vector define-structure
- delay flnonpositive? fxarithmetic-shift
- bytevector->uint-list datum fxvector->list enable-interrupts
- chmod console-output-port library-extensions
- call-with-current-continuation mutex-acquire
- bytevector->s8-list put-char real->flonum module
- source-condition? fx<=? modulo atanh immutable-bytevector?
- source-directories real-time profile-dump-data fx>=? collect
- ephemeron-cons call-with-port break display
- port-has-port-length? make-no-nans-violation apply asinh
- let-syntax csv7:record-type-symbol time-utc->date
- directory-separator atom? make-record-type
- symbol-hashtable-set! compile-whole-library cons*
- get-bytevector-some! date-nanosecond bitwise-bit-set?
- rational-valued? string-copy! r5rs-syntax string-fill! assoc
- with-implicit top-level-mutable? source-object-bfp
- quasisyntax flabs string-length bytevector-s32-native-ref
- sstats-gc-real ratnum? char-downcase iconv-codec
- char-upper-case? input-port-ready? source-object-efp fxlogand 
- interaction-environment sstats-print random
- gensym->unique-string fldiv flcos bytevector-length
- input-port? <= => >= r6rs:standard-input-port
- subtract-duration! object-counts compile flexp
- current-memory-bytes fxlogior mark-port-closed! flmax
- string-ref profile-dump-html pretty-format &continuation
- flmin fllog source-object-sfd flmod identifier?
- current-directory pretty-maximum-lines profile-dump-list
- gensym-count fxlognot make-serious-condition
- binary-port-output-buffer fltan floor
- enable-cross-library-optimization
- make-custom-binary-input/output-port syntax-object->datum
- flsin irritants-condition? optimize-level
- library-search-handler i/o-file-already-exists-error? even?
- call-with-input-file fxlogbit0 make-lexical-violation
- fxlogbit1 fxvector-copy annotation-options force cd
- fxlogbit? port-input-size do bitwise-bit-field fxlogxor if
- exact top-level-syntax compile-to-file bytevector-copy error
- substring or scheme generate-procedure-source-information
- sealed source-table-ref record-accessor copy-environment
- opaque list-head default-record-equal-procedure fxabs rename
- bitwise-bit-count open-file-input-port
- make-i/o-file-is-read-only-error list-copy fxand
- library-version guard bytevector-u48-set! fxmodulo
- cost-center? fxdiv remove! open-string-output-port
- implementation-restriction-violation?
- port-has-set-port-position!? debug-level flnumerator
- register-signal-handler fxior fxmax integer? fxmin
- initial-bytes-allocated remove fxmod compile-library-handler
- define-property make-i/o-filename-error record-type-name
- trace-output-port fxnot fxvector-set! remprop
- record-hash-procedure call-with-values fxsll fxsra
- vector-sort! fxsrl merge utf-8-codec command-line-arguments
- make-vector list* read-token bwp-object? fxxor list?
- visit-compiled-from-port div0-and-mod0 pair? mkdir
- set-time-second! collect-notify mutex? bytevector-u56-set!
- remove-foreign-entry library-exports ieee-environment
- eol-style compile-to-port block-read isqrt syntax-violation
- list-tail set-sstats-bytes! environment? transcoded-port
- logor undefined-violation? ftype-guardian prefix
- bitwise-rotate-bit-field binary-port-input-buffer
- make-thread-parameter mutable fxlogtest
- r6rs:with-output-to-file source-table? mutable-bytevector?
- eof-object finite? bytevector-u64-native-set! real?
- list-sort bytevector-u8-set! profile-query-weight
- foreign-callable bytevector-ieee-single-set! raise
- eq-hashtable-ref trace-let put-u8 subset-mode for-all
- date-year-day time-second bytevector-u64-set! gensym?
- make-custom-textual-input/output-port remq! new-cafe
- make-ephemeron-eq-hashtable enum-set-indexer remv!
- scheme-version printf char-foldcase load-library
- make-i/o-encoding-error i/o-error-filename reverse magnitude
- number? condition-name compile-imported-libraries
- procedure-arity-mask flfloor reset time<? enum-set-union
- time=? time>? null? fresh-line set-port-input-index! ormap
- fleven? guardian? current-exception-state revisit
- fxdiv0-and-mod0 eval-when &implementation-restriction port?
- with-input-from-string bytevector->immutable-bytevector
- threaded? r6rs:hashtable-entries rational? values
- hashtable-ephemeron? with-output-to-string
- make-i/o-write-error i/o-file-is-read-only-error? sleep
- time? bound-identifier=? utf-16le-codec sc-expand
- foreign-sizeof source-file-descriptor-path condition-wait
- vector time-difference char->integer integer-valued?
- engine-block bitwise-and infinite? ftype-pointer=?
- make-sstats cp0-effort-limit getprop char-titlecase
- compress-level waiter-prompt-and-read round utf32->string
- date-and-time sort! bytevector->u8-list drop-prefix trace
- record-constructor-descriptor? syntax-violation-form
- vector-cas! get-char quote cpu-time port-nonblocking?
- make-string bitwise-ior record-field-mutable? unbox
- eq-hashtable-ephemeron? commonization-level date-dst?
- eval-syntax-expanders-when putenv subst enum-set=?
- bitwise-not string-truncate! r6rs:delete-file
- verify-loadability textual-port-input-size condition
- textual-port-output-size make-syntax-violation visit
- type-descriptor hash-table? generate-instruction-counts
- constructor flnegative? make-ephemeron-eqv-hashtable
- get-string-some! string-for-each bitwise-xor fold-right
- date-hour make-input-port condition-accessor string-ci<?
- string-ci=? string-ci>? record-type-hash-procedure
- i/o-filename-error? vector-copy format-condition?
- i/o-write-error? fxquotient boolean? bytevector-s16-set!
- enum-set-projection default-prompt-and-read
- bytevector-s16-native-set! pretty-initial-indent
- immutable-vector? zero? get-line ftype-pointer?
- bitwise-copy-bit transcript-cafe standard-input-port
- list->vector fxarithmetic-shift-right source-object?
- get-mode case-lambda &i/o-decoding make-source-table
- print-precision write subst! sstats-real
- bytevector-ieee-single-native-ref
- csv7:record-field-accessible? command-line record-type-uid
- enum-set-subset? make-undefined-violation greatest-fixnum
- r6rs:record? fxvector set-binary-port-input-size! fixnum?
- flonum? bytevector-uncompress substq flush-output-port
- substv string-copy file-regular? string-hash latin-1-codec
- bytevector-s24-set! date-year vector-set!
- compile-time-value? unless source-table-cell flfinite?
- directory-list port-output-buffer cfl-conjugate fltruncate
- transcript-off make-who-condition r6rs:utf-16-codec
- concatenate-object-files print-extended-identifiers
- positive? file-change-time hashtable-update! process
- &violation sstats-gc-cpu make-weak-eq-hashtable random-seed
- string<? string=? vector-sort time<=? string>?
- fxvector->immutable-fxvector set-sstats-gc-real!
- compile-script time>=? make-continuation-condition string
- locate-source-object-source condition-continuation
- syntax->datum record-mutator cost-center-instruction-count
- source-table-dump revisit-compiled-from-port profile
- r6rs:case char-ready? put-bytevector make-i/o-decoding-error
- bytevector-s32-set! top-level-syntax?
- make-custom-binary-input-port string-set! fx*/carry
- syntax-error exit-handler fldenominator
- current-locate-source-object-source gensym-prefix flround
- environment-symbols enum-set-member? i/o-read-error?
- maximum-memory-bytes fluid-let make-boot-header
- letrec-syntax textual-port-output-count
- r6rs:standard-output-port generate-covin-files record-rtd
- scheme-start cfl-magnitude-squared source-object-line
- set-time-nanosecond! default-record-hash-procedure
- profile-clear binary-port-input-count
- set-binary-port-output-size! unquote-splicing
- bitwise-copy-bit-field set-sstats-cpu! &i/o-encoding
- r6rs:eval source-table-set! syntax-case
- make-non-continuable-violation
- port-has-set-port-nonblocking!? set-timer fxnonnegative?
- csv7:record-type-field-decls fasl-compressed r6rs:exit
- bytevector-u16-native-ref import-only bytevector-s40-set!
- with-output-to-file truncate-file open-input-string
- load-shared-object &i/o-filename base-exception-handler
- file-buffer-size ftype-lock! source-table-size
- console-error-port file-options dynamic-wind
- port-has-port-position? bitwise-reverse-bit-field
- symbol-hashtable-contains? hashtable-cell syntax remainder
- hashtable-values fixnum-width flzero? &i/o-invalid-position
- source-condition-form textual-port-output-index list->string
- open-output-file immutable-fxvector? condition-who
- record-type-parent binary-port-input-index meta-cond
- ftype-locked-decr! hashtable-copy make-eq-hashtable run-cp0
- open-bytevector-input-port protocol system
- bytevector-sint-ref i/o-file-protection-error?
- flonum->fixnum fixnum->flonum syntax->annotation
- number->string thread? with-syntax r6rs:string-ci<=?
- uint-list->bytevector record-type-descriptor
- r6rs:string-ci>=? enable-object-counts hashtable-keys
- transcript-on condition? bitwise-if simple-conditions
- collect-generation-radix transcoder? truncate-port
- symbol-hashtable? put-string vector? sstats-cpu
- set-port-bol! make-fxvector maybe-compile-program
- bytevector-sint-set! trace-define-syntax
- profile-clear-database date-minute foreign-free
- hashtable-set! vector-map string-upcase enumerate
- r6rs:number->string fx+/carry set-port-eof!
- make-record-type-descriptor make-custom-textual-output-port
- vector-ref waiter-prompt-string open-file-output-port
- interpret fprintf standard-output-port r6rs:hashtable-keys
- continuation-condition? i/o-encoding-error? set-car!
- generate-temporaries hashtable-size make-output-port
- set-cdr! fxvector-fill! set-port-name! path-first list-ref
- compile-time-value-value add-prefix library-requirements
- hashtable-ref suppress-greeting close-input-port
- profile-load-data environment-mutable? foreign-set!
- print-brackets &serious &format make-eqv-hashtable
- apropos-list set-box! set-port-length! message-condition?
- denominator magnitude-squared csv7:record-type-field-names
- date->time-utc thread-condition? make-source-condition
- enum-set-intersection symbol-hashtable-ref list->fxvector
- bitwise-arithmetic-shift-left bytevector->sint-list
- set-sstats-real! copy-time put-source-table syntax-rules
- non-continuable-violation? date-day port-input-buffer
- bytevector-s64-native-ref ftype-locked-incr!
- r6rs:flush-output-port set-port-position! annotation-source
- directory-separator? invoke-library syntax-violation?
- call-with-output-file extend-syntax r6rs:string-ci<?
- r6rs:string-ci=? r6rs:string-ci>? binary-port-output-count
- eq-hashtable? r6rs:open-input-file fasl-strip-options
- current-transcoder virtual-register-count port-closed?
- bitwise-length import-notify delete-directory date-month
- nonpositive? display-string assertion-violation
- ftype-unlock! print-graph &condition define-top-level-syntax
- with-cost-center bytes-deallocated make-compile-time-value
- textual-port-output-buffer eq-hashtable-cell flnonnegative?
- make-bytevector make-implementation-restriction-violation
- immutable-box? fxdiv-and-mod r6rs:fx* r6rs:fx+ r6rs:fx-
- bytevector=? lock-object source-file-descriptor decode-float
- fxreverse-bit-field output-port? conjugate include
- parent-rtd mutable-vector? native-endianness compile-profile
- port-input-count exact-integer-sqrt warning
- scheme-version-number file-length foreign-procedure
- expand/optimize set-port-output-size!
- binary-port-output-index print-level date-second
- textual-port? cp0-score-limit file-directory? putprop
- ftype-pointer-address compile-program clear-input-port
- &assertion set-textual-port-input-index!
- compile-interpret-simple hashtable-cells
- collect-maximum-generation string-downcase
- make-source-file-descriptor bytevector-u32-native-ref
- i/o-invalid-position-error? i/o-error-port port-input-empty?
- mutex-release make-format-condition r6rs:string<?
- r6rs:string=? r6rs:string>? generate-profile-forms
- condition-signal top-level-bound? bitwise-arithmetic-shift
- get-bytevector-n pretty-file mutable-box?
- r6rs:current-output-port source-file-descriptor-checksum
- define-condition-type truncate char-upcase locate-source
- transcoder-error-handling-mode
- make-i/o-file-already-exists-error make-annotation
- eq-hashtable-set! port-input-index ftype-sizeof inexact
- get-string-n! print-radix path-parent fldiv-and-mod
- csv7:record-field-mutator bytevector-truncate!
- profile-release-counters unsyntax indirect-export
- char-lower-case? * + - / port-transcoder < = >
- port-has-set-port-length!? complex? file-modification-time
- port-handler make-no-infinities-violation open-input-file _
- ftype-&ref r6rs:current-error-port fork-thread symbol=?
- expand/optimize-output eof-object? sint-list->bytevector
- utf-16be-codec immutable-string? char-alphabetic?
- r6rs:open-output-file fxeven? get-bytevector-n! file-port?
- print-gensym default-library-search-handler
- string-normalize-nfkc string-normalize-nfkd sstats-gc-count
- reset-handler char-ci<=? eq-hashtable-update! box-immutable
- char-ci>=? current-make-source-object
- bytevector-u16-native-set! hashtable-delete!
- eq-hashtable-contains? set-binary-port-input-buffer!
- ftype-pointer-ftype buffer-mode bytevector-ieee-single-ref
- set-binary-port-output-index! profile-dump
- put-bytevector-some open-fd-output-port
- make-record-constructor-descriptor predicate scheme-script
- native-eol-style unget-char free-identifier=?
- current-error-port bytevector-ieee-single-native-set!
- get-source-table! least-fixnum condition-broadcast
- inspect/object sstats-gc-bytes no-nans-violation? call/cc
- utf8->string get-datum call-with-string-output-port
- library-requirements-options make-error
- csv7:record-type-name caaaar set-port-input-size!
- bytevector-s48-set! record-constructor-descriptor caaadr
- fx-/carry fxpositive? syntax->vector with-profile-tracker
- fxcopy-bit-field caadar define-ftype caaddr
- debug-on-exception substq! record-type-generative? substv!
- set-textual-port-input-buffer! compute-size cadaar cadadr
- define-record set-textual-port-output-index! time-type
- caddar cadddr mutex-name string->number &no-nans library
- machine-type add-duration! symbol->string
- get-bytevector-some fldiv0-and-mod0 vector->list port-length
- string->immutable-string fxlogor lookahead-u8
- set-port-output-buffer! library-object-filename
- file-access-time record-type-sealed? define-enumeration
- numerator annotation-option-set block-write get-string-n
- cdaaar string-foldcase unlock-object bytevector-s56-set!
- make-date cdaadr record-type-opaque? cdadar cdaddr
- get-process-id record-predicate &irritants cddaar &i/o
- ftype-pointer-null? cddadr r6rs:string->number cdddar
- csv7:record-type-descriptor cddddr utf16->string
- file-exists? r6rs:standard-error-port
- set-textual-port-output-buffer! make-cost-center
- bytevector-copy! bytevector-fill! maybe-compile-file
- cfl-imag-part bytevector-s8-ref foreign-callable-code-object
- close-output-port add-duration compile-file div-and-mod
- enum-set-difference set-sstats-gc-cpu! quasiquote
- make-hash-table inspect enum-set->list bytevector-s64-set!
- literal-identifier=? get-string-some fxremainder environment
- boolean=? release-minimum-generation
- set-textual-port-input-size! letrec* make-i/o-read-error
- r6rs:string<=? rename-file make-list vector-set-fixnum!
- symbol-hash make-i/o-file-protection-error
- &i/o-file-already-exists char<? char=? char>? r6rs:string>=?
- sstats? record-reader record-equal-procedure abort-handler
- bytevector-s16-ref r6rs:< r6rs:= s8-list->bytevector r6rs:>
- lookahead-char require-nongenerative-clause
- i/o-error-position &who weak-pair? reset-cost-center!
- generate-wpo-files &undefined bytevector-s24-ref
- ephemeron-pair? fl-make-rectangular make-polar
- fxarithmetic-shift-left generate-interrupt-trap make-mutex
- &i/o-file-is-read-only &warning assertion-violation?
- fxbit-set? make-time integer-length
- r6rs:with-input-from-file andmap make-message-condition
- call-with-bytevector-output-port assertion-violationf
- maybe-compile-library bytevector-s32-ref string?
- hashtable-weak? define compile-port make-violation
- serious-condition? debug-condition trace-print print-length
- sstats-difference bytevector-s40-ref date-week-day
- $primitive print-char-name char-general-category
- make-transcoder &no-infinities fxrotate-bit-field
- r6rs:command-line eq-hashtable-weak? bytes-allocated
- set-time-type! string->list char<=? bytevector-u8-ref
- generate-allocation-counts char>=?  ...
- make-weak-eqv-hashtable current-output-port
- lexical-violation? record-type-descriptor?
- with-interrupts-disabled with-mutex define-values
- get-output-string char-whitespace? get-hash-table
- integer->char ftype-pointer->sexpr string-titlecase
- make-hashtable waiter-write r6rs:<= r6rs:>=
- source-table-contains? fxzero? most-positive-fixnum
- enum-set-constructor native-transcoder untrace cflonum?
- nongenerative get-string-all unquote fxvector? fasl-write
- compute-composition peek-char scheme-report-environment
- make-engine string->utf8 make-warning port-file-compressed!
- append statistics partition with-exception-handler negative?
- flinfinite? r6rs:record-constructor annotation-expression
- ceiling bytevector->string foreign-ref hash-table-map
- make-rectangular bytevector-s32-native-set!
- heap-reserve-ratio make-enumeration profile-palette warning?
- open-string-input-port $system get-u8 warningf
- exclusive-cond port-output-count load-compiled-from-port
- most-negative-fixnum hashtable-mutable? print-unicode
- get-bytevector-all identifier-syntax &i/o-file-protection
- bytevector? read-char symbol? reset-maximum-memory-bytes!
- bytevector-ieee-double-native-ref equal-hash
- with-input-from-file bignum? trace-do i/o-port-error?
- exact->inexact bytevector-s48-ref record-constructor)]
-      [(equal? list-instance '(rnrs condition)) '(&assertion &condition &error &implementation-restriction
- &irritants &lexical &message &non-continuable &serious
- &syntax &undefined &violation &warning &who
- assertion-violation? condition condition-accessor
- condition-irritants condition-message condition-predicate
- condition-who condition? define-condition-type error?
- implementation-restriction-violation? irritants-condition?
- lexical-violation? make-assertion-violation make-error
- make-implementation-restriction-violation
- make-irritants-condition make-lexical-violation
- make-message-condition make-non-continuable-violation
- make-serious-condition make-syntax-violation
- make-undefined-violation make-violation make-warning
- make-who-condition message-condition?
- non-continuable-violation? serious-condition?
- simple-conditions syntax-violation-form
- syntax-violation-subform syntax-violation?
- undefined-violation? violation? warning? who-condition?)]
-      [(equal? list-instance '(rnrs files)) '(&i/o &i/o-file-already-exists &i/o-file-does-not-exist
- &i/o-file-is-read-only &i/o-file-protection &i/o-filename
- &i/o-invalid-position &i/o-port &i/o-read &i/o-write
- i/o-error-filename i/o-error-port i/o-error-position
- i/o-error? i/o-file-already-exists-error?
- i/o-file-does-not-exist-error? i/o-file-is-read-only-error?
- i/o-file-protection-error? i/o-filename-error?
- i/o-invalid-position-error? i/o-port-error? i/o-read-error?
- i/o-write-error? make-i/o-error make-i/o-file-already-exists-error
- make-i/o-file-does-not-exist-error make-i/o-file-is-read-only-error
- make-i/o-file-protection-error make-i/o-filename-error
- make-i/o-invalid-position-error make-i/o-port-error
- make-i/o-read-error make-i/o-write-error delete-file
- file-exists?)]
-      [(equal? list-instance '(rnrs base)) '(* + - ... / => _ abs acos and angle append apply asin assert
- assertion-violation atan begin boolean=? boolean? caaaar
- caaadr caaar caadar caaddr caadr caar cadaar cadadr cadar
- caddar cadddr caddr cadr call-with-current-continuation
- call-with-values call/cc car cdaaar cdaadr cdaar cdadar
- cdaddr cdadr cdar cddaar cddadr cddar cdddar cddddr cdddr
- cddr cdr ceiling char->integer char? complex? cond cons cos
- define define-syntax denominator div div-and-mod div0
- div0-and-mod0 else eq? equal? eqv? error even? exact
- exact-integer-sqrt exact? exp expt finite? floor for-each
- gcd identifier-syntax if imag-part inexact inexact?
- infinite? integer->char integer-valued? integer? lambda lcm
- length let let* let*-values let-syntax let-values letrec
- letrec* letrec-syntax list list->string list->vector
- list-ref list-tail list? log magnitude make-polar
- make-rectangular make-string make-vector map max min mod
- mod0 nan? negative? not null? number? numerator odd? or
- pair? positive? procedure? quasiquote quote < <= = > >= case
- char<=? char<? char=? char>=? char>? dynamic-wind
- number->string string->number string<=? string<? string=?
- string>=? string>? syntax-rules rational-valued? rational?
- rationalize real-part real-valued? real? reverse round set!
- sin sqrt string string->list string->symbol string-append
- string-copy string-for-each string-length string-ref string?
- substring symbol->string symbol=? symbol? tan truncate
- unquote unquote-splicing values vector vector->list
- vector-fill! vector-for-each vector-length vector-map
- vector-ref vector-set! vector? zero?)]
-      [(equal? list-instance '(rnrs syntax-case)) '(... _ bound-identifier=? datum->syntax free-identifier=?
-     generate-temporaries identifier? make-variable-transformer
-     quasisyntax syntax syntax->datum syntax-case
-     syntax-violation unsyntax unsyntax-splicing with-syntax)]
-      [(equal? list-instance '(rnrs exception)) '(=> else guard raise raise-continuable with-exception-handler)]
-      [(equal? list-instance '(rnrs lists)) '(assoc assp assq assv cons* exists filter find fold-left
-  fold-right for-all member memp memq memv partition remove remp remq remv)]
-      [(equal? list-instance '(rnrs bytevectors)) '(bytevector->sint-list bytevector->u8-list
- bytevector->uint-list bytevector-copy bytevector-copy!
- bytevector-fill! bytevector-ieee-double-native-ref
- bytevector-ieee-double-native-set!
- bytevector-ieee-double-ref bytevector-ieee-double-set!
- bytevector-ieee-single-native-ref
- bytevector-ieee-single-native-set!
- bytevector-ieee-single-ref bytevector-ieee-single-set!
- bytevector-length bytevector-s16-native-ref
- bytevector-s16-native-set! bytevector-s16-ref
- bytevector-s16-set! bytevector-s32-native-ref
- bytevector-s32-native-set! bytevector-s32-ref
- bytevector-s32-set! bytevector-s64-native-ref
- bytevector-s64-native-set! bytevector-s64-ref
- bytevector-s64-set! bytevector-s8-ref bytevector-s8-set!
- bytevector-sint-ref bytevector-sint-set!
- bytevector-u16-native-ref bytevector-u16-native-set!
- bytevector-u16-ref bytevector-u16-set!
- bytevector-u32-native-ref bytevector-u32-native-set!
- bytevector-u32-ref bytevector-u32-set!
- bytevector-u64-native-ref bytevector-u64-native-set!
- bytevector-u64-ref bytevector-u64-set! bytevector-u8-ref
- bytevector-u8-set! bytevector-uint-ref bytevector-uint-set!
- bytevector=? bytevector? endianness make-bytevector
- native-endianness sint-list->bytevector string->utf16
- string->utf32 string->utf8 u8-list->bytevector
- uint-list->bytevector utf16->string utf32->string
- utf8->string)]
-      [(equal? list-instance '(rnrs control)) '(case-lambda do unless when)]
-      [(equal? list-instance '(rnrs unicode)) '(char-alphabetic? char-downcase char-foldcase
- char-general-category char-lower-case? char-numeric?
- char-title-case? char-titlecase char-upcase char-upper-case?
- char-whitespace? char-ci<=? char-ci<? char-ci=? char-ci>=?
- char-ci>? string-ci<=? string-ci<? string-ci=? string-ci>=?
- string-ci>? string-downcase string-foldcase
- string-normalize-nfc string-normalize-nfd
- string-normalize-nfkc string-normalize-nfkd string-titlecase
- string-upcase)]
-      [(equal? list-instance '(rnrs enums)) '(define-enumeration enum-set->list
-  enum-set-complement enum-set-constructor enum-set-difference enum-set-indexer enum-set-intersection
-  enum-set-member?  enum-set-projection enum-set-subset?  enum-set-union enum-set-universe
-  enum-set=?  make-enumeration)]
-      [(equal? list-instance '(rnrs r5rs)) '(delay exact->inexact force inexact->exact modulo
-  null-environment quotient remainder scheme-report-environment)]
-      [(equal? list-instance '(rnrs eval)) '(environment eval)]
-      [(equal? list-instance '(rnrs hashtables)) '(equal-hash hashtable-clear! hashtable-contains?
- hashtable-copy hashtable-delete!  hashtable-equivalence-function hashtable-hash-function
- hashtable-mutable? hashtable-ref hashtable-set!  hashtable-size hashtable-update! hashtable?
- make-eq-hashtable make-eqv-hashtable make-hashtable hashtable-entries hashtable-keys 
- string-ci-hash string-hash symbol-hash)]
-      [(equal? list-instance '(rnrs sorting)) '(list-sort vector-sort vector-sort!)]
-      [(equal? list-instance '(rnrs programs)) '(command-line exit)]
-      [(equal? list-instance '(rnrs mutable-pairs)) '(set-car! set-cdr!)]
-      [(equal? list-instance '(rnrs mutable-strings)) '(string-fill! string-set!)]
-      [(equal? list-instance '(rnrs io ports)) '(&i/o &i/o-decoding &i/o-encoding &i/o-file-already-exists
- &i/o-file-does-not-exist &i/o-file-is-read-only
- &i/o-file-protection &i/o-filename &i/o-invalid-position
- &i/o-port &i/o-read &i/o-write binary-port? buffer-mode
- buffer-mode? bytevector->string
- call-with-bytevector-output-port call-with-port
- call-with-string-output-port close-port eof-object
- eof-object? eol-style error-handling-mode file-options
- get-bytevector-all get-bytevector-n get-bytevector-n!
- get-bytevector-some get-char get-datum get-line
- get-string-all get-string-n get-string-n! get-u8
- i/o-decoding-error? i/o-encoding-error-char
- i/o-encoding-error? i/o-error-filename i/o-error-port
- i/o-error-position i/o-error? i/o-file-already-exists-error?
- i/o-file-does-not-exist-error? i/o-file-is-read-only-error?
- i/o-file-protection-error? i/o-filename-error?
- i/o-invalid-position-error? i/o-port-error? i/o-read-error?
- i/o-write-error? input-port? latin-1-codec lookahead-char
- lookahead-u8 make-custom-binary-input-port
- make-custom-binary-input/output-port
- make-custom-binary-output-port
- make-custom-textual-input-port
- make-custom-textual-input/output-port
- make-custom-textual-output-port make-i/o-decoding-error
- make-i/o-encoding-error make-i/o-error
- make-i/o-file-already-exists-error
- make-i/o-file-does-not-exist-error
- make-i/o-file-is-read-only-error
- make-i/o-file-protection-error make-i/o-filename-error
- make-i/o-invalid-position-error make-i/o-port-error
- make-i/o-read-error make-i/o-write-error make-transcoder
- native-eol-style native-transcoder
- open-bytevector-input-port open-bytevector-output-port
- open-file-input-port open-file-input/output-port
- open-file-output-port open-string-input-port
- open-string-output-port output-port-buffer-mode output-port?
- port-eof? port-has-port-position?
- port-has-set-port-position!? port-position port-transcoder
- port? put-bytevector put-char put-datum put-string put-u8
- current-error-port current-input-port current-output-port
- flush-output-port standard-error-port standard-input-port
- standard-output-port utf-16-codec set-port-position!
- string->bytevector textual-port? transcoded-port
- transcoder-codec transcoder-eol-style
- transcoder-error-handling-mode utf-8-codec)]
-      [(equal? list-instance '(rnrs io simple)) '(&i/o &i/o-file-already-exists &i/o-file-does-not-exist
- &i/o-file-is-read-only &i/o-file-protection &i/o-filename
- &i/o-invalid-position &i/o-port &i/o-read &i/o-write
- close-input-port close-output-port display eof-object
- eof-object? i/o-error-filename i/o-error-port
- i/o-error-position i/o-error? i/o-file-already-exists-error?
- i/o-file-does-not-exist-error? i/o-file-is-read-only-error?
- i/o-file-protection-error? i/o-filename-error?
- i/o-invalid-position-error? i/o-port-error? i/o-read-error?
- i/o-write-error? input-port? make-i/o-error
- make-i/o-file-already-exists-error
- make-i/o-file-does-not-exist-error
- make-i/o-file-is-read-only-error
- make-i/o-file-protection-error make-i/o-filename-error
- make-i/o-invalid-position-error make-i/o-port-error
- make-i/o-read-error make-i/o-write-error newline
- output-port? peek-char call-with-input-file
- call-with-output-file current-error-port current-input-port
- current-output-port open-input-file open-output-file
- with-input-from-file with-output-to-file read read-char
- write write-char)]
-      [(equal? list-instance '(rnrs arithmetic flonums)) '(&no-infinities &no-nans fixnum->flonum fl* fl+ fl- fl/ fl<=?
- fl<? fl=? fl>=? fl>? flabs flacos flasin flatan flceiling
- flcos fldenominator fldiv fldiv-and-mod fldiv0
- fldiv0-and-mod0 fleven? flexp flexpt flfinite? flfloor
- flinfinite? flinteger? fllog flmax flmin flmod flmod0 flnan?
- flnegative? flnumerator flodd? flonum? flpositive? flround
- flsin flsqrt fltan fltruncate flzero?
- make-no-infinities-violation make-no-nans-violation
- no-infinities-violation? no-nans-violation? real->flonum)]
-      [(equal? list-instance '(rnrs arithmetic bitwise)) '(bitwise-and bitwise-arithmetic-shift bitwise-arithmetic-shift-left
-  bitwise-arithmetic-shift-right bitwise-bit-count
-  bitwise-bit-field bitwise-bit-set? bitwise-copy-bit
-  bitwise-copy-bit-field bitwise-first-bit-set bitwise-if
-  bitwise-ior bitwise-length bitwise-not
-  bitwise-reverse-bit-field bitwise-rotate-bit-field bitwise-xor)]
-      [(equal? list-instance '(rnrs arithmetic fixnums)) '(fixnum-width fixnum? fx*/carry fx+/carry fx-/carry fx<=?
- fx<? fx=? fx>=? fx>? fxand fxarithmetic-shift
- fxarithmetic-shift-left fxarithmetic-shift-right fxbit-count
- fxbit-field fxbit-set? fxcopy-bit fxcopy-bit-field fxdiv
- fxdiv-and-mod fxdiv0 fxdiv0-and-mod0 fxeven? fxfirst-bit-set
- fxif fxior fxlength fxmax fxmin fxmod fxmod0 fxnegative?
- fxnot fxodd? fxpositive? fxreverse-bit-field
- fxrotate-bit-field fxxor fxzero? greatest-fixnum
- least-fixnum fx* fx+ fx-)]
-      [(equal? list-instance '(rnrs records syntactic)) '(define-record-type fields
-  immutable mutable nongenerative opaque parent parent-rtd protocol record-constructor-descriptor
-  record-type-descriptor sealed)]
-      [(equal? list-instance '(rnrs records procedure)) '(make-record-constructor-descriptor make-record-type-descriptor 
-    record-constructor record-accessor record-mutator record-predicate record-type-descriptor?)]
-      [(equal? list-instance '(rnrs records inspection)) '(record? record-field-mutable? record-rtd record-type-field-names
-  record-type-generative? record-type-name record-type-opaque?  record-type-parent record-type-sealed? record-type-uid)]
-      [(equal? list-instance '(chezscheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
-  record-field-mutator record-type-descriptor record-type-field-decls record-type-field-names 
-  record-type-name record-type-symbol)]
-      [(equal? list-instance '(scheme csv7)) '(record-field-accessible? record-field-accessor record-field-mutable?
-  record-field-mutator record-type-descriptor record-type-field-decls record-type-field-names 
-  record-type-name record-type-symbol)]
+      [(equal? list-instance '(rnrs)) '(
+(&assertion	syntax)
+(&condition	syntax)
+(&error	syntax)
+(&i/o	syntax)
+(&i/o-decoding	syntax)
+(&i/o-encoding	syntax)
+(&i/o-file-already-exists	syntax)
+(&i/o-file-does-not-exist	syntax)
+(&i/o-file-is-read-only	syntax)
+(&i/o-file-protection	syntax)
+(&i/o-filename	syntax)
+(&i/o-invalid-position	syntax)
+(&i/o-port	syntax)
+(&i/o-read	syntax)
+(&i/o-write	syntax)
+(&implementation-restriction	syntax)
+(&irritants	syntax)
+(&lexical	syntax)
+(&message	syntax)
+(&no-infinities	syntax)
+(&no-nans	syntax)
+(&non-continuable	syntax)
+(&serious	syntax)
+(&syntax	syntax)
+(&undefined	syntax)
+(&violation	syntax)
+(&warning	syntax)
+(&who	syntax)
+(*	Category)
+(+	procedure)
+(-	procedure)
+(...	syntax)
+(/	procedure)
+(=>	syntax)
+(_	syntax)
+(abs	procedure)
+(acos	procedure)
+(and	syntax)
+(angle	procedure)
+(append	procedure)
+(apply	procedure)
+(asin	procedure)
+(assert	syntax)
+(assertion-violation	procedure)
+(assertion-violation?	procedure)
+(assoc	procedure)
+(assp	procedure)
+(assq	procedure)
+(assv	procedure)
+(atan	procedure)
+(begin	syntax)
+(binary-port?	procedure)
+(bitwise-and	procedure)
+(bitwise-arithmetic-shift	procedure)
+(bitwise-arithmetic-shift-left	procedure)
+(bitwise-arithmetic-shift-right	procedure)
+(bitwise-bit-count	procedure)
+(bitwise-bit-field	procedure)
+(bitwise-bit-set?	procedure)
+(bitwise-copy-bit	procedure)
+(bitwise-copy-bit-field	procedure)
+(bitwise-first-bit-set	procedure)
+(bitwise-if	procedure)
+(bitwise-ior	procedure)
+(bitwise-length	procedure)
+(bitwise-not	procedure)
+(bitwise-reverse-bit-field	procedure)
+(bitwise-rotate-bit-field	procedure)
+(bitwise-xor	procedure)
+(boolean=?	procedure)
+(boolean?	procedure)
+(bound-identifier=?	procedure)
+(buffer-mode	syntax)
+(buffer-mode?	syntax)
+(bytevector->sint-list	procedure)
+(bytevector->string	procedure)
+(bytevector->u8-list	procedure)
+(bytevector->uint-list	procedure)
+(bytevector-copy	procedure)
+(bytevector-copy!	procedure)
+(bytevector-fill!	procedure)
+(bytevector-ieee-double-native-ref	procedure)
+(bytevector-ieee-double-native-set!	procedure)
+(bytevector-ieee-double-ref	procedure)
+(bytevector-ieee-double-set!	procedure)
+(bytevector-ieee-single-native-ref	procedure)
+(bytevector-ieee-single-native-set!	procedure)
+(bytevector-ieee-single-ref	procedure)
+(bytevector-ieee-single-set!	procedure)
+(bytevector-length	procedure)
+(bytevector-s16-native-ref	procedure)
+(bytevector-s16-native-set!	procedure)
+(bytevector-s16-ref	procedure)
+(bytevector-s16-set!	procedure)
+(bytevector-s32-native-ref	procedure)
+(bytevector-s32-native-set!	procedure)
+(bytevector-s32-ref	procedure)
+(bytevector-s32-set!	procedure)
+(bytevector-s64-native-ref	procedure)
+(bytevector-s64-native-set!	procedure)
+(bytevector-s64-ref	procedure)
+(bytevector-s64-set!	procedure)
+(bytevector-s8-ref	procedure)
+(bytevector-s8-set!	procedure)
+(bytevector-sint-ref	procedure)
+(bytevector-sint-set!	procedure)
+(bytevector-u16-native-ref	procedure)
+(bytevector-u16-native-set!	procedure)
+(bytevector-u16-ref	procedure)
+(bytevector-u16-set!	procedure)
+(bytevector-u32-native-ref	procedure)
+(bytevector-u32-native-set!	procedure)
+(bytevector-u32-ref	procedure)
+(bytevector-u32-set!	procedure)
+(bytevector-u64-native-ref	procedure)
+(bytevector-u64-native-set!	procedure)
+(bytevector-u64-ref	procedure)
+(bytevector-u64-set!	procedure)
+(bytevector-u8-ref	procedure)
+(bytevector-u8-set!	procedure)
+(bytevector-uint-ref	procedure)
+(bytevector-uint-set!	procedure)
+(bytevector=?	procedure)
+(bytevector?	procedure)
+(caaaar	procedure)
+(caaadr	procedure)
+(caaar	procedure)
+(caadar	procedure)
+(caaddr	procedure)
+(caadr	procedure)
+(caar	procedure)
+(cadaar	procedure)
+(cadadr	procedure)
+(cadar	procedure)
+(caddar	procedure)
+(cadddr	procedure)
+(caddr	procedure)
+(cadr	procedure)
+(call-with-bytevector-output-port	procedure)
+(call-with-current-continuation	procedure)
+(call-with-port	procedure)
+(call-with-string-output-port	procedure)
+(call-with-values	procedure)
+(call/cc	procedure)
+(car	procedure)
+(case-lambda	syntax)
+(cdaaar	procedure)
+(cdaadr	procedure)
+(cdaar	procedure)
+(cdadar	procedure)
+(cdaddr	procedure)
+(cdadr	procedure)
+(cdar	procedure)
+(cddaar	procedure)
+(cddadr	procedure)
+(cddar	procedure)
+(cdddar	procedure)
+(cddddr	procedure)
+(cdddr	procedure)
+(cddr	procedure)
+(cdr	procedure)
+(ceiling	procedure)
+(char->integer	procedure)
+(char-alphabetic?	procedure)
+(char-downcase	procedure)
+(char-foldcase	procedure)
+(char-general-category	procedure)
+(char-lower-case?	procedure)
+(char-numeric?	procedure)
+(char-title-case?	procedure)
+(char-titlecase	procedure)
+(char-upcase	procedure)
+(char-upper-case?	procedure)
+(char-whitespace?	procedure)
+(char?	procedure)
+(close-input-port	procedure)
+(close-output-port	procedure)
+(close-port	procedure)
+(complex?	procedure)
+(cond	syntax)
+(condition	procedure)
+(condition-accessor	procedure)
+(condition-irritants	procedure)
+(condition-message	procedure)
+(condition-predicate	procedure)
+(condition-who	procedure)
+(condition?	procedure)
+(cons	procedure)
+(cons*	procedure)
+(cos	procedure)
+(datum->syntax	procedure)
+(define	syntax)
+(define-condition-type	syntax)
+(define-enumeration	syntax)
+(define-record-type	syntax)
+(define-syntax	syntax)
+(denominator	procedure)
+(display	procedure)
+(div	procedure)
+(div-and-mod	procedure)
+(div0	procedure)
+(div0-and-mod0	procedure)
+(do	syntax)
+(else	syntax)
+(endianness	syntax)
+(enum-set->list	procedure)
+(enum-set-complement	procedure)
+(enum-set-constructor	procedure)
+(enum-set-difference	procedure)
+(enum-set-indexer	procedure)
+(enum-set-intersection	procedure)
+(enum-set-member?	procedure)
+(enum-set-projection	procedure)
+(enum-set-subset?	procedure)
+(enum-set-union	procedure)
+(enum-set-universe	procedure)
+(enum-set=?	procedure)
+(eof-object	procedure)
+(eof-object?	procedure)
+(eol-style	syntax)
+(eq?	procedure)
+(equal-hash	procedure)
+(equal?	procedure)
+(eqv?	procedure)
+(error	procedure)
+(error-handling-mode	syntax)
+(error?	procedure)
+(even?	procedure)
+(exact	procedure)
+(exact-integer-sqrt	procedure)
+(exact?	procedure)
+(exists	procedure)
+(exp	procedure)
+(expt	procedure)
+(fields	syntax)
+(file-options	syntax)
+(filter	procedure)
+(find	procedure)
+(finite?	procedure)
+(fixnum->flonum	procedure)
+(fixnum-width	procedure)
+(fixnum?	procedure)
+(fl*	procedure)
+(fl+	procedure)
+(fl-	procedure)
+(fl/	procedure)
+(fl<=?	procedure)
+(fl<?	procedure)
+(fl=?	procedure)
+(fl>=?	procedure)
+(fl>?	procedure)
+(flabs	procedure)
+(flacos	procedure)
+(flasin	procedure)
+(flatan	procedure)
+(flceiling	procedure)
+(flcos	procedure)
+(fldenominator	procedure)
+(fldiv	procedure)
+(fldiv-and-mod	procedure)
+(fldiv0	procedure)
+(fldiv0-and-mod0	procedure)
+(fleven?	procedure)
+(flexp	procedure)
+(flexpt	procedure)
+(flfinite?	procedure)
+(flfloor	procedure)
+(flinfinite?	procedure)
+(flinteger?	procedure)
+(fllog	procedure)
+(flmax	procedure)
+(flmin	procedure)
+(flmod	procedure)
+(flmod0	procedure)
+(flnan?	procedure)
+(flnegative?	procedure)
+(flnumerator	procedure)
+(flodd?	procedure)
+(flonum?	procedure)
+(floor	procedure)
+(flpositive?	procedure)
+(flround	procedure)
+(flsin	procedure)
+(flsqrt	procedure)
+(fltan	procedure)
+(fltruncate	procedure)
+(flzero?	procedure)
+(fold-left	procedure)
+(fold-right	procedure)
+(for-all	procedure)
+(for-each	procedure)
+(free-identifier=?	procedure)
+(fx*/carry	procedure)
+(fx+/carry	procedure)
+(fx-/carry	procedure)
+(fx<=?	procedure)
+(fx<?	procedure)
+(fx=?	procedure)
+(fx>=?	procedure)
+(fx>?	procedure)
+(fxand	procedure)
+(fxarithmetic-shift	procedure)
+(fxarithmetic-shift-left	procedure)
+(fxarithmetic-shift-right	procedure)
+(fxbit-count	procedure)
+(fxbit-field	procedure)
+(fxbit-set?	procedure)
+(fxcopy-bit	procedure)
+(fxcopy-bit-field	procedure)
+(fxdiv	procedure)
+(fxdiv-and-mod	procedure)
+(fxdiv0	procedure)
+(fxdiv0-and-mod0	procedure)
+(fxeven?	procedure)
+(fxfirst-bit-set	procedure)
+(fxif	procedure)
+(fxior	procedure)
+(fxlength	procedure)
+(fxmax	procedure)
+(fxmin	procedure)
+(fxmod	procedure)
+(fxmod0	procedure)
+(fxnegative?	procedure)
+(fxnot	procedure)
+(fxodd?	procedure)
+(fxpositive?	procedure)
+(fxreverse-bit-field	procedure)
+(fxrotate-bit-field	procedure)
+(fxxor	procedure)
+(fxzero?	procedure)
+(gcd	procedure)
+(generate-temporaries	procedure)
+(get-bytevector-all	procedure)
+(get-bytevector-n	procedure)
+(get-bytevector-n!	procedure)
+(get-bytevector-some	procedure)
+(get-char	procedure)
+(get-datum	procedure)
+(get-line	procedure)
+(get-string-all	procedure)
+(get-string-n	procedure)
+(get-string-n!	procedure)
+(get-u8	procedure)
+(greatest-fixnum	procedure)
+(guard	syntax)
+(hashtable-clear!	procedure)
+(hashtable-contains?	procedure)
+(hashtable-copy	procedure)
+(hashtable-delete!	procedure)
+(hashtable-equivalence-function	procedure)
+(hashtable-hash-function	procedure)
+(hashtable-mutable?	procedure)
+(hashtable-ref	procedure)
+(hashtable-set!	procedure)
+(hashtable-size	procedure)
+(hashtable-update!	procedure)
+(hashtable?	procedure)
+(i/o-decoding-error?	procedure)
+(i/o-encoding-error-char	procedure)
+(i/o-encoding-error?	procedure)
+(i/o-error-filename	procedure)
+(i/o-error-port	procedure)
+(i/o-error-position	procedure)
+(i/o-error?	procedure)
+(i/o-file-already-exists-error?	procedure)
+(i/o-file-does-not-exist-error?	procedure)
+(i/o-file-is-read-only-error?	procedure)
+(i/o-file-protection-error?	procedure)
+(i/o-filename-error?	procedure)
+(i/o-invalid-position-error?	procedure)
+(i/o-port-error?	procedure)
+(i/o-read-error?	procedure)
+(i/o-write-error?	procedure)
+(identifier-syntax	syntax)
+(identifier?	procedure)
+(if	syntax)
+(imag-part	procedure)
+(immutable	syntax)
+(implementation-restriction-violation?	procedure)
+(inexact	procedure)
+(inexact?	procedure)
+(infinite?	procedure)
+(input-port?	procedure)
+(integer->char	procedure)
+(integer-valued?	procedure)
+(integer?	procedure)
+(irritants-condition?	procedure)
+(lambda	syntax)
+(latin-1-codec	procedure)
+(lcm	procedure)
+(least-fixnum	procedure)
+(length	procedure)
+(let	syntax)
+(let*	syntax)
+(let*-values	syntax)
+(let-syntax	syntax)
+(let-values	syntax)
+(letrec	syntax)
+(letrec*	syntax)
+(letrec-syntax	syntax)
+(lexical-violation?	procedure)
+(list	procedure)
+(list->string	procedure)
+(list->vector	procedure)
+(list-ref	procedure)
+(list-sort	procedure)
+(list-tail	procedure)
+(list?	procedure)
+(log	procedure)
+(lookahead-char	procedure)
+(lookahead-u8	procedure)
+(magnitude	procedure)
+(make-assertion-violation	procedure)
+(make-bytevector	procedure)
+(make-custom-binary-input-port	procedure)
+(make-custom-binary-input/output-port	procedure)
+(make-custom-binary-output-port	procedure)
+(make-custom-textual-input-port	procedure)
+(make-custom-textual-input/output-port	procedure)
+(make-custom-textual-output-port	procedure)
+(make-enumeration	procedure)
+(make-eq-hashtable	procedure)
+(make-eqv-hashtable	procedure)
+(make-error	procedure)
+(make-hashtable	procedure)
+(make-i/o-decoding-error	procedure)
+(make-i/o-encoding-error	procedure)
+(make-i/o-error	procedure)
+(make-i/o-file-already-exists-error	procedure)
+(make-i/o-file-does-not-exist-error	procedure)
+(make-i/o-file-is-read-only-error	procedure)
+(make-i/o-file-protection-error	procedure)
+(make-i/o-filename-error	procedure)
+(make-i/o-invalid-position-error	procedure)
+(make-i/o-port-error	procedure)
+(make-i/o-read-error	procedure)
+(make-i/o-write-error	procedure)
+(make-implementation-restriction-violation	procedure)
+(make-irritants-condition	procedure)
+(make-lexical-violation	procedure)
+(make-message-condition	procedure)
+(make-no-infinities-violation	procedure)
+(make-no-nans-violation	procedure)
+(make-non-continuable-violation	procedure)
+(make-polar	procedure)
+(make-record-constructor-descriptor	procedure)
+(make-record-type-descriptor	procedure)
+(make-rectangular	procedure)
+(make-serious-condition	procedure)
+(make-string	procedure)
+(make-syntax-violation	procedure)
+(make-transcoder	procedure)
+(make-undefined-violation	procedure)
+(make-variable-transformer	procedure)
+(make-vector	procedure)
+(make-violation	procedure)
+(make-warning	procedure)
+(make-who-condition	procedure)
+(map	procedure)
+(max	procedure)
+(member	procedure)
+(memp	procedure)
+(memq	procedure)
+(memv	procedure)
+(message-condition?	procedure)
+(min	procedure)
+(mod	procedure)
+(mod0	procedure)
+(mutable	syntax)
+(nan?	procedure)
+(native-endianness	procedure)
+(native-eol-style	procedure)
+(native-transcoder	procedure)
+(negative?	procedure)
+(newline	procedure)
+(no-infinities-violation?	procedure)
+(no-nans-violation?	procedure)
+(non-continuable-violation?	procedure)
+(nongenerative	syntax)
+(not	procedure)
+(null?	procedure)
+(number?	procedure)
+(numerator	procedure)
+(odd?	procedure)
+(opaque	syntax)
+(open-bytevector-input-port	procedure)
+(open-bytevector-output-port	procedure)
+(open-file-input-port	procedure)
+(open-file-input/output-port	procedure)
+(open-file-output-port	procedure)
+(open-string-input-port	procedure)
+(open-string-output-port	procedure)
+(or	syntax)
+(output-port-buffer-mode	procedure)
+(output-port?	procedure)
+(pair?	procedure)
+(parent	syntax)
+(parent-rtd	syntax)
+(partition	procedure)
+(peek-char	procedure)
+(port-eof?	procedure)
+(port-has-port-position?	procedure)
+(port-has-set-port-position!?	procedure)
+(port-position	procedure)
+(port-transcoder	procedure)
+(port?	procedure)
+(positive?	procedure)
+(procedure?	procedure)
+(protocol	syntax)
+(put-bytevector	procedure)
+(put-char	procedure)
+(put-datum	procedure)
+(put-string	procedure)
+(put-u8	procedure)
+(quasiquote	syntax)
+(quasisyntax	syntax)
+(quote	syntax)
+(<	procedure)
+(<=	procedure)
+(=	procedure)
+(>	procedure)
+(>=	procedure)
+(call-with-input-file	procedure)
+(call-with-output-file	procedure)
+(case	syntax)
+(char-ci<=?	procedure)
+(char-ci<?	procedure)
+(char-ci=?	procedure)
+(char-ci>=?	procedure)
+(char-ci>?	procedure)
+(char<=?	procedure)
+(char<?	procedure)
+(char=?	procedure)
+(char>=?	procedure)
+(char>?	procedure)
+(command-line	global-param)
+(current-error-port	thread-param)
+(current-input-port	thread-param)
+(current-output-port	thread-param)
+(delete-file	procedure)
+(dynamic-wind	procedure)
+(exit	#f)
+(file-exists?	#f)
+(flush-output-port	#f)
+(fx*	#f)
+(fx+	#f)
+(fx-	#f)
+(hashtable-entries	#f)
+(hashtable-keys	#f)
+(number->string	#f)
+(open-input-file	#f)
+(open-output-file	#f)
+(record-constructor	#f)
+(record?	#f)
+(standard-error-port	#f)
+(standard-input-port	#f)
+(standard-output-port	#f)
+(string->number	#f)
+(string-ci<=?	#f)
+(string-ci<?	#f)
+(string-ci=?	#f)
+(string-ci>=?	#f)
+(string-ci>?	#f)
+(string<=?	#f)
+(string<?	#f)
+(string=?	#f)
+(string>=?	#f)
+(string>?	#f)
+(syntax-rules	#f)
+(utf-16-codec	#f)
+(with-input-from-file	#f)
+(with-output-to-file	#f)
+(raise	#f)
+(raise-continuable	#f)
+(rational-valued?	#f)
+(rational?	#f)
+(rationalize	#f)
+(read	#f)
+(read-char	#f)
+(real->flonum	#f)
+(real-part	#f)
+(real-valued?	#f)
+(real?	#f)
+(record-accessor	#f)
+(record-constructor-descriptor	#f)
+(record-field-mutable?	#f)
+(record-mutator	#f)
+(record-predicate	#f)
+(record-rtd	#f)
+(record-type-descriptor	#f)
+(record-type-descriptor?	#f)
+(record-type-field-names	#f)
+(record-type-generative?	#f)
+(record-type-name	#f)
+(record-type-opaque?	#f)
+(record-type-parent	#f)
+(record-type-sealed?	#f)
+(record-type-uid	#f)
+(remove	#f)
+(remp	#f)
+(remq	#f)
+(remv	#f)
+(reverse	#f)
+(round	#f)
+(sealed	#f)
+(serious-condition?	#f)
+(set!	#f)
+(set-port-position!	#f)
+(simple-conditions	#f)
+(sin	#f)
+(sint-list->bytevector	#f)
+(sqrt	#f)
+(string	#f)
+(string->bytevector	#f)
+(string->list	#f)
+(string->symbol	#f)
+(string->utf16	#f)
+(string->utf32	#f)
+(string->utf8	#f)
+(string-append	#f)
+(string-ci-hash	#f)
+(string-copy	#f)
+(string-downcase	#f)
+(string-foldcase	#f)
+(string-for-each	#f)
+(string-hash	#f)
+(string-length	#f)
+(string-normalize-nfc	#f)
+(string-normalize-nfd	#f)
+(string-normalize-nfkc	#f)
+(string-normalize-nfkd	#f)
+(string-ref	#f)
+(string-titlecase	#f)
+(string-upcase	#f)
+(string?	#f)
+(substring	#f)
+(symbol->string	#f)
+(symbol-hash	#f)
+(symbol=?	#f)
+(symbol?	#f)
+(syntax	#f)
+(syntax->datum	#f)
+(syntax-case	#f)
+(syntax-violation	#f)
+(syntax-violation-form	#f)
+(syntax-violation-subform	#f)
+(syntax-violation?	#f)
+(tan	#f)
+(textual-port?	#f)
+(transcoded-port	#f)
+(transcoder-codec	#f)
+(transcoder-eol-style	#f)
+(transcoder-error-handling-mode	#f)
+(truncate	#f)
+(u8-list->bytevector	#f)
+(uint-list->bytevector	#f)
+(undefined-violation?	#f)
+(unless	#f)
+(unquote	#f)
+(unquote-splicing	#f)
+(unsyntax	#f)
+(unsyntax-splicing	#f)
+(utf-8-codec	#f)
+(utf16->string	#f)
+(utf32->string	#f)
+(utf8->string	#f)
+(values	#f)
+(vector	#f)
+(vector->list	#f)
+(vector-fill!	#f)
+(vector-for-each	#f)
+(vector-length	#f)
+(vector-map	#f)
+(vector-ref	#f)
+(vector-set!	#f)
+(vector-sort	#f)
+(vector-sort!	#f)
+(vector?	#f)
+(violation?	#f)
+(warning?	#f)
+(when	#f)
+(who-condition?	#f)
+(with-exception-handler	#f)
+(with-syntax	#f)
+(write	#f)
+(write-char	#f)
+(zero?	#f)
+)]
+      [(equal? list-instance '(scheme)) '(
+(+	procedure)
+; (1+	procedure)
+(fxlogand	procedure)
+(symbol-hashtable-update!	procedure)
+(r6rs:dynamic-wind	#f)
+(trace-define	syntax)
+(mutable-string?	procedure)
+(assert	syntax)
+(textual-port-input-count	procedure)
+(property-list	procedure)
+(make-parameter	procedure)
+(compile-library	procedure)
+(logbit0	procedure)
+(logbit1	procedure)
+(make-i/o-file-does-not-exist-error	procedure)
+(pretty-line-length	thread-param)
+(bytevector-s56-ref	procedure)
+(make-custom-binary-output-port	procedure)
+(logbit?	procedure)
+(virtual-register	procedure)
+(ftype-set!	syntax)
+(fields	syntax)
+(make-ftype-pointer	syntax)
+(make-source-object	procedure)
+(port-output-full?	procedure)
+(abs	procedure)
+(break-handler	thread-param)
+(fl*	procedure)
+(library-directories	thread-param)
+(fl+	procedure)
+(set-binary-port-output-buffer!	procedure)
+(fl-	procedure)
+(fl/	procedure)
+(port-output-index	procedure)
+(car	procedure)
+(fl<	procedure)
+(fl=	procedure)
+(and	syntax)
+(fl>	procedure)
+(cdr	procedure)
+(profile-line-number-color	thread-param)
+(eq?	procedure)
+(bytevector-s64-ref	procedure)
+(fx*	procedure)
+(fx+	procedure)
+(ash	procedure)
+(make-assertion-violation	procedure)
+(fx-	procedure)
+(gcd	procedure)
+(fx/	procedure)
+(div	procedure)
+(box	procedure)
+(record-type-field-names	procedure)
+(flacos	procedure)
+(fx<	procedure)
+(fx=	procedure)
+(cos	procedure)
+(fx>	procedure)
+(string->symbol	procedure)
+(compile-whole-program	procedure)
+(bytevector-u16-set!	procedure)
+(for-each	procedure)
+(lcm	procedure)
+(exp	procedure)
+(map	procedure)
+(let	syntax)
+(max	procedure)
+(disable-interrupts	procedure)
+(min	procedure)
+(make-i/o-port-error	procedure)
+(log	procedure)
+(bytevector-compress	procedure)
+(string<=?	procedure)
+(mod	procedure)
+(fldiv0	procedure)
+(expt-mod	procedure)
+(string>=?	procedure)
+(rec	syntax)
+(not	procedure)
+(flatan	procedure)
+(tan	procedure)
+(critical-section	syntax)
+(vector-length	procedure)
+(close-port	procedure)
+(set-textual-port-output-size!	procedure)
+(flasin	procedure)
+(binary-port-output-size	procedure)
+(sin	procedure)
+(make-object-finder	procedure)
+(engine-return	procedure)
+(current-expand	thread-param)
+(console-input-port	global-param)
+(textual-port-input-index	procedure)
+(port-bol?	procedure)
+(&i/o-write	syntax)
+(filter	procedure)
+(datum->syntax	procedure)
+(no-infinities-violation?	procedure)
+(vector-for-each	procedure)
+(gensym	procedure)
+(fxvector-ref	procedure)
+(flpositive?	procedure)
+(bytevector-ieee-double-ref	procedure)
+(getenv	procedure)
+(eq-hashtable-delete!	procedure)
+(set-port-input-buffer!	procedure)
+(standard-error-port	procedure)
+(port-eof?	procedure)
+(make-input/output-port	procedure)
+(r6rs:char-ci<?	#f)
+(set-port-output-index!	procedure)
+(r6rs:char-ci=?	#f)
+(r6rs:char-ci>?	#f)
+(who-condition?	procedure)
+(i/o-decoding-error?	procedure)
+(make-i/o-invalid-position-error	procedure)
+(bytevector-u24-set!	procedure)
+(flnan?	procedure)
+(add1	procedure)
+(mutable-fxvector?	procedure)
+(flexpt	procedure)
+(flodd?	procedure)
+(imag-part	procedure)
+(reverse!	procedure)
+(top-level-program	syntax)
+(&source	syntax)
+(flmod0	procedure)
+(source-table-delete!	procedure)
+(&i/o-file-does-not-exist	syntax)
+(date-zone-offset	procedure)
+(caar	procedure)
+(foreign-callable-entry-point	procedure)
+(cfl*	procedure)
+(print-record	thread-param)
+(cfl+	procedure)
+(acos	procedure)
+(bytevector-u16-ref	procedure)
+(cadr	procedure)
+(cfl-	procedure)
+(cfl/	procedure)
+(fold-left	procedure)
+(compile-program-handler	thread-param)
+(unsyntax-splicing	syntax)
+(fl<=	procedure)
+(open-process-ports	procedure)
+(fl<?	procedure)
+(fl=?	procedure)
+(fl>=	procedure)
+(fl>?	procedure)
+(cfl=	procedure)
+(port-name	procedure)
+(cdar	procedure)
+(output-port-buffer-mode	procedure)
+(logtest	procedure)
+(condition-irritants	procedure)
+(cddr	procedure)
+(case	syntax)
+(display-condition	procedure)
+(r5rs	module)
+(foreign-entry?	procedure)
+(fx1+	procedure)
+(fx1-	procedure)
+(csv7:record-field-accessor	#f)
+(cfl-real-part	procedure)
+(bytevector-u24-ref	procedure)
+(&lexical	syntax)
+(set-port-nonblocking!	procedure)
+(div0	procedure)
+(transcoder-eol-style	procedure)
+(bitwise-first-bit-set	procedure)
+(pretty-one-line-limit	thread-param)
+(foreign-alloc	procedure)
+(make-condition	procedure)
+(atan	procedure)
+(remove-hash-table!	procedure)
+(inexact?	procedure)
+(box?	procedure)
+(fx<=	procedure)
+(fx<?	procedure)
+(asin	procedure)
+(fx=?	procedure)
+(fx>=	procedure)
+(fx>?	procedure)
+(bytevector-u32-set!	procedure)
+(clear-output-port	procedure)
+(newline	procedure)
+(cond	syntax)
+(assp	procedure)
+(assq	procedure)
+(cons	procedure)
+(assv	procedure)
+(bytevector-u32-ref	procedure)
+(cosh	procedure)
+(hashtable-clear!	procedure)
+(keyboard-interrupt-handler	thread-param)
+(find	procedure)
+(enum-set?	procedure)
+(string->utf16	procedure)
+(string->utf32	procedure)
+(string-append	procedure)
+(else	syntax)
+(fxvector-length	procedure)
+(put-hash-table!	procedure)
+(ieee	module)
+(inexact->exact	procedure)
+(define-syntax	syntax)
+(i/o-file-does-not-exist-error?	procedure)
+(eqv?	procedure)
+(fllp	procedure)
+(r6rs:syntax-rules	#f)
+(get-datum/annotations	procedure)
+(u8-list->bytevector	procedure)
+(eval	procedure)
+(flsqrt	procedure)
+(equal?	procedure)
+(flceiling	procedure)
+(bytevector-u40-ref	procedure)
+(print-vector-length	thread-param)
+(let*	syntax)
+(bytevector-s64-native-set!	procedure)
+(cp0-outer-unroll-limit	thread-param)
+(expression-editor	module)
+(implicit-exports	syntax)
+(nan?	procedure)
+(error-handling-mode	syntax)
+(exit	procedure)
+(fxif	procedure)
+(record-type-equal-procedure	procedure)
+(r6rs:char-ci<=?	#f)
+(expt	procedure)
+(odd?	procedure)
+(fxcopy-bit	procedure)
+(port-has-port-nonblocking??	procedure)
+(exact?	procedure)
+(r6rs:char-ci>=?	#f)
+(transcoder-codec	procedure)
+(timer-interrupt-handler	thread-param)
+(real-valued?	procedure)
+(iota	procedure)
+(top-level-value	procedure)
+(mod0	procedure)
+(memp	procedure)
+(memq	procedure)
+(memv	procedure)
+(meta	syntax)
+(hashtable-hash-function	procedure)
+(syntax-violation-subform	procedure)
+(get-thread-id	procedure)
+(load	procedure)
+(datum->syntax-object	procedure)
+(list	procedure)
+(format	procedure)
+(bytevector-u40-set!	procedure)
+(internal-defines-as-letrec*	thread-param)
+(error?	procedure)
+(bytevector-u64-native-ref	procedure)
+(default-exception-handler	procedure)
+(endianness	syntax)
+(port-file-descriptor	procedure)
+(utf-16-codec	procedure)
+(read	procedure)
+(except	syntax)
+(errorf	procedure)
+(set!	syntax)
+(bitwise-arithmetic-shift-right	procedure)
+(case-sensitive	thread-param)
+(lambda	syntax)
+(substring-fill!	procedure)
+(quotient	procedure)
+(enum-set-complement	procedure)
+(violation?	procedure)
+(annotation?	procedure)
+(remp	procedure)
+(remq	procedure)
+(remv	procedure)
+(only	syntax)
+(make-guardian	procedure)
+(tanh	procedure)
+(undefined-variable-warnings	thread-param)
+(box-cas!	procedure)
+(&error	syntax)
+(pretty-print	procedure)
+(path-extension	procedure)
+(buffer-mode?	syntax)
+(procedure?	procedure)
+(sinh	procedure)
+(i/o-error?	procedure)
+(bytevector	procedure)
+(sub1	procedure)
+(binary-port?	procedure)
+(time	syntax)
+(unregister-guardian	procedure)
+(nonnegative?	procedure)
+(flinteger?	procedure)
+(set-top-level-value!	procedure)
+(date-zone-name	procedure)
+(foreign-entry	procedure)
+(syntax->list	procedure)
+(load-program	procedure)
+(&syntax	syntax)
+(let-values	syntax)
+(fxnonpositive?	procedure)
+(sort	procedure)
+(when	syntax)
+(port-position	procedure)
+(bytevector-uint-ref	procedure)
+(sqrt	procedure)
+(pretty-standard-indent	thread-param)
+(void	procedure)
+(bytevector-s16-native-ref	procedure)
+(scheme-environment	procedure)
+(r6rs:char<?	#f)
+(r6rs:char=?	#f)
+(r6rs:char>?	#f)
+(&message	syntax)
+(fxdiv0	procedure)
+(source-object-column	procedure)
+(file-position	procedure)
+(open-output-string	procedure)
+(bytevector-ieee-double-set!	procedure)
+(unget-u8	procedure)
+(with-source-path	procedure)
+(expand	procedure)
+(exists	procedure)
+(define-top-level-value	procedure)
+(append!	procedure)
+(collect-rendezvous	procedure)
+(path-last	procedure)
+(current-date	procedure)
+(make-irritants-condition	procedure)
+(define-record-type	syntax)
+(char-numeric?	procedure)
+(display-statistics	procedure)
+(library-list	procedure)
+(open-bytevector-output-port	procedure)
+(string-normalize-nfc	procedure)
+(string-normalize-nfd	procedure)
+(export	syntax)
+(file-symbolic-link?	procedure)
+(fxodd?	procedure)
+(bytevector-u48-ref	procedure)
+(length	procedure)
+(make-custom-textual-input-port	procedure)
+(raise-continuable	procedure)
+(fxmod0	procedure)
+(annotation-stripped	procedure)
+(current-eval	thread-param)
+(fasl-file	procedure)
+(set-sstats-gc-count!	procedure)
+(import	syntax)
+(path-rest	procedure)
+(set-virtual-register!	procedure)
+(put-string-some	procedure)
+(parameterize	syntax)
+(bytevector-u56-ref	procedure)
+(ftype-init-lock!	syntax)
+(cost-center-time	procedure)
+(immutable	syntax)
+(r6rs:char<=?	#f)
+(r6rs:char>=?	#f)
+(port-output-size	procedure)
+(expand-output	thread-param)
+(collect-trip-bytes	global-param)
+(fxbit-field	procedure)
+(member	procedure)
+(path-root	procedure)
+(call/1cc	procedure)
+(unread-char	procedure)
+(bytevector-u64-ref	procedure)
+(char-ci<?	procedure)
+(char-ci=?	procedure)
+(char-ci>?	procedure)
+(collect-request-handler	global-param)
+(locked-object?	procedure)
+(null-environment	procedure)
+(cost-center-allocation-count	procedure)
+(i/o-encoding-error-char	procedure)
+(rationalize	procedure)
+(create-exception-state	procedure)
+(scheme-program	global-param)
+(letrec	syntax)
+(make-boot-file	procedure)
+(sstats-bytes	procedure)
+(fxbit-count	procedure)
+(open-file-input/output-port	procedure)
+(time-difference!	procedure)
+(merge!	procedure)
+(weak-cons	procedure)
+(string-ci<=?	procedure)
+(record-writer	procedure)
+(binary-port-input-size	procedure)
+(string-ci>=?	procedure)
+(hashtable-contains?	procedure)
+(trace-case-lambda	syntax)
+(vector-fill!	procedure)
+(trace-lambda	syntax)
+(fasl-read	procedure)
+(open-fd-input-port	procedure)
+(r6rs:call-with-output-file	#f)
+(strip-fasl-file	procedure)
+(hashtable?	procedure)
+(write-char	procedure)
+(current-time	procedure)
+(record-case	syntax)
+(generate-inspector-information	thread-param)
+(bytevector-s8-set!	procedure)
+(fluid-let-syntax	syntax)
+(apropos	procedure)
+(petite?	procedure)
+(interactive?	procedure)
+(source-file-descriptor?	procedure)
+(hashtable-equivalence-function	procedure)
+(r6rs:current-input-port	#f)
+(ftype-spin-lock!	syntax)
+(let*-values	syntax)
+(open-input-output-file	procedure)
+(oblist	procedure)
+(bytevector-uint-set!	procedure)
+(open-fd-input/output-port	procedure)
+(subtract-duration	procedure)
+(hash-table-for-each	procedure)
+(char-title-case?	procedure)
+(set-sstats-gc-bytes!	procedure)
+(last-pair	procedure)
+(caaar	procedure)
+(caadr	procedure)
+(fxlength	procedure)
+(&i/o-read	syntax)
+(cadar	procedure)
+(logand	procedure)
+(caddr	procedure)
+(collections	procedure)
+(abort	procedure)
+(r6rs:call-with-input-file	#f)
+(condition-predicate	procedure)
+(string-ci-hash	procedure)
+(fl<=?	procedure)
+(char-name	procedure)
+(enum-set-universe	procedure)
+(acosh	procedure)
+(fl>=?	procedure)
+(string->bytevector	procedure)
+(cdaar	procedure)
+(time-nanosecond	procedure)
+(cdadr	procedure)
+(symbol-hashtable-cell	procedure)
+(&non-continuable	syntax)
+(make-i/o-error	procedure)
+(compress-format	thread-param)
+(begin	syntax)
+(cddar	procedure)
+(fxnegative?	procedure)
+(compile-file-message	thread-param)
+(record?	procedure)
+(cdddr	procedure)
+(bytevector-ieee-double-native-set!	procedure)
+(logior	procedure)
+(&i/o-port	syntax)
+(symbol-hashtable-delete!	procedure)
+(foreign-address-name	procedure)
+(current-input-port	thread-param)
+(condition-message	procedure)
+(lognot	procedure)
+(char-	procedure)
+(csv7:record-field-mutable?	#f)
+(textual-port-input-buffer	procedure)
+(char?	procedure)
+(custom-port-buffer-size	thread-param)
+(fxfirst-bit-set	procedure)
+(pariah	syntax)
+(make-variable-transformer	procedure)
+(alias	syntax)
+(date?	procedure)
+(set-binary-port-input-index!	procedure)
+(parent	syntax)
+(delete-file	procedure)
+(ftype-ref	syntax)
+(real-part	procedure)
+(hashtable-entries	procedure)
+(put-datum	procedure)
+(path-absolute?	procedure)
+(debug	procedure)
+(logxor	procedure)
+(bytevector-u32-native-set!	procedure)
+(angle	procedure)
+(open-source-file	procedure)
+(r6rs:file-exists?	#f)
+(vector->immutable-vector	procedure)
+(define-structure	syntax)
+(delay	syntax)
+(flnonpositive?	procedure)
+(fxarithmetic-shift	procedure)
+(bytevector->uint-list	procedure)
+(datum	syntax)
+(fxvector->list	procedure)
+(enable-interrupts	procedure)
+(chmod	procedure)
+(console-output-port	global-param)
+(library-extensions	thread-param)
+(call-with-current-continuation	procedure)
+(mutex-acquire	procedure)
+(bytevector->s8-list	procedure)
+(put-char	procedure)
+(real->flonum	procedure)
+(module	syntax)
+(source-condition?	procedure)
+(fx<=?	procedure)
+(modulo	procedure)
+(atanh	procedure)
+(immutable-bytevector?	procedure)
+(source-directories	global-param)
+(real-time	procedure)
+(profile-dump-data	procedure)
+(fx>=?	procedure)
+(collect	procedure)
+(ephemeron-cons	procedure)
+(call-with-port	procedure)
+(break	procedure)
+(display	procedure)
+(port-has-port-length?	procedure)
+(make-no-nans-violation	procedure)
+(apply	procedure)
+(asinh	procedure)
+(let-syntax	syntax)
+(csv7:record-type-symbol	#f)
+(time-utc->date	procedure)
+(directory-separator	procedure)
+(atom?	procedure)
+(make-record-type	procedure)
+(symbol-hashtable-set!	procedure)
+(compile-whole-library	procedure)
+(cons*	procedure)
+(get-bytevector-some!	procedure)
+(date-nanosecond	procedure)
+(bitwise-bit-set?	procedure)
+(rational-valued?	procedure)
+(string-copy!	procedure)
+(r5rs-syntax	module)
+(string-fill!	procedure)
+(assoc	procedure)
+(with-implicit	syntax)
+(top-level-mutable?	procedure)
+(source-object-bfp	procedure)
+(quasisyntax	syntax)
+(flabs	procedure)
+(string-length	procedure)
+(bytevector-s32-native-ref	procedure)
+(sstats-gc-real	procedure)
+(ratnum?	procedure)
+(char-downcase	procedure)
+(iconv-codec	procedure)
+(char-upper-case?	procedure)
+(input-port-ready?	procedure)
+(source-object-efp	procedure)
+(-	procedure)
+(interaction-environment	thread-param)
+(sstats-print	procedure)
+(random	procedure)
+(gensym->unique-string	procedure)
+(fldiv	procedure)
+(flcos	procedure)
+(bytevector-length	procedure)
+(input-port?	procedure)
+(<=	procedure)
+(=>	syntax)
+(>=	procedure)
+(r6rs:standard-input-port	#f)
+(subtract-duration!	procedure)
+(object-counts	procedure)
+(compile	procedure)
+(flexp	procedure)
+(current-memory-bytes	procedure)
+(fxlogior	procedure)
+(mark-port-closed!	procedure)
+(flmax	procedure)
+(string-ref	procedure)
+(profile-dump-html	procedure)
+(pretty-format	procedure)
+(&continuation	syntax)
+(flmin	procedure)
+(fllog	procedure)
+(source-object-sfd	procedure)
+(flmod	procedure)
+(identifier?	procedure)
+(current-directory	global-param)
+(pretty-maximum-lines	thread-param)
+(profile-dump-list	procedure)
+(gensym-count	thread-param)
+(fxlognot	procedure)
+(make-serious-condition	procedure)
+(binary-port-output-buffer	procedure)
+(fltan	procedure)
+(floor	procedure)
+(enable-cross-library-optimization	thread-param)
+(make-custom-binary-input/output-port	procedure)
+(syntax-object->datum	procedure)
+(flsin	procedure)
+(irritants-condition?	procedure)
+(optimize-level	thread-param)
+(library-search-handler	thread-param)
+(i/o-file-already-exists-error?	procedure)
+(even?	procedure)
+(call-with-input-file	procedure)
+(fxlogbit0	procedure)
+(make-lexical-violation	procedure)
+(fxlogbit1	procedure)
+(fxvector-copy	procedure)
+(annotation-options	procedure)
+(force	procedure)
+(cd	global-param)
+(fxlogbit?	procedure)
+(port-input-size	procedure)
+(do	syntax)
+(bitwise-bit-field	procedure)
+(fxlogxor	procedure)
+(if	syntax)
+(exact	procedure)
+(top-level-syntax	procedure)
+(compile-to-file	procedure)
+(bytevector-copy	procedure)
+(error	procedure)
+(substring	procedure)
+(or	syntax)
+(scheme	module)
+(generate-procedure-source-information	thread-param)
+(sealed	syntax)
+(source-table-ref	procedure)
+(record-accessor	procedure)
+(copy-environment	procedure)
+(opaque	syntax)
+(list-head	procedure)
+(default-record-equal-procedure	thread-param)
+(fxabs	procedure)
+(rename	syntax)
+(bitwise-bit-count	procedure)
+(open-file-input-port	procedure)
+(make-i/o-file-is-read-only-error	procedure)
+(list-copy	procedure)
+(fxand	procedure)
+(library-version	procedure)
+(guard	syntax)
+(bytevector-u48-set!	procedure)
+(fxmodulo	procedure)
+(cost-center?	procedure)
+(fxdiv	procedure)
+(remove!	procedure)
+(open-string-output-port	procedure)
+(implementation-restriction-violation?	procedure)
+(port-has-set-port-position!?	procedure)
+(debug-level	thread-param)
+(flnumerator	procedure)
+(register-signal-handler	procedure)
+(fxior	procedure)
+(fxmax	procedure)
+(integer?	procedure)
+(fxmin	procedure)
+(initial-bytes-allocated	procedure)
+(remove	procedure)
+(fxmod	procedure)
+(compile-library-handler	thread-param)
+(define-property	syntax)
+(make-i/o-filename-error	procedure)
+(record-type-name	procedure)
+(trace-output-port	thread-param)
+(fxnot	procedure)
+(fxvector-set!	procedure)
+(remprop	procedure)
+(record-hash-procedure	procedure)
+(call-with-values	procedure)
+(fxsll	procedure)
+(fxsra	procedure)
+(vector-sort!	procedure)
+(fxsrl	procedure)
+(merge	procedure)
+(utf-8-codec	procedure)
+(command-line-arguments	global-param)
+(make-vector	procedure)
+(list*	procedure)
+(read-token	procedure)
+(bwp-object?	procedure)
+(fxxor	procedure)
+(list?	procedure)
+(visit-compiled-from-port	procedure)
+(div0-and-mod0	procedure)
+(pair?	procedure)
+(mkdir	procedure)
+(set-time-second!	procedure)
+(collect-notify	global-param)
+(self-evaluating-vectors	thread-param)
+(mutex?	procedure)
+(bytevector-u56-set!	procedure)
+(remove-foreign-entry	procedure)
+(library-exports	procedure)
+(ieee-environment	procedure)
+(eol-style	syntax)
+(compile-to-port	procedure)
+(block-read	procedure)
+(isqrt	procedure)
+(syntax-violation	procedure)
+(list-tail	procedure)
+(set-sstats-bytes!	procedure)
+(environment?	procedure)
+(transcoded-port	procedure)
+(logor	procedure)
+(undefined-violation?	procedure)
+(ftype-guardian	syntax)
+(prefix	syntax)
+(bitwise-rotate-bit-field	procedure)
+(binary-port-input-buffer	procedure)
+(make-thread-parameter	procedure)
+(mutable	syntax)
+(fxlogtest	procedure)
+(r6rs:with-output-to-file	#f)
+(source-table?	procedure)
+(mutable-bytevector?	procedure)
+(eof-object	procedure)
+(finite?	procedure)
+(bytevector-u64-native-set!	procedure)
+(real?	procedure)
+(list-sort	procedure)
+(bytevector-u8-set!	procedure)
+(profile-query-weight	procedure)
+(foreign-callable	syntax)
+(bytevector-ieee-single-set!	procedure)
+(raise	procedure)
+(eq-hashtable-ref	procedure)
+(trace-let	syntax)
+(put-u8	procedure)
+(subset-mode	thread-param)
+(for-all	procedure)
+(date-year-day	procedure)
+(time-second	procedure)
+(bytevector-u64-set!	procedure)
+(gensym?	procedure)
+(make-custom-textual-input/output-port	procedure)
+(remq!	procedure)
+(new-cafe	procedure)
+(make-ephemeron-eq-hashtable	procedure)
+(enum-set-indexer	procedure)
+(remv!	procedure)
+(scheme-version	procedure)
+(printf	procedure)
+(char-foldcase	procedure)
+(load-library	procedure)
+(make-i/o-encoding-error	procedure)
+(i/o-error-filename	procedure)
+(reverse	procedure)
+(magnitude	procedure)
+(number?	procedure)
+(condition-name	procedure)
+(compile-imported-libraries	thread-param)
+(procedure-arity-mask	procedure)
+(flfloor	procedure)
+(reset	procedure)
+(time<?	procedure)
+(enum-set-union	procedure)
+(time=?	procedure)
+(time>?	procedure)
+(null?	procedure)
+(fresh-line	procedure)
+(set-port-input-index!	procedure)
+(ormap	procedure)
+(fleven?	procedure)
+(guardian?	procedure)
+(current-exception-state	thread-param)
+(revisit	procedure)
+(fxdiv0-and-mod0	procedure)
+(eval-when	syntax)
+(&implementation-restriction	syntax)
+(port?	procedure)
+(with-input-from-string	procedure)
+(bytevector->immutable-bytevector	procedure)
+(threaded?	procedure)
+(r6rs:hashtable-entries	#f)
+(rational?	procedure)
+(values	procedure)
+(hashtable-ephemeron?	procedure)
+(with-output-to-string	procedure)
+(make-i/o-write-error	procedure)
+(i/o-file-is-read-only-error?	procedure)
+(sleep	procedure)
+(time?	procedure)
+(bound-identifier=?	procedure)
+(utf-16le-codec	procedure)
+(sc-expand	procedure)
+(foreign-sizeof	procedure)
+(source-file-descriptor-path	procedure)
+(condition-wait	procedure)
+(vector	procedure)
+(time-difference	procedure)
+(char->integer	procedure)
+(integer-valued?	procedure)
+(engine-block	procedure)
+(bitwise-and	procedure)
+(infinite?	procedure)
+(ftype-pointer=?	syntax)
+(make-sstats	procedure)
+(cp0-effort-limit	thread-param)
+(getprop	procedure)
+(char-titlecase	procedure)
+(compress-level	thread-param)
+(waiter-prompt-and-read	thread-param)
+(round	procedure)
+(utf32->string	procedure)
+(date-and-time	procedure)
+(sort!	procedure)
+(bytevector->u8-list	procedure)
+(drop-prefix	syntax)
+(trace	syntax)
+(record-constructor-descriptor?	procedure)
+(syntax-violation-form	procedure)
+(vector-cas!	procedure)
+(get-char	procedure)
+(quote	syntax)
+(cpu-time	procedure)
+(port-nonblocking?	procedure)
+(make-string	procedure)
+(bitwise-ior	procedure)
+(record-field-mutable?	procedure)
+(unbox	procedure)
+(eq-hashtable-ephemeron?	procedure)
+(commonization-level	thread-param)
+(date-dst?	procedure)
+(eval-syntax-expanders-when	thread-param)
+(putenv	procedure)
+(subst	procedure)
+(enum-set=?	procedure)
+(bitwise-not	procedure)
+(string-truncate!	procedure)
+(r6rs:delete-file	#f)
+(verify-loadability	procedure)
+(textual-port-input-size	procedure)
+(condition	procedure)
+(textual-port-output-size	procedure)
+(make-syntax-violation	procedure)
+(visit	procedure)
+(type-descriptor	syntax)
+(hash-table?	procedure)
+(generate-instruction-counts	thread-param)
+(constructor	syntax)
+(flnegative?	procedure)
+(make-ephemeron-eqv-hashtable	procedure)
+(get-string-some!	procedure)
+(string-for-each	procedure)
+(bitwise-xor	procedure)
+(fold-right	procedure)
+(date-hour	procedure)
+(make-input-port	procedure)
+(condition-accessor	procedure)
+(string-ci<?	procedure)
+(string-ci=?	procedure)
+(string-ci>?	procedure)
+(record-type-hash-procedure	procedure)
+(i/o-filename-error?	procedure)
+(vector-copy	procedure)
+(format-condition?	procedure)
+(i/o-write-error?	procedure)
+(fxquotient	procedure)
+(boolean?	procedure)
+(bytevector-s16-set!	procedure)
+(enum-set-projection	procedure)
+(default-prompt-and-read	procedure)
+(bytevector-s16-native-set!	procedure)
+(pretty-initial-indent	thread-param)
+(immutable-vector?	procedure)
+(zero?	procedure)
+(get-line	procedure)
+(ftype-pointer?	syntax)
+(bitwise-copy-bit	procedure)
+(transcript-cafe	procedure)
+(standard-input-port	procedure)
+(list->vector	procedure)
+(fxarithmetic-shift-right	procedure)
+(source-object?	procedure)
+(get-mode	procedure)
+(case-lambda	syntax)
+(&i/o-decoding	syntax)
+(make-source-table	procedure)
+(print-precision	thread-param)
+(write	procedure)
+(subst!	procedure)
+(sstats-real	procedure)
+(bytevector-ieee-single-native-ref	procedure)
+(csv7:record-field-accessible?	#f)
+(command-line	global-param)
+(record-type-uid	procedure)
+(enum-set-subset?	procedure)
+(make-undefined-violation	procedure)
+(greatest-fixnum	procedure)
+(r6rs:record?	#f)
+(fxvector	procedure)
+(set-binary-port-input-size!	procedure)
+(fixnum?	procedure)
+(flonum?	procedure)
+(bytevector-uncompress	procedure)
+(substq	procedure)
+(flush-output-port	procedure)
+(substv	procedure)
+(string-copy	procedure)
+(file-regular?	procedure)
+(string-hash	procedure)
+(latin-1-codec	procedure)
+(bytevector-s24-set!	procedure)
+(date-year	procedure)
+(vector-set!	procedure)
+(compile-time-value?	procedure)
+(unless	syntax)
+(source-table-cell	procedure)
+(flfinite?	procedure)
+(directory-list	procedure)
+(port-output-buffer	procedure)
+(cfl-conjugate	procedure)
+(fltruncate	procedure)
+(transcript-off	procedure)
+(make-who-condition	procedure)
+(r6rs:utf-16-codec	#f)
+(concatenate-object-files	procedure)
+(print-extended-identifiers	thread-param)
+(positive?	procedure)
+(file-change-time	procedure)
+(hashtable-update!	procedure)
+(process	procedure)
+(&violation	syntax)
+(sstats-gc-cpu	procedure)
+(make-weak-eq-hashtable	procedure)
+(random-seed	thread-param)
+(string<?	procedure)
+(string=?	procedure)
+(vector-sort	procedure)
+(time<=?	procedure)
+(string>?	procedure)
+(fxvector->immutable-fxvector	procedure)
+(set-sstats-gc-real!	procedure)
+(compile-script	procedure)
+(time>=?	procedure)
+(make-continuation-condition	procedure)
+(string	procedure)
+(locate-source-object-source	procedure)
+(condition-continuation	procedure)
+(syntax->datum	procedure)
+(record-mutator	procedure)
+(cost-center-instruction-count	procedure)
+(source-table-dump	procedure)
+(revisit-compiled-from-port	procedure)
+(profile	syntax)
+(r6rs:case	#f)
+(char-ready?	procedure)
+(put-bytevector	procedure)
+(make-i/o-decoding-error	procedure)
+(bytevector-s32-set!	procedure)
+(top-level-syntax?	procedure)
+(make-custom-binary-input-port	procedure)
+(string-set!	procedure)
+(fx*/carry	procedure)
+(syntax-error	procedure)
+(exit-handler	thread-param)
+(fldenominator	procedure)
+(current-locate-source-object-source	thread-param)
+(gensym-prefix	thread-param)
+(flround	procedure)
+(environment-symbols	procedure)
+(enum-set-member?	procedure)
+(i/o-read-error?	procedure)
+(maximum-memory-bytes	procedure)
+(fluid-let	syntax)
+(make-boot-header	procedure)
+(letrec-syntax	syntax)
+(textual-port-output-count	procedure)
+(r6rs:standard-output-port	#f)
+(generate-covin-files	thread-param)
+(record-rtd	procedure)
+(scheme-start	global-param)
+(cfl-magnitude-squared	procedure)
+(source-object-line	procedure)
+(set-time-nanosecond!	procedure)
+(default-record-hash-procedure	thread-param)
+(profile-clear	procedure)
+(binary-port-input-count	procedure)
+(set-binary-port-output-size!	procedure)
+(unquote-splicing	syntax)
+(bitwise-copy-bit-field	procedure)
+(set-sstats-cpu!	procedure)
+(&i/o-encoding	syntax)
+(r6rs:eval	#f)
+(source-table-set!	procedure)
+(syntax-case	syntax)
+(make-non-continuable-violation	procedure)
+(port-has-set-port-nonblocking!?	procedure)
+(set-timer	procedure)
+(fxnonnegative?	procedure)
+(csv7:record-type-field-decls	#f)
+(fasl-compressed	thread-param)
+(r6rs:exit	#f)
+(bytevector-u16-native-ref	procedure)
+(import-only	syntax)
+(bytevector-s40-set!	procedure)
+(with-output-to-file	procedure)
+(truncate-file	procedure)
+(open-input-string	procedure)
+(load-shared-object	procedure)
+(&i/o-filename	syntax)
+(base-exception-handler	thread-param)
+(file-buffer-size	thread-param)
+(ftype-lock!	syntax)
+(source-table-size	procedure)
+(console-error-port	thread-param)
+(file-options	syntax)
+(dynamic-wind	procedure)
+(port-has-port-position?	procedure)
+(bitwise-reverse-bit-field	procedure)
+(symbol-hashtable-contains?	procedure)
+(hashtable-cell	procedure)
+(syntax	syntax)
+(remainder	procedure)
+(hashtable-values	procedure)
+(fixnum-width	procedure)
+(flzero?	procedure)
+(&i/o-invalid-position	syntax)
+(source-condition-form	procedure)
+(textual-port-output-index	procedure)
+(list->string	procedure)
+(open-output-file	procedure)
+(immutable-fxvector?	procedure)
+(condition-who	procedure)
+(record-type-parent	procedure)
+(binary-port-input-index	procedure)
+(meta-cond	syntax)
+(ftype-locked-decr!	syntax)
+(hashtable-copy	procedure)
+(make-eq-hashtable	procedure)
+(run-cp0	thread-param)
+(open-bytevector-input-port	procedure)
+(protocol	syntax)
+(system	procedure)
+(bytevector-sint-ref	procedure)
+(i/o-file-protection-error?	procedure)
+(flonum->fixnum	procedure)
+(fixnum->flonum	procedure)
+(syntax->annotation	procedure)
+(number->string	procedure)
+(thread?	procedure)
+(with-syntax	syntax)
+(r6rs:string-ci<=?	#f)
+(uint-list->bytevector	procedure)
+(record-type-descriptor	procedure)
+(r6rs:string-ci>=?	#f)
+(enable-object-counts	global-param)
+(hashtable-keys	procedure)
+(transcript-on	procedure)
+(condition?	procedure)
+(bitwise-if	procedure)
+(simple-conditions	procedure)
+(collect-generation-radix	global-param)
+(transcoder?	procedure)
+(truncate-port	procedure)
+(symbol-hashtable?	procedure)
+(put-string	procedure)
+(vector?	procedure)
+(sstats-cpu	procedure)
+(set-port-bol!	procedure)
+(make-fxvector	procedure)
+(maybe-compile-program	procedure)
+(bytevector-sint-set!	procedure)
+(trace-define-syntax	syntax)
+(profile-clear-database	procedure)
+(date-minute	procedure)
+(foreign-free	procedure)
+(hashtable-set!	procedure)
+(vector-map	procedure)
+(string-upcase	procedure)
+(enumerate	procedure)
+(r6rs:number->string	#f)
+(fx+/carry	procedure)
+(set-port-eof!	procedure)
+(make-record-type-descriptor	procedure)
+(make-custom-textual-output-port	procedure)
+(vector-ref	procedure)
+(waiter-prompt-string	thread-param)
+(open-file-output-port	procedure)
+(interpret	procedure)
+(fprintf	procedure)
+(standard-output-port	procedure)
+(r6rs:hashtable-keys	#f)
+(continuation-condition?	procedure)
+(i/o-encoding-error?	procedure)
+(set-car!	procedure)
+(generate-temporaries	procedure)
+(hashtable-size	procedure)
+(make-output-port	procedure)
+(set-cdr!	procedure)
+(fxvector-fill!	procedure)
+(set-port-name!	procedure)
+(path-first	procedure)
+(list-ref	procedure)
+(compile-time-value-value	procedure)
+(add-prefix	syntax)
+(library-requirements	procedure)
+(hashtable-ref	procedure)
+(suppress-greeting	global-param)
+(close-input-port	procedure)
+(profile-load-data	procedure)
+(environment-mutable?	procedure)
+(foreign-set!	procedure)
+(print-brackets	thread-param)
+(&serious	syntax)
+(&format	syntax)
+(make-eqv-hashtable	procedure)
+(apropos-list	procedure)
+(set-box!	procedure)
+(set-port-length!	procedure)
+(message-condition?	procedure)
+(denominator	procedure)
+(magnitude-squared	procedure)
+(csv7:record-type-field-names	#f)
+(date->time-utc	procedure)
+(thread-condition?	procedure)
+(make-source-condition	procedure)
+(enum-set-intersection	procedure)
+(symbol-hashtable-ref	procedure)
+(list->fxvector	procedure)
+(bitwise-arithmetic-shift-left	procedure)
+(bytevector->sint-list	procedure)
+(set-sstats-real!	procedure)
+(copy-time	procedure)
+(put-source-table	procedure)
+(syntax-rules	syntax)
+(non-continuable-violation?	procedure)
+(date-day	procedure)
+(port-input-buffer	procedure)
+(bytevector-s64-native-ref	procedure)
+(ftype-locked-incr!	syntax)
+(r6rs:flush-output-port	#f)
+(set-port-position!	procedure)
+(annotation-source	procedure)
+(directory-separator?	procedure)
+(invoke-library	procedure)
+(syntax-violation?	procedure)
+(call-with-output-file	procedure)
+(extend-syntax	syntax)
+(r6rs:string-ci<?	#f)
+(r6rs:string-ci=?	#f)
+(r6rs:string-ci>?	#f)
+(binary-port-output-count	procedure)
+(eq-hashtable?	procedure)
+(r6rs:open-input-file	#f)
+(fasl-strip-options	syntax)
+(current-transcoder	thread-param)
+(virtual-register-count	procedure)
+(port-closed?	procedure)
+(bitwise-length	procedure)
+(import-notify	thread-param)
+(delete-directory	procedure)
+(date-month	procedure)
+(nonpositive?	procedure)
+(display-string	procedure)
+(assertion-violation	procedure)
+(ftype-unlock!	syntax)
+(print-graph	thread-param)
+(&condition	syntax)
+(define-top-level-syntax	procedure)
+(with-cost-center	procedure)
+(bytes-deallocated	procedure)
+(make-compile-time-value	procedure)
+(textual-port-output-buffer	procedure)
+(eq-hashtable-cell	procedure)
+(flnonnegative?	procedure)
+(make-bytevector	procedure)
+(make-implementation-restriction-violation	procedure)
+(immutable-box?	procedure)
+(fxdiv-and-mod	procedure)
+(r6rs:fx*	#f)
+(r6rs:fx+	#f)
+(r6rs:fx-	#f)
+(bytevector=?	procedure)
+(lock-object	procedure)
+(source-file-descriptor	procedure)
+(decode-float	procedure)
+(fxreverse-bit-field	procedure)
+(output-port?	procedure)
+(conjugate	procedure)
+(include	syntax)
+(parent-rtd	syntax)
+(mutable-vector?	procedure)
+(native-endianness	procedure)
+(compile-profile	thread-param)
+(port-input-count	procedure)
+(exact-integer-sqrt	procedure)
+(warning	procedure)
+(scheme-version-number	procedure)
+(file-length	procedure)
+(foreign-procedure	syntax)
+(expand/optimize	procedure)
+(set-port-output-size!	procedure)
+(binary-port-output-index	procedure)
+(print-level	thread-param)
+(date-second	procedure)
+(textual-port?	procedure)
+(cp0-score-limit	thread-param)
+(file-directory?	procedure)
+(putprop	procedure)
+(ftype-pointer-address	procedure)
+(compile-program	procedure)
+(clear-input-port	procedure)
+(&assertion	syntax)
+(set-textual-port-input-index!	procedure)
+(compile-interpret-simple	thread-param)
+(hashtable-cells	procedure)
+(collect-maximum-generation	global-param)
+(string-downcase	procedure)
+(make-source-file-descriptor	procedure)
+(bytevector-u32-native-ref	procedure)
+(i/o-invalid-position-error?	procedure)
+(i/o-error-port	procedure)
+(port-input-empty?	procedure)
+(mutex-release	procedure)
+(make-format-condition	procedure)
+(r6rs:string<?	#f)
+(r6rs:string=?	#f)
+(r6rs:string>?	#f)
+(generate-profile-forms	thread-param)
+(condition-signal	procedure)
+(top-level-bound?	procedure)
+(bitwise-arithmetic-shift	procedure)
+(get-bytevector-n	procedure)
+(pretty-file	procedure)
+(mutable-box?	procedure)
+(r6rs:current-output-port	#f)
+(source-file-descriptor-checksum	procedure)
+(define-condition-type	syntax)
+(truncate	procedure)
+(char-upcase	procedure)
+(locate-source	procedure)
+(transcoder-error-handling-mode	procedure)
+(make-i/o-file-already-exists-error	procedure)
+(make-annotation	procedure)
+(eq-hashtable-set!	procedure)
+(port-input-index	procedure)
+(ftype-sizeof	syntax)
+(inexact	procedure)
+(get-string-n!	procedure)
+(print-radix	thread-param)
+(path-parent	procedure)
+(fldiv-and-mod	procedure)
+(csv7:record-field-mutator	#f)
+(bytevector-truncate!	procedure)
+(profile-release-counters	procedure)
+(unsyntax	syntax)
+(indirect-export	syntax)
+(char-lower-case?	procedure)
+(*	Category)
+(+	procedure)
+(/	procedure)
+(port-transcoder	procedure)
+(<	procedure)
+(=	procedure)
+(>	procedure)
+(port-has-set-port-length!?	procedure)
+(complex?	procedure)
+(file-modification-time	procedure)
+(port-handler	procedure)
+(make-no-infinities-violation	procedure)
+(open-input-file	procedure)
+(_	syntax)
+(ftype-&ref	syntax)
+(r6rs:current-error-port	#f)
+(fork-thread	procedure)
+(symbol=?	procedure)
+(expand/optimize-output	thread-param)
+(eof-object?	procedure)
+(sint-list->bytevector	procedure)
+(utf-16be-codec	procedure)
+(immutable-string?	procedure)
+(char-alphabetic?	procedure)
+(r6rs:open-output-file	#f)
+(fxeven?	procedure)
+(get-bytevector-n!	procedure)
+(file-port?	procedure)
+(print-gensym	thread-param)
+(default-library-search-handler	procedure)
+(string-normalize-nfkc	procedure)
+(string-normalize-nfkd	procedure)
+(sstats-gc-count	procedure)
+(reset-handler	thread-param)
+(char-ci<=?	procedure)
+(eq-hashtable-update!	procedure)
+(box-immutable	procedure)
+(char-ci>=?	procedure)
+(current-make-source-object	thread-param)
+(bytevector-u16-native-set!	procedure)
+(hashtable-delete!	procedure)
+(eq-hashtable-contains?	procedure)
+(set-binary-port-input-buffer!	procedure)
+(ftype-pointer-ftype	procedure)
+(buffer-mode	syntax)
+(bytevector-ieee-single-ref	procedure)
+(set-binary-port-output-index!	procedure)
+(profile-dump	procedure)
+(put-bytevector-some	procedure)
+(open-fd-output-port	procedure)
+(make-record-constructor-descriptor	procedure)
+(predicate	syntax)
+(scheme-script	global-param)
+(native-eol-style	procedure)
+(unget-char	procedure)
+(free-identifier=?	procedure)
+(current-error-port	thread-param)
+(bytevector-ieee-single-native-set!	procedure)
+(get-source-table!	procedure)
+(least-fixnum	procedure)
+(condition-broadcast	procedure)
+(inspect/object	procedure)
+(sstats-gc-bytes	procedure)
+(no-nans-violation?	procedure)
+(call/cc	procedure)
+(utf8->string	procedure)
+(get-datum	procedure)
+(call-with-string-output-port	procedure)
+(library-requirements-options	syntax)
+(make-error	procedure)
+(csv7:record-type-name	#f)
+(caaaar	procedure)
+(set-port-input-size!	procedure)
+(bytevector-s48-set!	procedure)
+(record-constructor-descriptor	syntax)
+(caaadr	procedure)
+(fx-/carry	procedure)
+(fxpositive?	procedure)
+(syntax->vector	procedure)
+(with-profile-tracker	procedure)
+(fxcopy-bit-field	procedure)
+(caadar	procedure)
+(define-ftype	syntax)
+(caaddr	procedure)
+(debug-on-exception	global-param)
+(substq!	procedure)
+(record-type-generative?	procedure)
+(substv!	procedure)
+(set-textual-port-input-buffer!	procedure)
+(compute-size	procedure)
+(cadaar	procedure)
+(cadadr	procedure)
+(define-record	syntax)
+(set-textual-port-output-index!	procedure)
+(time-type	procedure)
+(caddar	procedure)
+(cadddr	procedure)
+(mutex-name	procedure)
+(string->number	procedure)
+(&no-nans	syntax)
+(library	syntax)
+(machine-type	procedure)
+(add-duration!	procedure)
+(symbol->string	procedure)
+(get-bytevector-some	procedure)
+(fldiv0-and-mod0	procedure)
+(vector->list	procedure)
+(port-length	procedure)
+(string->immutable-string	procedure)
+(fxlogor	procedure)
+(lookahead-u8	procedure)
+(set-port-output-buffer!	procedure)
+(library-object-filename	procedure)
+(file-access-time	procedure)
+(record-type-sealed?	procedure)
+(define-enumeration	syntax)
+(numerator	procedure)
+(annotation-option-set	syntax)
+(block-write	procedure)
+(get-string-n	procedure)
+(cdaaar	procedure)
+(string-foldcase	procedure)
+(unlock-object	procedure)
+(bytevector-s56-set!	procedure)
+(make-date	procedure)
+(cdaadr	procedure)
+(record-type-opaque?	procedure)
+(cdadar	procedure)
+(cdaddr	procedure)
+(get-process-id	procedure)
+(record-predicate	procedure)
+(&irritants	syntax)
+(cddaar	procedure)
+(&i/o	syntax)
+(ftype-pointer-null?	syntax)
+(cddadr	procedure)
+(r6rs:string->number	#f)
+(cdddar	procedure)
+(csv7:record-type-descriptor	#f)
+(cddddr	procedure)
+(utf16->string	procedure)
+(file-exists?	procedure)
+(r6rs:standard-error-port	#f)
+(set-textual-port-output-buffer!	procedure)
+(make-cost-center	procedure)
+(bytevector-copy!	procedure)
+(bytevector-fill!	procedure)
+(maybe-compile-file	procedure)
+(cfl-imag-part	procedure)
+(bytevector-s8-ref	procedure)
+(foreign-callable-code-object	procedure)
+(close-output-port	procedure)
+(add-duration	procedure)
+(compile-file	procedure)
+(div-and-mod	procedure)
+(enum-set-difference	procedure)
+(set-sstats-gc-cpu!	procedure)
+(quasiquote	syntax)
+(make-hash-table	procedure)
+(inspect	procedure)
+(enum-set->list	procedure)
+(bytevector-s64-set!	procedure)
+(literal-identifier=?	procedure)
+(get-string-some	procedure)
+(fxremainder	procedure)
+(environment	procedure)
+(boolean=?	procedure)
+(release-minimum-generation	global-param)
+(set-textual-port-input-size!	procedure)
+(letrec*	syntax)
+(make-i/o-read-error	procedure)
+(r6rs:string<=?	#f)
+(rename-file	procedure)
+(make-list	procedure)
+(vector-set-fixnum!	procedure)
+(symbol-hash	procedure)
+(make-i/o-file-protection-error	procedure)
+(&i/o-file-already-exists	syntax)
+(char<?	procedure)
+(char=?	procedure)
+(char>?	procedure)
+(r6rs:string>=?	#f)
+(sstats?	procedure)
+(record-reader	procedure)
+(record-equal-procedure	procedure)
+(abort-handler	thread-param)
+(bytevector-s16-ref	procedure)
+(r6rs:<	#f)
+(r6rs:=	#f)
+(s8-list->bytevector	procedure)
+(r6rs:>	#f)
+(lookahead-char	procedure)
+(require-nongenerative-clause	thread-param)
+(i/o-error-position	procedure)
+(&who	syntax)
+(weak-pair?	procedure)
+(reset-cost-center!	procedure)
+(generate-wpo-files	thread-param)
+(&undefined	syntax)
+(bytevector-s24-ref	procedure)
+(ephemeron-pair?	procedure)
+(fl-make-rectangular	procedure)
+(make-polar	procedure)
+(fxarithmetic-shift-left	procedure)
+(generate-interrupt-trap	thread-param)
+(make-mutex	procedure)
+(&i/o-file-is-read-only	syntax)
+(&warning	syntax)
+(assertion-violation?	procedure)
+(fxbit-set?	procedure)
+(make-time	procedure)
+(integer-length	procedure)
+(r6rs:with-input-from-file	#f)
+(andmap	procedure)
+(make-message-condition	procedure)
+(call-with-bytevector-output-port	procedure)
+(assertion-violationf	procedure)
+(maybe-compile-library	procedure)
+(bytevector-s32-ref	procedure)
+(string?	procedure)
+(hashtable-weak?	procedure)
+(define	syntax)
+(compile-port	procedure)
+(make-violation	procedure)
+(serious-condition?	procedure)
+(debug-condition	thread-param)
+(trace-print	thread-param)
+(print-length	thread-param)
+(sstats-difference	procedure)
+(bytevector-s40-ref	procedure)
+(date-week-day	procedure)
+($primitive	syntax)
+(print-char-name	thread-param)
+(char-general-category	procedure)
+(make-transcoder	procedure)
+(&no-infinities	syntax)
+(fxrotate-bit-field	procedure)
+(r6rs:command-line	#f)
+(eq-hashtable-weak?	procedure)
+(bytes-allocated	procedure)
+(set-time-type!	procedure)
+(string->list	procedure)
+(char<=?	procedure)
+(bytevector-u8-ref	procedure)
+(generate-allocation-counts	thread-param)
+(char>=?	procedure)
+(...	syntax)
+(make-weak-eqv-hashtable	procedure)
+(current-output-port	thread-param)
+(lexical-violation?	procedure)
+(record-type-descriptor?	procedure)
+(with-interrupts-disabled	syntax)
+(with-mutex	syntax)
+(define-values	syntax)
+(get-output-string	procedure)
+(char-whitespace?	procedure)
+(get-hash-table	procedure)
+(integer->char	procedure)
+(ftype-pointer->sexpr	procedure)
+(string-titlecase	procedure)
+(make-hashtable	procedure)
+(waiter-write	thread-param)
+(r6rs:<=	#f)
+(r6rs:>=	#f)
+(source-table-contains?	procedure)
+(fxzero?	procedure)
+(most-positive-fixnum	procedure)
+(enum-set-constructor	procedure)
+(native-transcoder	procedure)
+(untrace	syntax)
+(cflonum?	procedure)
+(nongenerative	syntax)
+(get-string-all	procedure)
+(unquote	syntax)
+(fxvector?	procedure)
+(fasl-write	procedure)
+(compute-composition	procedure)
+(peek-char	procedure)
+(scheme-report-environment	procedure)
+(make-engine	procedure)
+(string->utf8	procedure)
+(make-warning	procedure)
+(port-file-compressed!	procedure)
+(append	procedure)
+(statistics	procedure)
+(partition	procedure)
+(with-exception-handler	procedure)
+(negative?	procedure)
+(flinfinite?	procedure)
+(r6rs:record-constructor	#f)
+(annotation-expression	procedure)
+(ceiling	procedure)
+(bytevector->string	procedure)
+(foreign-ref	procedure)
+(hash-table-map	procedure)
+(make-rectangular	procedure)
+(bytevector-s32-native-set!	procedure)
+(heap-reserve-ratio	global-param)
+(make-enumeration	procedure)
+(profile-palette	thread-param)
+(warning?	procedure)
+(open-string-input-port	procedure)
+($system	module)
+(get-u8	procedure)
+(warningf	procedure)
+(exclusive-cond	syntax)
+(port-output-count	procedure)
+(load-compiled-from-port	procedure)
+(most-negative-fixnum	procedure)
+(hashtable-mutable?	procedure)
+(print-unicode	thread-param)
+(get-bytevector-all	procedure)
+(identifier-syntax	syntax)
+(&i/o-file-protection	syntax)
+(bytevector?	procedure)
+(read-char	procedure)
+(symbol?	procedure)
+(reset-maximum-memory-bytes!	procedure)
+(bytevector-ieee-double-native-ref	procedure)
+(equal-hash	procedure)
+(with-input-from-file	procedure)
+(bignum?	procedure)
+(trace-do	syntax)
+(i/o-port-error?	procedure)
+(exact->inexact	procedure)
+(bytevector-s48-ref	procedure)
+(record-constructor	procedure)
+)]
+      [(equal? list-instance '(chezscheme)) '(
+(symbol-hashtable-update!	procedure)
+(r6rs:dynamic-wind	#f)
+(trace-define	syntax)
+(+	procedure)
+(-	procedure)
+; (1+	procedure)
+(mutable-string?	procedure)
+(assert	syntax)
+(textual-port-input-count	procedure)
+(property-list	procedure)
+(make-parameter	procedure)
+(compile-library	procedure)
+(logbit0	procedure)
+(logbit1	procedure)
+(make-i/o-file-does-not-exist-error	procedure)
+(pretty-line-length	thread-param)
+(bytevector-s56-ref	procedure)
+(make-custom-binary-output-port	procedure)
+(logbit?	procedure)
+(virtual-register	procedure)
+(ftype-set!	syntax)
+(fields	syntax)
+(make-ftype-pointer	syntax)
+(make-source-object	procedure)
+(port-output-full?	procedure)
+(abs	procedure)
+(break-handler	thread-param)
+(fl*	procedure)
+(library-directories	thread-param)
+(fl+	procedure)
+(set-binary-port-output-buffer!	procedure)
+(fl-	procedure)
+(fl/	procedure)
+(port-output-index	procedure)
+(car	procedure)
+(fl<	procedure)
+(fl=	procedure)
+(and	syntax)
+(fl>	procedure)
+(cdr	procedure)
+(profile-line-number-color	thread-param)
+(eq?	procedure)
+(bytevector-s64-ref	procedure)
+(fx*	procedure)
+(fx+	procedure)
+(ash	procedure)
+(make-assertion-violation	procedure)
+(fx-	procedure)
+(gcd	procedure)
+(fx/	procedure)
+(div	procedure)
+(box	procedure)
+(record-type-field-names	procedure)
+(flacos	procedure)
+(fx<	procedure)
+(fx=	procedure)
+(cos	procedure)
+(fx>	procedure)
+(string->symbol	procedure)
+(compile-whole-program	procedure)
+(bytevector-u16-set!	procedure)
+(for-each	procedure)
+(lcm	procedure)
+(exp	procedure)
+(map	procedure)
+(let	syntax)
+(max	procedure)
+(disable-interrupts	procedure)
+(min	procedure)
+(make-i/o-port-error	procedure)
+(log	procedure)
+(bytevector-compress	procedure)
+(string<=?	procedure)
+(mod	procedure)
+(fldiv0	procedure)
+(expt-mod	procedure)
+(string>=?	procedure)
+(rec	syntax)
+(not	procedure)
+(flatan	procedure)
+(tan	procedure)
+(critical-section	syntax)
+(vector-length	procedure)
+(close-port	procedure)
+(set-textual-port-output-size!	procedure)
+(flasin	procedure)
+(binary-port-output-size	procedure)
+(sin	procedure)
+(make-object-finder	procedure)
+(engine-return	procedure)
+(current-expand	thread-param)
+(console-input-port	global-param)
+(textual-port-input-index	procedure)
+(port-bol?	procedure)
+(&i/o-write	syntax)
+(filter	procedure)
+(datum->syntax	procedure)
+(no-infinities-violation?	procedure)
+(vector-for-each	procedure)
+(gensym	procedure)
+(fxvector-ref	procedure)
+(flpositive?	procedure)
+(bytevector-ieee-double-ref	procedure)
+(getenv	procedure)
+(eq-hashtable-delete!	procedure)
+(set-port-input-buffer!	procedure)
+(standard-error-port	procedure)
+(port-eof?	procedure)
+(make-input/output-port	procedure)
+(r6rs:char-ci<?	#f)
+(set-port-output-index!	procedure)
+(r6rs:char-ci=?	#f)
+(r6rs:char-ci>?	#f)
+(who-condition?	procedure)
+(i/o-decoding-error?	procedure)
+(make-i/o-invalid-position-error	procedure)
+(bytevector-u24-set!	procedure)
+(flnan?	procedure)
+(add1	procedure)
+(mutable-fxvector?	procedure)
+(flexpt	procedure)
+(flodd?	procedure)
+(imag-part	procedure)
+(reverse!	procedure)
+(top-level-program	syntax)
+(&source	syntax)
+(flmod0	procedure)
+(source-table-delete!	procedure)
+(&i/o-file-does-not-exist	syntax)
+(date-zone-offset	procedure)
+(caar	procedure)
+(foreign-callable-entry-point	procedure)
+(cfl*	procedure)
+(print-record	thread-param)
+(cfl+	procedure)
+(acos	procedure)
+(bytevector-u16-ref	procedure)
+(cadr	procedure)
+(cfl-	procedure)
+(cfl/	procedure)
+(fold-left	procedure)
+(compile-program-handler	thread-param)
+(unsyntax-splicing	syntax)
+(fl<=	procedure)
+(open-process-ports	procedure)
+(fl<?	procedure)
+(fl=?	procedure)
+(fl>=	procedure)
+(fl>?	procedure)
+(cfl=	procedure)
+(port-name	procedure)
+(cdar	procedure)
+(output-port-buffer-mode	procedure)
+(logtest	procedure)
+(condition-irritants	procedure)
+(cddr	procedure)
+(case	syntax)
+(display-condition	procedure)
+(r5rs	module)
+(foreign-entry?	procedure)
+(fx1+	procedure)
+(fx1-	procedure)
+(csv7:record-field-accessor	#f)
+(cfl-real-part	procedure)
+(bytevector-u24-ref	procedure)
+(&lexical	syntax)
+(set-port-nonblocking!	procedure)
+(div0	procedure)
+(transcoder-eol-style	procedure)
+(bitwise-first-bit-set	procedure)
+(pretty-one-line-limit	thread-param)
+(foreign-alloc	procedure)
+(make-condition	procedure)
+(atan	procedure)
+(remove-hash-table!	procedure)
+(inexact?	procedure)
+(box?	procedure)
+(fx<=	procedure)
+(fx<?	procedure)
+(asin	procedure)
+(fx=?	procedure)
+(fx>=	procedure)
+(fx>?	procedure)
+(bytevector-u32-set!	procedure)
+(clear-output-port	procedure)
+(newline	procedure)
+(cond	syntax)
+(assp	procedure)
+(assq	procedure)
+(cons	procedure)
+(assv	procedure)
+(bytevector-u32-ref	procedure)
+(cosh	procedure)
+(hashtable-clear!	procedure)
+(keyboard-interrupt-handler	thread-param)
+(find	procedure)
+(enum-set?	procedure)
+(string->utf16	procedure)
+(string->utf32	procedure)
+(string-append	procedure)
+(else	syntax)
+(fxvector-length	procedure)
+(put-hash-table!	procedure)
+(ieee	module)
+(inexact->exact	procedure)
+(define-syntax	syntax)
+(i/o-file-does-not-exist-error?	procedure)
+(eqv?	procedure)
+(fllp	procedure)
+(r6rs:syntax-rules	#f)
+(get-datum/annotations	procedure)
+(u8-list->bytevector	procedure)
+(eval	procedure)
+(flsqrt	procedure)
+(equal?	procedure)
+(flceiling	procedure)
+(bytevector-u40-ref	procedure)
+(print-vector-length	thread-param)
+(let*	syntax)
+(bytevector-s64-native-set!	procedure)
+(cp0-outer-unroll-limit	thread-param)
+(expression-editor	module)
+(implicit-exports	syntax)
+(nan?	procedure)
+(error-handling-mode	syntax)
+(exit	procedure)
+(fxif	procedure)
+(record-type-equal-procedure	procedure)
+(r6rs:char-ci<=?	#f)
+(expt	procedure)
+(odd?	procedure)
+(fxcopy-bit	procedure)
+(port-has-port-nonblocking??	procedure)
+(exact?	procedure)
+(r6rs:char-ci>=?	#f)
+(transcoder-codec	procedure)
+(timer-interrupt-handler	thread-param)
+(real-valued?	procedure)
+(iota	procedure)
+(top-level-value	procedure)
+(mod0	procedure)
+(memp	procedure)
+(memq	procedure)
+(memv	procedure)
+(meta	syntax)
+(hashtable-hash-function	procedure)
+(syntax-violation-subform	procedure)
+(get-thread-id	procedure)
+(load	procedure)
+(datum->syntax-object	procedure)
+(list	procedure)
+(format	procedure)
+(bytevector-u40-set!	procedure)
+(internal-defines-as-letrec*	thread-param)
+(error?	procedure)
+(bytevector-u64-native-ref	procedure)
+(default-exception-handler	procedure)
+(endianness	syntax)
+(port-file-descriptor	procedure)
+(utf-16-codec	procedure)
+(read	procedure)
+(except	syntax)
+(errorf	procedure)
+(set!	syntax)
+(bitwise-arithmetic-shift-right	procedure)
+(case-sensitive	thread-param)
+(lambda	syntax)
+(substring-fill!	procedure)
+(quotient	procedure)
+(enum-set-complement	procedure)
+(violation?	procedure)
+(annotation?	procedure)
+(remp	procedure)
+(remq	procedure)
+(remv	procedure)
+(only	syntax)
+(make-guardian	procedure)
+(tanh	procedure)
+(undefined-variable-warnings	thread-param)
+(box-cas!	procedure)
+(&error	syntax)
+(pretty-print	procedure)
+(path-extension	procedure)
+(buffer-mode?	syntax)
+(procedure?	procedure)
+(sinh	procedure)
+(i/o-error?	procedure)
+(bytevector	procedure)
+(sub1	procedure)
+(binary-port?	procedure)
+(time	syntax)
+(unregister-guardian	procedure)
+(nonnegative?	procedure)
+(flinteger?	procedure)
+(set-top-level-value!	procedure)
+(date-zone-name	procedure)
+(foreign-entry	procedure)
+(syntax->list	procedure)
+(load-program	procedure)
+(&syntax	syntax)
+(let-values	syntax)
+(fxnonpositive?	procedure)
+(sort	procedure)
+(when	syntax)
+(port-position	procedure)
+(bytevector-uint-ref	procedure)
+(sqrt	procedure)
+(pretty-standard-indent	thread-param)
+(void	procedure)
+(bytevector-s16-native-ref	procedure)
+(scheme-environment	procedure)
+(r6rs:char<?	#f)
+(r6rs:char=?	#f)
+(r6rs:char>?	#f)
+(&message	syntax)
+(fxdiv0	procedure)
+(source-object-column	procedure)
+(file-position	procedure)
+(open-output-string	procedure)
+(bytevector-ieee-double-set!	procedure)
+(unget-u8	procedure)
+(with-source-path	procedure)
+(expand	procedure)
+(exists	procedure)
+(define-top-level-value	procedure)
+(append!	procedure)
+(collect-rendezvous	procedure)
+(path-last	procedure)
+(current-date	procedure)
+(make-irritants-condition	procedure)
+(define-record-type	syntax)
+(char-numeric?	procedure)
+(display-statistics	procedure)
+(library-list	procedure)
+(open-bytevector-output-port	procedure)
+(string-normalize-nfc	procedure)
+(string-normalize-nfd	procedure)
+(export	syntax)
+(file-symbolic-link?	procedure)
+(fxodd?	procedure)
+(bytevector-u48-ref	procedure)
+(length	procedure)
+(make-custom-textual-input-port	procedure)
+(raise-continuable	procedure)
+(fxmod0	procedure)
+(annotation-stripped	procedure)
+(current-eval	thread-param)
+(fasl-file	procedure)
+(set-sstats-gc-count!	procedure)
+(import	syntax)
+(path-rest	procedure)
+(set-virtual-register!	procedure)
+(put-string-some	procedure)
+(parameterize	syntax)
+(bytevector-u56-ref	procedure)
+(ftype-init-lock!	syntax)
+(cost-center-time	procedure)
+(immutable	syntax)
+(r6rs:char<=?	#f)
+(r6rs:char>=?	#f)
+(port-output-size	procedure)
+(expand-output	thread-param)
+(collect-trip-bytes	global-param)
+(fxbit-field	procedure)
+(member	procedure)
+(path-root	procedure)
+(call/1cc	procedure)
+(unread-char	procedure)
+(bytevector-u64-ref	procedure)
+(char-ci<?	procedure)
+(char-ci=?	procedure)
+(char-ci>?	procedure)
+(collect-request-handler	global-param)
+(locked-object?	procedure)
+(null-environment	procedure)
+(cost-center-allocation-count	procedure)
+(i/o-encoding-error-char	procedure)
+(rationalize	procedure)
+(create-exception-state	procedure)
+(scheme-program	global-param)
+(letrec	syntax)
+(make-boot-file	procedure)
+(sstats-bytes	procedure)
+(fxbit-count	procedure)
+(open-file-input/output-port	procedure)
+(time-difference!	procedure)
+(merge!	procedure)
+(weak-cons	procedure)
+(string-ci<=?	procedure)
+(record-writer	procedure)
+(binary-port-input-size	procedure)
+(string-ci>=?	procedure)
+(hashtable-contains?	procedure)
+(trace-case-lambda	syntax)
+(vector-fill!	procedure)
+(trace-lambda	syntax)
+(fasl-read	procedure)
+(open-fd-input-port	procedure)
+(r6rs:call-with-output-file	#f)
+(strip-fasl-file	procedure)
+(hashtable?	procedure)
+(write-char	procedure)
+(current-time	procedure)
+(record-case	syntax)
+(generate-inspector-information	thread-param)
+(bytevector-s8-set!	procedure)
+(fluid-let-syntax	syntax)
+(apropos	procedure)
+(petite?	procedure)
+(interactive?	procedure)
+(source-file-descriptor?	procedure)
+(hashtable-equivalence-function	procedure)
+(r6rs:current-input-port	#f)
+(ftype-spin-lock!	syntax)
+(let*-values	syntax)
+(open-input-output-file	procedure)
+(oblist	procedure)
+(bytevector-uint-set!	procedure)
+(open-fd-input/output-port	procedure)
+(subtract-duration	procedure)
+(hash-table-for-each	procedure)
+(char-title-case?	procedure)
+(set-sstats-gc-bytes!	procedure)
+(last-pair	procedure)
+(caaar	procedure)
+(caadr	procedure)
+(fxlength	procedure)
+(&i/o-read	syntax)
+(cadar	procedure)
+(logand	procedure)
+(caddr	procedure)
+(collections	procedure)
+(abort	procedure)
+(r6rs:call-with-input-file	#f)
+(condition-predicate	procedure)
+(string-ci-hash	procedure)
+(fl<=?	procedure)
+(char-name	procedure)
+(enum-set-universe	procedure)
+(acosh	procedure)
+(fl>=?	procedure)
+(string->bytevector	procedure)
+(cdaar	procedure)
+(time-nanosecond	procedure)
+(cdadr	procedure)
+(symbol-hashtable-cell	procedure)
+(&non-continuable	syntax)
+(make-i/o-error	procedure)
+(compress-format	thread-param)
+(begin	syntax)
+(cddar	procedure)
+(fxnegative?	procedure)
+(compile-file-message	thread-param)
+(record?	procedure)
+(cdddr	procedure)
+(bytevector-ieee-double-native-set!	procedure)
+(logior	procedure)
+(&i/o-port	syntax)
+(symbol-hashtable-delete!	procedure)
+(foreign-address-name	procedure)
+(current-input-port	thread-param)
+(condition-message	procedure)
+(lognot	procedure)
+(char-	procedure)
+(csv7:record-field-mutable?	#f)
+(textual-port-input-buffer	procedure)
+(char?	procedure)
+(custom-port-buffer-size	thread-param)
+(fxfirst-bit-set	procedure)
+(pariah	syntax)
+(make-variable-transformer	procedure)
+(alias	syntax)
+(date?	procedure)
+(set-binary-port-input-index!	procedure)
+(parent	syntax)
+(delete-file	procedure)
+(ftype-ref	syntax)
+(real-part	procedure)
+(hashtable-entries	procedure)
+(put-datum	procedure)
+(path-absolute?	procedure)
+(debug	procedure)
+(logxor	procedure)
+(bytevector-u32-native-set!	procedure)
+(angle	procedure)
+(open-source-file	procedure)
+(r6rs:file-exists?	#f)
+(vector->immutable-vector	procedure)
+(define-structure	syntax)
+(delay	syntax)
+(flnonpositive?	procedure)
+(fxarithmetic-shift	procedure)
+(bytevector->uint-list	procedure)
+(datum	syntax)
+(fxvector->list	procedure)
+(enable-interrupts	procedure)
+(chmod	procedure)
+(console-output-port	global-param)
+(library-extensions	thread-param)
+(call-with-current-continuation	procedure)
+(mutex-acquire	procedure)
+(bytevector->s8-list	procedure)
+(put-char	procedure)
+(real->flonum	procedure)
+(module	syntax)
+(source-condition?	procedure)
+(fx<=?	procedure)
+(modulo	procedure)
+(atanh	procedure)
+(immutable-bytevector?	procedure)
+(source-directories	global-param)
+(real-time	procedure)
+(profile-dump-data	procedure)
+(fx>=?	procedure)
+(collect	procedure)
+(ephemeron-cons	procedure)
+(call-with-port	procedure)
+(break	procedure)
+(display	procedure)
+(port-has-port-length?	procedure)
+(make-no-nans-violation	procedure)
+(apply	procedure)
+(asinh	procedure)
+(let-syntax	syntax)
+(csv7:record-type-symbol	#f)
+(time-utc->date	procedure)
+(directory-separator	procedure)
+(atom?	procedure)
+(make-record-type	procedure)
+(symbol-hashtable-set!	procedure)
+(compile-whole-library	procedure)
+(cons*	procedure)
+(get-bytevector-some!	procedure)
+(date-nanosecond	procedure)
+(bitwise-bit-set?	procedure)
+(rational-valued?	procedure)
+(string-copy!	procedure)
+(r5rs-syntax	module)
+(string-fill!	procedure)
+(assoc	procedure)
+(with-implicit	syntax)
+(top-level-mutable?	procedure)
+(source-object-bfp	procedure)
+(quasisyntax	syntax)
+(flabs	procedure)
+(string-length	procedure)
+(bytevector-s32-native-ref	procedure)
+(sstats-gc-real	procedure)
+(ratnum?	procedure)
+(char-downcase	procedure)
+(iconv-codec	procedure)
+(char-upper-case?	procedure)
+(input-port-ready?	procedure)
+(source-object-efp	procedure)
+(fxlogand	procedure)
+(interaction-environment	thread-param)
+(sstats-print	procedure)
+(random	procedure)
+(gensym->unique-string	procedure)
+(fldiv	procedure)
+(flcos	procedure)
+(bytevector-length	procedure)
+(input-port?	procedure)
+(<=	procedure)
+(=>	syntax)
+(>=	procedure)
+(r6rs:standard-input-port	#f)
+(subtract-duration!	procedure)
+(object-counts	procedure)
+(compile	procedure)
+(flexp	procedure)
+(current-memory-bytes	procedure)
+(fxlogior	procedure)
+(mark-port-closed!	procedure)
+(flmax	procedure)
+(string-ref	procedure)
+(profile-dump-html	procedure)
+(pretty-format	procedure)
+(&continuation	syntax)
+(flmin	procedure)
+(fllog	procedure)
+(source-object-sfd	procedure)
+(flmod	procedure)
+(identifier?	procedure)
+(current-directory	global-param)
+(pretty-maximum-lines	thread-param)
+(profile-dump-list	procedure)
+(gensym-count	thread-param)
+(fxlognot	procedure)
+(make-serious-condition	procedure)
+(binary-port-output-buffer	procedure)
+(fltan	procedure)
+(floor	procedure)
+(enable-cross-library-optimization	thread-param)
+(make-custom-binary-input/output-port	procedure)
+(syntax-object->datum	procedure)
+(flsin	procedure)
+(irritants-condition?	procedure)
+(optimize-level	thread-param)
+(library-search-handler	thread-param)
+(i/o-file-already-exists-error?	procedure)
+(even?	procedure)
+(call-with-input-file	procedure)
+(fxlogbit0	procedure)
+(make-lexical-violation	procedure)
+(fxlogbit1	procedure)
+(fxvector-copy	procedure)
+(annotation-options	procedure)
+(force	procedure)
+(cd	global-param)
+(fxlogbit?	procedure)
+(port-input-size	procedure)
+(do	syntax)
+(bitwise-bit-field	procedure)
+(fxlogxor	procedure)
+(if	syntax)
+(exact	procedure)
+(top-level-syntax	procedure)
+(compile-to-file	procedure)
+(bytevector-copy	procedure)
+(error	procedure)
+(substring	procedure)
+(or	syntax)
+(scheme	module)
+(generate-procedure-source-information	thread-param)
+(sealed	syntax)
+(source-table-ref	procedure)
+(record-accessor	procedure)
+(copy-environment	procedure)
+(opaque	syntax)
+(list-head	procedure)
+(default-record-equal-procedure	thread-param)
+(fxabs	procedure)
+(rename	syntax)
+(bitwise-bit-count	procedure)
+(open-file-input-port	procedure)
+(make-i/o-file-is-read-only-error	procedure)
+(list-copy	procedure)
+(fxand	procedure)
+(library-version	procedure)
+(guard	syntax)
+(bytevector-u48-set!	procedure)
+(fxmodulo	procedure)
+(cost-center?	procedure)
+(fxdiv	procedure)
+(remove!	procedure)
+(open-string-output-port	procedure)
+(implementation-restriction-violation?	procedure)
+(port-has-set-port-position!?	procedure)
+(debug-level	thread-param)
+(flnumerator	procedure)
+(register-signal-handler	procedure)
+(fxior	procedure)
+(fxmax	procedure)
+(integer?	procedure)
+(fxmin	procedure)
+(initial-bytes-allocated	procedure)
+(remove	procedure)
+(fxmod	procedure)
+(compile-library-handler	thread-param)
+(define-property	syntax)
+(make-i/o-filename-error	procedure)
+(record-type-name	procedure)
+(trace-output-port	thread-param)
+(fxnot	procedure)
+(fxvector-set!	procedure)
+(remprop	procedure)
+(record-hash-procedure	procedure)
+(call-with-values	procedure)
+(fxsll	procedure)
+(fxsra	procedure)
+(vector-sort!	procedure)
+(fxsrl	procedure)
+(merge	procedure)
+(utf-8-codec	procedure)
+(command-line-arguments	global-param)
+(make-vector	procedure)
+(list*	procedure)
+(read-token	procedure)
+(bwp-object?	procedure)
+(fxxor	procedure)
+(list?	procedure)
+(visit-compiled-from-port	procedure)
+(div0-and-mod0	procedure)
+(pair?	procedure)
+(mkdir	procedure)
+(set-time-second!	procedure)
+(collect-notify	global-param)
+(mutex?	procedure)
+(bytevector-u56-set!	procedure)
+(remove-foreign-entry	procedure)
+(library-exports	procedure)
+(ieee-environment	procedure)
+(eol-style	syntax)
+(compile-to-port	procedure)
+(block-read	procedure)
+(isqrt	procedure)
+(syntax-violation	procedure)
+(list-tail	procedure)
+(set-sstats-bytes!	procedure)
+(environment?	procedure)
+(transcoded-port	procedure)
+(logor	procedure)
+(undefined-violation?	procedure)
+(ftype-guardian	syntax)
+(prefix	syntax)
+(bitwise-rotate-bit-field	procedure)
+(binary-port-input-buffer	procedure)
+(make-thread-parameter	procedure)
+(mutable	syntax)
+(fxlogtest	procedure)
+(r6rs:with-output-to-file	#f)
+(source-table?	procedure)
+(mutable-bytevector?	procedure)
+(eof-object	procedure)
+(finite?	procedure)
+(bytevector-u64-native-set!	procedure)
+(real?	procedure)
+(list-sort	procedure)
+(bytevector-u8-set!	procedure)
+(profile-query-weight	procedure)
+(foreign-callable	syntax)
+(bytevector-ieee-single-set!	procedure)
+(raise	procedure)
+(eq-hashtable-ref	procedure)
+(trace-let	syntax)
+(put-u8	procedure)
+(subset-mode	thread-param)
+(for-all	procedure)
+(date-year-day	procedure)
+(time-second	procedure)
+(bytevector-u64-set!	procedure)
+(gensym?	procedure)
+(make-custom-textual-input/output-port	procedure)
+(remq!	procedure)
+(new-cafe	procedure)
+(make-ephemeron-eq-hashtable	procedure)
+(enum-set-indexer	procedure)
+(remv!	procedure)
+(scheme-version	procedure)
+(printf	procedure)
+(char-foldcase	procedure)
+(load-library	procedure)
+(make-i/o-encoding-error	procedure)
+(i/o-error-filename	procedure)
+(reverse	procedure)
+(magnitude	procedure)
+(number?	procedure)
+(condition-name	procedure)
+(compile-imported-libraries	thread-param)
+(procedure-arity-mask	procedure)
+(flfloor	procedure)
+(reset	procedure)
+(time<?	procedure)
+(enum-set-union	procedure)
+(time=?	procedure)
+(time>?	procedure)
+(null?	procedure)
+(fresh-line	procedure)
+(set-port-input-index!	procedure)
+(ormap	procedure)
+(fleven?	procedure)
+(guardian?	procedure)
+(current-exception-state	thread-param)
+(revisit	procedure)
+(fxdiv0-and-mod0	procedure)
+(eval-when	syntax)
+(&implementation-restriction	syntax)
+(port?	procedure)
+(with-input-from-string	procedure)
+(bytevector->immutable-bytevector	procedure)
+(threaded?	procedure)
+(r6rs:hashtable-entries	#f)
+(rational?	procedure)
+(values	procedure)
+(hashtable-ephemeron?	procedure)
+(with-output-to-string	procedure)
+(make-i/o-write-error	procedure)
+(i/o-file-is-read-only-error?	procedure)
+(sleep	procedure)
+(time?	procedure)
+(bound-identifier=?	procedure)
+(utf-16le-codec	procedure)
+(sc-expand	procedure)
+(foreign-sizeof	procedure)
+(source-file-descriptor-path	procedure)
+(condition-wait	procedure)
+(vector	procedure)
+(time-difference	procedure)
+(char->integer	procedure)
+(integer-valued?	procedure)
+(engine-block	procedure)
+(bitwise-and	procedure)
+(infinite?	procedure)
+(ftype-pointer=?	syntax)
+(make-sstats	procedure)
+(cp0-effort-limit	thread-param)
+(getprop	procedure)
+(char-titlecase	procedure)
+(compress-level	thread-param)
+(waiter-prompt-and-read	thread-param)
+(round	procedure)
+(utf32->string	procedure)
+(date-and-time	procedure)
+(sort!	procedure)
+(bytevector->u8-list	procedure)
+(drop-prefix	syntax)
+(trace	syntax)
+(record-constructor-descriptor?	procedure)
+(syntax-violation-form	procedure)
+(vector-cas!	procedure)
+(get-char	procedure)
+(quote	syntax)
+(cpu-time	procedure)
+(port-nonblocking?	procedure)
+(make-string	procedure)
+(bitwise-ior	procedure)
+(record-field-mutable?	procedure)
+(unbox	procedure)
+(eq-hashtable-ephemeron?	procedure)
+(commonization-level	thread-param)
+(date-dst?	procedure)
+(eval-syntax-expanders-when	thread-param)
+(putenv	procedure)
+(subst	procedure)
+(enum-set=?	procedure)
+(bitwise-not	procedure)
+(string-truncate!	procedure)
+(r6rs:delete-file	#f)
+(verify-loadability	procedure)
+(textual-port-input-size	procedure)
+(condition	procedure)
+(textual-port-output-size	procedure)
+(make-syntax-violation	procedure)
+(visit	procedure)
+(type-descriptor	syntax)
+(hash-table?	procedure)
+(generate-instruction-counts	thread-param)
+(constructor	syntax)
+(flnegative?	procedure)
+(make-ephemeron-eqv-hashtable	procedure)
+(get-string-some!	procedure)
+(string-for-each	procedure)
+(bitwise-xor	procedure)
+(fold-right	procedure)
+(date-hour	procedure)
+(make-input-port	procedure)
+(condition-accessor	procedure)
+(string-ci<?	procedure)
+(string-ci=?	procedure)
+(string-ci>?	procedure)
+(record-type-hash-procedure	procedure)
+(i/o-filename-error?	procedure)
+(vector-copy	procedure)
+(format-condition?	procedure)
+(i/o-write-error?	procedure)
+(fxquotient	procedure)
+(boolean?	procedure)
+(bytevector-s16-set!	procedure)
+(enum-set-projection	procedure)
+(default-prompt-and-read	procedure)
+(bytevector-s16-native-set!	procedure)
+(pretty-initial-indent	thread-param)
+(immutable-vector?	procedure)
+(zero?	procedure)
+(get-line	procedure)
+(ftype-pointer?	syntax)
+(bitwise-copy-bit	procedure)
+(transcript-cafe	procedure)
+(standard-input-port	procedure)
+(list->vector	procedure)
+(fxarithmetic-shift-right	procedure)
+(source-object?	procedure)
+(get-mode	procedure)
+(case-lambda	syntax)
+(&i/o-decoding	syntax)
+(make-source-table	procedure)
+(print-precision	thread-param)
+(write	procedure)
+(subst!	procedure)
+(sstats-real	procedure)
+(bytevector-ieee-single-native-ref	procedure)
+(csv7:record-field-accessible?	#f)
+(command-line	global-param)
+(record-type-uid	procedure)
+(enum-set-subset?	procedure)
+(make-undefined-violation	procedure)
+(greatest-fixnum	procedure)
+(r6rs:record?	#f)
+(fxvector	procedure)
+(set-binary-port-input-size!	procedure)
+(fixnum?	procedure)
+(flonum?	procedure)
+(bytevector-uncompress	procedure)
+(substq	procedure)
+(flush-output-port	procedure)
+(substv	procedure)
+(string-copy	procedure)
+(file-regular?	procedure)
+(string-hash	procedure)
+(latin-1-codec	procedure)
+(bytevector-s24-set!	procedure)
+(date-year	procedure)
+(vector-set!	procedure)
+(compile-time-value?	procedure)
+(unless	syntax)
+(source-table-cell	procedure)
+(flfinite?	procedure)
+(directory-list	procedure)
+(port-output-buffer	procedure)
+(cfl-conjugate	procedure)
+(fltruncate	procedure)
+(transcript-off	procedure)
+(make-who-condition	procedure)
+(r6rs:utf-16-codec	#f)
+(concatenate-object-files	procedure)
+(print-extended-identifiers	thread-param)
+(positive?	procedure)
+(file-change-time	procedure)
+(hashtable-update!	procedure)
+(process	procedure)
+(&violation	syntax)
+(sstats-gc-cpu	procedure)
+(make-weak-eq-hashtable	procedure)
+(random-seed	thread-param)
+(string<?	procedure)
+(string=?	procedure)
+(vector-sort	procedure)
+(time<=?	procedure)
+(string>?	procedure)
+(fxvector->immutable-fxvector	procedure)
+(set-sstats-gc-real!	procedure)
+(compile-script	procedure)
+(time>=?	procedure)
+(make-continuation-condition	procedure)
+(string	procedure)
+(locate-source-object-source	procedure)
+(condition-continuation	procedure)
+(syntax->datum	procedure)
+(record-mutator	procedure)
+(cost-center-instruction-count	procedure)
+(source-table-dump	procedure)
+(revisit-compiled-from-port	procedure)
+(profile	syntax)
+(r6rs:case	#f)
+(char-ready?	procedure)
+(put-bytevector	procedure)
+(make-i/o-decoding-error	procedure)
+(bytevector-s32-set!	procedure)
+(top-level-syntax?	procedure)
+(make-custom-binary-input-port	procedure)
+(string-set!	procedure)
+(fx*/carry	procedure)
+(syntax-error	procedure)
+(exit-handler	thread-param)
+(fldenominator	procedure)
+(current-locate-source-object-source	thread-param)
+(gensym-prefix	thread-param)
+(flround	procedure)
+(environment-symbols	procedure)
+(enum-set-member?	procedure)
+(i/o-read-error?	procedure)
+(maximum-memory-bytes	procedure)
+(fluid-let	syntax)
+(make-boot-header	procedure)
+(letrec-syntax	syntax)
+(textual-port-output-count	procedure)
+(r6rs:standard-output-port	#f)
+(generate-covin-files	thread-param)
+(record-rtd	procedure)
+(scheme-start	global-param)
+(cfl-magnitude-squared	procedure)
+(source-object-line	procedure)
+(set-time-nanosecond!	procedure)
+(default-record-hash-procedure	thread-param)
+(profile-clear	procedure)
+(binary-port-input-count	procedure)
+(set-binary-port-output-size!	procedure)
+(unquote-splicing	syntax)
+(bitwise-copy-bit-field	procedure)
+(set-sstats-cpu!	procedure)
+(&i/o-encoding	syntax)
+(r6rs:eval	#f)
+(source-table-set!	procedure)
+(syntax-case	syntax)
+(make-non-continuable-violation	procedure)
+(port-has-set-port-nonblocking!?	procedure)
+(set-timer	procedure)
+(fxnonnegative?	procedure)
+(csv7:record-type-field-decls	#f)
+(fasl-compressed	thread-param)
+(r6rs:exit	#f)
+(bytevector-u16-native-ref	procedure)
+(import-only	syntax)
+(bytevector-s40-set!	procedure)
+(with-output-to-file	procedure)
+(truncate-file	procedure)
+(open-input-string	procedure)
+(load-shared-object	procedure)
+(&i/o-filename	syntax)
+(base-exception-handler	thread-param)
+(file-buffer-size	thread-param)
+(ftype-lock!	syntax)
+(source-table-size	procedure)
+(console-error-port	thread-param)
+(file-options	syntax)
+(dynamic-wind	procedure)
+(port-has-port-position?	procedure)
+(bitwise-reverse-bit-field	procedure)
+(symbol-hashtable-contains?	procedure)
+(hashtable-cell	procedure)
+(syntax	syntax)
+(remainder	procedure)
+(hashtable-values	procedure)
+(fixnum-width	procedure)
+(flzero?	procedure)
+(&i/o-invalid-position	syntax)
+(source-condition-form	procedure)
+(textual-port-output-index	procedure)
+(list->string	procedure)
+(open-output-file	procedure)
+(immutable-fxvector?	procedure)
+(condition-who	procedure)
+(record-type-parent	procedure)
+(binary-port-input-index	procedure)
+(meta-cond	syntax)
+(ftype-locked-decr!	syntax)
+(hashtable-copy	procedure)
+(make-eq-hashtable	procedure)
+(run-cp0	thread-param)
+(open-bytevector-input-port	procedure)
+(protocol	syntax)
+(system	procedure)
+(bytevector-sint-ref	procedure)
+(i/o-file-protection-error?	procedure)
+(flonum->fixnum	procedure)
+(fixnum->flonum	procedure)
+(syntax->annotation	procedure)
+(number->string	procedure)
+(thread?	procedure)
+(with-syntax	syntax)
+(r6rs:string-ci<=?	#f)
+(uint-list->bytevector	procedure)
+(record-type-descriptor	procedure)
+(r6rs:string-ci>=?	#f)
+(enable-object-counts	global-param)
+(hashtable-keys	procedure)
+(transcript-on	procedure)
+(condition?	procedure)
+(bitwise-if	procedure)
+(simple-conditions	procedure)
+(collect-generation-radix	global-param)
+(transcoder?	procedure)
+(truncate-port	procedure)
+(symbol-hashtable?	procedure)
+(put-string	procedure)
+(vector?	procedure)
+(sstats-cpu	procedure)
+(set-port-bol!	procedure)
+(make-fxvector	procedure)
+(maybe-compile-program	procedure)
+(bytevector-sint-set!	procedure)
+(trace-define-syntax	syntax)
+(profile-clear-database	procedure)
+(date-minute	procedure)
+(foreign-free	procedure)
+(hashtable-set!	procedure)
+(vector-map	procedure)
+(string-upcase	procedure)
+(enumerate	procedure)
+(r6rs:number->string	#f)
+(fx+/carry	procedure)
+(set-port-eof!	procedure)
+(make-record-type-descriptor	procedure)
+(make-custom-textual-output-port	procedure)
+(vector-ref	procedure)
+(waiter-prompt-string	thread-param)
+(open-file-output-port	procedure)
+(interpret	procedure)
+(fprintf	procedure)
+(standard-output-port	procedure)
+(r6rs:hashtable-keys	#f)
+(continuation-condition?	procedure)
+(i/o-encoding-error?	procedure)
+(set-car!	procedure)
+(generate-temporaries	procedure)
+(hashtable-size	procedure)
+(make-output-port	procedure)
+(set-cdr!	procedure)
+(fxvector-fill!	procedure)
+(set-port-name!	procedure)
+(path-first	procedure)
+(list-ref	procedure)
+(compile-time-value-value	procedure)
+(add-prefix	syntax)
+(library-requirements	procedure)
+(hashtable-ref	procedure)
+(suppress-greeting	global-param)
+(close-input-port	procedure)
+(profile-load-data	procedure)
+(environment-mutable?	procedure)
+(foreign-set!	procedure)
+(print-brackets	thread-param)
+(&serious	syntax)
+(&format	syntax)
+(make-eqv-hashtable	procedure)
+(apropos-list	procedure)
+(set-box!	procedure)
+(set-port-length!	procedure)
+(message-condition?	procedure)
+(denominator	procedure)
+(magnitude-squared	procedure)
+(csv7:record-type-field-names	#f)
+(date->time-utc	procedure)
+(thread-condition?	procedure)
+(make-source-condition	procedure)
+(enum-set-intersection	procedure)
+(symbol-hashtable-ref	procedure)
+(list->fxvector	procedure)
+(bitwise-arithmetic-shift-left	procedure)
+(bytevector->sint-list	procedure)
+(set-sstats-real!	procedure)
+(copy-time	procedure)
+(put-source-table	procedure)
+(syntax-rules	syntax)
+(non-continuable-violation?	procedure)
+(date-day	procedure)
+(port-input-buffer	procedure)
+(bytevector-s64-native-ref	procedure)
+(ftype-locked-incr!	syntax)
+(r6rs:flush-output-port	#f)
+(set-port-position!	procedure)
+(annotation-source	procedure)
+(directory-separator?	procedure)
+(invoke-library	procedure)
+(syntax-violation?	procedure)
+(call-with-output-file	procedure)
+(extend-syntax	syntax)
+(r6rs:string-ci<?	#f)
+(r6rs:string-ci=?	#f)
+(r6rs:string-ci>?	#f)
+(binary-port-output-count	procedure)
+(eq-hashtable?	procedure)
+(r6rs:open-input-file	#f)
+(fasl-strip-options	syntax)
+(current-transcoder	thread-param)
+(virtual-register-count	procedure)
+(port-closed?	procedure)
+(bitwise-length	procedure)
+(import-notify	thread-param)
+(delete-directory	procedure)
+(date-month	procedure)
+(nonpositive?	procedure)
+(display-string	procedure)
+(assertion-violation	procedure)
+(ftype-unlock!	syntax)
+(print-graph	thread-param)
+(&condition	syntax)
+(define-top-level-syntax	procedure)
+(with-cost-center	procedure)
+(bytes-deallocated	procedure)
+(make-compile-time-value	procedure)
+(textual-port-output-buffer	procedure)
+(eq-hashtable-cell	procedure)
+(flnonnegative?	procedure)
+(make-bytevector	procedure)
+(make-implementation-restriction-violation	procedure)
+(immutable-box?	procedure)
+(fxdiv-and-mod	procedure)
+(r6rs:fx*	#f)
+(r6rs:fx+	#f)
+(r6rs:fx-	#f)
+(bytevector=?	procedure)
+(lock-object	procedure)
+(source-file-descriptor	procedure)
+(decode-float	procedure)
+(fxreverse-bit-field	procedure)
+(output-port?	procedure)
+(conjugate	procedure)
+(include	syntax)
+(parent-rtd	syntax)
+(mutable-vector?	procedure)
+(native-endianness	procedure)
+(compile-profile	thread-param)
+(port-input-count	procedure)
+(exact-integer-sqrt	procedure)
+(warning	procedure)
+(scheme-version-number	procedure)
+(file-length	procedure)
+(foreign-procedure	syntax)
+(expand/optimize	procedure)
+(set-port-output-size!	procedure)
+(binary-port-output-index	procedure)
+(print-level	thread-param)
+(date-second	procedure)
+(textual-port?	procedure)
+(cp0-score-limit	thread-param)
+(file-directory?	procedure)
+(putprop	procedure)
+(ftype-pointer-address	procedure)
+(compile-program	procedure)
+(clear-input-port	procedure)
+(&assertion	syntax)
+(set-textual-port-input-index!	procedure)
+(compile-interpret-simple	thread-param)
+(hashtable-cells	procedure)
+(collect-maximum-generation	global-param)
+(string-downcase	procedure)
+(make-source-file-descriptor	procedure)
+(bytevector-u32-native-ref	procedure)
+(i/o-invalid-position-error?	procedure)
+(i/o-error-port	procedure)
+(port-input-empty?	procedure)
+(mutex-release	procedure)
+(make-format-condition	procedure)
+(r6rs:string<?	#f)
+(r6rs:string=?	#f)
+(r6rs:string>?	#f)
+(generate-profile-forms	thread-param)
+(condition-signal	procedure)
+(top-level-bound?	procedure)
+(bitwise-arithmetic-shift	procedure)
+(get-bytevector-n	procedure)
+(pretty-file	procedure)
+(mutable-box?	procedure)
+(r6rs:current-output-port	#f)
+(source-file-descriptor-checksum	procedure)
+(define-condition-type	syntax)
+(truncate	procedure)
+(char-upcase	procedure)
+(locate-source	procedure)
+(transcoder-error-handling-mode	procedure)
+(make-i/o-file-already-exists-error	procedure)
+(make-annotation	procedure)
+(eq-hashtable-set!	procedure)
+(port-input-index	procedure)
+(ftype-sizeof	syntax)
+(inexact	procedure)
+(get-string-n!	procedure)
+(print-radix	thread-param)
+(path-parent	procedure)
+(fldiv-and-mod	procedure)
+(csv7:record-field-mutator	#f)
+(bytevector-truncate!	procedure)
+(profile-release-counters	procedure)
+(unsyntax	syntax)
+(indirect-export	syntax)
+(char-lower-case?	procedure)
+(*	Category)
+(+	procedure)
+(-	procedure)
+(/	procedure)
+(port-transcoder	procedure)
+(<	procedure)
+(=	procedure)
+(>	procedure)
+(port-has-set-port-length!?	procedure)
+(complex?	procedure)
+(file-modification-time	procedure)
+(port-handler	procedure)
+(make-no-infinities-violation	procedure)
+(open-input-file	procedure)
+(_	syntax)
+(ftype-&ref	syntax)
+(r6rs:current-error-port	#f)
+(fork-thread	procedure)
+(symbol=?	procedure)
+(expand/optimize-output	thread-param)
+(eof-object?	procedure)
+(sint-list->bytevector	procedure)
+(utf-16be-codec	procedure)
+(immutable-string?	procedure)
+(char-alphabetic?	procedure)
+(r6rs:open-output-file	#f)
+(fxeven?	procedure)
+(get-bytevector-n!	procedure)
+(file-port?	procedure)
+(print-gensym	thread-param)
+(default-library-search-handler	procedure)
+(string-normalize-nfkc	procedure)
+(string-normalize-nfkd	procedure)
+(sstats-gc-count	procedure)
+(reset-handler	thread-param)
+(char-ci<=?	procedure)
+(eq-hashtable-update!	procedure)
+(box-immutable	procedure)
+(char-ci>=?	procedure)
+(current-make-source-object	thread-param)
+(bytevector-u16-native-set!	procedure)
+(hashtable-delete!	procedure)
+(eq-hashtable-contains?	procedure)
+(set-binary-port-input-buffer!	procedure)
+(ftype-pointer-ftype	procedure)
+(buffer-mode	syntax)
+(bytevector-ieee-single-ref	procedure)
+(set-binary-port-output-index!	procedure)
+(profile-dump	procedure)
+(put-bytevector-some	procedure)
+(open-fd-output-port	procedure)
+(make-record-constructor-descriptor	procedure)
+(predicate	syntax)
+(scheme-script	global-param)
+(native-eol-style	procedure)
+(unget-char	procedure)
+(free-identifier=?	procedure)
+(current-error-port	thread-param)
+(bytevector-ieee-single-native-set!	procedure)
+(get-source-table!	procedure)
+(least-fixnum	procedure)
+(condition-broadcast	procedure)
+(inspect/object	procedure)
+(sstats-gc-bytes	procedure)
+(no-nans-violation?	procedure)
+(call/cc	procedure)
+(utf8->string	procedure)
+(get-datum	procedure)
+(call-with-string-output-port	procedure)
+(library-requirements-options	syntax)
+(make-error	procedure)
+(csv7:record-type-name	#f)
+(caaaar	procedure)
+(set-port-input-size!	procedure)
+(bytevector-s48-set!	procedure)
+(record-constructor-descriptor	syntax)
+(caaadr	procedure)
+(fx-/carry	procedure)
+(fxpositive?	procedure)
+(syntax->vector	procedure)
+(with-profile-tracker	procedure)
+(fxcopy-bit-field	procedure)
+(caadar	procedure)
+(define-ftype	syntax)
+(caaddr	procedure)
+(debug-on-exception	global-param)
+(substq!	procedure)
+(record-type-generative?	procedure)
+(substv!	procedure)
+(set-textual-port-input-buffer!	procedure)
+(compute-size	procedure)
+(cadaar	procedure)
+(cadadr	procedure)
+(define-record	syntax)
+(set-textual-port-output-index!	procedure)
+(time-type	procedure)
+(caddar	procedure)
+(cadddr	procedure)
+(mutex-name	procedure)
+(string->number	procedure)
+(&no-nans	syntax)
+(library	syntax)
+(machine-type	procedure)
+(add-duration!	procedure)
+(symbol->string	procedure)
+(get-bytevector-some	procedure)
+(fldiv0-and-mod0	procedure)
+(vector->list	procedure)
+(port-length	procedure)
+(string->immutable-string	procedure)
+(fxlogor	procedure)
+(lookahead-u8	procedure)
+(set-port-output-buffer!	procedure)
+(library-object-filename	procedure)
+(file-access-time	procedure)
+(record-type-sealed?	procedure)
+(define-enumeration	syntax)
+(numerator	procedure)
+(annotation-option-set	syntax)
+(block-write	procedure)
+(get-string-n	procedure)
+(cdaaar	procedure)
+(string-foldcase	procedure)
+(unlock-object	procedure)
+(bytevector-s56-set!	procedure)
+(make-date	procedure)
+(cdaadr	procedure)
+(record-type-opaque?	procedure)
+(cdadar	procedure)
+(cdaddr	procedure)
+(get-process-id	procedure)
+(record-predicate	procedure)
+(&irritants	syntax)
+(cddaar	procedure)
+(&i/o	syntax)
+(ftype-pointer-null?	syntax)
+(cddadr	procedure)
+(r6rs:string->number	#f)
+(cdddar	procedure)
+(csv7:record-type-descriptor	#f)
+(cddddr	procedure)
+(utf16->string	procedure)
+(file-exists?	procedure)
+(r6rs:standard-error-port	#f)
+(set-textual-port-output-buffer!	procedure)
+(make-cost-center	procedure)
+(bytevector-copy!	procedure)
+(bytevector-fill!	procedure)
+(maybe-compile-file	procedure)
+(cfl-imag-part	procedure)
+(bytevector-s8-ref	procedure)
+(foreign-callable-code-object	procedure)
+(close-output-port	procedure)
+(add-duration	procedure)
+(compile-file	procedure)
+(div-and-mod	procedure)
+(enum-set-difference	procedure)
+(set-sstats-gc-cpu!	procedure)
+(quasiquote	syntax)
+(make-hash-table	procedure)
+(inspect	procedure)
+(enum-set->list	procedure)
+(bytevector-s64-set!	procedure)
+(literal-identifier=?	procedure)
+(get-string-some	procedure)
+(fxremainder	procedure)
+(environment	procedure)
+(boolean=?	procedure)
+(release-minimum-generation	global-param)
+(set-textual-port-input-size!	procedure)
+(letrec*	syntax)
+(make-i/o-read-error	procedure)
+(r6rs:string<=?	#f)
+(rename-file	procedure)
+(make-list	procedure)
+(vector-set-fixnum!	procedure)
+(symbol-hash	procedure)
+(make-i/o-file-protection-error	procedure)
+(&i/o-file-already-exists	syntax)
+(char<?	procedure)
+(char=?	procedure)
+(char>?	procedure)
+(r6rs:string>=?	#f)
+(sstats?	procedure)
+(record-reader	procedure)
+(record-equal-procedure	procedure)
+(abort-handler	thread-param)
+(bytevector-s16-ref	procedure)
+(r6rs:<	#f)
+(r6rs:=	#f)
+(s8-list->bytevector	procedure)
+(r6rs:>	#f)
+(lookahead-char	procedure)
+(require-nongenerative-clause	thread-param)
+(i/o-error-position	procedure)
+(&who	syntax)
+(weak-pair?	procedure)
+(reset-cost-center!	procedure)
+(generate-wpo-files	thread-param)
+(&undefined	syntax)
+(bytevector-s24-ref	procedure)
+(ephemeron-pair?	procedure)
+(fl-make-rectangular	procedure)
+(make-polar	procedure)
+(fxarithmetic-shift-left	procedure)
+(generate-interrupt-trap	thread-param)
+(make-mutex	procedure)
+(&i/o-file-is-read-only	syntax)
+(&warning	syntax)
+(assertion-violation?	procedure)
+(fxbit-set?	procedure)
+(make-time	procedure)
+(integer-length	procedure)
+(r6rs:with-input-from-file	#f)
+(andmap	procedure)
+(make-message-condition	procedure)
+(call-with-bytevector-output-port	procedure)
+(assertion-violationf	procedure)
+(maybe-compile-library	procedure)
+(bytevector-s32-ref	procedure)
+(string?	procedure)
+(hashtable-weak?	procedure)
+(define	syntax)
+(compile-port	procedure)
+(make-violation	procedure)
+(serious-condition?	procedure)
+(debug-condition	thread-param)
+(trace-print	thread-param)
+(print-length	thread-param)
+(sstats-difference	procedure)
+(bytevector-s40-ref	procedure)
+(date-week-day	procedure)
+($primitive	syntax)
+(print-char-name	thread-param)
+(char-general-category	procedure)
+(make-transcoder	procedure)
+(&no-infinities	syntax)
+(fxrotate-bit-field	procedure)
+(r6rs:command-line	#f)
+(eq-hashtable-weak?	procedure)
+(bytes-allocated	procedure)
+(set-time-type!	procedure)
+(string->list	procedure)
+(char<=?	procedure)
+(bytevector-u8-ref	procedure)
+(generate-allocation-counts	thread-param)
+(char>=?	procedure)
+(...	syntax)
+(make-weak-eqv-hashtable	procedure)
+(current-output-port	thread-param)
+(lexical-violation?	procedure)
+(record-type-descriptor?	procedure)
+(with-interrupts-disabled	syntax)
+(with-mutex	syntax)
+(define-values	syntax)
+(get-output-string	procedure)
+(char-whitespace?	procedure)
+(get-hash-table	procedure)
+(integer->char	procedure)
+(ftype-pointer->sexpr	procedure)
+(string-titlecase	procedure)
+(make-hashtable	procedure)
+(waiter-write	thread-param)
+(r6rs:<=	#f)
+(r6rs:>=	#f)
+(source-table-contains?	procedure)
+(fxzero?	procedure)
+(most-positive-fixnum	procedure)
+(enum-set-constructor	procedure)
+(native-transcoder	procedure)
+(untrace	syntax)
+(cflonum?	procedure)
+(nongenerative	syntax)
+(get-string-all	procedure)
+(unquote	syntax)
+(fxvector?	procedure)
+(fasl-write	procedure)
+(compute-composition	procedure)
+(peek-char	procedure)
+(scheme-report-environment	procedure)
+(make-engine	procedure)
+(string->utf8	procedure)
+(make-warning	procedure)
+(port-file-compressed!	procedure)
+(append	procedure)
+(statistics	procedure)
+(partition	procedure)
+(with-exception-handler	procedure)
+(negative?	procedure)
+(flinfinite?	procedure)
+(r6rs:record-constructor	#f)
+(annotation-expression	procedure)
+(ceiling	procedure)
+(bytevector->string	procedure)
+(foreign-ref	procedure)
+(hash-table-map	procedure)
+(make-rectangular	procedure)
+(bytevector-s32-native-set!	procedure)
+(heap-reserve-ratio	global-param)
+(make-enumeration	procedure)
+(profile-palette	thread-param)
+(warning?	procedure)
+(open-string-input-port	procedure)
+($system	module)
+(get-u8	procedure)
+(warningf	procedure)
+(exclusive-cond	syntax)
+(port-output-count	procedure)
+(load-compiled-from-port	procedure)
+(most-negative-fixnum	procedure)
+(hashtable-mutable?	procedure)
+(print-unicode	thread-param)
+(get-bytevector-all	procedure)
+(identifier-syntax	syntax)
+(&i/o-file-protection	syntax)
+(bytevector?	procedure)
+(read-char	procedure)
+(symbol?	procedure)
+(reset-maximum-memory-bytes!	procedure)
+(bytevector-ieee-double-native-ref	procedure)
+(equal-hash	procedure)
+(with-input-from-file	procedure)
+(bignum?	procedure)
+(trace-do	syntax)
+(i/o-port-error?	procedure)
+(exact->inexact	procedure)
+(bytevector-s48-ref	procedure)
+(record-constructor	procedure)
+(equal?	procedure)
+(list-instance	#f)
+(rnrs	#f)
+(condition	procedure)
+(&assertion	syntax)
+)]
+      [(equal? list-instance '(rnrs condition)) '(
+(&assertion	syntax)
+(&condition	syntax)
+(&error	syntax)
+(&implementation-restriction	syntax)
+(&irritants	syntax)
+(&lexical	syntax)
+(&message	syntax)
+(&non-continuable	syntax)
+(&serious	syntax)
+(&syntax	syntax)
+(&undefined	syntax)
+(&violation	syntax)
+(&warning	syntax)
+(&who	syntax)
+(assertion-violation?	procedure)
+(condition	procedure)
+(condition-accessor	procedure)
+(condition-irritants	procedure)
+(condition-message	procedure)
+(condition-predicate	procedure)
+(condition-who	procedure)
+(condition?	procedure)
+(define-condition-type	syntax)
+(error?	procedure)
+(implementation-restriction-violation?	procedure)
+(irritants-condition?	procedure)
+(lexical-violation?	procedure)
+(make-assertion-violation	procedure)
+(make-error	procedure)
+(make-implementation-restriction-violation	procedure)
+(make-irritants-condition	procedure)
+(make-lexical-violation	procedure)
+(make-message-condition	procedure)
+(make-non-continuable-violation	procedure)
+(make-serious-condition	procedure)
+(make-syntax-violation	procedure)
+(make-undefined-violation	procedure)
+(make-violation	procedure)
+(make-warning	procedure)
+(make-who-condition	procedure)
+(message-condition?	procedure)
+(non-continuable-violation?	procedure)
+(serious-condition?	procedure)
+(simple-conditions	procedure)
+(syntax-violation-form	procedure)
+(syntax-violation-subform	procedure)
+(syntax-violation?	procedure)
+(undefined-violation?	procedure)
+(violation?	procedure)
+(warning?	procedure)
+(who-condition?	procedure)
+)]
+      [(equal? list-instance '(rnrs files)) '(
+(&i/o	syntax)
+(&i/o-file-already-exists	syntax)
+(&i/o-file-does-not-exist	syntax)
+(&i/o-file-is-read-only	syntax)
+(&i/o-file-protection	syntax)
+(&i/o-filename	syntax)
+(&i/o-invalid-position	syntax)
+(&i/o-port	syntax)
+(&i/o-read	syntax)
+(&i/o-write	syntax)
+(i/o-error-filename	procedure)
+(i/o-error-port	procedure)
+(i/o-error-position	procedure)
+(i/o-error?	procedure)
+(i/o-file-already-exists-error?	procedure)
+(i/o-file-does-not-exist-error?	procedure)
+(i/o-file-is-read-only-error?	procedure)
+(i/o-file-protection-error?	procedure)
+(i/o-filename-error?	procedure)
+(i/o-invalid-position-error?	procedure)
+(i/o-port-error?	procedure)
+(i/o-read-error?	procedure)
+(i/o-write-error?	procedure)
+(make-i/o-error	procedure)
+(make-i/o-file-already-exists-error	procedure)
+(make-i/o-file-does-not-exist-error	procedure)
+(make-i/o-file-is-read-only-error	procedure)
+(make-i/o-file-protection-error	procedure)
+(make-i/o-filename-error	procedure)
+(make-i/o-invalid-position-error	procedure)
+(make-i/o-port-error	procedure)
+(make-i/o-read-error	procedure)
+(make-i/o-write-error	procedure)
+(delete-file	procedure)
+(file-exists?	procedure)
+)]
+      [(equal? list-instance '(rnrs base)) '(
+(+	procedure)
+(*	procedure)
+(-	procedure)
+(...	syntax)
+(/	procedure)
+(=>	syntax)
+(_	syntax)
+(abs	procedure)
+(acos	procedure)
+(and	syntax)
+(angle	procedure)
+(append	procedure)
+(apply	procedure)
+(asin	procedure)
+(assert	syntax)
+(assertion-violation	procedure)
+(atan	procedure)
+(begin	syntax)
+(boolean=?	procedure)
+(boolean?	procedure)
+(caaaar	procedure)
+(caaadr	procedure)
+(caaar	procedure)
+(caadar	procedure)
+(caaddr	procedure)
+(caadr	procedure)
+(caar	procedure)
+(cadaar	procedure)
+(cadadr	procedure)
+(cadar	procedure)
+(caddar	procedure)
+(cadddr	procedure)
+(caddr	procedure)
+(cadr	procedure)
+(call-with-current-continuation	procedure)
+(call-with-values	procedure)
+(call/cc	procedure)
+(car	procedure)
+(cdaaar	procedure)
+(cdaadr	procedure)
+(cdaar	procedure)
+(cdadar	procedure)
+(cdaddr	procedure)
+(cdadr	procedure)
+(cdar	procedure)
+(cddaar	procedure)
+(cddadr	procedure)
+(cddar	procedure)
+(cdddar	procedure)
+(cddddr	procedure)
+(cdddr	procedure)
+(cddr	procedure)
+(cdr	procedure)
+(ceiling	procedure)
+(char->integer	procedure)
+(char?	procedure)
+(complex?	procedure)
+(cond	syntax)
+(cons	procedure)
+(cos	procedure)
+(define	syntax)
+(define-syntax	syntax)
+(denominator	procedure)
+(div	procedure)
+(div-and-mod	procedure)
+(div0	procedure)
+(div0-and-mod0	procedure)
+(else	syntax)
+(eq?	procedure)
+(equal?	procedure)
+(eqv?	procedure)
+(error	procedure)
+(even?	procedure)
+(exact	procedure)
+(exact-integer-sqrt	procedure)
+(exact?	procedure)
+(exp	procedure)
+(expt	procedure)
+(finite?	procedure)
+(floor	procedure)
+(for-each	procedure)
+(gcd	procedure)
+(identifier-syntax	syntax)
+(if	syntax)
+(imag-part	procedure)
+(inexact	procedure)
+(inexact?	procedure)
+(infinite?	procedure)
+(integer->char	procedure)
+(integer-valued?	procedure)
+(integer?	procedure)
+(lambda	syntax)
+(lcm	procedure)
+(length	procedure)
+(let	syntax)
+(let*	syntax)
+(let*-values	syntax)
+(let-syntax	syntax)
+(let-values	syntax)
+(letrec	syntax)
+(letrec*	syntax)
+(letrec-syntax	syntax)
+(list	procedure)
+(list->string	procedure)
+(list->vector	procedure)
+(list-ref	procedure)
+(list-tail	procedure)
+(list?	procedure)
+(log	procedure)
+(magnitude	procedure)
+(make-polar	procedure)
+(make-rectangular	procedure)
+(make-string	procedure)
+(make-vector	procedure)
+(map	procedure)
+(max	procedure)
+(min	procedure)
+(mod	procedure)
+(mod0	procedure)
+(nan?	procedure)
+(negative?	procedure)
+(not	procedure)
+(null?	procedure)
+(number?	procedure)
+(numerator	procedure)
+(odd?	procedure)
+(or	syntax)
+(pair?	procedure)
+(positive?	procedure)
+(procedure?	procedure)
+(quasiquote	syntax)
+(quote	syntax)
+(<	procedure)
+(<=	procedure)
+(=	procedure)
+(>	procedure)
+(>=	procedure)
+(case	syntax)
+(char<=?	procedure)
+(char<?	procedure)
+(char=?	procedure)
+(char>=?	procedure)
+(char>?	procedure)
+(dynamic-wind	procedure)
+(number->string	procedure)
+(string->number	procedure)
+(string<=?	procedure)
+(string<?	procedure)
+(string=?	procedure)
+(string>=?	procedure)
+(string>?	procedure)
+(syntax-rules	syntax)
+(rational-valued?	procedure)
+(rational?	procedure)
+(rationalize	procedure)
+(real-part	procedure)
+(real-valued?	procedure)
+(real?	procedure)
+(reverse	procedure)
+(round	procedure)
+(set!	syntax)
+(sin	procedure)
+(sqrt	procedure)
+(string	procedure)
+(string->list	procedure)
+(string->symbol	procedure)
+(string-append	procedure)
+(string-copy	procedure)
+(string-for-each	procedure)
+(string-length	procedure)
+(string-ref	procedure)
+(string?	procedure)
+(substring	procedure)
+(symbol->string	procedure)
+(symbol=?	procedure)
+(symbol?	procedure)
+(tan	procedure)
+(truncate	procedure)
+(unquote	syntax)
+(unquote-splicing	syntax)
+(values	procedure)
+(vector	procedure)
+(vector->list	procedure)
+(vector-fill!	procedure)
+(vector-for-each	procedure)
+(vector-length	procedure)
+(vector-map	procedure)
+(vector-ref	procedure)
+(vector-set!	procedure)
+(vector?	procedure)
+(zero?	procedure)
+)]
+      [(equal? list-instance '(rnrs syntax-case)) '(
+(...	syntax)
+(_	syntax)
+(bound-identifier=?	procedure)
+(datum->syntax	procedure)
+(free-identifier=?	procedure)
+(generate-temporaries	procedure)
+(identifier?	procedure)
+(make-variable-transformer	procedure)
+(quasisyntax	syntax)
+(syntax	syntax)
+(syntax->datum	procedure)
+(syntax-case	syntax)
+(syntax-violation	procedure)
+(unsyntax	syntax)
+(unsyntax-splicing	syntax)
+(with-syntax	syntax)
+)]
+      [(equal? list-instance '(rnrs exception)) '(
+(=>	syntax)
+(else	syntax)
+(guard	syntax)
+(raise	procedure)
+(raise-continuable	procedure)
+(with-exception-handler	procedure)
+)]
+      [(equal? list-instance '(rnrs lists)) '(
+(assoc	procedure)
+(assp	procedure)
+(assq	procedure)
+(assv	procedure)
+(cons*	procedure)
+(exists	procedure)
+(filter	procedure)
+(find	procedure)
+(fold-left	procedure)
+(fold-right	procedure)
+(for-all	procedure)
+(member	procedure)
+(memp	procedure)
+(memq	procedure)
+(memv	procedure)
+(partition	procedure)
+(remove	procedure)
+(remp	procedure)
+(remq	procedure)
+(remv	procedure)
+)]
+      [(equal? list-instance '(rnrs bytevectors)) '(
+(bytevector->sint-list	procedure)
+(bytevector->u8-list	procedure)
+(bytevector->uint-list	procedure)
+(bytevector-copy	procedure)
+(bytevector-copy!	procedure)
+(bytevector-fill!	procedure)
+(bytevector-ieee-double-native-ref	procedure)
+(bytevector-ieee-double-native-set!	procedure)
+(bytevector-ieee-double-ref	procedure)
+(bytevector-ieee-double-set!	procedure)
+(bytevector-ieee-single-native-ref	procedure)
+(bytevector-ieee-single-native-set!	procedure)
+(bytevector-ieee-single-ref	procedure)
+(bytevector-ieee-single-set!	procedure)
+(bytevector-length	procedure)
+(bytevector-s16-native-ref	procedure)
+(bytevector-s16-native-set!	procedure)
+(bytevector-s16-ref	procedure)
+(bytevector-s16-set!	procedure)
+(bytevector-s32-native-ref	procedure)
+(bytevector-s32-native-set!	procedure)
+(bytevector-s32-ref	procedure)
+(bytevector-s32-set!	procedure)
+(bytevector-s64-native-ref	procedure)
+(bytevector-s64-native-set!	procedure)
+(bytevector-s64-ref	procedure)
+(bytevector-s64-set!	procedure)
+(bytevector-s8-ref	procedure)
+(bytevector-s8-set!	procedure)
+(bytevector-sint-ref	procedure)
+(bytevector-sint-set!	procedure)
+(bytevector-u16-native-ref	procedure)
+(bytevector-u16-native-set!	procedure)
+(bytevector-u16-ref	procedure)
+(bytevector-u16-set!	procedure)
+(bytevector-u32-native-ref	procedure)
+(bytevector-u32-native-set!	procedure)
+(bytevector-u32-ref	procedure)
+(bytevector-u32-set!	procedure)
+(bytevector-u64-native-ref	procedure)
+(bytevector-u64-native-set!	procedure)
+(bytevector-u64-ref	procedure)
+(bytevector-u64-set!	procedure)
+(bytevector-u8-ref	procedure)
+(bytevector-u8-set!	procedure)
+(bytevector-uint-ref	procedure)
+(bytevector-uint-set!	procedure)
+(bytevector=?	procedure)
+(bytevector?	procedure)
+(endianness	syntax)
+(make-bytevector	procedure)
+(native-endianness	procedure)
+(sint-list->bytevector	procedure)
+(string->utf16	procedure)
+(string->utf32	procedure)
+(string->utf8	procedure)
+(u8-list->bytevector	procedure)
+(uint-list->bytevector	procedure)
+(utf16->string	procedure)
+(utf32->string	procedure)
+(utf8->string	procedure)
+)]
+      [(equal? list-instance '(rnrs control)) '(
+(case-lambda	syntax)
+(do	syntax)
+(unless	syntax)
+(when	syntax)
+)]
+      [(equal? list-instance '(rnrs unicode)) '(
+(char-alphabetic?	procedure)
+(char-downcase	procedure)
+(char-foldcase	procedure)
+(char-general-category	procedure)
+(char-lower-case?	procedure)
+(char-numeric?	procedure)
+(char-title-case?	procedure)
+(char-titlecase	procedure)
+(char-upcase	procedure)
+(char-upper-case?	procedure)
+(char-whitespace?	procedure)
+(char-ci<=?	procedure)
+(char-ci<?	procedure)
+(char-ci=?	procedure)
+(char-ci>=?	procedure)
+(char-ci>?	procedure)
+(string-ci<=?	procedure)
+(string-ci<?	procedure)
+(string-ci=?	procedure)
+(string-ci>=?	procedure)
+(string-ci>?	procedure)
+(string-downcase	procedure)
+(string-foldcase	procedure)
+(string-normalize-nfc	procedure)
+(string-normalize-nfd	procedure)
+(string-normalize-nfkc	procedure)
+(string-normalize-nfkd	procedure)
+(string-titlecase	procedure)
+(string-upcase	procedure)
+)]
+      [(equal? list-instance '(rnrs enums)) '(
+(define-enumeration	syntax)
+(enum-set->list	procedure)
+(enum-set-complement	procedure)
+(enum-set-constructor	procedure)
+(enum-set-difference	procedure)
+(enum-set-indexer	procedure)
+(enum-set-intersection	procedure)
+(enum-set-member?	procedure)
+(enum-set-projection	procedure)
+(enum-set-subset?	procedure)
+(enum-set-union	procedure)
+(enum-set-universe	procedure)
+(enum-set=?	procedure)
+(make-enumeration	procedure)
+)]
+      [(equal? list-instance '(rnrs r5rs)) '(
+(delay	syntax)
+(exact->inexact	procedure)
+(force	procedure)
+(inexact->exact	procedure)
+(modulo	procedure)
+(null-environment	procedure)
+(quotient	procedure)
+(remainder	procedure)
+(scheme-report-environment	procedure)
+)]
+      [(equal? list-instance '(rnrs eval)) '(
+(environment	procedure)
+(eval	procedure)
+)]
+      [(equal? list-instance '(rnrs hashtables)) '(
+(equal-hash	procedure)
+(hashtable-clear!	procedure)
+(hashtable-contains?	procedure)
+(hashtable-copy	procedure)
+(hashtable-delete!	procedure)
+(hashtable-equivalence-function	procedure)
+(hashtable-hash-function	procedure)
+(hashtable-mutable?	procedure)
+(hashtable-ref	procedure)
+(hashtable-set!	procedure)
+(hashtable-size	procedure)
+(hashtable-update!	procedure)
+(hashtable?	procedure)
+(make-eq-hashtable	procedure)
+(make-eqv-hashtable	procedure)
+(make-hashtable	procedure)
+(hashtable-entries	procedure)
+(hashtable-keys	procedure)
+(string-ci-hash	procedure)
+(string-hash	procedure)
+(symbol-hash	procedure)
+)]
+      [(equal? list-instance '(rnrs sorting)) '(
+(list-sort	procedure)
+(vector-sort	procedure)
+(vector-sort!	procedure)
+)]
+      [(equal? list-instance '(rnrs programs)) '(
+(command-line	global-param)
+(exit	procedure)
+)]
+      [(equal? list-instance '(rnrs mutable-pairs)) '(
+(set-car!	procedure)
+(set-cdr!	procedure)
+)]
+      [(equal? list-instance '(rnrs mutable-strings)) '(
+(string-fill!	procedure)
+(string-set!	procedure)
+)]
+      [(equal? list-instance '(rnrs io ports)) '(
+(&i/o	syntax)
+(&i/o-decoding	syntax)
+(&i/o-encoding	syntax)
+(&i/o-file-already-exists	syntax)
+(&i/o-file-does-not-exist	syntax)
+(&i/o-file-is-read-only	syntax)
+(&i/o-file-protection	syntax)
+(&i/o-filename	syntax)
+(&i/o-invalid-position	syntax)
+(&i/o-port	syntax)
+(&i/o-read	syntax)
+(&i/o-write	syntax)
+(binary-port?	procedure)
+(buffer-mode	syntax)
+(buffer-mode?	syntax)
+(bytevector->string	procedure)
+(call-with-bytevector-output-port	procedure)
+(call-with-port	procedure)
+(call-with-string-output-port	procedure)
+(close-port	procedure)
+(eof-object	procedure)
+(eof-object?	procedure)
+(eol-style	syntax)
+(error-handling-mode	syntax)
+(file-options	syntax)
+(get-bytevector-all	procedure)
+(get-bytevector-n	procedure)
+(get-bytevector-n!	procedure)
+(get-bytevector-some	procedure)
+(get-char	procedure)
+(get-datum	procedure)
+(get-line	procedure)
+(get-string-all	procedure)
+(get-string-n	procedure)
+(get-string-n!	procedure)
+(get-u8	procedure)
+(i/o-decoding-error?	procedure)
+(i/o-encoding-error-char	procedure)
+(i/o-encoding-error?	procedure)
+(i/o-error-filename	procedure)
+(i/o-error-port	procedure)
+(i/o-error-position	procedure)
+(i/o-error?	procedure)
+(i/o-file-already-exists-error?	procedure)
+(i/o-file-does-not-exist-error?	procedure)
+(i/o-file-is-read-only-error?	procedure)
+(i/o-file-protection-error?	procedure)
+(i/o-filename-error?	procedure)
+(i/o-invalid-position-error?	procedure)
+(i/o-port-error?	procedure)
+(i/o-read-error?	procedure)
+(i/o-write-error?	procedure)
+(input-port?	procedure)
+(latin-1-codec	procedure)
+(lookahead-char	procedure)
+(lookahead-u8	procedure)
+(make-custom-binary-input-port	procedure)
+(make-custom-binary-input/output-port	procedure)
+(make-custom-binary-output-port	procedure)
+(make-custom-textual-input-port	procedure)
+(make-custom-textual-input/output-port	procedure)
+(make-custom-textual-output-port	procedure)
+(make-i/o-decoding-error	procedure)
+(make-i/o-encoding-error	procedure)
+(make-i/o-error	procedure)
+(make-i/o-file-already-exists-error	procedure)
+(make-i/o-file-does-not-exist-error	procedure)
+(make-i/o-file-is-read-only-error	procedure)
+(make-i/o-file-protection-error	procedure)
+(make-i/o-filename-error	procedure)
+(make-i/o-invalid-position-error	procedure)
+(make-i/o-port-error	procedure)
+(make-i/o-read-error	procedure)
+(make-i/o-write-error	procedure)
+(make-transcoder	procedure)
+(native-eol-style	procedure)
+(native-transcoder	procedure)
+(open-bytevector-input-port	procedure)
+(open-bytevector-output-port	procedure)
+(open-file-input-port	procedure)
+(open-file-input/output-port	procedure)
+(open-file-output-port	procedure)
+(open-string-input-port	procedure)
+(open-string-output-port	procedure)
+(output-port-buffer-mode	procedure)
+(output-port?	procedure)
+(port-eof?	procedure)
+(port-has-port-position?	procedure)
+(port-has-set-port-position!?	procedure)
+(port-position	procedure)
+(port-transcoder	procedure)
+(port?	procedure)
+(put-bytevector	procedure)
+(put-char	procedure)
+(put-datum	procedure)
+(put-string	procedure)
+(put-u8	procedure)
+(current-error-port	thread-param)
+(current-input-port	thread-param)
+(current-output-port	thread-param)
+(flush-output-port	procedure)
+(standard-error-port	procedure)
+(standard-input-port	procedure)
+(standard-output-port	procedure)
+(utf-16-codec	procedure)
+(set-port-position!	procedure)
+(string->bytevector	procedure)
+(textual-port?	procedure)
+(transcoded-port	procedure)
+(transcoder-codec	procedure)
+(transcoder-eol-style	procedure)
+(transcoder-error-handling-mode	procedure)
+(utf-8-codec	procedure)
+)]
+      [(equal? list-instance '(rnrs io simple)) '(
+(&i/o	syntax)
+(&i/o-file-already-exists	syntax)
+(&i/o-file-does-not-exist	syntax)
+(&i/o-file-is-read-only	syntax)
+(&i/o-file-protection	syntax)
+(&i/o-filename	syntax)
+(&i/o-invalid-position	syntax)
+(&i/o-port	syntax)
+(&i/o-read	syntax)
+(&i/o-write	syntax)
+(close-input-port	procedure)
+(close-output-port	procedure)
+(display	procedure)
+(eof-object	procedure)
+(eof-object?	procedure)
+(i/o-error-filename	procedure)
+(i/o-error-port	procedure)
+(i/o-error-position	procedure)
+(i/o-error?	procedure)
+(i/o-file-already-exists-error?	procedure)
+(i/o-file-does-not-exist-error?	procedure)
+(i/o-file-is-read-only-error?	procedure)
+(i/o-file-protection-error?	procedure)
+(i/o-filename-error?	procedure)
+(i/o-invalid-position-error?	procedure)
+(i/o-port-error?	procedure)
+(i/o-read-error?	procedure)
+(i/o-write-error?	procedure)
+(input-port?	procedure)
+(make-i/o-error	procedure)
+(make-i/o-file-already-exists-error	procedure)
+(make-i/o-file-does-not-exist-error	procedure)
+(make-i/o-file-is-read-only-error	procedure)
+(make-i/o-file-protection-error	procedure)
+(make-i/o-filename-error	procedure)
+(make-i/o-invalid-position-error	procedure)
+(make-i/o-port-error	procedure)
+(make-i/o-read-error	procedure)
+(make-i/o-write-error	procedure)
+(newline	procedure)
+(output-port?	procedure)
+(peek-char	procedure)
+(call-with-input-file	procedure)
+(call-with-output-file	procedure)
+(current-error-port	thread-param)
+(current-input-port	thread-param)
+(current-output-port	thread-param)
+(open-input-file	procedure)
+(open-output-file	procedure)
+(with-input-from-file	procedure)
+(with-output-to-file	procedure)
+(read	procedure)
+(read-char	procedure)
+(write	procedure)
+(write-char	procedure)
+)]
+      [(equal? list-instance '(rnrs arithmetic flonums)) '(
+(&no-infinities	syntax)
+(&no-nans	syntax)
+(fixnum->flonum	procedure)
+(fl*	procedure)
+(fl+	procedure)
+(fl-	procedure)
+(fl/	procedure)
+(fl<=?	procedure)
+(fl<?	procedure)
+(fl=?	procedure)
+(fl>=?	procedure)
+(fl>?	procedure)
+(flabs	procedure)
+(flacos	procedure)
+(flasin	procedure)
+(flatan	procedure)
+(flceiling	procedure)
+(flcos	procedure)
+(fldenominator	procedure)
+(fldiv	procedure)
+(fldiv-and-mod	procedure)
+(fldiv0	procedure)
+(fldiv0-and-mod0	procedure)
+(fleven?	procedure)
+(flexp	procedure)
+(flexpt	procedure)
+(flfinite?	procedure)
+(flfloor	procedure)
+(flinfinite?	procedure)
+(flinteger?	procedure)
+(fllog	procedure)
+(flmax	procedure)
+(flmin	procedure)
+(flmod	procedure)
+(flmod0	procedure)
+(flnan?	procedure)
+(flnegative?	procedure)
+(flnumerator	procedure)
+(flodd?	procedure)
+(flonum?	procedure)
+(flpositive?	procedure)
+(flround	procedure)
+(flsin	procedure)
+(flsqrt	procedure)
+(fltan	procedure)
+(fltruncate	procedure)
+(flzero?	procedure)
+(make-no-infinities-violation	procedure)
+(make-no-nans-violation	procedure)
+(no-infinities-violation?	procedure)
+(no-nans-violation?	procedure)
+(real->flonum	procedure)
+)]
+      [(equal? list-instance '(rnrs arithmetic bitwise)) '(
+(bitwise-and	procedure)
+(bitwise-arithmetic-shift	procedure)
+(bitwise-arithmetic-shift-left	procedure)
+(bitwise-arithmetic-shift-right	procedure)
+(bitwise-bit-count	procedure)
+(bitwise-bit-field	procedure)
+(bitwise-bit-set?	procedure)
+(bitwise-copy-bit	procedure)
+(bitwise-copy-bit-field	procedure)
+(bitwise-first-bit-set	procedure)
+(bitwise-if	procedure)
+(bitwise-ior	procedure)
+(bitwise-length	procedure)
+(bitwise-not	procedure)
+(bitwise-reverse-bit-field	procedure)
+(bitwise-rotate-bit-field	procedure)
+(bitwise-xor	procedure)
+)]
+      [(equal? list-instance '(rnrs arithmetic fixnums)) '(
+(fixnum-width	procedure)
+(fixnum?	procedure)
+(fx*/carry	procedure)
+(fx+/carry	procedure)
+(fx-/carry	procedure)
+(fx<=?	procedure)
+(fx<?	procedure)
+(fx=?	procedure)
+(fx>=?	procedure)
+(fx>?	procedure)
+(fxand	procedure)
+(fxarithmetic-shift	procedure)
+(fxarithmetic-shift-left	procedure)
+(fxarithmetic-shift-right	procedure)
+(fxbit-count	procedure)
+(fxbit-field	procedure)
+(fxbit-set?	procedure)
+(fxcopy-bit	procedure)
+(fxcopy-bit-field	procedure)
+(fxdiv	procedure)
+(fxdiv-and-mod	procedure)
+(fxdiv0	procedure)
+(fxdiv0-and-mod0	procedure)
+(fxeven?	procedure)
+(fxfirst-bit-set	procedure)
+(fxif	procedure)
+(fxior	procedure)
+(fxlength	procedure)
+(fxmax	procedure)
+(fxmin	procedure)
+(fxmod	procedure)
+(fxmod0	procedure)
+(fxnegative?	procedure)
+(fxnot	procedure)
+(fxodd?	procedure)
+(fxpositive?	procedure)
+(fxreverse-bit-field	procedure)
+(fxrotate-bit-field	procedure)
+(fxxor	procedure)
+(fxzero?	procedure)
+(greatest-fixnum	procedure)
+(least-fixnum	procedure)
+(fx*	procedure)
+(fx+	procedure)
+(fx-	procedure)
+)]
+      [(equal? list-instance '(rnrs records syntactic)) '(
+(define-record-type	syntax)
+(fields	syntax)
+(immutable	syntax)
+(mutable	syntax)
+(nongenerative	syntax)
+(opaque	syntax)
+(parent	syntax)
+(parent-rtd	syntax)
+(protocol	syntax)
+(record-constructor-descriptor	syntax)
+(record-type-descriptor	procedure)
+(sealed	syntax)
+)]
+      [(equal? list-instance '(rnrs records procedure)) '(
+(make-record-constructor-descriptor	procedure)
+(make-record-type-descriptor	procedure)
+(record-constructor	procedure)
+(record-accessor	procedure)
+(record-mutator	procedure)
+(record-predicate	procedure)
+(record-type-descriptor?	procedure)
+)]
+      [(equal? list-instance '(rnrs records inspection)) '(
+(record?	procedure)
+(record-field-mutable?	procedure)
+(record-rtd	procedure)
+(record-type-field-names	procedure)
+(record-type-generative?	procedure)
+(record-type-name	procedure)
+(record-type-opaque?	procedure)
+(record-type-parent	procedure)
+(record-type-sealed?	procedure)
+(record-type-uid	procedure)
+)]
+      [(equal? list-instance '(chezscheme csv7)) '(
+(record-field-accessible?	procedure)
+(record-field-accessor	procedure)
+(record-field-mutable?	procedure)
+(record-field-mutator	procedure)
+(record-type-descriptor	procedure)
+(record-type-field-decls	procedure)
+(record-type-field-names	procedure)
+(record-type-name	procedure)
+(record-type-symbol	procedure)
+)]
+      [(equal? list-instance '(scheme csv7)) '(
+(record-field-accessible?	procedure)
+(record-field-accessor	procedure)
+(record-field-mutable?	procedure)
+(record-field-mutator	procedure)
+(record-type-descriptor	procedure)
+(record-type-field-decls	procedure)
+(record-type-field-names	procedure)
+(record-type-name	procedure)
+(record-type-symbol	procedure)
+)]
       [else '()])))
 )
