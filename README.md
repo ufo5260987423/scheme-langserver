@@ -32,6 +32,7 @@ compile-chez-program run.ss
 ./run path-to-logfile
 ```
 #### TODO: for Windows
+The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
 
 ### Manual Installation for [LunarVim](https://www.lunarvim.org/)
 In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
