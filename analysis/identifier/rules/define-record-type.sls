@@ -14,7 +14,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-;;todo more test
+; reference-identifier-type include 
+; getter setter constructor predicator
 (define (define-record-type-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
@@ -94,13 +95,15 @@
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
                     get-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'getter)]
                 [set-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name-set)))
                     document
                     set-index-node
-                    (get-nearest-ancestor-library-identifier index-node))])
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'setter)])
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -124,13 +127,15 @@
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
                     get-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'getter)]
                 [set-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name) "-set"))
                     document
                     set-index-node
-                    (get-nearest-ancestor-library-identifier index-node))])
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'setter)])
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -154,13 +159,15 @@
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     get-index-node
-                    (get-nearest-ancestor-library-identifier index-node))]
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'getter)]
                 [set-identifier-reference
                   (make-identifier-reference
                     (string->symbol (string-append record-name-string (symbol->string name) "-set"))
                     document
                     set-index-node
-                    (get-nearest-ancestor-library-identifier index-node))])
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'setter)])
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -183,7 +190,8 @@
                     (string->symbol (string-append record-name-string (symbol->string name-get)))
                     document
                     get-index-node
-                    (get-nearest-ancestor-library-identifier index-node))])
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'getter)])
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -199,7 +207,8 @@
                     (string->symbol (string-append record-name-string (symbol->string name)))
                     document
                     get-index-node
-                    (get-nearest-ancestor-library-identifier index-node))])
+                    (get-nearest-ancestor-library-identifier index-node)
+                    'getter)])
               (index-node-references-export-to-other-node-set!
                 get-index-node
                 (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
@@ -217,30 +226,33 @@
         (let* ([name-index-node index-node]
             [constructor-index-node index-node]
             [predicator-index-node index-node]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                (get-nearest-ancestor-library-identifier name-index-node))]
+            ; [name-identifier-reference
+            ;   (make-identifier-reference 
+            ;     name
+            ;     document
+            ;     name-index-node
+            ;     (get-nearest-ancestor-library-identifier name-index-node)
+            ;     'procedure)]
             [constructor-identifier-reference
               (make-identifier-reference 
                 (string->symbol (string-append "make-" (symbol->string name)))
                 document
                 constructor-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+                (get-nearest-ancestor-library-identifier index-node)
+                'constructor)]
             [predicator-identifier-reference
               (make-identifier-reference 
                 (string->symbol (string-append (symbol->string name) "?"))
                 document
                 predicator-index-node
-                (get-nearest-ancestor-library-identifier index-node))])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+                (get-nearest-ancestor-library-identifier index-node)
+                'predicator)])
+        ; (index-node-references-export-to-other-node-set!
+        ;   name-index-node
+        ;   (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
+        ; (index-node-references-import-in-this-node-set!
+        ;   target-parent-index-node
+        ;   (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
@@ -260,30 +272,33 @@
             [name-index-node (car children)]
             [constructor-index-node name-index-node]
             [predicator-index-node name-index-node]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+            ; [name-identifier-reference
+            ;   (make-identifier-reference 
+            ;     name
+            ;     document
+            ;     name-index-node
+            ;     (get-nearest-ancestor-library-identifier index-node)
+            ;     'procedure)]
             [constructor-identifier-reference
               (make-identifier-reference 
                 (string->symbol (string-append "make-" (symbol->string name)))
                 document
                 constructor-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+                (get-nearest-ancestor-library-identifier index-node)
+                'constructor)]
             [predicator-identifier-reference
               (make-identifier-reference 
                 (string->symbol (string-append (symbol->string name) "?"))
                 document
                 predicator-index-node
-                (get-nearest-ancestor-library-identifier index-node))])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+                (get-nearest-ancestor-library-identifier index-node)
+                'predicator)])
+        ; (index-node-references-export-to-other-node-set!
+        ;   name-index-node
+        ;   (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
+        ; (index-node-references-import-in-this-node-set!
+        ;   target-parent-index-node
+        ;   (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
@@ -303,30 +318,33 @@
             [name-index-node (car children)]
             [constructor-index-node (cadr children)]
             [predicator-index-node name-index-node]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+            ; [name-identifier-reference
+            ;   (make-identifier-reference 
+            ;     name
+            ;     document
+            ;     name-index-node
+            ;     (get-nearest-ancestor-library-identifier index-node)
+            ;     'procedure)]
             [constructor-identifier-reference
               (make-identifier-reference 
                 constructor
                 document
                 constructor-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+                (get-nearest-ancestor-library-identifier index-node)
+                'constructor)]
             [predicator-identifier-reference
               (make-identifier-reference 
                 (string->symbol (string-append (symbol->string name) "?"))
                 document
                 predicator-index-node
-                (get-nearest-ancestor-library-identifier index-node))])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+                (get-nearest-ancestor-library-identifier index-node)
+                'predicator)])
+        ; (index-node-references-export-to-other-node-set!
+        ;   name-index-node
+        ;   (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
+        ; (index-node-references-import-in-this-node-set!
+        ;   target-parent-index-node
+        ;   (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
@@ -346,30 +364,33 @@
             [name-index-node (car children)]
             [constructor-index-node (cadr children)]
             [predicator-index-node (caddr children)]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+            ; [name-identifier-reference
+            ;   (make-identifier-reference 
+            ;     name
+            ;     document
+            ;     name-index-node
+            ;     (get-nearest-ancestor-library-identifier index-node)
+            ;     'procedure)]
             [constructor-identifier-reference
               (make-identifier-reference 
                 constructor
                 document
                 constructor-index-node
-                (get-nearest-ancestor-library-identifier index-node))]
+                (get-nearest-ancestor-library-identifier index-node)
+                'constructor)]
             [predicator-identifier-reference
               (make-identifier-reference 
                 predicator
                 document
                 predicator-index-node
-                (get-nearest-ancestor-library-identifier index-node))])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+                (get-nearest-ancestor-library-identifier index-node)
+                'predicator)])
+        ; (index-node-references-export-to-other-node-set!
+        ;   name-index-node
+        ;   (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
+        ; (index-node-references-import-in-this-node-set!
+        ;   target-parent-index-node
+        ;   (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node

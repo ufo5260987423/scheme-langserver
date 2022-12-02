@@ -12,6 +12,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; procedure parameter variable syntax-variable let-loop
 (define (let-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
@@ -19,7 +21,7 @@
       (match expression
         [('let (? symbol? loop-identifier) (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let ([loop-reference-list (private-process (cadr (index-node-children index-node)) index-node '() document)])
+          (let ([loop-reference-list (private-process (cadr (index-node-children index-node)) index-node '() document 'let-loop)])
             (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
               (if (not (null? rest))
                 (let* ([identifier-parent-index-node (car rest)]
@@ -28,7 +30,7 @@
                     identifier-parent-index-node
                     (append 
                       (index-node-excluded-references identifier-parent-index-node)
-                      (private-process identifier-index-node index-node loop-reference-list document)))
+                      (private-process identifier-index-node index-node loop-reference-list document 'variable)))
                   (loop (cdr rest))))))]
         [('let (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -40,7 +42,7 @@
                   identifier-parent-index-node
                   (append 
                     (index-node-excluded-references identifier-parent-index-node)
-                    (private-process identifier-index-node index-node '() document)))
+                    (private-process identifier-index-node index-node '() document 'variable)))
                 (loop (cdr rest)))))]
         [('let-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -52,7 +54,7 @@
                   identifier-parent-index-node
                   (append 
                     (index-node-excluded-references identifier-parent-index-node)
-                    (private-process identifier-index-node index-node '() document)))
+                    (private-process identifier-index-node index-node '() document 'syntax-variable)))
                 (loop (cdr rest)))))]
         [('let-values (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let-values '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -64,7 +66,7 @@
                   identifier-parent-index-node
                   (append 
                     (index-node-excluded-references identifier-parent-index-node)
-                    (private-process identifier-index-node index-node '() document)))
+                    (private-process identifier-index-node index-node '() document 'syntax-variable)))
                 (loop (cdr rest)))))]
         [('let* (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -73,7 +75,7 @@
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [reference-list (private-process identifier-index-node index-node '() document)])
+                    [reference-list (private-process identifier-index-node index-node '() document 'variable)])
                 (index-node-excluded-references-set! 
                   identifier-parent-index-node
                   (append 
@@ -92,7 +94,7 @@
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [reference-list (private-process identifier-index-node index-node '() document)])
+                    [reference-list (private-process identifier-index-node index-node '() document 'variable)])
                 (index-node-excluded-references-set! 
                   identifier-parent-index-node
                   (append 
@@ -111,7 +113,7 @@
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-                (loop (append exclude (private-process identifier-index-node index-node exclude document)) (cdr rest)))))]
+                (loop (append exclude (private-process identifier-index-node index-node exclude document 'variable)) (cdr rest)))))]
         [('letrec-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'letrec-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([exclude '()]
@@ -119,7 +121,7 @@
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-                (loop (append exclude (private-process identifier-index-node index-node exclude document)) (cdr rest)))))]
+                (loop (append exclude (private-process identifier-index-node index-node exclude document 'syntax-variable)) (cdr rest)))))]
         [('letrec* (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([include '()] 
@@ -127,7 +129,7 @@
             (if (not (null? rest))
               (let* ([identifier-parent-index-node (car rest)]
                     [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [reference-list (private-process identifier-index-node index-node '() document)])
+                    [reference-list (private-process identifier-index-node index-node '() document 'variable)])
                 (index-node-references-import-in-this-node-set! 
                   identifier-parent-index-node
                   (append 
@@ -138,7 +140,7 @@
       (except c
         [else '()]))))
 
-(define (private-process index-node let-node exclude document)
+(define (private-process index-node let-node exclude document type)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [reference 
@@ -146,7 +148,8 @@
           expression
           document
           index-node
-          '())])
+          '()
+          type)])
     (index-node-references-export-to-other-node-set! 
       index-node
       (append 

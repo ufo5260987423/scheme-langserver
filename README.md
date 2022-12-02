@@ -4,7 +4,7 @@ Implementing support like autocomplete, goto definition, or documentation on hov
 
 A primary cause is, for scheme and other lisp dialects, their abundant data sets and flexible control structures raise program analysis a big challenge. In fact, scheme even don't have commonly acknowledged project management frameworks and [corresponding extension system](https://stackoverflow.com/questions/36240629/whats-the-proper-scheme-file-extension). As for extensions SS, and SCM, most programmers suppose their codes are writing for a running environment and don't provide any library information. Although with [Akku](https://akkuscm.org/) and [Snow](http://snow-fort.org/), SLS and SLD files can base a project on a stable library framework, `involve`, `load` and many other procedures which maintain dynamic library linkages make static code analysis telling less.
 
-This package is a language server protocol implementation helping scheme programming. It provides completion, definition and will provide many other functionalities. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme. 
+This package is a language server protocol implementation helping scheme programming. It provides completion, definition and will provide many other functionalities for SLS and SLD files. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme. 
 
 This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5.
 
@@ -32,6 +32,7 @@ compile-chez-program run.ss
 ./run path-to-logfile
 ```
 #### TODO: for Windows
+The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
 
 ### Manual Installation for [LunarVim](https://www.lunarvim.org/)
 In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
@@ -140,4 +141,8 @@ With above [output log](#output-log), you may use `tests/log-debug.sps` recurrin
 Almost all key procedures and APIs are tested. You can find out what I've done in `tests` directory or just run following command in `{scheme-langserver-root-directory}`
 ``` bash
 bash test.sh
+```
+## Code Count
+```bash
+find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ```

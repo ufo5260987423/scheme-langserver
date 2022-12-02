@@ -14,6 +14,7 @@
     (scheme-langserver util natural-order-compare)
     (scheme-langserver util association)
     (scheme-langserver util path) 
+    (scheme-langserver util try) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
@@ -35,20 +36,24 @@
           maybe)]
       [text (text-document-text text-document)]
       [mutex (workspace-mutex workspace)])
-    (if (null? mutex)
-      (refresh-workspace-for workspace file-node text)
-      (with-mutex mutex 
-        (refresh-workspace-for workspace file-node text)))))
+    (try
+      (if (null? mutex)
+        (refresh-workspace-for workspace file-node text)
+        (with-mutex mutex 
+          (refresh-workspace-for workspace file-node text)))
+      (except e [else '()]))))
 
 (define (did-close workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
       [text (document-text (file-node-document file-node))]
       [mutex (workspace-mutex workspace)])
-    (if (null? mutex)
-      (refresh-workspace-for workspace file-node text)
-      (with-mutex mutex
-        (refresh-workspace-for workspace file-node text)))))
+    (try
+      (if (null? mutex)
+        (refresh-workspace-for workspace file-node text)
+        (with-mutex mutex
+          (refresh-workspace-for workspace file-node text)))
+      (except e [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
@@ -59,7 +64,9 @@
           (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
               [text (document-text (file-node-document file-node))])
             (if (null? content-changes)
-              (refresh-workspace-for workspace file-node text)
+              (try
+                (refresh-workspace-for workspace file-node text)
+                (except e [else '()]))
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
                   [temp-text (text-edit-text target)])
@@ -86,5 +93,4 @@
       (body)
       (with-mutex mutex
         (body)))))
-
 )

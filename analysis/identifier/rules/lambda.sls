@@ -12,6 +12,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; parameter 
 (define (lambda-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
@@ -25,6 +27,9 @@
                   [identifier-index-node-parent (index-node-parent identifier-index-node)])
                 (private-process identifier-index-node index-node '() document)
                 (loop (cdr rest)))))]
+        [('lambda (? symbol? identifier) _ ... ) 
+          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (private-process (cadr (index-node-children index-node)) index-node '() document)]
         [('case-lambda (dummy0 ...) dummy1 ... ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
@@ -55,7 +60,8 @@
               expression
               document
               index-node
-              '())])
+              '()
+              'parameter)])
         (index-node-references-export-to-other-node-set! 
           index-node
           (append 

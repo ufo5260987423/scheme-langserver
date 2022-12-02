@@ -6,7 +6,6 @@
     (scheme-langserver util io)
     (scheme-langserver util try))
 
-;;many codes are from chez scheme read.ss
 (define source-file->annotations
   (case-lambda
     ([path] (source-file->annotations (read-string path) path))

@@ -10,6 +10,14 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; pointer 
+
+; NOTE: the difference between variable and pointer is 
+; usually variables store the result of tailed s-expression
+; like (let ([A a])...) and A is a variable recalled in the fowlling body
+; but pointers manipulate the result of previous s-expression
+; like (rename (a A)) and A is a pointer recalled outsize this body 
 (define (export-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
@@ -57,7 +65,8 @@
                   (annotation-stripped (index-node-datum/annotations external-index-node))
                   document
                   external-index-node
-                  library-identifiers))))
+                  library-identifiers
+                  'pointer))))
 
           (if (not (null? (cdr children-index-nodes)))
             (loop 
@@ -78,7 +87,8 @@
                   expression
                   document
                   index-node
-                  library-identifiers))
+                  library-identifiers
+                  'pointer))
                 references))))]
       [else '()])))
 )

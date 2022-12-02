@@ -13,6 +13,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; reference-identifier-type include 
+; pointer 
 (define (import-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
@@ -129,7 +131,8 @@
                     (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference)))
                     (identifier-reference-document reference)
                     (identifier-reference-index-node reference)
-                    (identifier-reference-library-identifier reference))) 
+                    (identifier-reference-library-identifier reference)
+                    'pointer)) 
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
           (index-node-references-import-in-this-node-set! 
@@ -164,7 +167,8 @@
                         current-internal-name
                         (identifier-reference-document reference)
                         (identifier-reference-index-node reference)
-                        (identifier-reference-library-identifier reference))) 
+                        (identifier-reference-library-identifier reference)
+                        'pointer)) 
                     current-references)])
 
               (index-node-references-import-in-this-node-set! 
@@ -219,7 +223,8 @@
                         current-internal-name
                         (identifier-reference-document reference)
                         (identifier-reference-index-node reference)
-                        (identifier-reference-library-identifier reference))) 
+                        (identifier-reference-library-identifier reference)
+                        'pointer)) 
                     current-references)])
 
               (index-node-references-import-in-this-node-set! 

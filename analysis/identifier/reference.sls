@@ -8,6 +8,7 @@
     identifier-reference-identifier
     identifier-reference-document
     identifier-reference-library-identifier
+    identifier-reference-type
     identifier-reference-index-node)
   (import 
     (chezscheme)
@@ -19,7 +20,8 @@
     (immutable identifier)
     (immutable document)
     (immutable index-node)
-    (immutable library-identifier)))
+    (immutable library-identifier)
+    (immutable type)))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])
