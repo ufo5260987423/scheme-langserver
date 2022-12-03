@@ -47,8 +47,10 @@ In practice, these forms would produce [identifier-reference](../../analysis/ide
 | syntax-rules            | (syntax-rules (literal ...) clause ...)                            |
 | with-syntax             | (with-syntax ((pattern expr) ...) body1 body2 ...)                 |
 
->NOTE: 
-`define-top-level-syntax`, `define-top-level-value` would bind identifiers to environment instead of library. Detailed catching rule would be programmed when I'm ready. 
+
+NOTE: 
+1.  `define-top-level-syntax`, `define-top-level-value` would bind identifiers to environment instead of library. Detailed catching rule would be programmed when I'm ready. 
+2.  `define-record` is only available to Chez Scheme, so I haven't been writing corresponding rules. A direct problem is whether `define-record` binding can make `define-record-type` binding as its parent.
 
 ### Identifier binding export/import/load in r6rs standard 
 Based on library framework, `export` and `import` would transfer identifier-references across libraries files. Specially, `load` will bind identifiers dynamically, I just try my best to analysis corresponding static code and roughly attach references to caller files.
