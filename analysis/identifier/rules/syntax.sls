@@ -27,7 +27,7 @@
             (let loop ([children (index-node-children pattern-expression)])
               (if (not (null? children))
                 (body 
-                  (clause-process (car children) index-node '())
+                  (clause-process document (car children) index-node '())
                   (loop (cdr children))))))]
         [('syntax-rules (literals ...) (a b ...) **1) 
           (guard-for document index-node 'syntax-rules '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -36,22 +36,22 @@
           (let ([rest (cddr (index-node-children index-node))])
             ;(a b)
             (map (lambda (clause-index-node)
-              (clause-process clause-index-node clause-index-node literals))
+              (clause-process document clause-index-node clause-index-node literals))
               rest))]
         [('syntax-case to-match (literals ...) (a b ...) **1) 
           (guard-for document index-node 'syntax-case '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([rest (cdddr (index-node-children index-node))])
             ;(a b)
             (map (lambda (clause-index-node)
-              (clause-process clause-index-node clause-index-node literals))
+              (clause-process document clause-index-node clause-index-node literals))
               rest))]
         [else '()])
       (except c
         [else '()]))))
 
-(define (clause-process index-node target-index-node literals)
+(define (clause-process document index-node target-index-node literals)
   (let* ([template-index-node (car (index-node-children index-node))]
-      [ann (index-node-datum/annotations templage-index-node)]
+      [ann (index-node-datum/annotations template-index-node)]
       [expression (annotation-stripped ann)]
       [symbols 
         (filter 
