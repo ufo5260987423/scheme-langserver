@@ -21,25 +21,35 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('syntax-rules (literals ...) (a b) **1) 
+        [('with-syntax ((pattern expression) **1) body ...)
+          (guard-for document index-node 'with-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let* ([pattern-expression (cdr (index-node-children index-node))])
+            (let loop ([children (index-node-children pattern-expression)])
+              (if (not (null? children))
+                (body 
+                  (clause-process (car children) index-node '())
+                  (loop (cdr children))))))]
+        [('syntax-rules (literals ...) (a b ...) **1) 
           (guard-for document index-node 'syntax-rules '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ; https://www.scheme.com/tspl4/syntax.html
         ; Any syntax-rules form can be expressed with syntax-case by making the lambda expression and syntax expressions explicit.
-          (let ([rest (cdddr (index-node-children index-node))])
+          (let ([rest (cddr (index-node-children index-node))])
+            ;(a b)
             (map (lambda (clause-index-node)
-              (clause-process clause-index-node literals))
+              (clause-process clause-index-node clause-index-node literals))
               rest))]
-        [('syntax-case to-match (literals ...) (a b) **1) 
+        [('syntax-case to-match (literals ...) (a b ...) **1) 
           (guard-for document index-node 'syntax-case '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([rest (cdddr (index-node-children index-node))])
+            ;(a b)
             (map (lambda (clause-index-node)
-              (clause-process clause-index-node literals))
+              (clause-process clause-index-node clause-index-node literals))
               rest))]
         [else '()])
       (except c
         [else '()]))))
 
-(define (clause-process index-node literals)
+(define (clause-process index-node target-index-node literals)
   (let* ([template-index-node (car (index-node-children index-node))]
       [ann (index-node-datum/annotations templage-index-node)]
       [expression (annotation-stripped ann)]
@@ -54,7 +64,7 @@
               (make-identifier-reference
                 expression
                 document
-                index-node
+                template-index-node
                 '()
                 'syntax-parameter)])
           (index-node-references-export-to-other-node-set! 
@@ -64,11 +74,11 @@
               `(,reference)))
 
           (index-node-references-import-in-this-node-set! 
-            index-node
+            target-index-node
             (append 
               (index-node-references-import-in-this-node index-node)
               `(,reference)))
-          `(,reference)))
+          reference))
       symbols)))
 
 (define (get-all-symbols s-expression)

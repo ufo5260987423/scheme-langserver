@@ -34,10 +34,10 @@ compile-chez-program run.ss
 #### TODO: for Windows
 The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
 
-### Manual Installation for [LunarVim](https://www.lunarvim.org/)
-In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
+### Installation for [LunarVim](https://www.lunarvim.org/)
+I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
 
-But now, for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), we have to manually do some installation: after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+But now, above configuration haven't been tested. So, manual installation is still needed: for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'
 local bin_name = '{path-to-run}'
