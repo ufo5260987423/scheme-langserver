@@ -27,6 +27,7 @@
     (scheme-langserver analysis dependency rules involve)
 
     (scheme-langserver util dedupe)
+    (scheme-langserver util contain)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -339,6 +340,4 @@
           (append path `(,n))
           '())
         )]))
-(define (contain? list-instance item)
-  (if (filter (lambda(i) (equal? i item)) list-instance) #t #f))
 )
