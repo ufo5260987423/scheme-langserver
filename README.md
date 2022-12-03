@@ -146,3 +146,5 @@ bash test.sh
 ```bash
 find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ```
+## Detailed Document
+1. [Catching identifier bindings](./doc/analysis/identifier.md)
