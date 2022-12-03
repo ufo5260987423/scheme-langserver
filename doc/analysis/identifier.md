@@ -7,8 +7,6 @@ In practice, these forms would produce [identifier-reference](../../analysis/ide
 
 | Head                    | Form                                                               |
 |-------------------------|--------------------------------------------------------------------|
-| call/1cc                | (call/1cc procedure)                                               |
-| call/cc                 | (call/cc procedure)                                                |
 | case-lambda             | (case-lambda clause ...)                                           |
 | define                  | (define var expr)                                                  |
 | define                  | (define var)                                                       |
