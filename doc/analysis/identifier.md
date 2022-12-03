@@ -1,4 +1,4 @@
-## How scheme-langserver catch identifier bindings?
+## How dose scheme-langserver catch identifier bindings?
 
 Procedures and variable bindings are the fundamental building blocks of Scheme programs. In fact, most part of functionalities including auto-completion, goto definition, document symbol etc., all dependent on them. In this document, I'll describe what scheme-langserver do in analysis/identifier/rules directory. Following forms are from [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0). These form should be catched by define-record-type.sls, lambda.sls, let.sls and so one. 
 
@@ -42,11 +42,14 @@ In practice, these forms would produce [identifier-reference](../../analysis/ide
 | letrec                  | (letrec ((var expr) ...) body1 body2 ...)                          |
 | letrec*                 | (letrec* ((var expr) ...) body1 body2 ...)                         |
 | letrec-syntax           | (letrec-syntax ((keyword expr) ...) form1 form2 ...)               |
-| quasisyntax             | (quasisyntax template ...)                                         |
 | syntax                  | (syntax template)                                                  |
 | syntax-case             | (syntax-case expr (literal ...) clause ...)                        |
 | syntax-rules            | (syntax-rules (literal ...) clause ...)                            |
 | with-syntax             | (with-syntax ((pattern expr) ...) body1 body2 ...)                 |
+
+>NOTE: 
+`define-top-level-syntax`, `define-top-level-value` would bind identifiers to environment instead of library. Detailed catching rule would be programmed when I'm ready. 
+
 ### Identifier binding export/import/load in r6rs standard 
 Based on library framework, `export` and `import` would transfer identifier-references across libraries files. Specially, `load` will bind identifiers dynamically, I just try my best to analysis corresponding static code and roughly attach references to caller files.
 

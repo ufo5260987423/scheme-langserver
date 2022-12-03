@@ -44,6 +44,30 @@
                     (index-node-excluded-references identifier-parent-index-node)
                     (private-process identifier-index-node index-node '() document 'variable)))
                 (loop (cdr rest)))))]
+        [('fluid-let (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
+          (guard-for document index-node 'fluid-let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
+            (if (not (null? rest))
+              (let* ([identifier-parent-index-node (car rest)]
+                    [identifier-index-node (car (index-node-children identifier-parent-index-node))])
+                (index-node-excluded-references-set! 
+                  identifier-parent-index-node
+                  (append 
+                    (index-node-excluded-references identifier-parent-index-node)
+                    (private-process identifier-index-node index-node '() document 'variable)))
+                (loop (cdr rest)))))]
+        [('fluid-let-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
+          (guard-for document index-node 'fluid-let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
+            (if (not (null? rest))
+              (let* ([identifier-parent-index-node (car rest)]
+                    [identifier-index-node (car (index-node-children identifier-parent-index-node))])
+                (index-node-excluded-references-set! 
+                  identifier-parent-index-node
+                  (append 
+                    (index-node-excluded-references identifier-parent-index-node)
+                    (private-process identifier-index-node index-node '() document 'syntax-variable)))
+                (loop (cdr rest)))))]
         [('let-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])

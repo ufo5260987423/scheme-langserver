@@ -138,7 +138,7 @@ With above [output log](#output-log), you may use `tests/log-debug.sps` recurrin
 2. run `scheme --script tests/log-debug.sps`
 
 ## Test
-Almost all key procedures and APIs are tested. You can find out what I've done in `tests` directory or just run following command in `{scheme-langserver-root-directory}`
+Almost all key procedures and APIs are tested. My work is just so rough but useful, maybe you would like to find what I've done in `tests` directory or just run following command in `{scheme-langserver-root-directory}`
 ``` bash
 bash test.sh
 ```
