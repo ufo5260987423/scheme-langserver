@@ -1,5 +1,5 @@
-(library (scheme-langserver analysis identifier rules involve)
-  (export involve-process)
+(library (scheme-langserver analysis identifier rules load)
+  (export load-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -15,7 +15,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ;;todo more test
-(define (involve-process root-file-node document index-node)
+(define (load-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [library-identifier (get-nearest-ancestor-library-identifier index-node)]
@@ -23,7 +23,7 @@
       [current-absolute-path (uri->path (document-uri document))])
     (try
       (match expression
-        [('involve (? string? path)) 
+        [('load(? string? path)) 
           (guard-for document index-node 'involve '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([target-file-node 
                 (cond
