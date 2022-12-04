@@ -237,23 +237,6 @@
           (get-library-identifier-list file-node)))
       root-library-node]))
 
-(define (init-index-node parent datum/annotation)
-  (let* ([source (annotation-source datum/annotation)]
-        [node (make-index-node parent (source-object-bfp source) (source-object-efp source) datum/annotation '() '() '() '())]
-        [annotation-list (annotation-expression datum/annotation)])
-    (index-node-children-set! 
-      node 
-      (if (list? annotation-list)
-        (filter 
-          (lambda (item) (not (null? item)))
-          (map 
-            (lambda(e) 
-              (if (annotation? e)
-                (init-index-node node e)
-                '()))
-            annotation-list))
-        '()))
-    node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define pick
   (case-lambda 
