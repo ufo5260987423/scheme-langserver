@@ -98,27 +98,27 @@
     (syntax-case x (except)
       [(try body0 body1 ... (except condition clause0 clause1 ...))
        #`((call/1cc
-	   (lambda (escape)
-	     (with-exception-handler
-	       (lambda (c)
-		 (let ([condition c])     ;; clauses may set! this
-		   #,(let loop ([first #'clause0] [rest #'(clause1 ...)])
-		       (if (null? rest)
-			   (syntax-case first (else =>)
-			     [(else h0 h1 ...) #'(escape (lambda () h0 h1 ...))]
-			     [(tst) #'(let ([t tst]) (if t (escape (lambda () t)) (raise c)))]
-			     [(tst => l) #'(let ([t tst]) (if t (escape (lambda () (l t))) (raise c)))]
-			     [(tst h0 h1 ...) #'(if tst (escape (lambda () h0 h1 ...)) (raise c))])
-			   (syntax-case first (=>)
-			     [(tst) #`(let ([t tst]) (if t (escape (lambda () t)) #,(loop (car rest) (cdr rest))))]
-			     [(tst => l) #`(let ([t tst]) (if t (escape (lambda () (l t))) #,(loop (car rest) (cdr rest))))]
-			     [(tst h0 h1 ...) #`(if tst (escape (lambda () h0 h1 ...)) #,(loop (car rest) (cdr rest)))])))))
-	       (lambda ()
-		 ;; cater for multiple return values
-		 (call-with-values
-		     (lambda () body0 body1 ...)
-		   (lambda args
-		     (escape (lambda ()
-			       (apply values args))))))))))])))
+       (lambda (escape)
+         (with-exception-handler
+           (lambda (c)
+         (let ([condition c])     ;; clauses may set! this
+           #,(let loop ([first #'clause0] [rest #'(clause1 ...)])
+               (if (null? rest)
+               (syntax-case first (else =>)
+                 [(else h0 h1 ...) #'(escape (lambda () h0 h1 ...))]
+                 [(tst) #'(let ([t tst]) (if t (escape (lambda () t)) (raise c)))]
+                 [(tst => l) #'(let ([t tst]) (if t (escape (lambda () (l t))) (raise c)))]
+                 [(tst h0 h1 ...) #'(if tst (escape (lambda () h0 h1 ...)) (raise c))])
+               (syntax-case first (=>)
+                 [(tst) #`(let ([t tst]) (if t (escape (lambda () t)) #,(loop (car rest) (cdr rest))))]
+                 [(tst => l) #`(let ([t tst]) (if t (escape (lambda () (l t))) #,(loop (car rest) (cdr rest))))]
+                 [(tst h0 h1 ...) #`(if tst (escape (lambda () h0 h1 ...)) #,(loop (car rest) (cdr rest)))])))))
+           (lambda ()
+         ;; cater for multiple return values
+         (call-with-values
+             (lambda () body0 body1 ...)
+           (lambda args
+             (escape (lambda ()
+                   (apply values args))))))))))])))
 
 ) ;; library

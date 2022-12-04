@@ -72,7 +72,7 @@
       (lambda (symbol)
         (let ([reference 
               (make-identifier-reference
-                expression
+                symbol
                 document
                 template-index-node
                 '()
