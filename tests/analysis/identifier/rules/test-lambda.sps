@@ -18,17 +18,19 @@
     (scheme-langserver virtual-file-system document))
 
 
-(test-begin "lambda-process")
+(test-begin "case-lambda-process")
     (let* ( [workspace (init-workspace "./util")]
             [root-file-node (workspace-file-node workspace)]
             [target-file-node (walk-file root-file-node "./util/natural-order-compare.sls")]
             [document (file-node-document target-file-node)]
-            ;; a let node
-            [position (make-position 6 54)]
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
+            ;; a case-lambda node
+            [ready-position (make-position 5 4)]
+            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
+            [target-position (make-position 6 8)]
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
             (import-process root-file-node (workspace-library-node workspace) document root-index-node)
-            (lambda-process root-file-node document target-index-node)
+            (lambda-process root-file-node document ready-index-node)
             (test-equal #f
                 (not 
                     (find 
