@@ -7,7 +7,7 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules lambda)
+    (scheme-langserver analysis identifier rules syntax)
     (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis package-manager akku)
 
@@ -23,12 +23,14 @@
             [root-file-node (workspace-file-node workspace)]
             [target-file-node (walk-file root-file-node "./util/try.sls")]
             [document (file-node-document target-file-node)]
-            ;; a templage node
-            [position (make-position 108 36)]
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
+            ;; a syntax-case node
+            [ready-position (make-position 106 15)]
+            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
+            [target-position (make-position 108 17)]
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
             (import-process root-file-node (workspace-library-node workspace) document root-index-node)
-            (syntax-process root-file-node document target-index-node)
+            (syntax-process root-file-node document ready-index-node)
             (test-equal #f
                 (not 
                     (find 
