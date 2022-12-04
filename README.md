@@ -94,7 +94,7 @@ This project is still in early development, so you may run into rough edges with
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
-8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. But Chez Scheme's `get-datum/annotations` won't parse quoted s-expression, and `syntax-case` rule is barried. This problem will be completely solved with self-made annotator.
+8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
 
 ### TODOs
 
