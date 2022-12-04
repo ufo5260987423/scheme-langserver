@@ -6,5 +6,5 @@ tar -zxvf akku-1.1.0.tar.gz
 cd akku-1.1.0
 ./configure
 make -j $(getconf _NPROCESSORS_ONLN)
-make install
+sudo make install
 cd ..

@@ -34,10 +34,10 @@ compile-chez-program run.ss
 #### TODO: for Windows
 The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
 
-### Manual Installation for [LunarVim](https://www.lunarvim.org/)
-In the near future, I will pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you will be able to get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
+### Installation for [LunarVim](https://www.lunarvim.org/)
+I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
 
-But now, for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), we have to manually do some installation: after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+But now, above configuration haven't been tested. So, manual installation is still needed: for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), after manually building from above step [Building](#building), an executable file `run`  would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'
 local bin_name = '{path-to-run}'
@@ -94,18 +94,19 @@ This project is still in early development, so you may run into rough edges with
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
+8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. But Chez Scheme's `get-datum/annotations` won't parse quoted s-expression, and `syntax-case` rule is barried. This problem will be completely solved with self-made annotator.
+
 ### TODOs
 
-8. Renaming.
-9. *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
-10. Fully compatible with r6rs standard.
-11. Cross-platform Parallel indexing.
-12. Macro expanding.
-13. Code eval.
-14. Code diagnostic.
-15. Add cross-language semantic supporting.
-16. Self-made annotator.
-17. Type inference.
+9. Renaming. 
+11. Fully compatible with r6rs standard.
+12. Cross-platform parallel indexing.
+13. Macro expanding.
+14. Code eval.
+15. Code diagnostic.
+16. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
+17. Self-made annotator.
+18. Type inference.
 
 ## TODO:Contributing 
 

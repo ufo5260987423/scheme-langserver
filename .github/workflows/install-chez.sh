@@ -12,5 +12,5 @@ case "$TARGET_MACHINE" in
     curl -Ls https://github.com/burgerrg/win-iconv/releases/download/v0.0.9/iconv-x86.dll > "$TARGET_MACHINE"/bin/"$TARGET_MACHINE"/iconv.dll
     ;;
 esac
-make install
+sudo make install
 cd ..

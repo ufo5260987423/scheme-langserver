@@ -42,6 +42,7 @@
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis identifier rules lambda)
+    (scheme-langserver analysis identifier rules syntax)
     (scheme-langserver analysis identifier rules let)
     (scheme-langserver analysis identifier rules load)
 
@@ -181,6 +182,7 @@
   ;;2
   (let-process root-file-node document index-node)
   (lambda-process root-file-node document index-node)
+  (syntax-process root-file-node document index-node)
   (load-process root-file-node document index-node)
 
   (map 
