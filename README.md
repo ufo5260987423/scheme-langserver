@@ -94,18 +94,19 @@ This project is still in early development, so you may run into rough edges with
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
+8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. But Chez Scheme's `get-datum/annotations` won't parse quoted s-expression, and `syntax-case` rule is barried. This problem will be completely solved with self-made annotator.
+
 ### TODOs
 
-8. Renaming.
-9. *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
-10. Fully compatible with r6rs standard.
-11. Cross-platform Parallel indexing.
-12. Macro expanding.
-13. Code eval.
-14. Code diagnostic.
-15. Add cross-language semantic supporting.
-16. Self-made annotator.
-17. Type inference.
+9. Renaming. 
+11. Fully compatible with r6rs standard.
+12. Cross-platform parallel indexing.
+13. Macro expanding.
+14. Code eval.
+15. Code diagnostic.
+16. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
+17. Self-made annotator.
+18. Type inference.
 
 ## TODO:Contributing 
 
