@@ -6,5 +6,5 @@
     (case-lambda
         [(list-instance item) (contain? list-instance item equal?)]
         [(list-instance item equal-predicator) 
-            (if (filter (lambda(i) (equal-predicator i item)) list-instance) #t #f)]))
+            (if (find (lambda(i) (equal-predicator i item)) list-instance) #t #f)]))
 )

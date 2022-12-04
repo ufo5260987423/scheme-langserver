@@ -7,7 +7,7 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules lambda)
+    (scheme-langserver analysis identifier rules syntax)
     (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis package-manager akku)
 
@@ -18,24 +18,24 @@
     (scheme-langserver virtual-file-system document))
 
 
-(test-begin "case-lambda-process")
+(test-begin "syntax-process")
     (let* ( [workspace (init-workspace "./util")]
             [root-file-node (workspace-file-node workspace)]
-            [target-file-node (walk-file root-file-node "./util/natural-order-compare.sls")]
+            [target-file-node (walk-file root-file-node "./util/try.sls")]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
-            ;; a case-lambda node
-            [ready-position (make-position 5 4)]
+            ;; a syntax-case node
+            [ready-position (make-position 106 15)]
             [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
-            [target-position (make-position 6 8)]
+            [target-position (make-position 108 17)]
             [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
             (import-process root-file-node (workspace-library-node workspace) document root-index-node)
-            (lambda-process root-file-node document ready-index-node)
+            (syntax-process root-file-node document ready-index-node)
             (test-equal #f
                 (not 
                     (find 
                         (lambda (reference) 
-                            (equal? 'string-a (identifier-reference-identifier reference)))
+                            (equal? 'tst (identifier-reference-identifier reference)))
                         (index-node-references-import-in-this-node target-index-node)))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
