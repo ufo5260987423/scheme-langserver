@@ -71,17 +71,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install gcc-multilib lib32ncurses5-dev uuid-dev:i386
       - name: Install Chez Scheme
-        run: .github/workflows/install-chez.sh
+        run: .github/install-chez.sh
       - name: Install Chez-exe
-        run: .github/workflows/install-chez-exe.sh
+        run: .github/install-chez-exe.sh
       - name: Install Akku
-        run: .github/workflows/install-akku.sh
+        run: .github/install-akku.sh
       - name: Build 
-        run: .github/workflows/build.sh
+        run: .github/build.sh
       - name: Test 
-        run: .github/workflows/test.sh
+        run: .github/test.sh
       - name: Compile 
-        run: .github/workflows/compile.sh
+        run: .github/compile.sh
 #       - name: Build tests
 #         timeout-minutes: 30
 #         run: .github/workflows/test.sh
