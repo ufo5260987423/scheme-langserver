@@ -70,6 +70,16 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install gcc-multilib lib32ncurses5-dev uuid-dev:i386
+      - name: Clone Chez Scheme
+        uses: actions/checkout@v3
+        with:
+          repository: cisco/ChezScheme 
+          path: ChezScheme
+      - name: Clone Chez exe
+        uses: actions/checkout@v3
+        with:
+          repository: gwatt/chez-exe
+          path: chez-exe
       - name: Install Chez Scheme
         run: .github/install-chez.sh
       - name: Install Chez-exe
