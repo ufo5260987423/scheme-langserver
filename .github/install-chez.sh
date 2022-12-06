@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e -o pipefail
-git clone https://github.com/cisco/ChezScheme.git
 cd ChezScheme
 ./configure -m="$TARGET_MACHINE"
 make -j $(getconf _NPROCESSORS_ONLN)
