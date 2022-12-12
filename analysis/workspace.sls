@@ -8,6 +8,7 @@
     init-references
 
     refresh-workspace
+    refresh-workspace-for
 
     workspace?
     workspace-file-node
@@ -17,8 +18,6 @@
     workspace-file-linkage
     ;;todo: replace with scheduler
     workspace-mutex
-
-    refresh-workspace-for
 
     pick
     generate-library-node)
