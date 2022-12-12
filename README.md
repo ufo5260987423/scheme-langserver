@@ -107,6 +107,8 @@ This project is still in early development, so you may run into rough edges with
 16. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
 17. Self-made annotator.
 18. Type inference.
+19. Speed up document synchronizing.
+20. Compatible to .sps files as https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280.
 
 ## TODO:Contributing 
 
