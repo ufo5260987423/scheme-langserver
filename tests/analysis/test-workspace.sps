@@ -42,14 +42,15 @@
 (test-end)
 
 (test-begin "refresh-workspace-for-test")
-    (let* ([workspace (init-workspace "./util/")]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node "./util/natural-order-compare.sls")])
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))])
         (refresh-workspace-for 
             workspace 
             target-file-node 
-            "(library (scheme-langserver util natural-order-compare1)\n    (export natural-order-compare)\n    (import (rnrs) )\n\n(define natural-order-compare \n    (case-lambda \n        [(string-a string-b) (natural-order-compare string-a string-b 0 0)] \n        [(string-a string-b index-a index-b) \n            (let ([length-a (string-length string-a)] \n                    [length-b (string-length string-b)]) \n                (if (or (>= index-a length-a) \n                        (>= index-b length-b)) \n                    (< length-a length-b) \n                    (let ([char-a (string-ref string-a index-a)] \n                            [char-b (string-ref string-b index-b)]) \n                        (if (char=? char-a char-b) \n                            (natural-order-compare string-a string-b (+ 1 index-a) (+ 1 index-b)) \n                            (char<? char-a char-b)))))])) \n)")
+            "(library (scheme-langserver util natural-order-compare1)\n    (export natural-order-compare)\n    (import (rnrs) )\n\n(define natural-order-compare \n    (case-lambda \n        [(string-a string-b) (natural-order-compare string-a string-b 0 0)] \n        [(string-a string-b index-a index-b) \n            (let ([length-a (string-length string-a)] \n                    [length-b (string-length string-b)]) \n                (if (or (>= index-a length-a) \n                        (>= index-b length-b)) \n                    (< length-a length-b) \n                    (let ([char-a (string-ref string-a index-a)] \n                            [char-b (string-ref string-b index-b)]) \n                        (if (char=? char-a char-b) \n                            (natural-order-compare string-a string-b (+ 1 index-a) (+ 1 index-b)) \n                            (char<? char-a char-b)))))])) \n)"
+            'single)
         (test-equal #f (null? (walk-library '(scheme-langserver util natural-order-compare1) root-library-node))))
 (test-end)
 

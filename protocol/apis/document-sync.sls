@@ -38,7 +38,7 @@
       [mutex (workspace-mutex workspace)])
     (try
       (if (null? mutex)
-        (refresh-workspace-for workspace file-node text)
+        (refresh-workspace-for workspace file-node text 'previous+single)
         (with-mutex mutex 
           (refresh-workspace-for workspace file-node text)))
       (except e [else '()]))))
@@ -50,7 +50,7 @@
       [mutex (workspace-mutex workspace)])
     (try
       (if (null? mutex)
-        (refresh-workspace-for workspace file-node text)
+        (refresh-workspace-for workspace file-node text 'single+tail)
         (with-mutex mutex
           (refresh-workspace-for workspace file-node text)))
       (except e [else '()]))))
@@ -65,7 +65,7 @@
               [text (document-text (file-node-document file-node))])
             (if (null? content-changes)
               (try
-                (refresh-workspace-for workspace file-node text)
+                (refresh-workspace-for workspace file-node text 'single)
                 (except e [else '()]))
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]

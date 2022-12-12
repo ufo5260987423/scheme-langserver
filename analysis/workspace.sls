@@ -99,7 +99,7 @@
               [paths (get-init-reference-path file-linkage)])
         ; (display "aaa")
         ; (newline)
-            (init-references root-file-node root-library-node paths)
+            ; (init-references root-file-node root-library-node paths)
         ; (display "eee")
         ; (newline)
             (make-workspace root-file-node root-library-node file-linkage (if threaded? (make-mutex) '()) identifier))]
@@ -135,7 +135,7 @@
 ;; target-file-node<-[linkage]-other-file-nodes
 ;; add read/write-lock to above model
 ;; add file-change-notification
-(define (refresh-workspace-for workspace-instance target-file-node text)
+(define (refresh-workspace-for workspace-instance target-file-node text path-mode)
   (let* ([linkage (workspace-file-linkage workspace-instance)]
       [old-library-identifier-list (get-library-identifier-list target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
@@ -171,7 +171,36 @@
             (generate-library-node library-identifier root-library-node target-file-node)))
         new-library-identifier-list)
       (let ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
-        (init-references root-file-node root-library-node path)))))
+        (cond 
+          [(equal? path-mode 'previous+single+tail) (init-references root-file-node root-library-node path)]
+          [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
+          [(equal? path-mode 'previous+single) 
+            (let loop ([loop-body path] [result-path '()])
+              (if (not (null? loop-body))
+                (if (equal? target-path (car loop-body))
+                  (init-references root-file-node root-library-node (append result-path `(,(car loop-body))))
+                  (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
+          [(equal? path-mode 'previous) 
+            (let loop ([loop-body path] [result-path '()])
+              (if (not (null? loop-body))
+                (if (equal? target-path (car loop-body))
+                  (init-references root-file-node root-library-node result-path)
+                  (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
+          [(equal? path-mode 'single+tail) 
+            (let loop ([loop-body path] [result-path '()] [flag #f])
+              (if (null? loop-body)
+                (init-references root-file-node root-library-node (append `(,target-path) result-path))
+                (if flag
+                  (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
+                  (loop (cdr loop-body) result-path (equal? target-path (car loop-body))))))]
+          [(equal? path-mode 'tail) 
+            (let loop ([loop-body path] [result-path '()] [flag #f])
+              (if (null? loop-body)
+                (init-references root-file-node root-library-node result-path)
+                (if flag
+                  (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
+                  (loop (cdr loop-body) result-path (or flag (equal? target-path (car loop-body)))))))]
+          [else (raise 'illegle-path-mode)])))))
 
 ;; rules must be run as ordered
 (define (walk-and-process root-file-node document index-node)
