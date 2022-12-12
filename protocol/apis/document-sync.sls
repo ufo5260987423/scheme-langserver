@@ -40,7 +40,7 @@
       (if (null? mutex)
         (refresh-workspace-for workspace file-node text 'previous+single)
         (with-mutex mutex 
-          (refresh-workspace-for workspace file-node text)))
+          (refresh-workspace-for workspace file-node text 'previous+single)))
       (except e [else '()]))))
 
 (define (did-close workspace params)
