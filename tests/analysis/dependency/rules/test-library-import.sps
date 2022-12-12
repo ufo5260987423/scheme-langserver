@@ -23,19 +23,20 @@
 (test-end)
 
 (test-begin "test-is-library-identifiers?")
-    (let* ( [workspace (init-workspace "./util")]
+    (let* ( [workspace (init-workspace (string-append (current-directory) "/util"))]
             [root-file-node (workspace-file-node workspace)]
-            [target-file-node (walk-file root-file-node "./util/path.sls")]
-            [document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list document))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/path.sls"))]
+            [document (file-node-document target-file-node)])
+        (refresh-workspace-for workspace target-file-node (document-text document) 'previous+single)
+        (let* ([root-index-node (car (document-index-node-list document))]
 
-            [position (make-position 10 26)]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))]
+                [position (make-position 10 26)]
+                [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))]
 
-            [position-a (make-position 11 19)]
-            [target-index-node-a (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position-a))])
-        (test-equal #t (is-library-identifiers? document target-index-node))
-        (test-equal #t (is-library-identifiers? document target-index-node-a)))
+                [position-a (make-position 11 19)]
+                [target-index-node-a (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position-a))])
+            (test-equal #t (is-library-identifiers? document target-index-node))
+            (test-equal #t (is-library-identifiers? document target-index-node-a))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
