@@ -10,13 +10,16 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 
 Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
+## Log
+1.0.8: Build index as document synchronizing instead of workspace initializing.
+1.0.7: Catch syntax-* identifier bindings.
 
 ## Setup
 ### Building
 #### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
-If you wanted to enable scheme-langserver's muti-thread feature, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. This uses chez scheme's FFI to call up the pipe() and poll() system calls, and therefore requires a UNIX-like operating system to function correctly.  It has been tested with linux and should work on the BSDs and on Mac OS X. If using OS X, the glibtool package will be required.
+If you wanted to enable scheme-langserver's muti-thread feature, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. I've test multi-thread feature for Linux, and according to [this page](https://github.com/cisco/ChezScheme/blob/main/BUILDING), it will also excutable for Windows.
 2. [Akku](https://akkuscm.org/)；
 3. [chez-exe](https://github.com/gwatt/chez-exe)；
 >NOTE
