@@ -52,7 +52,7 @@
       (if (null? mutex)
         (refresh-workspace-for workspace file-node text 'single+tail)
         (with-mutex mutex
-          (refresh-workspace-for workspace file-node text)))
+          (refresh-workspace-for workspace file-node text 'single+tail)))
       (except e [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
