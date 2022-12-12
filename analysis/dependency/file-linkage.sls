@@ -75,6 +75,7 @@
             (file-linkage-matrix-set! linkage (matrix-expand-0 (file-linkage-matrix linkage)))
             old-node-count)))]
       [reference-id-to (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)))]
+      [reference-id-from (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-from-recursive (file-linkage-matrix linkage) id)))]
       [matrix (file-linkage-matrix linkage)]
       [target-document (file-node-document file-node)]
       [old-imported-file-ids
@@ -94,7 +95,7 @@
       (begin 
         (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
         (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
-        (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,id ,@reference-id-to))))))
+        (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to))))))
 
 (define (matrix-expand-0 target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]
