@@ -98,11 +98,11 @@ jobs:
           wget https://gitlab.com/akkuscm/akku/-/archive/master/akku-master.tar.gz
           tar -zxvf akku-master.tar.gz
           cd akku-master
-          .akku/env
-          mkdir -p ~/.local/share/akku/keys.d
-          cp akku-archive-*.gpg ~/.local/share/akku/keys.d
-          bin/akku.sps update
-          bin/akku.sps install
+          sudo .akku/env
+          sudo mkdir -p ~/.local/share/akku/keys.d
+          sudo cp akku-archive-*.gpg ~/.local/share/akku/keys.d
+          sudo bin/akku.sps update
+          sudo bin/akku.sps install
           sudo private/build.chezscheme.sps
           cd ..
       - name: Build 
