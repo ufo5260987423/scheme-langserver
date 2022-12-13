@@ -119,12 +119,14 @@ jobs:
       - name: Test 
         run: |
           cd scheme-langserver
+          ~/.local/bin/akku install
           bash .akku/env
           bash test.sh
           cd ..
       - name: Compile 
         run: |
           cd scheme-langserver
+          ~/.local/bin/akku install
           bash .akku/env
           compile-chez-program run.ss
           cd ..
