@@ -119,7 +119,7 @@ jobs:
       - name: Test 
         run: |
           cd scheme-langserver
-          bash tests.sh
+          bash test.sh
           cd ..
       - name: Compile 
         run: |
