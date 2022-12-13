@@ -111,11 +111,6 @@ jobs:
           ~/.local/bin/akku install
           bash .akku/env
           cd ..
-
-      # - name: Setup tmate session
-      #   if: success() || failure()
-      #   uses: mxschmitt/action-tmate@v3
-
       - name: Test 
         run: |
           cd scheme-langserver
@@ -130,6 +125,11 @@ jobs:
           bash .akku/env
           compile-chez-program run.ss
           cd ..
+
+      - name: Setup tmate session
+        if: success() || failure()
+        uses: mxschmitt/action-tmate@v3
+
 #       - name: Build tests
 #         timeout-minutes: 30
 #         run: .github/workflows/test.sh
