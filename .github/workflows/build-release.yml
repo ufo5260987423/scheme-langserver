@@ -126,9 +126,9 @@ jobs:
           compile-chez-program run.ss
           cd ..
 
-      - name: Setup tmate session
-        if: success() || failure()
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   if: success() || failure()
+      #   uses: mxschmitt/action-tmate@v3
 
 #       - name: Build tests
 #         timeout-minutes: 30
