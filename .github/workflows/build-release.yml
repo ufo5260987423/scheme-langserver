@@ -105,6 +105,11 @@ jobs:
           sudo bin/akku.sps install
           sudo private/build.chezscheme.sps
           cd ..
+
+      - name: Setup tmate session
+      if: success() || failure()
+      uses: mxschmitt/action-tmate@v3
+
       - name: Build 
         run: |
           akku install
