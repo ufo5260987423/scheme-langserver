@@ -65,7 +65,7 @@
               [text (document-text (file-node-document file-node))])
             (if (null? content-changes)
               (try
-                (refresh-workspace-for workspace file-node text 'single)
+                (refresh-workspace-for workspace file-node text 'single+tail)
                 (except e [else '()]))
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
