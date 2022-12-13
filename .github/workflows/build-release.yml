@@ -89,7 +89,6 @@ jobs:
         run: |
           cd chez-exe
           scheme --script gen-config.ss --bootpath "../ChezScheme/${{ matrix.config.machine }}/boot/${{ matrix.config.machine }}"
-          ./configure -m="${{ matrix.config.machine }}"
           make -j $(getconf _NPROCESSORS_ONLN)
           sudo make install
           cd ..
