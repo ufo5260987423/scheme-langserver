@@ -73,6 +73,11 @@ jobs:
         with:
           repository: cisco/ChezScheme 
           path: ChezScheme
+      - name: Clone scheme-langserver
+        uses: actions/checkout@v3
+        with:
+          repository: ufo5260987423/scheme-langserver
+          path: scheme-langserver
       - name: Clone Chez exe
         uses: actions/checkout@v3
         with:
@@ -102,17 +107,25 @@ jobs:
           cd ..
       - name: Build 
         run: |
+          cd scheme-langserver
           ~/.local/bin/akku install
           bash .akku/env
+          cd ..
 
-      - name: Setup tmate session
-        if: success() || failure()
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   if: success() || failure()
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Test 
-        run: bash tests.sh
+        run: |
+          cd scheme-langserver
+          bash tests.sh
+          cd ..
       - name: Compile 
-        run: compile-chez-program run.ss
+        run: |
+          cd scheme-langserver
+          compile-chez-program run.ss
+          cd ..
 #       - name: Build tests
 #         timeout-minutes: 30
 #         run: .github/workflows/test.sh
