@@ -154,3 +154,4 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ```
 ## Detailed Document
 1. [Catching identifier bindings](./doc/analysis/identifier.md)
+2. [Synchronizing](./doc/util/synchronize.md)
