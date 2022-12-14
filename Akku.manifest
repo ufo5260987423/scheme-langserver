@@ -2,10 +2,12 @@
 (import (akku format manifest))
 
 (akku-package ("scheme-langserver" "1.0.8")
-  (synopsis "This package is a language server protocol implementation helping scheme programming.")
+  (synopsis
+   "This package is a language server protocol implementation helping scheme programming.")
   (authors "WANG Zheng")
   (license "MIT")
-  (depends ((chibi pathname) "^0.9.0")
+  (depends ("ufo-coroutines" "^1.0.3")
+           ((chibi pathname) "^0.9.0")
            ("ufo-match" "^1.0.0-alpha.0")
            ("ufo-thread-pool" "^1.0.0")
            ("arew-json" "^1.0.0-alpha.0")

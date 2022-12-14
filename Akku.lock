@@ -52,10 +52,16 @@
         "dedce2bc5eda6735aa5880741802a5b508b49c3b327d14b40e9fecbdf86353db")))
   ((name "laesare")
     (location
-      (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.0_repack.tar.xz"))
+      (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.1_repack.tar.xz"))
     (content
       (sha256
-        "bd9c6cf5dabc9fc961094e0bf3f7339b7ad13902cb80a1e62377d57991548d7b")))
+        "dffb043bfdbe3bcd42ad0475a61338eec4fd1b1e68bcce17c30d6e6605f2d632")))
+  ((name "ufo-coroutines")
+    (location
+      (url "https://archive.akkuscm.org/archive/pkg/u/ufo-coroutines_1.0.3_repack.tar.xz"))
+    (content
+      (sha256
+        "16b8aa3a449ba4cc91bd435ad0a97be9776c9dca24323b31f7f64e1f68c4b342")))
   ((name (chibi pathname))
     (location
       (url "http://snow-fort.org/s/gmail.com/alexshinn/chibi/pathname/0.9.0/chibi-pathname-0.9.0.tgz"))
