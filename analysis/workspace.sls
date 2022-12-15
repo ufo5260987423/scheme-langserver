@@ -136,71 +136,71 @@
 ;; add read/write-lock to above model
 ;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)
-  (let* ([linkage (workspace-file-linkage workspace-instance)]
-      [old-library-identifier-list (get-library-identifier-list target-file-node)]
-      [root-file-node (workspace-file-node workspace-instance)]
-      [root-library-node (workspace-library-node workspace-instance)]
-      [old-library-node-list 
-        (filter (lambda (item) (not (null? item)))
-          (map (lambda (old-library-identifier) (walk-library old-library-identifier root-library-node))
-            old-library-identifier-list))]
-      [target-document (file-node-document target-file-node)]
-      [target-path (uri->path (document-uri target-document))]
-      [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
-    (document-text-set! target-document text)
-    (document-index-node-list-set! target-document new-index-nodes)
-
+  (if (not (equal? document-text text))
+    (let* ([linkage (workspace-file-linkage workspace-instance)]
+        [old-library-identifier-list (get-library-identifier-list target-file-node)]
+        [root-file-node (workspace-file-node workspace-instance)]
+        [root-library-node (workspace-library-node workspace-instance)]
+        [old-library-node-list 
+          (filter (lambda (item) (not (null? item)))
+            (map (lambda (old-library-identifier) (walk-library old-library-identifier root-library-node))
+              old-library-identifier-list))]
+        [target-document (file-node-document target-file-node)]
+        [target-path (uri->path (document-uri target-document))]
+        [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
+      (document-text-set! target-document text)
+      (document-index-node-list-set! target-document new-index-nodes)
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
-    (map 
-      (lambda (old-library-node)
-        (library-node-file-nodes-set! 
-          old-library-node 
-          (filter 
-            (lambda (file-node)
-              (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
-            (library-node-file-nodes old-library-node)))
-        (if (and (null? (library-node-file-nodes old-library-node)) 
-            (null? (library-node-children old-library-node)))
-          (delete-library-node-from-tree old-library-node)))
-      old-library-node-list)
-;; END
-    (let ([new-library-identifier-list (get-library-identifier-list target-file-node)])
       (map 
-        (lambda (library-identifier)
-          (if (walk-library library-identifier root-library-node)
-            (generate-library-node library-identifier root-library-node target-file-node)))
-        new-library-identifier-list)
-      (let ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
-        (cond 
-          [(equal? path-mode 'previous+single+tail) (init-references root-file-node root-library-node path)]
-          [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
-          [(equal? path-mode 'previous+single) 
-            (let loop ([loop-body path] [result-path '()])
-              (if (not (null? loop-body))
-                (if (equal? target-path (car loop-body))
-                  (init-references root-file-node root-library-node (append result-path `(,(car loop-body))))
-                  (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
-          [(equal? path-mode 'previous) 
-            (let loop ([loop-body path] [result-path '()])
-              (if (not (null? loop-body))
-                (if (equal? target-path (car loop-body))
+        (lambda (old-library-node)
+          (library-node-file-nodes-set! 
+            old-library-node 
+            (filter 
+              (lambda (file-node)
+                (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
+              (library-node-file-nodes old-library-node)))
+          (if (and (null? (library-node-file-nodes old-library-node)) 
+              (null? (library-node-children old-library-node)))
+            (delete-library-node-from-tree old-library-node)))
+        old-library-node-list)
+;; END
+      (let ([new-library-identifier-list (get-library-identifier-list target-file-node)])
+        (map 
+          (lambda (library-identifier)
+            (if (walk-library library-identifier root-library-node)
+              (generate-library-node library-identifier root-library-node target-file-node)))
+          new-library-identifier-list)
+        (let ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
+          (cond 
+            [(equal? path-mode 'previous+single+tail) (init-references root-file-node root-library-node path)]
+            [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
+            [(equal? path-mode 'previous+single) 
+              (let loop ([loop-body path] [result-path '()])
+                (if (not (null? loop-body))
+                  (if (equal? target-path (car loop-body))
+                    (init-references root-file-node root-library-node (append result-path `(,(car loop-body))))
+                    (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
+            [(equal? path-mode 'previous) 
+              (let loop ([loop-body path] [result-path '()])
+                (if (not (null? loop-body))
+                  (if (equal? target-path (car loop-body))
+                    (init-references root-file-node root-library-node result-path)
+                    (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
+            [(equal? path-mode 'single+tail) 
+              (let loop ([loop-body path] [result-path '()] [flag #f])
+                (if (null? loop-body)
+                  (init-references root-file-node root-library-node (append `(,target-path) result-path))
+                  (if flag
+                    (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
+                    (loop (cdr loop-body) result-path (equal? target-path (car loop-body))))))]
+            [(equal? path-mode 'tail) 
+              (let loop ([loop-body path] [result-path '()] [flag #f])
+                (if (null? loop-body)
                   (init-references root-file-node root-library-node result-path)
-                  (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
-          [(equal? path-mode 'single+tail) 
-            (let loop ([loop-body path] [result-path '()] [flag #f])
-              (if (null? loop-body)
-                (init-references root-file-node root-library-node (append `(,target-path) result-path))
-                (if flag
-                  (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
-                  (loop (cdr loop-body) result-path (equal? target-path (car loop-body))))))]
-          [(equal? path-mode 'tail) 
-            (let loop ([loop-body path] [result-path '()] [flag #f])
-              (if (null? loop-body)
-                (init-references root-file-node root-library-node result-path)
-                (if flag
-                  (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
-                  (loop (cdr loop-body) result-path (or flag (equal? target-path (car loop-body)))))))]
-          [else (raise 'illegle-path-mode)])))))
+                  (if flag
+                    (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
+                    (loop (cdr loop-body) result-path (or flag (equal? target-path (car loop-body)))))))]
+            [else (raise 'illegle-path-mode)]))))))
 
 ;; rules must be run as ordered
 (define (walk-and-process root-file-node document index-node)
