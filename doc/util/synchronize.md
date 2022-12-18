@@ -21,3 +21,12 @@ This document will describe what Scheme-langserver did with [synchronize.sls](..
 2. Threaded functions with [ufo-threaded-functions](https://github.com/ufo5260987423/ufo-threaded-function);
 3. Coroutine with [ufo-coroutines](https://github.com/ufo5260987423/ufo-coroutines);
 4. Reader-writer lock in [synchronize.sls](../../util/synchronize.sls), and we add them at document-level and dependency-matrix level. 
+>NOTE:
+All edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving.
+
+### Reader-writer Lock
+| Status     | Read Request | Write Request |
+|------------|--------------|---------------|
+| None       | Permit       | Permit        |
+| Has Reader | Permit       | Block         |
+| Has Writer | Block        | Block         |
