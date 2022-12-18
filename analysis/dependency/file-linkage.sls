@@ -28,6 +28,7 @@
 
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
+    (scheme-langserver util synchronize)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
