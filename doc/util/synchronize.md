@@ -24,9 +24,13 @@ This document will describe what Scheme-langserver did with [synchronize.sls](..
 >NOTE:
 All edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving.
 
-### Reader-writer Lock
+### Where dose Scheme-langserver Lock?
+As everyone known, reader-writer lock perform following properties. And these make it unlike the other 3 mechanisms, it should be carefully handled to avoid nested locking and many other things.
+
 | Status     | Read Request | Write Request |
 |------------|--------------|---------------|
 | None       | Permit       | Permit        |
 | Has Reader | Permit       | Block         |
 | Has Writer | Block        | Block         |
+
+Scheme-language currently supposes that [file-linkage.sls](../../analysis/dependency/file-linkage.sls) and[document.sls](../../virtual-file-system/document.sls) provide `with-(document/linkage)-(read/write)` syntax to [workspace.sls](../../analysis/workspace.sls), assure above reader-writer-lock's properties.
