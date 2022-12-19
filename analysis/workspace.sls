@@ -17,7 +17,6 @@
     workspace-library-node-set!
     workspace-file-linkage
 
-    with-workspace-write
     with-workspace-read
 
     pick
@@ -135,8 +134,7 @@
 ;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)
   (if (not (equal? document-text text))
-    (let* ([linkage (workspace-file-linkage workspace-instance)]
-        [old-library-identifier-list (get-library-identifier-list target-file-node)]
+    (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
         [root-file-node (workspace-file-node workspace-instance)]
         [root-library-node (workspace-library-node workspace-instance)]
         [old-library-node-list 
@@ -168,7 +166,8 @@
             (if (walk-library library-identifier root-library-node)
               (generate-library-node library-identifier root-library-node target-file-node)))
           new-library-identifier-list)
-        (let ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
+        (let* ([linkage (workspace-file-linkage workspace-instance)]
+            [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
           (cond 
             [(equal? path-mode 'previous+single+tail) (init-references root-file-node root-library-node path)]
             [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
