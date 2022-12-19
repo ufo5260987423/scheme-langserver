@@ -52,8 +52,8 @@
 
                     (reader-writer-lock-waiting-reader-count-set! 
                         lock 
-                        (- (reader-writer-lock-waiting-reader-count lock) 1)))
-                (loop)))
+                        (- (reader-writer-lock-waiting-reader-count lock) 1))
+                    (loop))))
         (reader-writer-lock-reader-count-set! 
             lock 
             (+ (reader-writer-lock-reader-count lock) 1))))
@@ -92,8 +92,7 @@
 (define (writer-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
         (let loop ()
-            (if (zero? (reader-writer-lock-reader-count lock))
-                (loop)
+            (if (not (zero? (reader-writer-lock-reader-count lock)))
                 (begin
                     (reader-writer-lock-waiting-writer-count-set! 
                         lock 
@@ -103,8 +102,9 @@
 
                     (reader-writer-lock-waiting-writer-count-set! 
                         lock 
-                        (- (reader-writer-lock-waiting-writer-count lock) 1)))))
-        (reader-writer-lock-reader-count-set!  lock -1)))
+                        (- (reader-writer-lock-waiting-writer-count lock) 1))
+                    (loop))))
+        (reader-writer-lock-reader-count-set! lock -1)))
 
 
 (define (release-lock lock) 
