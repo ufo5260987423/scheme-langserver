@@ -33,7 +33,7 @@ As everyone known, reader-writer lock perform following properties. And these ma
 | Has Reader | Permit       | Block         |
 | Has Writer | Block        | Block         |
 
-Scheme-language currently supposes that [file-linkage.sls](../../analysis/dependency/file-linkage.sls), [workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document/linkage)-(read/write)` syntax to [workspace.sls](../../analysis/workspace.sls), assure above reader-writer-lock's properties.
+Scheme-language currently supposes that [workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document)-(read/write)` syntax to [workspace.sls](../../analysis/workspace.sls), assure above reader-writer-lock's properties.
 
 A common situation is that APIs like `textDocument/didChange` and `textDocument/completion` may not disturb with each other in [scheme-langserver.sls](../../scheme-langserver.sls), but they may conflict in [document.sls](../../virtual-file-system/document.sls).
 
@@ -43,4 +43,3 @@ Expose `with-workspace-(read/write)` to APIs' handling procedures. Document sync
 These two procedures must nest `try` to avoid deadly locking. Referring `with-workspace-read` examples in [scheme-langserver.sls](../../scheme-langserver.sls), and `with-workspace-write` in [workspace.sls](../../analysis/workspace.sls).
 
 #### [document.sls](../../virtual-file-system/document.sls)
-#### [file-linkage.sls](../../analysis/dependency/file-linkage.sls)

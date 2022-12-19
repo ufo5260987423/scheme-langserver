@@ -17,10 +17,7 @@
     get-imported-libraries-from-index-node
     
     refresh-file-linkage&get-refresh-path
-    get-init-reference-path
-
-    with-linkage-read
-    with-linkage-write)
+    get-init-reference-path)
   (import 
     ; (rnrs)
     (chezscheme)
@@ -31,7 +28,6 @@
 
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
-    (scheme-langserver util synchronize)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -42,18 +38,7 @@
   (fields
     (mutable path->id-map)
     (mutable id->path-map)
-    (mutable matrix)
-    (immutable lock))
-  (protocol
-    (lambda (new)
-      (lambda (path->id-map id->path-map matrix)
-        (new path->id-map id->path-map matrix (make-reader-writer-lock))))))
-
-(define-syntax with-linkage-read
-    (syntax-rules () [(_ linkage e0 e1 ...) (with-lock-read (file-linkage-lock linkage) e0 e1 ...) ]))
-
-(define-syntax with-linkage-write
-    (syntax-rules () [(_ linkage e0 e1 ...) (with-lock-write (file-linkage-lock linkage) e0 e1 ...) ]))
+    (mutable matrix)))
 
 (define (init-file-linkage root-library-node)
   (let ([id->path-map (make-eq-hashtable)]
