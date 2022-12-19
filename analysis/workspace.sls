@@ -134,19 +134,20 @@
 ;; add read/write-lock to above model
 ;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)
-  (if (not (equal? document-text text))
-    (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
-        [root-file-node (workspace-file-node workspace-instance)]
-        [root-library-node (workspace-library-node workspace-instance)]
-        [old-library-node-list 
-          (filter (lambda (item) (not (null? item)))
-            (map (lambda (old-library-identifier) (walk-library old-library-identifier root-library-node))
-              old-library-identifier-list))]
-        [target-document (file-node-document target-file-node)]
-        [target-path (uri->path (document-uri target-document))]
-        [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
+  (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
+      [root-file-node (workspace-file-node workspace-instance)]
+      [root-library-node (workspace-library-node workspace-instance)]
+      [old-library-node-list 
+        (filter (lambda (item) (not (null? item)))
+          (map (lambda (old-library-identifier) (walk-library old-library-identifier root-library-node))
+            old-library-identifier-list))]
+      [target-document (file-node-document target-file-node)]
+      [target-path (uri->path (document-uri target-document))]
+      [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
+    (with-document-write target-document
       (document-text-set! target-document text)
       (document-index-node-list-set! target-document new-index-nodes)
+
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
       (map 
         (lambda (old-library-node)
