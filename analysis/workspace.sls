@@ -18,6 +18,7 @@
     workspace-file-linkage
 
     with-workspace-read
+    with-workspace-write
 
     pick
     generate-library-node)
