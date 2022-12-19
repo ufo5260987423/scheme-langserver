@@ -41,19 +41,19 @@
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
 
         ["textDocument/didOpen" 
-          (with-workspace-write workspace 
+          (with-workspace-read workspace 
             (try
               (did-open workspace params)
               (except c
                 [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/didClose" 
-          (with-workspace-write workspace 
+          (with-workspace-read workspace 
             (try
               (did-close workspace params)
               (except c
                 [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/didChange" 
-          (with-workspace-write workspace 
+          (with-workspace-read workspace 
             (try
               (did-change workspace params)
               (except c
