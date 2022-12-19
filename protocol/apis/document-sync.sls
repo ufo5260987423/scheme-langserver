@@ -35,19 +35,17 @@
             (walk-file (workspace-file-node workspace) path))
           maybe)]
       [text (text-document-text text-document)])
-    (with-workspace-write workspace
-      (try
-        (refresh-workspace-for workspace file-node text 'previous+single)
-        (except e [else '()])))))
+    (try
+      (refresh-workspace-for workspace file-node text 'previous+single)
+      (except e [else '()]))))
 
 (define (did-close workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
       [text (document-text (file-node-document file-node))])
-    (with-workspace-write workspace
-      (try
-        (refresh-workspace-for workspace file-node text 'single+tail)
-        (except e [else '()])))))
+    (try
+      (refresh-workspace-for workspace file-node text 'single+tail)
+      (except e [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
@@ -82,8 +80,7 @@
                       (text+position->int text (range-start range))
                       (text+position->int text (range-end range)))
                     temp-text))))))])
-    (with-workspace-write workspace
-      (try
-        (body)
-        (except e [else '()])))))
+    (try
+      (body)
+      (except e [else '()]))))
 )

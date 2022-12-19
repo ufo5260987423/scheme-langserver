@@ -41,49 +41,57 @@
         ["shutdown" (send-message server-instance (shutdown server-instance id))]
 
         ["textDocument/didOpen" 
-          (try
-            (did-open workspace params)
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-write workspace 
+            (try
+              (did-open workspace params)
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/didClose" 
-          (try
-            (did-close workspace params)
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-write workspace 
+            (try
+              (did-close workspace params)
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/didChange" 
-          (try
-            (did-change workspace params)
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-write workspace 
+            (try
+              (did-change workspace params)
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/hover" 
-          (try
-            (send-message server-instance (success-response id (hover workspace params)))
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-read workspace
+            (try
+              (send-message server-instance (success-response id (hover workspace params)))
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/completion" 
-          (try
-            (send-message server-instance (success-response id (completion workspace params)))
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-read workspace
+            (try
+              (send-message server-instance (success-response id (completion workspace params)))
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/references" 
-          (try
-            (send-message server-instance (success-response id (find-references workspace params)))
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-read workspace
+            (try
+              (send-message server-instance (success-response id (find-references workspace params)))
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
         ["textDocument/definition" 
-          (try
-            (send-message server-instance (success-response id (definition workspace params)))
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-read workspace
+            (try
+              (send-message server-instance (success-response id (definition workspace params)))
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
         ["textDocument/documentSymbol" 
-          (try
-            (send-message server-instance (success-response id (document-symbol workspace params)))
-            (except c
-              [else (send-message server-instance (fail-response id unknown-error-code method))]))]
+          (with-workspace-read workspace
+            (try
+              (send-message server-instance (success-response id (document-symbol workspace params)))
+              (except c
+                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/formatting"
