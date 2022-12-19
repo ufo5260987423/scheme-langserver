@@ -65,7 +65,7 @@
             (list->vector 
               (map location->alist 
                 (apply append 
-                  (with-documents-read target-documents
+                  (with-documents-read (filter (lambda (t) (not (equal? t document))) target-documents)
                     (map 
                       (lambda (document) 
                         (apply append 
