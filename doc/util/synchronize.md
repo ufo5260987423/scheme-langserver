@@ -33,9 +33,7 @@ As everyone known, reader-writer lock perform following properties. And these ma
 | Has Reader | Permit       | Block         |
 | Has Writer | Block        | Block         |
 
-Scheme-language currently supposes that [workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document)-(read/write)` syntax to [workspace.sls](../../analysis/workspace.sls), assure above reader-writer-lock's properties.
-
-A common situation is that APIs like `textDocument/didChange` and `textDocument/completion` may not disturb with each other in [scheme-langserver.sls](../../scheme-langserver.sls), but they may conflict in [document.sls](../../virtual-file-system/document.sls).
+Scheme-language currently supposes that [workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document)-(read/write)` syntax to assure above reader-writer-lock's properties. A common situation here is that APIs like `textDocument/didChange` and `textDocument/completion` may not disturb with each other in [scheme-langserver.sls](../../scheme-langserver.sls), but they may conflict in [document.sls](../../virtual-file-system/document.sls).
 
 #### [workspace.sls](../../analysis/workspace.sls)
 Expose `with-workspace-(read/write)` to APIs' handling procedures. Document synchronizing are nested with `with-workspace-write` and others with `with-workspace-read`.
