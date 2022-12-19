@@ -65,15 +65,14 @@
             (list->vector 
               (map location->alist 
                 (apply append 
-                  (map 
-                    (lambda (document) 
-                    ;; may cause problem
-                      (with-document-read document 
-                      (apply append 
-                        (map 
-                          (lambda (index-node) (find-references-in document index-node available-references predicate?))
-                          (document-index-node-list document)))))
-                    target-documents)))))
+                  (with-documents-read target-documents
+                    (map 
+                      (lambda (document) 
+                        (apply append 
+                          (map 
+                            (lambda (index-node) (find-references-in document index-node available-references predicate?))
+                            (document-index-node-list document))))
+                      target-documents))))))
           '#())))))
 
 (define (find-references-in document index-node available-references predicate?)
