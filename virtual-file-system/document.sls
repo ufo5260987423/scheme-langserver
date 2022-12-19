@@ -17,7 +17,7 @@
     (scheme-langserver util synchronize))
 
 (define-syntax with-document-write
-    (syntax-rules () [(_ document e0 e1 ...) (with-lock-write(document-lock document) e0 e1 ...) ]))
+    (syntax-rules () [(_ document e0 e1 ...) (with-lock-write (document-lock document) e0 e1 ...) ]))
 
 (define-syntax with-document-read
     (syntax-rules () [(_ document e0 e1 ...) (with-lock-read (document-lock document) e0 e1 ...) ]))

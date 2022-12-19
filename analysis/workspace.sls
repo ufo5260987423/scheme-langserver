@@ -16,8 +16,9 @@
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
-    ;;todo: replace with scheduler
-    workspace-mutex
+
+    with-workspace-write
+    with-workspace-read
 
     pick
     generate-library-node)
@@ -29,6 +30,7 @@
     (scheme-langserver util path)
     (scheme-langserver util try)
     (scheme-langserver util io)
+    (scheme-langserver util synchronize)
 
     (scheme-langserver analysis util)
     
@@ -57,40 +59,37 @@
     (mutable file-node)
     (mutable library-node)
     (mutable file-linkage)
+    (immutable facet)
+    (immutable lock))
+  (protocol
+    (lambda (new)
+      (lambda (file-node library-node file-linkage facet)
+        (new file-node library-node file-linkage facet (make-reader-writer-lock))))))
 
-    (immutable mutex)
-    (immutable facet)))
+(define-syntax with-workspace-write
+    (syntax-rules () [(_ workspace e0 e1 ...) 
+      (with-lock-write (workspace-lock workspace) e0 e1 ...) ]))
+
+(define-syntax with-workspace-read
+    (syntax-rules () [(_ workspace e0 e1 ...) 
+      (with-lock-read (workspace-lock workspace) e0 e1 ...) ]))
 
 (define (refresh-workspace workspace-instance)
-  (let ([mutex (workspace-mutex workspace-instance)])
-    (if (null? mutex)
-      (let* ([path (file-node-path (workspace-file-node workspace-instance))]
-          [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
-          [root-library-node (init-library-node root-file-node)]
-          [file-linkage (init-file-linkage root-library-node)]
-          [paths (get-init-reference-path file-linkage)])
-        (init-references root-file-node root-library-node paths)
-        (workspace-file-node-set! workspace-instance root-file-node)
-        (workspace-library-node-set! workspace-instance root-library-node)
-        (workspace-file-linkage-set! workspace-instance file-linkage)
-        workspace-instance)
-      (with-mutex mutex
-        (let* ([path (file-node-path (workspace-file-node workspace-instance))]
-            [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
-            [root-library-node (init-library-node root-file-node)]
-            [file-linkage (init-file-linkage root-library-node)]
-            [paths (get-init-reference-path file-linkage)])
-          (init-references root-file-node root-library-node paths)
-          (workspace-file-node-set! workspace-instance root-file-node)
-          (workspace-library-node-set! workspace-instance root-library-node)
-          (workspace-file-linkage-set! workspace-instance file-linkage)
-          workspace-instance)))))
+  (let* ([path (file-node-path (workspace-file-node workspace-instance))]
+      [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
+      [root-library-node (init-library-node root-file-node)]
+      [file-linkage (init-file-linkage root-library-node)]
+      [paths (get-init-reference-path file-linkage)])
+    (init-references root-file-node root-library-node paths)
+    (workspace-file-node-set! workspace-instance root-file-node)
+    (workspace-library-node-set! workspace-instance root-library-node)
+    (workspace-file-linkage-set! workspace-instance file-linkage)
+    workspace-instance))
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path #f 'akku )]
-    [(path threaded?) (init-workspace path threaded? 'akku )]
-    [(path threaded? identifier) 
+    [(path) (init-workspace path 'akku )]
+    [(path identifier) 
       (cond 
         [(equal? 'akku identifier) 
           (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
@@ -102,8 +101,7 @@
             ; (init-references root-file-node root-library-node paths)
         ; (display "eee")
         ; (newline)
-            (make-workspace root-file-node root-library-node file-linkage (if threaded? (make-mutex) '()) identifier))]
-      )]))
+            (make-workspace root-file-node root-library-node file-linkage identifier))])]))
 
 ;; head -[linkage]->files
 ;; for single file

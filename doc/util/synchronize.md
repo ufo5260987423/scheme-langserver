@@ -33,4 +33,13 @@ As everyone known, reader-writer lock perform following properties. And these ma
 | Has Reader | Permit       | Block         |
 | Has Writer | Block        | Block         |
 
-Scheme-language currently supposes that [file-linkage.sls](../../analysis/dependency/file-linkage.sls) and[document.sls](../../virtual-file-system/document.sls) provide `with-(document/linkage)-(read/write)` syntax to [workspace.sls](../../analysis/workspace.sls), assure above reader-writer-lock's properties.
+Scheme-language currently supposes that [file-linkage.sls](../../analysis/dependency/file-linkage.sls),
+[workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document/linkage)-(read/write)` syntax to [workspace.sls](../../analysis/workspace.sls), assure above reader-writer-lock's properties.
+
+#### [workspace.sls](../../analysis/workspace.sls)
+Expose `with-workspace-(read/write)` to APIs' handling procedures. 
+>NOTE:
+These two procedures must nest `try` to avoid deadly locking.
+
+#### [document.sls](../../virtual-file-system/document.sls)
+#### [file-linkage.sls](../../analysis/dependency/file-linkage.sls)

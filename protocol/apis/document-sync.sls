@@ -34,32 +34,25 @@
             (refresh-workspace workspace)
             (walk-file (workspace-file-node workspace) path))
           maybe)]
-      [text (text-document-text text-document)]
-      [mutex (workspace-mutex workspace)])
-    (try
-      (if (null? mutex)
+      [text (text-document-text text-document)])
+    (with-workspace-write workspace
+      (try
         (refresh-workspace-for workspace file-node text 'previous+single)
-        (with-mutex mutex 
-          (refresh-workspace-for workspace file-node text 'previous+single)))
-      (except e [else '()]))))
+        (except e [else '()])))))
 
 (define (did-close workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
-      [text (document-text (file-node-document file-node))]
-      [mutex (workspace-mutex workspace)])
-    (try
-      (if (null? mutex)
+      [text (document-text (file-node-document file-node))])
+    (with-workspace-write workspace
+      (try
         (refresh-workspace-for workspace file-node text 'single+tail)
-        (with-mutex mutex
-          (refresh-workspace-for workspace file-node text 'single+tail)))
-      (except e [else '()]))))
+        (except e [else '()])))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
-      [mutex (workspace-mutex workspace)]
       [body (lambda() 
           (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
               [text (document-text (file-node-document file-node))])
@@ -89,8 +82,8 @@
                       (text+position->int text (range-start range))
                       (text+position->int text (range-end range)))
                     temp-text))))))])
-    (if (null? mutex)
-      (body)
-      (with-mutex mutex
-        (body)))))
+    (with-workspace-write workspace
+      (try
+        (body)
+        (except e [else '()])))))
 )

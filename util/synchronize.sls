@@ -1,7 +1,8 @@
 (library (scheme-langserver util synchronize)
     (export 
         make-reader-writer-lock
-        )
+        with-lock-write
+        with-lock-read)
     (import (chezscheme))
 
 ; https://www.cnblogs.com/fortunely/p/15778050.html#%E4%BD%BF%E7%94%A81%E4%B8%AAmutex--2%E4%B8%AA%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F
