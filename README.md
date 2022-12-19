@@ -148,6 +148,9 @@ Almost all key procedures and APIs are tested. My work is just so rough but usef
 ``` bash
 bash test.sh
 ```
+>NOTE
+It's hard to do test with threaded environment. So, current tests focus on single thread.
+
 ## Code Count
 ```bash
 find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
