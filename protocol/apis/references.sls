@@ -15,6 +15,7 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util dedupe) 
+    (scheme-langserver util synchronize) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
@@ -61,18 +62,20 @@
                     (find 
                       (lambda (identifier) (equal? maybe-symbol identifier))
                       (map identifier-reference-identifier available-references))
-                    #f))])
-            (with-documents-read (filter (lambda (t) (not (equal? t document))) target-documents)
-              (list->vector 
-                (map location->alist 
-                  (apply append 
-                    (map 
-                      (lambda (document) 
-                        (apply append 
-                          (map 
-                            (lambda (index-node) (find-references-in document index-node available-references predicate?))
-                            (document-index-node-list document))))
-                      target-documents))))))
+                    #f))]
+              [lock-documents (filter (lambda (t) (not (equal? t document))) target-documents)])
+            (map reader-lock (map document-lock lock-documents))
+            (list->vector 
+              (map location->alist 
+                (apply append 
+                  (map 
+                    (lambda (document) 
+                      (apply append 
+                        (map 
+                          (lambda (index-node) (find-references-in document index-node available-references predicate?))
+                          (document-index-node-list document))))
+                    target-documents))))
+            (map release-lock (map document-lock lock-documents)))
           '#())))))
 
 (define (find-references-in document index-node available-references predicate?)
