@@ -62,12 +62,6 @@
     (content
       (sha256
         "64614e094a04ed26fcff845691c73d5b1680fd2b0207a4aa49eb19b30ef3b8cb")))
-  ((name "ufo-coroutines")
-    (location
-      (url "https://archive.akkuscm.org/archive/pkg/u/ufo-coroutines_1.0.3_repack.tar.xz"))
-    (content
-      (sha256
-        "16b8aa3a449ba4cc91bd435ad0a97be9776c9dca24323b31f7f64e1f68c4b342")))
   ((name (chibi pathname))
     (location
       (url "http://snow-fort.org/s/gmail.com/alexshinn/chibi/pathname/0.9.0/chibi-pathname-0.9.0.tgz"))
