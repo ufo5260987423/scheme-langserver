@@ -52,10 +52,16 @@
         "dedce2bc5eda6735aa5880741802a5b508b49c3b327d14b40e9fecbdf86353db")))
   ((name "laesare")
     (location
-      (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.1_repack.tar.xz"))
+      (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.0_repack.tar.xz"))
     (content
       (sha256
-        "dffb043bfdbe3bcd42ad0475a61338eec4fd1b1e68bcce17c30d6e6605f2d632")))
+        "bd9c6cf5dabc9fc961094e0bf3f7339b7ad13902cb80a1e62377d57991548d7b")))
+  ((name "ufo-threaded-function")
+    (location
+      (url "https://archive.akkuscm.org/archive/pkg/u/ufo-threaded-function_1.0.2_repack.tar.xz"))
+    (content
+      (sha256
+        "64614e094a04ed26fcff845691c73d5b1680fd2b0207a4aa49eb19b30ef3b8cb")))
   ((name "ufo-coroutines")
     (location
       (url "https://archive.akkuscm.org/archive/pkg/u/ufo-coroutines_1.0.3_repack.tar.xz"))

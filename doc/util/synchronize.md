@@ -17,12 +17,11 @@ This document will describe what Scheme-langserver did with [synchronize.sls](..
 3. To analyze static codes parallel. 
 
 ### What mechanism dose Scheme-langserver implement?
+Scheme-langserver is supposed to receive requests sequentially but response parallelly. This means all edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving. In addition, multi-threads should be involved at tiller data nodes(like [index-node.sls](../../virtual-file-system/index-node.sls)). And the following mechanisms are what we're using:
 1. Thread pool with [ufo-match](https://github.com/ufo5260987423/ufo-thread-pool);
 2. Threaded functions with [ufo-threaded-functions](https://github.com/ufo5260987423/ufo-threaded-function);
 3. Coroutine with [ufo-coroutines](https://github.com/ufo5260987423/ufo-coroutines);
 4. Reader-writer lock in [synchronize.sls](../../util/synchronize.sls), and we add them at document-level and dependency-matrix level. 
->NOTE:
-All edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving.
 
 ### Where dose Scheme-langserver Lock?
 As everyone known, reader-writer lock perform following properties. And these make it unlike the other 3 mechanisms, it should be carefully handled to avoid nested locking and many other things.
