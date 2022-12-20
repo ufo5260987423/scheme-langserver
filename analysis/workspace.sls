@@ -30,6 +30,8 @@
     (scheme-langserver util path)
     (scheme-langserver util try)
     (scheme-langserver util io)
+    (scheme-langserver util dedupe)
+    (scheme-langserver util contain)
     (scheme-langserver util synchronize)
     (scheme-langserver util sub-list)
 
@@ -148,7 +150,6 @@
     (with-document-write target-document
       (document-text-set! target-document text)
       (document-index-node-list-set! target-document new-index-nodes)
-
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
       (map 
         (lambda (old-library-node)
@@ -172,15 +173,18 @@
         (let* ([linkage (workspace-file-linkage workspace-instance)]
             [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)]
             [target-documents (map file-node-document (map (lambda(p) (walk-file root-file-node p)) path))]
-            [previous-documents (list-ahead-of target-documents target-document)]
-            [tail-documents (list-after target-documents target-document)])
+            [previous-documents (dedupe (list-ahead-of target-documents target-document))]
+            [tail-documents 
+              (filter 
+                (lambda(t) (not (equal? t target-document))) 
+                (dedupe (list-after target-documents target-document)))])
           (cond 
             [(equal? path-mode 'previous+single+tail) 
-              (map reader-lock (map document-lock previous-documents))
+              (map reader-lock (map document-lock (filter (lambda(p) (contain? tail-documents p)) previous-documents)))
               (map writer-lock (map document-lock tail-documents))
               (init-references root-file-node root-library-node path)
-              (map release-lock (map document-lock tail-documents))
-              (map release-lock (map document-lock previous-documents))]
+              (map release-lock (map document-lock (filter (lambda(p) (contain? tail-documents p)) previous-documents)))
+              (map release-lock (map document-lock tail-documents))]
             [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
             [(equal? path-mode 'previous+single) 
               (map reader-lock (map document-lock previous-documents))
