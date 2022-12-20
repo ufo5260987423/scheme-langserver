@@ -31,6 +31,7 @@
     (scheme-langserver util try)
     (scheme-langserver util io)
     (scheme-langserver util synchronize)
+    (scheme-langserver util sub-list)
 
     (scheme-langserver analysis util)
     
@@ -169,36 +170,34 @@
               (generate-library-node library-identifier root-library-node target-file-node)))
           new-library-identifier-list)
         (let* ([linkage (workspace-file-linkage workspace-instance)]
-            [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)])
+            [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)]
+            [target-documents (map file-node-document (map (lambda(p) (walk-file root-file-node p)) path))]
+            [previous-documents (list-ahead-of target-documents target-document)]
+            [tail-documents (list-after target-documents target-document)])
           (cond 
-            [(equal? path-mode 'previous+single+tail) (init-references root-file-node root-library-node path)]
+            [(equal? path-mode 'previous+single+tail) 
+              (map reader-lock (map document-lock previous-documents))
+              (map writer-lock (map document-lock tail-documents))
+              (init-references root-file-node root-library-node path)
+              (map release-lock (map document-lock tail-documents))
+              (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
             [(equal? path-mode 'previous+single) 
-              (let loop ([loop-body path] [result-path '()])
-                (if (not (null? loop-body))
-                  (if (equal? target-path (car loop-body))
-                    (init-references root-file-node root-library-node (append result-path `(,(car loop-body))))
-                    (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
+              (map reader-lock (map document-lock previous-documents))
+              (init-references root-file-node root-library-node (append (list-ahead-of path target-path) `(,target-path)))
+              (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'previous) 
-              (let loop ([loop-body path] [result-path '()])
-                (if (not (null? loop-body))
-                  (if (equal? target-path (car loop-body))
-                    (init-references root-file-node root-library-node result-path)
-                    (loop (cdr loop-body) (append result-path `(,(car loop-body)))))))]
+              (map reader-lock (map document-lock previous-documents))
+              (init-references root-file-node root-library-node (list-ahead-of path target-path))
+              (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'single+tail) 
-              (let loop ([loop-body path] [result-path '()] [flag #f])
-                (if (null? loop-body)
-                  (init-references root-file-node root-library-node (append `(,target-path) result-path))
-                  (if flag
-                    (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
-                    (loop (cdr loop-body) result-path (equal? target-path (car loop-body))))))]
+              (map writer-lock (map document-lock tail-documents))
+              (init-references root-file-node root-library-node (append `(,target-path) (list-after path target-path)))
+              (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'tail) 
-              (let loop ([loop-body path] [result-path '()] [flag #f])
-                (if (null? loop-body)
-                  (init-references root-file-node root-library-node result-path)
-                  (if flag
-                    (loop (cdr loop-body) (append result-path `(,(car loop-body))) flag)
-                    (loop (cdr loop-body) result-path (or flag (equal? target-path (car loop-body)))))))]
+              (map writer-lock (map document-lock tail-documents))
+              (init-references root-file-node root-library-node (list-after path target-path))
+              (map release-lock (map document-lock previous-documents))]
             [else (raise 'illegle-path-mode)]))))))
 
 ;; rules must be run as ordered
