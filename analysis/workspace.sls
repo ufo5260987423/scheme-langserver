@@ -24,6 +24,8 @@
     generate-library-node)
   (import 
     (ufo-match)
+    (ufo-threaded-function)
+
     (chezscheme) 
     (only (srfi :13 strings) string-suffix?)
 
@@ -83,7 +85,7 @@
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-library-node)]
       [paths (get-init-reference-path file-linkage)])
-    (init-references root-file-node root-library-node paths)
+    (init-references workspace-instance paths)
     (workspace-file-node-set! workspace-instance root-file-node)
     (workspace-library-node-set! workspace-instance root-library-node)
     (workspace-file-linkage-set! workspace-instance file-linkage)
@@ -111,12 +113,14 @@
 ;; import 
 ;; init define let ...
 ;; export
-(define (init-references root-file-node root-library-node target-paths)
+(define (init-references workspace-instance target-paths)
   (let loop ([paths target-paths])
     (if (not (null? paths))
-      (let* ([current-file-node (walk-file root-file-node (car paths))]
-            [document (file-node-document current-file-node)]
-            [index-node-list (document-index-node-list document)])
+      (let* ([root-file-node (workspace-file-node workspace-instance)]
+          [root-library-node (workspace-library-node workspace-instance)]
+          [current-file-node (walk-file root-file-node (car paths))]
+          [document (file-node-document current-file-node)]
+          [index-node-list (document-index-node-list document)])
         (document-reference-list-set! document '())
         (map 
           (lambda (index-node)
@@ -124,7 +128,7 @@
           ; (pretty-print "bbb")
             (import-process root-file-node root-library-node document index-node)
           ; (pretty-print "ccc")
-            (walk-and-process root-file-node document index-node)
+            (walk-and-process (not (null? (workspace-lock workspace-instance))) root-file-node document index-node)
             (export-process root-file-node document index-node)
           ; (pretty-print "ddd")
             (document-reference-list-set! 
@@ -182,42 +186,51 @@
             [(equal? path-mode 'previous+single+tail) 
               (map reader-lock (map document-lock (filter (lambda(p) (contain? tail-documents p)) previous-documents)))
               (map writer-lock (map document-lock tail-documents))
-              (init-references root-file-node root-library-node path)
+              (init-references workspace-instance path)
               (map release-lock (map document-lock (filter (lambda(p) (contain? tail-documents p)) previous-documents)))
               (map release-lock (map document-lock tail-documents))]
-            [(equal? path-mode 'single) (init-references root-file-node root-library-node `(,target-path))]
+            [(equal? path-mode 'single) (init-references workspace-instance `(,target-path))]
             [(equal? path-mode 'previous+single) 
               (map reader-lock (map document-lock previous-documents))
-              (init-references root-file-node root-library-node (append (list-ahead-of path target-path) `(,target-path)))
+              (init-references workspace-instance (append (list-ahead-of path target-path) `(,target-path)))
               (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'previous) 
               (map reader-lock (map document-lock previous-documents))
-              (init-references root-file-node root-library-node (list-ahead-of path target-path))
+              (init-references workspace-instance (list-ahead-of path target-path))
               (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'single+tail) 
               (map writer-lock (map document-lock tail-documents))
-              (init-references root-file-node root-library-node (append `(,target-path) (list-after path target-path)))
+              (init-references workspace-instance (append `(,target-path) (list-after path target-path)))
               (map release-lock (map document-lock previous-documents))]
             [(equal? path-mode 'tail) 
               (map writer-lock (map document-lock tail-documents))
-              (init-references root-file-node root-library-node (list-after path target-path))
+              (init-references workspace-instance (list-after path target-path))
               (map release-lock (map document-lock previous-documents))]
             [else (raise 'illegle-path-mode)]))))))
 
 ;; rules must be run as ordered
-(define (walk-and-process root-file-node document index-node)
+(define (walk-and-process threaded? root-file-node document index-node)
   ;;1
   (define-process root-file-node document index-node)
   (define-record-type-process root-file-node document index-node)
   ;;2
-  (let-process root-file-node document index-node)
-  (lambda-process root-file-node document index-node)
-  (syntax-process root-file-node document index-node)
-  (load-process root-file-node document index-node)
+  (if threaded?
+    (threaded-map 
+      (lambda (func) (func root-file-node document index-node))
+      (list 
+        let-process 
+        lambda-process 
+        syntax-process 
+        load-process))
+    (begin 
+      (let-process root-file-node document index-node)
+      (lambda-process root-file-node document index-node)
+      (syntax-process root-file-node document index-node)
+      (load-process root-file-node document index-node)))
 
   (map 
     (lambda (child-index-node) 
-      (walk-and-process root-file-node document child-index-node)) 
+      (walk-and-process threaded? root-file-node document child-index-node)) 
     (index-node-children index-node)))
 
 (define (init-virtual-file-system path parent my-filter)
