@@ -62,10 +62,10 @@
                       (lambda (identifier) (equal? maybe-symbol identifier))
                       (map identifier-reference-identifier available-references))
                     #f))])
-            (list->vector 
-              (map location->alist 
-                (apply append 
-                  (with-documents-read (filter (lambda (t) (not (equal? t document))) target-documents)
+            (with-documents-read (filter (lambda (t) (not (equal? t document))) target-documents)
+              (list->vector 
+                (map location->alist 
+                  (apply append 
                     (map 
                       (lambda (document) 
                         (apply append 

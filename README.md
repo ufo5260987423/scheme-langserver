@@ -116,6 +116,10 @@ This project is still in early development, so you may run into rough edges with
 ## TODO:Contributing 
 
 ## Debug
+
+### How to Debug
+https://www.scheme.com/debug/debug.html#g1
+
 ### Output Log
 Following tips from [Building](#building), [Installation for Lunar Vim](#installation-for-lunarvim) and [Installation for VScode](#todo-installation-for-vscode), if anyone wants to do some developing and log something, it will be convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
