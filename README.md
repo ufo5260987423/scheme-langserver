@@ -68,11 +68,34 @@ require 'lspconfig'.scheme_langserver.setup {}
 ```
 
 >NOTE
-For LunarVim, default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/ftdetec/` is to add `sls.lua` file as following:
+For [LunarVim](https://www.lunarvim.org/), default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/ftdetec/` is to add `sls.lua` file as following:
 ```lua
 vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
 ```
 
+### Enable Multi-thread Response and Indexing
+Current scheme-langserver haven't been fully tested in multi-thread scenario, and corresponding functionalities is default disabled. Please make sure you'd truly want to enable multi-thread features and the following changes were what you wanted.
+
+Taking [LunarVim](https://www.lunarvim.org/) as an example, steping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+```lua
+local util = require 'lspconfig.util'
+local bin_name = '{path-to-run}'
+local cmd = { bin_name ,'{path-to-log}','enable'}
+
+return {
+  default_config = {
+    cmd = cmd,
+    filetypes = { 'scheme' },
+    root_dir = util.find_git_ancestor,
+    single_file_support = true,
+  },
+  docs = {
+    description = [[
+https://github.com/ufo5260987423/scheme-langserver
+`scheme-langserver`, a language server protocol implementation for scheme
+]]   ,
+  },
+}
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 ## Status 
