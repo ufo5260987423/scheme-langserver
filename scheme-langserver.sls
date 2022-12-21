@@ -205,6 +205,7 @@
     (case-lambda
         [() (init-server (standard-input-port) (standard-output-port) '() #f)]
         [(log-path) (init-server (standard-input-port) (standard-output-port) (open-file-output-port log-path (file-options replace) 'block (make-transcoder (utf-8-codec))) #f)]
+        [(log-path enable-multi-thread?) (init-server (standard-input-port) (standard-output-port) (open-file-output-port log-path (file-options replace) 'block (make-transcoder (utf-8-codec))) (equal? enable-multi-thread? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
           (let ([server-instance 
                   (if enable-multi-thread?
