@@ -64,18 +64,20 @@
                       (map identifier-reference-identifier available-references))
                     #f))]
               [lock-documents (filter (lambda (t) (not (equal? t document))) target-documents)])
-            (map reader-lock (map document-lock lock-documents))
-            (list->vector 
-              (map location->alist 
-                (apply append 
-                  (map 
-                    (lambda (document) 
-                      (apply append 
-                        (map 
-                          (lambda (index-node) (find-references-in document index-node available-references predicate?))
-                          (document-index-node-list document))))
-                    target-documents))))
-            (map release-lock (map document-lock lock-documents)))
+            (dynamic-wind 
+              (lambda () (map reader-lock (map document-lock lock-documents)))
+              (lambda () 
+                (list->vector 
+                  (map location->alist 
+                    (apply append 
+                      (map 
+                        (lambda (document) 
+                          (apply append 
+                            (map 
+                              (lambda (index-node) (find-references-in document index-node available-references predicate?))
+                              (document-index-node-list document))))
+                        target-documents)))))
+              (lambda () (map release-lock (map document-lock lock-documents)))))
           '#())))))
 
 (define (find-references-in document index-node available-references predicate?)

@@ -45,38 +45,50 @@
             (try
               (did-open workspace params)
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/didClose" 
           (with-workspace-write workspace 
             (try
               (did-close workspace params)
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/didChange" 
           (with-workspace-write workspace 
             (try
               (did-change workspace params)
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
 
         ["textDocument/hover" 
           (with-workspace-read workspace
             (try
               (send-message server-instance (success-response id (hover workspace params)))
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/completion" 
           (with-workspace-read workspace
             (try
               (send-message server-instance (success-response id (completion workspace params)))
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
         ["textDocument/references" 
           (with-workspace-read workspace
             (try
               (send-message server-instance (success-response id (find-references workspace params)))
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
         ["textDocument/definition" 
@@ -84,7 +96,9 @@
             (try
               (send-message server-instance (success-response id (definition workspace params)))
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
           ; ["textDocument/documentHighlight"
           ;  (text-document/document-highlight id params)]
         ["textDocument/documentSymbol" 
@@ -92,7 +106,9 @@
             (try
               (send-message server-instance (success-response id (document-symbol workspace params)))
               (except c
-                [else (send-message server-instance (fail-response id unknown-error-code method))])))]
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (send-message server-instance (fail-response id unknown-error-code method))])))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/formatting"
