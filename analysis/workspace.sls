@@ -93,8 +93,9 @@
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku )]
-    [(path identifier) 
+    [(path) (init-workspace path 'akku #f)]
+    [(path threaded?) (init-workspace path 'akku threaded?)]
+    [(path identifier threaded?) 
       (cond 
         [(equal? 'akku identifier) 
           (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
@@ -103,7 +104,7 @@
               [paths (get-init-reference-path file-linkage)])
         ; (display "aaa")
         ; (newline)
-            ; (init-references root-file-node root-library-node paths)
+            (init-references root-file-node root-library-node threaded? paths)
         ; (display "eee")
         ; (newline)
             (make-workspace root-file-node root-library-node file-linkage identifier))])]))
@@ -113,29 +114,35 @@
 ;; import 
 ;; init define let ...
 ;; export
-(define (init-references workspace-instance target-paths)
-  (let loop ([paths target-paths])
-    (if (not (null? paths))
-      (let* ([root-file-node (workspace-file-node workspace-instance)]
-          [root-library-node (workspace-library-node workspace-instance)]
-          [current-file-node (walk-file root-file-node (car paths))]
-          [document (file-node-document current-file-node)]
-          [index-node-list (document-index-node-list document)])
-        (document-reference-list-set! document '())
-        (map 
-          (lambda (index-node)
-            (clear-references-for index-node)
+(define init-references 
+  (case-lambda 
+    [(workspace-instance target-paths) 
+      (init-references 
+        (workspace-file-node workspace-instance)
+        (workspace-library-node workspace-instance)
+        (not (null? (workspace-lock workspace-instance))) 
+        target-paths)]
+    [(root-file-node root-library-node threaded? target-paths)
+      (let loop ([paths target-paths])
+        (if (not (null? paths))
+          (let* ([current-file-node (walk-file root-file-node (car paths))]
+              [document (file-node-document current-file-node)]
+              [index-node-list (document-index-node-list document)])
+            (document-reference-list-set! document '())
+            (map 
+              (lambda (index-node)
+                (clear-references-for index-node)
           ; (pretty-print "bbb")
-            (import-process root-file-node root-library-node document index-node)
+                (import-process root-file-node root-library-node document index-node)
           ; (pretty-print "ccc")
-            (walk-and-process (not (null? (workspace-lock workspace-instance))) root-file-node document index-node)
-            (export-process root-file-node document index-node)
+                (walk-and-process threaded? root-file-node document index-node)
+                (export-process root-file-node document index-node)
           ; (pretty-print "ddd")
-            (document-reference-list-set! 
-              document 
-              (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-          index-node-list)
-        (loop (cdr paths))))))
+                (document-reference-list-set! 
+                  document 
+                  (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+              index-node-list)
+            (loop (cdr paths)))))]))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 ;; add read/write-lock to above model

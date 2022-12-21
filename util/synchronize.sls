@@ -29,18 +29,22 @@
 (define-syntax with-lock-read
     (syntax-rules ()
         [(_ lock e0 e1 ...) 
-            (begin 
-                (reader-lock lock)
-                e0 e1 ...
-                (release-lock lock))]))
+            (let ([l lock])
+                (dynamic-wind
+                    (lambda() (reader-lock l))
+                    (lambda() e0 e1 ...)
+                    (lambda() (release-lock l))
+                ))]))
 
 (define-syntax with-lock-write
     (syntax-rules ()
         [(_ lock e0 e1 ...) 
-            (begin 
-                (writer-lock lock)
-                e0 e1 ...
-                (release-lock lock))]))
+            (let ([l lock])
+                (dynamic-wind
+                    (lambda() (writer-lock l))
+                    (lambda() e0 e1 ...)
+                    (lambda() (release-lock l))
+                ))]))
 
 (define (reader-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)

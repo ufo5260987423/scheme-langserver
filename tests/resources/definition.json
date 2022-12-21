@@ -3,8 +3,8 @@
     "method": "textDocument/definition",
     "params": {
         "position" : {
-            "line": 65,
-            "character": 22
+            "line": 82,
+            "character": 19 
         },
         "textDocument" : {
             "uri" : "file://~a/analysis/workspace.sls"
