@@ -115,7 +115,7 @@
 (define (release-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
 		;; give preference to waiting writers over waiting readers 
-        (if (> (reader-write-lock-reader-count lock) 0)
+        (if (> (reader-writer-lock-reader-count lock) 0)
             (reader-writer-lock-reader-count-set! 
                 lock 
                 (- (reader-writer-lock-reader-count lock) 1))
