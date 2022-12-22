@@ -229,7 +229,7 @@
           ;             (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
           ;             (make-server input-port output-port log-port '() '() '() #f)) 
           ;           (make-server input-port output-port log-port '() '() '() #f))])
-          (let ([server-instance (make-server input-port output-port log-port '() '() '() #f)])
+          (let ([server-instance (make-server input-port output-port log-port '() (make-mutex) '() #f)])
             (try
               (let loop ([message (read-message server-instance)])
                 (if (null? (server-thread-pool server-instance))
