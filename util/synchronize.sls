@@ -33,8 +33,7 @@
                 (dynamic-wind
                     (lambda() (reader-lock l))
                     (lambda() e0 e1 ...)
-                    (lambda() (release-lock l))
-                ))]))
+                    (lambda() (release-lock l))))]))
 
 (define-syntax with-lock-write
     (syntax-rules ()
@@ -43,13 +42,12 @@
                 (dynamic-wind
                     (lambda() (writer-lock l))
                     (lambda() e0 e1 ...)
-                    (lambda() (release-lock l))
-                ))]))
+                    (lambda() (release-lock l))))]))
 
 (define (reader-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
         (let loop ()
-            (if (and (< (reader-writer-lock-reader-count lock) 0)
+            (if (or (< (reader-writer-lock-reader-count lock) 0)
                     (> (reader-writer-lock-waiting-writer-count lock) 0))
                 (begin
                     (reader-writer-lock-waiting-reader-count-set! 
@@ -113,7 +111,6 @@
                         (- (reader-writer-lock-waiting-writer-count lock) 1))
                     (loop))))
         (reader-writer-lock-reader-count-set! lock -1)))
-
 
 (define (release-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
