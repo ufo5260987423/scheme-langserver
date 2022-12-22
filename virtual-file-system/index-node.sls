@@ -1,6 +1,7 @@
 (library (scheme-langserver virtual-file-system index-node)
   (export 
     pick-index-node-from
+    pick-index-node-parent-of
 
     make-index-node
     index-node?
@@ -58,6 +59,14 @@
   (index-node-references-export-to-other-node-set! index-node '())
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
+
+(define (pick-index-node-parent-of index-node-list position0 position1)
+  (let* ([result (pick-index-node-from index-node-list position0)]
+      [start (index-node-start result)]
+      [end (index-node-end result)])
+    (if (and (<= start position0) (>= end position1))
+      result
+      (pick-index-node-parent-of `(,(index-node-parent result)) position0 position1))))
 
 (define (pick-index-node-from index-node-list position)
   (find index-node?
