@@ -61,18 +61,22 @@
   (map clear-references-for (index-node-children index-node)))
 
 (define (pick-index-node-parent-of index-node-list position0 position1)
-  (let* ([result (pick-index-node-from index-node-list position0)]
-      [start (index-node-start result)]
-      [end (index-node-end result)])
-    (if (and (<= start position0) (>= end position1))
+  (let ([result (pick-index-node-from index-node-list position0)])
+    (if (null? result)
       result
-      (pick-index-node-parent-of `(,(index-node-parent result)) position0 position1))))
+      (let* ([start (index-node-start result)]
+          [end (index-node-end result)])
+        (if (and (<= start position0) (>= end position1))
+          result
+          (pick-index-node-parent-of `(,(index-node-parent result)) position0 position1))))))
 
 (define (pick-index-node-from index-node-list position)
-  (find index-node?
-    (map 
-      (lambda (index-node) (pick-index-node-by index-node position)) 
-      index-node-list)))
+  (let ([result 
+      (find index-node?
+        (map 
+          (lambda (index-node) (pick-index-node-by index-node position)) 
+          index-node-list))])
+    (if result result '())))
 
 (define (pick-index-node-by index-node position)
   (if (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position))
