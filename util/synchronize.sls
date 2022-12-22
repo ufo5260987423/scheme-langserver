@@ -119,7 +119,7 @@
             (reader-writer-lock-reader-count-set! 
                 lock 
                 (- (reader-writer-lock-reader-count lock) 1))
-            (if (= (reader-write-lock-reader-count lock) -1)
+            (if (= (reader-writer-lock-reader-count lock) -1)
                 (reader-writer-lock-reader-count-set! lock 0)
                 (raise 'unknown-error)))
 
