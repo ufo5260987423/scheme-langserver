@@ -208,8 +208,7 @@
     (success-response id (make-alist 'capabilities server-capabilities))))
 
 (define (shutdown server-instance id)
-;;todo: kill server
-  (if (null? (server-mutex server-instance))
+  (if (null? (server-thread-pool server-instance))
     (server-shutdown?-set! server-instance #t)
     (begin
       (thread-pool-stop! (server-thread-pool server-instance))
