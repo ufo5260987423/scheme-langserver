@@ -115,20 +115,17 @@
 (define (release-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
 		;; give preference to waiting writers over waiting readers 
-        (cond
-            [(> (reader-writer-lock-reader-count lock) 0) 
-                (reader-writer-lock-reader-count-set! 
-                    lock 
-                    (- (reader-writer-lock-reader-count lock) 1))]
-            [(= (reader-writer-lock-reader-count lock) -1) 
-                (reader-writer-lock-reader-count-set! 
-                    lock 
-                    0)]
-            [else (raise 'unknown-error)])
+        (if (> (reader-write-lock-reader-count lock) 0)
+            (reader-writer-lock-reader-count-set! 
+                lock 
+                (- (reader-writer-lock-reader-count lock) 1))
+            (if (= (reader-write-lock-reader-count lock) -1)
+                (reader-writer-lock-reader-count-set! lock 0)
+                (raise 'unknown-error)))
 
-        (cond
-            [(and (> (reader-writer-lock-waiting-writer-count lock) 0) 
-                    (zero? (reader-writer-lock-reader-count lock)))
-                (condition-signal (reader-writer-lock-write-condition lock))]
-            [else (condition-broadcast (reader-writer-lock-read-condition lock))])))
+        (if (> (reader-writer-lock-waiting-writer-count lock) 0) 
+            (if (zero? (reader-writer-lock-reader-count lock))
+                (condition-signal (reader-writer-lock-write-condition lock)))
+            (if (> (reader-writer-lock-waiting-reader-count lock) 0)
+                (condition-broadcast (reader-writer-lock-read-condition lock))))))
 )
