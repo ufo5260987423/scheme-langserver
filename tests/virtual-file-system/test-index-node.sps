@@ -18,15 +18,15 @@
     (scheme-langserver protocol alist-access-object))
 
 (test-begin "pick-index-node")
-    (let* ([workspace (init-workspace "./protocol")]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/protocol"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node "./protocol/message.sls")]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/message.sls"))]
             [document (file-node-document target-file-node)]
             [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text (make-position 155 5))))])
-        (test-equal #f (null? (map identifier-reference-identifier (index-node-references-import-in-this-node index-node)))))
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text (make-position 155 10))))])
+        (test-equal #f (null? index-node)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

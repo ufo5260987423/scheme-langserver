@@ -56,6 +56,12 @@
     (content
       (sha256
         "bd9c6cf5dabc9fc961094e0bf3f7339b7ad13902cb80a1e62377d57991548d7b")))
+  ((name "ufo-threaded-function")
+    (location
+      (url "https://archive.akkuscm.org/archive/pkg/u/ufo-threaded-function_1.0.2_repack.tar.xz"))
+    (content
+      (sha256
+        "64614e094a04ed26fcff845691c73d5b1680fd2b0207a4aa49eb19b30ef3b8cb")))
   ((name (chibi pathname))
     (location
       (url "http://snow-fort.org/s/gmail.com/alexshinn/chibi/pathname/0.9.0/chibi-pathname-0.9.0.tgz"))

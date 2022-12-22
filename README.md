@@ -11,6 +11,7 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 ## Log
+1.0.9: Add parallel and synchronize mechanism, which can harshly speed up indexing.
 1.0.8: Build index as document synchronizing instead of workspace initializing.
 1.0.7: Catch syntax-* identifier bindings.
 
@@ -67,11 +68,34 @@ require 'lspconfig'.scheme_langserver.setup {}
 ```
 
 >NOTE
-For LunarVim, default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/ftdetec/` is to add `sls.lua` file as following:
+For [LunarVim](https://www.lunarvim.org/), default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/ftdetec/` is to add `sls.lua` file as following:
 ```lua
 vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
 ```
 
+### Enable Multi-thread Response and Indexing
+Current scheme-langserver haven't been fully tested in multi-thread scenario, and corresponding functionalities is default disabled. Please make sure you'd truly want to enable multi-thread features and the following changes were what you wanted.
+
+Taking [LunarVim](https://www.lunarvim.org/) as an example, steping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+```lua
+local util = require 'lspconfig.util'
+local bin_name = '{path-to-run}'
+local cmd = { bin_name ,'{path-to-log}','enable'}
+
+return {
+  default_config = {
+    cmd = cmd,
+    filetypes = { 'scheme' },
+    root_dir = util.find_git_ancestor,
+    single_file_support = true,
+  },
+  docs = {
+    description = [[
+https://github.com/ufo5260987423/scheme-langserver
+`scheme-langserver`, a language server protocol implementation for scheme
+]]   ,
+  },
+}
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 ## Status 
@@ -98,24 +122,27 @@ This project is still in early development, so you may run into rough edges with
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
+9. Cross-platform parallel indexing.
+10. Speed up document synchronizing.
 
 ### TODOs
 
-9. Renaming. 
-11. Fully compatible with r6rs standard.
-12. Cross-platform parallel indexing.
+11. Renaming. 
+12. Fully compatible with r6rs standard.
 13. Macro expanding.
 14. Code eval.
 15. Code diagnostic.
 16. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
-17. Self-made annotator.
+17. Self-made source code annotator to be compatible with .sps files as https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280 mentioned.
 18. Type inference.
-19. Speed up document synchronizing.
-20. Compatible to .sps files as https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280.
 
 ## TODO:Contributing 
 
 ## Debug
+
+### How to Debug
+https://www.scheme.com/debug/debug.html#g1
+
 ### Output Log
 Following tips from [Building](#building), [Installation for Lunar Vim](#installation-for-lunarvim) and [Installation for VScode](#todo-installation-for-vscode), if anyone wants to do some developing and log something, it will be convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
@@ -148,9 +175,13 @@ Almost all key procedures and APIs are tested. My work is just so rough but usef
 ``` bash
 bash test.sh
 ```
+>NOTE
+It's hard to do test with threaded environment. So, current tests focus on single thread.
+
 ## Code Count
 ```bash
 find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ```
 ## Detailed Document
 1. [Catching identifier bindings](./doc/analysis/identifier.md)
+2. [Synchronizing](./doc/util/synchronize.md)

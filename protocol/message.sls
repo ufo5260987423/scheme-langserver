@@ -161,7 +161,7 @@
 ; Server must not register the same capability both statically through the initialize result and dynamically for the same document selector. If a server wants to support both static and dynamic registration it needs to check the client capability in the initialize request and only register the capability statically if the client doesn’t support dynamic registration for that capability.
 (define (send-register-capability server-instance . registrations)
   (send-message server-instance `(;; FIXME: handle response
-                      (id . #f)
+                   ok   (id . #f)
                       (method . "client/registerCapability")
                       (params . ((registrations . ,registrations))))))
 
