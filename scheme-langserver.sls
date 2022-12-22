@@ -223,12 +223,13 @@
         [(log-path) (init-server (standard-input-port) (standard-output-port) (open-file-output-port log-path (file-options replace) 'block (make-transcoder (utf-8-codec))) #f)]
         [(log-path enable-multi-thread?) (init-server (standard-input-port) (standard-output-port) (open-file-output-port log-path (file-options replace) 'block (make-transcoder (utf-8-codec))) (equal? enable-multi-thread? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
-          (let ([server-instance 
-                  (if enable-multi-thread?
-                    (if threaded?
-                      (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
-                      (make-server input-port output-port log-port '() '() '() #f)) 
-                    (make-server input-port output-port log-port '() '() '() #f))])
+          ; ([server-instance 
+          ;         (if enable-multi-thread?
+          ;           (if threaded?
+          ;             (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
+          ;             (make-server input-port output-port log-port '() '() '() #f)) 
+          ;           (make-server input-port output-port log-port '() '() '() #f))])
+          (let ([server-instance (make-server input-port output-port log-port '() '() '() #f)])
             (try
               (let loop ([message (read-message server-instance)])
                 (if (null? (server-thread-pool server-instance))
