@@ -60,6 +60,7 @@
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
 
+; It's for partially indexing to speed up document synchronize. However, I notice that the semantic changing is within a document and not a index-node, which make comparing two indexing, copying identifier references and indexing changes much more difficult. Further works need more help.
 (define (pick-index-node-parent-of index-node-list position0 position1)
   (let ([result (pick-index-node-from index-node-list position0)])
     (if (null? result)
