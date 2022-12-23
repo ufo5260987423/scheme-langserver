@@ -15,7 +15,7 @@
     ;0 not locked
     ;-1 locked by writer
     ;>0 locked by reader 
-        (mutable reader-count)
+        (mutable ref-count)
         (mutable waiting-reader-count)
         (mutable waiting-writer-count)
         (immutable mutex)
@@ -47,7 +47,7 @@
 (define (reader-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
         (let loop ()
-            (if (or (< (reader-writer-lock-reader-count lock) 0)
+            (if (or (< (reader-writer-lock-ref-count lock) 0)
                     (> (reader-writer-lock-waiting-writer-count lock) 0))
                 (begin
                     (reader-writer-lock-waiting-reader-count-set! 
@@ -60,9 +60,9 @@
                         lock 
                         (- (reader-writer-lock-waiting-reader-count lock) 1))
                     (loop))))
-        (reader-writer-lock-reader-count-set! 
+        (reader-writer-lock-ref-count-set! 
             lock 
-            (+ (reader-writer-lock-reader-count lock) 1))))
+            (+ (reader-writer-lock-ref-count lock) 1))))
 
 ; // 尝试获取读锁，失败立即返回
 ; bool RWLock::tryrdlock()
@@ -98,7 +98,7 @@
 (define (writer-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
         (let loop ()
-            (if (not (zero? (reader-writer-lock-reader-count lock)))
+            (if (not (zero? (reader-writer-lock-ref-count lock)))
                 (begin
                     (reader-writer-lock-waiting-writer-count-set! 
                         lock 
@@ -110,21 +110,37 @@
                         lock 
                         (- (reader-writer-lock-waiting-writer-count lock) 1))
                     (loop))))
-        (reader-writer-lock-reader-count-set! lock -1)))
+        (reader-writer-lock-ref-count-set! lock -1)))
 
 (define (release-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
-		;; give preference to waiting writers over waiting readers 
-        (if (> (reader-writer-lock-reader-count lock) 0)
-            (reader-writer-lock-reader-count-set! 
+	; 	if (rw_refcount > 0)
+	; 		rw_refcount--;
+	; 	else if (rw_refcount == -1)
+	; 		rw_refcount = 0;
+	; 	else
+	; 		// unexpected error
+	; 		fprintf(stderr, "RWLock::unlock unexpected error. rw_refcount = %d\n", rw_refcount);
+		
+	; 	/* give preference to waiting writers over waiting readers */
+	; 	if (rw_nwaitwriters > 0) {
+	; 		if (rw_refcount == 0) {
+	; 			rw_condwriters.notify_one();
+	; 		}
+	; 	}
+	; 	else if (rw_nwaitreaders > 0) {
+	; 		rw_condreaders.notify_all(); /* rw lock is shared */
+	; 	}
+        (if (> (reader-writer-lock-ref-count lock) 0)
+            (reader-writer-lock-ref-count-set! 
                 lock 
-                (- (reader-writer-lock-reader-count lock) 1))
-            (if (= (reader-writer-lock-reader-count lock) -1)
-                (reader-writer-lock-reader-count-set! lock 0)
+                (- (reader-writer-lock-ref-count lock) 1))
+            (if (= (reader-writer-lock-ref-count lock) -1)
+                (reader-writer-lock-ref-count-set! lock 0)
                 (raise 'unknown-error)))
 
         (if (> (reader-writer-lock-waiting-writer-count lock) 0) 
-            (if (zero? (reader-writer-lock-reader-count lock))
+            (if (zero? (reader-writer-lock-ref-count lock))
                 (condition-signal (reader-writer-lock-write-condition lock)))
             (if (> (reader-writer-lock-waiting-reader-count lock) 0)
                 (condition-broadcast (reader-writer-lock-read-condition lock))))))
