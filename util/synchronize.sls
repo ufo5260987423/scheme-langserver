@@ -64,37 +64,6 @@
             lock 
             (+ (reader-writer-lock-ref-count lock) 1))))
 
-; // 尝试获取读锁，失败立即返回
-; bool RWLock::tryrdlock()
-; {
-; 	bool res = true;
-; 	rw_mutex.lock();
-; 	{
-; 		if (rw_refcount < 0 || rw_nwaitwriters > 0) { // 写优先
-; 			res = false; /* held by a writer or waiting writers */
-; 		}
-; 		else {
-; 			rw_refcount++; /* increment count of reader locks */
-; 		}
-; 	}
-; 	rw_mutex.unlock();
-; 	return res;
-; }
-; // 尝试获取写锁，失败立即返回
-; bool RWLock::trywrlock()
-; {
-; 	bool res = true;
-; 	rw_mutex.lock();
-; 	{
-; 		if (rw_refcount != 0) /* the lock is busy */
-; 			res = false;
-; 		else
-; 			rw_refcount = -1; /* acquire the wr lock */
-; 	}
-; 	rw_mutex.unlock();
-; 	return res;
-; }
-
 (define (writer-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
         (let loop ()
@@ -114,23 +83,6 @@
 
 (define (release-lock lock) 
     (with-mutex (reader-writer-lock-mutex lock)
-	; 	if (rw_refcount > 0)
-	; 		rw_refcount--;
-	; 	else if (rw_refcount == -1)
-	; 		rw_refcount = 0;
-	; 	else
-	; 		// unexpected error
-	; 		fprintf(stderr, "RWLock::unlock unexpected error. rw_refcount = %d\n", rw_refcount);
-		
-	; 	/* give preference to waiting writers over waiting readers */
-	; 	if (rw_nwaitwriters > 0) {
-	; 		if (rw_refcount == 0) {
-	; 			rw_condwriters.notify_one();
-	; 		}
-	; 	}
-	; 	else if (rw_nwaitreaders > 0) {
-	; 		rw_condreaders.notify_all(); /* rw lock is shared */
-	; 	}
         (if (> (reader-writer-lock-ref-count lock) 0)
             (reader-writer-lock-ref-count-set! 
                 lock 
