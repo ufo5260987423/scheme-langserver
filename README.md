@@ -96,6 +96,8 @@ https://github.com/ufo5260987423/scheme-langserver
 ]]   ,
   },
 }
+```
+
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 ## Status 
