@@ -15,7 +15,6 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util dedupe) 
-    (scheme-langserver util synchronize) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
