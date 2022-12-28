@@ -12,18 +12,16 @@ As like tape computer, a non-parallel mechanism view is that this machine rolls 
 This document will describe what Scheme-langserver did with [synchronize.sls](../../util/synchronize.sls).
 
 ### What does Scheme-langserver hope synchronizing to do?
-1. To respond API requests parallel. For example, when synchronizing documents with [document-sync.sls](../../protocol/apis/document-sync.sls), three workspace-refreshing mode `'single+tail`, `'previous+single` and `'single` marked that different parallel strategy: the "tail" indexing can be executed in background and the "single" indexing must respond rapidly;
-2. To schedule requests and optimize API responses. As [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) and [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#messageOrdering) said, many times we may cancel some requests with editor or by some API semantic definition. A peephole optimization should be applied.  This is specifically useful for Lunar Vim and some other editors' document synchronizing, for they always produce several `TextDocument/didChange` reducible requests.
-3. To analyze static codes parallel. 
+1. To analyze static codes parallel, for rules catching identifiers.
+2. To respond API requests sequentially. 
+3. Schedule requests and optimize API responses. As [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) and [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#messageOrdering) said, many times we may cancel some requests with editor or by some API semantic definition. A peephole optimization should be applied. This is specifically useful for Lunar Vim and some other editors' document synchronizing, for they always produce several `TextDocument/didChange` reducible requests.
 
 ### What mechanism dose Scheme-langserver implement?
 Scheme-langserver is supposed to receive requests sequentially but response parallelly. This means all edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving. In addition, multi-threads should be involved at tiller data nodes(like [index-node.sls](../../virtual-file-system/index-node.sls)). And the following mechanisms are what we're using:
 1. Thread pool with [ufo-match](https://github.com/ufo5260987423/ufo-thread-pool);
 2. Threaded functions with [ufo-threaded-functions](https://github.com/ufo5260987423/ufo-threaded-function);
-3. Coroutine with [ufo-coroutines](https://github.com/ufo5260987423/ufo-coroutines);
-4. Reader-writer lock in [synchronize.sls](../../util/synchronize.sls), and we add them at document-level and dependency-matrix level. 
 
-### Where dose Scheme-langserver Lock?
+### Why doesn't Scheme-langserver Use Reader-writer-lock?
 As everyone known, reader-writer lock perform following properties. And these make it unlike the other 3 mechanisms, it should be carefully handled to avoid nested locking and many other things.
 
 | Status     | Read Request | Write Request |
@@ -32,15 +30,8 @@ As everyone known, reader-writer lock perform following properties. And these ma
 | Has Reader | Permit       | Block         |
 | Has Writer | Block        | Block         |
 
-Scheme-language currently supposes that [workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document/documents)-(read/write)` syntax to assure above reader-writer-lock's properties. A common situation here is that APIs like `textDocument/didChange` and `textDocument/completion` may not disturb with each other in [scheme-langserver.sls](../../scheme-langserver.sls), but they may conflict in [document.sls](../../virtual-file-system/document.sls).
+Someone supposes scheme-language that [workspace.sls](../../analysis/workspace.sls) and [document.sls](../../virtual-file-system/document.sls) provide `with-(workspace/document/documents)-(read/write)` syntax to assure above reader-writer-lock's properties. A common situation here is that APIs like `textDocument/didChange` and `textDocument/completion` may not disturb with each other in [scheme-langserver.sls](../../scheme-langserver.sls), but they may conflict in [document.sls](../../virtual-file-system/document.sls) and the situation is much more difficult and exceed the ability of reader-writer-lock.
 
-#### [workspace.sls](../../analysis/workspace.sls)
-Expose `with-workspace-(read/write)` to APIs' handling procedures. Document synchronizing are nested with `with-workspace-write` and others with `with-workspace-read`.
->NOTE:
-These two procedures must nest `try` to avoid deadly locking. Referring `with-workspace-read` examples in [scheme-langserver.sls](../../scheme-langserver.sls), and `with-workspace-write` in [workspace.sls](../../analysis/workspace.sls).
+Because reader-writer-lock actually suppose that requests should be response parallelly as in many web APPs. It's not trivial, as [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) indicated.
 
-#### [document.sls](../../virtual-file-system/document.sls)
-Expose `with-document-(read/write)` and `with-documents-(read/write)` handling procedures. 
-
->NOTE:
-Most document write operation is nested in workspace writing.
+### TODO:API Scheduler

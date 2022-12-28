@@ -8,31 +8,13 @@
     document-index-node-list
     document-index-node-list-set!
     document-reference-list
-    document-reference-list-set!
-
-    document-lock
-
-    with-document-read
-    with-document-write)
-  (import 
-    (rnrs)
-    (scheme-langserver util synchronize))
-
-(define-syntax with-document-write
-    (syntax-rules () [(_ document e0 e1 ...) (with-lock-write (document-lock document) e0 e1 ...) ]))
-
-(define-syntax with-document-read
-    (syntax-rules () [(_ document e0 e1 ...) (with-lock-read (document-lock document) e0 e1 ...) ]))
+    document-reference-list-set!)
+  (import (rnrs))
 
 (define-record-type document 
   (fields 
     (immutable uri)
     (mutable text)
     (mutable index-node-list)
-    (mutable reference-list)
-    (immutable lock))
-  (protocol
-    (lambda (new)
-      (lambda (uri text index-node-list reference-list)
-        (new uri text index-node-list reference-list(make-reader-writer-lock))))))
+    (mutable reference-list)))
 )

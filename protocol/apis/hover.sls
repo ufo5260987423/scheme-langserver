@@ -30,13 +30,12 @@
       [character (position-character position)]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)])
-    (with-document-read document
-      (let* ([index-node-list (document-index-node-list document)]
-          [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
-          [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) )]
-          [available-reference (find-available-references-for document target-index-node prefix)])
-        (make-alist 'content (list->vector 
-          (dedupe (map identifier-reference->hover available-reference))))))))
+    (let* ([index-node-list (document-index-node-list document)]
+        [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
+        [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) )]
+        [available-reference (find-available-references-for document target-index-node prefix)])
+      (make-alist 'content (list->vector 
+        (dedupe (map identifier-reference->hover available-reference)))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference)
