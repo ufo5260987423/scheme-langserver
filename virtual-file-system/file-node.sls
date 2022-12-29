@@ -47,6 +47,6 @@
       (map (lambda (suffix) (string-suffix? suffix path)) 
       '(
         ;;todo 
-        ; ".sps" 
+        ".sps" 
         ".sls" ".scm" ".ss")))))
 )
