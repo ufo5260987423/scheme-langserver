@@ -18,8 +18,11 @@
 (define (shrink-ids matrix ids result)
       (pretty-print 'ok0)
   (if (null? ids)
+    result
     (let ([current-from (car ids)]
         [rest-from (cdr ids)])
+      (pretty-print 'ok1)
+      (pretty-print (null? result))
       (if (null? result)
         (shrink-ids matrix rest-from (append result (list `(current-from))))
         (if (zero? 
