@@ -37,6 +37,7 @@
     
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
+    (scheme-langserver analysis dependency shrinker)
 
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier rules define-record-type)
@@ -72,8 +73,9 @@
       [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-library-node)]
-      [paths (get-init-reference-path file-linkage)])
-    (init-references workspace-instance paths)
+      [paths (get-init-reference-path file-linkage)]
+      [batches (shrink-paths file-linkage paths)])
+    (init-references workspace-instance batches)
     (workspace-file-node-set! workspace-instance root-file-node)
     (workspace-library-node-set! workspace-instance root-library-node)
     (workspace-file-linkage-set! workspace-instance file-linkage)
@@ -89,10 +91,11 @@
           (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)]
-              [paths (get-init-reference-path file-linkage)])
+              [paths (get-init-reference-path file-linkage)]
+              [batches (shrink-paths file-linkage paths)])
         ; (display "aaa")
         ; (newline)
-            (init-references root-file-node root-library-node threaded? paths)
+            (init-references root-file-node root-library-node threaded? batches)
         ; (display "eee")
         ; (newline)
             (make-workspace root-file-node root-library-node file-linkage identifier))])]))
@@ -113,24 +116,31 @@
     [(root-file-node root-library-node threaded? target-paths)
       (let loop ([paths target-paths])
         (if (not (null? paths))
-          (let* ([current-file-node (walk-file root-file-node (car paths))]
-              [document (file-node-document current-file-node)]
-              [index-node-list (document-index-node-list document)])
-            (document-reference-list-set! document '())
-            (map 
-              (lambda (index-node)
-                (clear-references-for index-node)
-          ; (pretty-print "bbb")
-                (import-process root-file-node root-library-node document index-node)
-          ; (pretty-print "ccc")
-                (walk-and-process threaded? root-file-node document index-node)
-                (export-process root-file-node document index-node)
-          ; (pretty-print "ddd")
-                (document-reference-list-set! 
-                  document 
-                  (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-              index-node-list)
+          (let ([batch (car paths)])
+            ((if threaded? threaded-map map)
+              (lambda (path)
+                (private-init-references root-file-node root-library-node threaded? path))
+              batch)
             (loop (cdr paths)))))]))
+
+(define (private-init-references root-file-node root-library-node threaded? target-path)
+  (let* ([current-file-node (walk-file root-file-node target-path)]
+      [document (file-node-document current-file-node)]
+      [index-node-list (document-index-node-list document)])
+    (document-reference-list-set! document '())
+    (map 
+      (lambda (index-node)
+        (clear-references-for index-node)
+        ; (pretty-print "bbb")
+        (import-process root-file-node root-library-node document index-node)
+        ; (pretty-print "ccc")
+        (walk-and-process threaded? root-file-node document index-node)
+        (export-process root-file-node document index-node)
+        ; (pretty-print "ddd")
+        (document-reference-list-set! 
+          document 
+          (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+      index-node-list)))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 ;; TODO: add scheduler to linkage->path model
@@ -169,19 +179,26 @@
         new-library-identifier-list)
       (let* ([linkage (workspace-file-linkage workspace-instance)]
           [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)]
-          [target-documents (map file-node-document (map (lambda(p) (walk-file root-file-node p)) path))]
-          [previous-documents (dedupe (list-ahead-of target-documents target-document))]
-          [tail-documents 
-            (filter 
-              (lambda(t) (not (equal? t target-document))) 
-              (dedupe (list-after target-documents target-document)))])
+          [previous-path (list-ahead-of path target-path)]
+          [tail-path (list-after path target-path)]
+          [previous-path-batchs (shrink-paths linkage previous-path)]
+          [tail-path-batchs (shrink-paths linkage tail-path)])
         (cond 
-          [(equal? path-mode 'previous+single+tail) (init-references workspace-instance path) ]
-          [(equal? path-mode 'single) (init-references workspace-instance `(,target-path))]
-          [(equal? path-mode 'previous+single) (init-references workspace-instance (append (list-ahead-of path target-path) `(,target-path)))]
-          [(equal? path-mode 'previous) (init-references workspace-instance (list-ahead-of path target-path))]
-          [(equal? path-mode 'single+tail) (init-references workspace-instance (append `(,target-path) (list-after path target-path)))]
-          [(equal? path-mode 'tail) (init-references workspace-instance (list-after path target-path))]
+          [(equal? path-mode 'previous+single+tail) 
+            (init-references workspace-instance previous-path-batchs)
+            (init-references workspace-instance (list `(,target-path)))
+            (init-references workspace-instance tail-path-batchs)]
+          [(equal? path-mode 'single) (init-references workspace-instance (list `(,target-path)))]
+          [(equal? path-mode 'previous+single) 
+            (init-references workspace-instance previous-path-batchs)
+            (init-references workspace-instance (list `(,target-path)))]
+          [(equal? path-mode 'previous) 
+            (init-references workspace-instance previous-path-batchs)]
+          [(equal? path-mode 'single+tail) 
+            (init-references workspace-instance (list `(,target-path)))
+            (init-references workspace-instance tail-path-batchs)]
+          [(equal? path-mode 'tail) 
+            (init-references workspace-instance tail-path-batchs)]
           [else (raise 'illegle-path-mode)])))))
 
 ;; rules must be run as ordered
@@ -190,7 +207,8 @@
   (define-process root-file-node document index-node)
   (define-record-type-process root-file-node document index-node)
   ;;2
-  (if threaded?
+  ;; It's seemed that now single thread is faster.
+  (if #f;threaded?
     (threaded-map 
       (lambda (func) (func root-file-node document index-node))
       (list 

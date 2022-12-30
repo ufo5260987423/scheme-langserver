@@ -34,4 +34,7 @@ Someone supposes scheme-language that [workspace.sls](../../analysis/workspace.s
 
 Because reader-writer-lock actually suppose that requests should be response parallelly as in many web APPs. It's not trivial, as [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) indicated.
 
+### Parallel Identifier Catching
+With [shrinker.sls](../../analysis/dependency/shrinker.sls), identifier catching is divided into several batches. This means in [workspace.sls](../../analysis/workspace.sls), `threaded-map` can easily speed up working.
+
 ### TODO:API Scheduler
