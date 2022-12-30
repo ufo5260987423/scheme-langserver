@@ -7,12 +7,10 @@
 (define (shrink-paths linkage paths)
   (let* ([path->id-map (file-linkage-path->id-map linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
-      [matrix (file-linkage-matrix linkage)]
       [ids (map (lambda (current-path) (hashtable-ref path->id-map current-path #f)) paths)]
-      [shrinked-ids (shrink-ids matrix ids '())])
+      [shrinked-ids (shrink-ids linkage ids '())])
     (map 
       (lambda (ids) 
-        (pretty-print 'further)
         (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
       shrinked-ids)))
 
@@ -25,7 +23,7 @@
           [rest-from (cdr ids)]
           [current-from-path (hashtable-ref id->path-map current-from #f)])
         (if (null? result)
-          (shrink-ids matrix rest-from (append result (list `(current-from))))
+          (shrink-ids linkage rest-from (append result (list `(,current-from))))
           (if (zero? 
               (apply + 
                 (map 
@@ -36,13 +34,13 @@
                       (hashtable-ref id->path-map to #f))) 
                   (car (reverse result)))))
             (shrink-ids 
-              matrix 
+              linkage
               rest-from 
               (append 
                 (reverse (cdr (reverse result))) 
                 (list (append (car (reverse result)) `(,current-from)))))
             (shrink-ids 
-              matrix 
+              linkage
               rest-from 
               (append 
                 result
