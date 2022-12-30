@@ -19,9 +19,7 @@
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (init-file-linkage root-library-node)]
             [paths (get-init-reference-path file-linkage)])
-        (pretty-print (file-linkage? file-linkage))
-        (pretty-print (shrink-paths file-linkage paths))
-        )
+        (test-equal #f (zero? (length (shrink-paths file-linkage paths)))))
 (test-end)
 
 
