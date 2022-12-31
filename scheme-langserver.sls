@@ -240,15 +240,15 @@
               (make-transcoder (utf-8-codec))) 
             (equal? enable-multi-thread? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
-          (let ([server-instance 
-                  (if enable-multi-thread?
-                    (if threaded?
-                      (make-server input-port output-port log-port (init-thread-pool 1 #t) (make-mutex) (init-request-queue) '() #f)
-                      (make-server input-port output-port log-port '() '() '() '() #f)) 
-                    (make-server input-port output-port log-port '() '() '() '() #f))])
+          (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
+              [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
+              [server-instance (make-server input-port output-port log-port thread-pool (make-mutex) request-queue '() #f)])
             (try
-              (let loop ([message (read-message server-instance)])
-                (process-request server-instance message)
+              (if (not (null? thread-pool)) (thread-pool-add-job thread-pool (lambda () (process-request server-instance (request-queue-pop request-queue)))))
+              (let loop ([request-message (read-message server-instance)])
+                (if (null? request-queue)
+                  (process-request server-instance request-message)
+                  (request-queue-push request-queue request-message))
                 (loop (read-message server-instance)))
               (except c 
                 [else 
