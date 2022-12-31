@@ -26,21 +26,20 @@
       [path (uri->path (text-document-uri text-document))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)])
-    (with-document-read document
-      (let* ([index-node-list (document-index-node-list document)]
-          [identifiers
-            (filter 
-              (lambda (identifier-reference)
-                (equal? document (identifier-reference-document identifier-reference)))
-              (apply append 
-                (map 
-                  index-node-references-import-in-this-node
-                  index-node-list)))]
-          [result-vector 
-            (list->vector 
-              (map document-symbol->alist 
-                (map identifier->document-symbol identifiers)))])
-        result-vector))))
+    (let* ([index-node-list (document-index-node-list document)]
+        [identifiers
+          (filter 
+            (lambda (identifier-reference)
+              (equal? document (identifier-reference-document identifier-reference)))
+            (apply append 
+              (map 
+                index-node-references-import-in-this-node
+                index-node-list)))]
+        [result-vector 
+          (list->vector 
+            (map document-symbol->alist 
+              (map identifier->document-symbol identifiers)))])
+      result-vector)))
 
 (define (identifier->document-symbol identifier)
   (let* ([document (identifier-reference-document identifier)]

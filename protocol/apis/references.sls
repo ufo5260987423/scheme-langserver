@@ -15,7 +15,6 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util dedupe) 
-    (scheme-langserver util synchronize) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
@@ -30,55 +29,51 @@
       [position (alist->position (assq-ref params 'position))]
       [path (uri->path (text-document-uri text-document))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
-      [document (file-node-document file-node)])
-    (with-document-read document
-      (let* ([index-node-list (document-index-node-list document)]
-          [text (document-text document)]
-          [bias (text+position->int text position)]
-          [target-index-node (pick-index-node-from index-node-list bias)]
-          [prefix 
-            (if target-index-node 
-              (if (null? (index-node-children target-index-node)) 
-                (annotation-stripped (index-node-datum/annotations target-index-node))
-                #f))])
-        (if prefix
-          (let* ([available-references (find-available-references-for document target-index-node prefix)]
-              [origin-documents (dedupe (map identifier-reference-document available-references))]
-              [origin-uris (map document-uri origin-documents)]
-              [origin-paths (map uri->path origin-uris)]
-              [path-to-list 
-                  (apply append(map 
-                    (lambda (path)
-                      (file-linkage-to
-                        (workspace-file-linkage workspace) 
-                        path))
+      [document (file-node-document file-node)]
+      [index-node-list (document-index-node-list document)]
+      [text (document-text document)]
+      [bias (text+position->int text position)]
+      [target-index-node (pick-index-node-from index-node-list bias)]
+      [prefix 
+        (if target-index-node 
+          (if (null? (index-node-children target-index-node)) 
+            (annotation-stripped (index-node-datum/annotations target-index-node))
+            #f))])
+    (if prefix
+      (let* ([available-references (find-available-references-for document target-index-node prefix)]
+          [origin-documents (dedupe (map identifier-reference-document available-references))]
+          [origin-uris (map document-uri origin-documents)]
+          [origin-paths (map uri->path origin-uris)]
+          [path-to-list 
+            (apply append
+              (map 
+                (lambda (path)
+                  (file-linkage-to
+                    (workspace-file-linkage workspace) 
+                    path))
                     origin-paths))]
-              [root-file-node (workspace-file-node workspace)]
-              [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
-              [target-documents (map file-node-document maybe-target-documents)]
-              [predicate? 
-                (lambda (maybe-symbol)
-                  (if (symbol? maybe-symbol)
-                    (find 
-                      (lambda (identifier) (equal? maybe-symbol identifier))
-                      (map identifier-reference-identifier available-references))
-                    #f))]
-              [lock-documents (filter (lambda (t) (not (equal? t document))) target-documents)])
-            (dynamic-wind 
-              (lambda () (map reader-lock (map document-lock lock-documents)))
-              (lambda () 
-                (list->vector 
-                  (map location->alist 
-                    (apply append 
-                      (map 
-                        (lambda (document) 
-                          (apply append 
-                            (map 
-                              (lambda (index-node) (find-references-in document index-node available-references predicate?))
-                              (document-index-node-list document))))
-                        target-documents)))))
-              (lambda () (map release-lock (map document-lock lock-documents)))))
-          '#())))))
+          [root-file-node (workspace-file-node workspace)]
+          [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
+          [target-documents (map file-node-document maybe-target-documents)]
+          [predicate? 
+            (lambda (maybe-symbol)
+              (if (symbol? maybe-symbol)
+                (find 
+                  (lambda (identifier) (equal? maybe-symbol identifier))
+                  (map identifier-reference-identifier available-references))
+                #f))]
+          [lock-documents (filter (lambda (t) (not (equal? t document))) target-documents)])
+        (list->vector 
+          (map location->alist 
+            (apply append 
+              (map 
+                (lambda (document) 
+                  (apply append 
+                    (map 
+                      (lambda (index-node) (find-references-in document index-node available-references predicate?))
+                      (document-index-node-list document))))
+                target-documents)))))
+          '#())))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]

@@ -16,4 +16,12 @@
     (test-equal 2 (length (source-file->annotations "./run.ss")))
 (test-end)
 
+(test-begin "read-sps-test")
+    (test-equal 5 (length (source-file->annotations "./tests/log-debug.sps")))
+(test-end)
+
+(test-begin "read-scm-test")
+    (test-equal 1 (length (source-file->annotations ".akku/lib/srfi/%3a37/srfi-37-reference.scm")))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

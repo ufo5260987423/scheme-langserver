@@ -47,10 +47,11 @@
         (immutable input-port)
         (immutable output-port)
         (immutable log-port)
+        ;; reserve this thread-pool for requests optimization
         (immutable thread-pool)
         ;;for output-port
         (immutable mutex)
-        ; (immutable condition)
+        ; (immutable job-queue)
         (mutable workspace)
         (mutable shutdown?)))
 

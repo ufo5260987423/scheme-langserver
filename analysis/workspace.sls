@@ -17,9 +17,6 @@
     workspace-library-node-set!
     workspace-file-linkage
 
-    with-workspace-read
-    with-workspace-write
-
     pick
     generate-library-node)
   (import 
@@ -34,13 +31,13 @@
     (scheme-langserver util io)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
-    (scheme-langserver util synchronize)
     (scheme-langserver util sub-list)
 
     (scheme-langserver analysis util)
     
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
+    (scheme-langserver analysis dependency shrinker)
 
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier rules define-record-type)
@@ -65,27 +62,16 @@
     (mutable library-node)
     (mutable file-linkage)
     (immutable facet)
-    (immutable lock))
-  (protocol
-    (lambda (new)
-      (lambda (file-node library-node file-linkage facet)
-        (new file-node library-node file-linkage facet (make-reader-writer-lock))))))
-
-(define-syntax with-workspace-write
-    (syntax-rules () [(_ workspace e0 e1 ...) 
-      (with-lock-write (workspace-lock workspace) e0 e1 ...) ]))
-
-(define-syntax with-workspace-read
-    (syntax-rules () [(_ workspace e0 e1 ...) 
-      (with-lock-read (workspace-lock workspace) e0 e1 ...) ]))
+    (immutable threaded?)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
       [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-library-node)]
-      [paths (get-init-reference-path file-linkage)])
-    (init-references workspace-instance paths)
+      [paths (get-init-reference-path file-linkage)]
+      [batches (shrink-paths file-linkage paths)])
+    (init-references workspace-instance batches)
     (workspace-file-node-set! workspace-instance root-file-node)
     (workspace-library-node-set! workspace-instance root-library-node)
     (workspace-file-linkage-set! workspace-instance file-linkage)
@@ -101,13 +87,14 @@
           (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)]
-              [paths (get-init-reference-path file-linkage)])
+              [paths (get-init-reference-path file-linkage)]
+              [batches (shrink-paths file-linkage paths)])
         ; (display "aaa")
         ; (newline)
-            (init-references root-file-node root-library-node threaded? paths)
+            (init-references root-file-node root-library-node threaded? batches)
         ; (display "eee")
         ; (newline)
-            (make-workspace root-file-node root-library-node file-linkage identifier))])]))
+            (make-workspace root-file-node root-library-node file-linkage identifier threaded?))])]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -120,33 +107,38 @@
       (init-references 
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
-        (not (null? (workspace-lock workspace-instance))) 
+        (workspace-threaded? workspace-instance)
         target-paths)]
     [(root-file-node root-library-node threaded? target-paths)
       (let loop ([paths target-paths])
         (if (not (null? paths))
-          (let* ([current-file-node (walk-file root-file-node (car paths))]
-              [document (file-node-document current-file-node)]
-              [index-node-list (document-index-node-list document)])
-            (document-reference-list-set! document '())
-            (map 
-              (lambda (index-node)
-                (clear-references-for index-node)
-          ; (pretty-print "bbb")
-                (import-process root-file-node root-library-node document index-node)
-          ; (pretty-print "ccc")
-                (walk-and-process threaded? root-file-node document index-node)
-                (export-process root-file-node document index-node)
-          ; (pretty-print "ddd")
-                (document-reference-list-set! 
-                  document 
-                  (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-              index-node-list)
+          (let ([batch (car paths)])
+            ((if threaded? threaded-map map)
+              (lambda (path)
+                (private-init-references root-file-node root-library-node threaded? path))
+              batch)
             (loop (cdr paths)))))]))
 
+(define (private-init-references root-file-node root-library-node threaded? target-path)
+  (let* ([current-file-node (walk-file root-file-node target-path)]
+      [document (file-node-document current-file-node)]
+      [index-node-list (document-index-node-list document)])
+    (document-reference-list-set! document '())
+    (map 
+      (lambda (index-node)
+        (clear-references-for index-node)
+        ; (pretty-print "bbb")
+        (import-process root-file-node root-library-node document index-node)
+        ; (pretty-print "ccc")
+        (walk-and-process threaded? root-file-node document index-node)
+        (export-process root-file-node document index-node)
+        ; (pretty-print "ddd")
+        (document-reference-list-set! 
+          document 
+          (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+      index-node-list)))
+
 ;; target-file-node<-[linkage]-other-file-nodes
-;; add read/write-lock to above model
-;; add file-change-notification
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)
   (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
@@ -158,62 +150,51 @@
       [target-document (file-node-document target-file-node)]
       [target-path (uri->path (document-uri target-document))]
       [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
-    (with-document-write target-document
-      (document-text-set! target-document text)
-      (document-index-node-list-set! target-document new-index-nodes)
+    (document-text-set! target-document text)
+    (document-index-node-list-set! target-document new-index-nodes)
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
-      (map 
-        (lambda (old-library-node)
-          (library-node-file-nodes-set! 
-            old-library-node 
-            (filter 
-              (lambda (file-node)
-                (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
-              (library-node-file-nodes old-library-node)))
-          (if (and (null? (library-node-file-nodes old-library-node)) 
-              (null? (library-node-children old-library-node)))
-            (delete-library-node-from-tree old-library-node)))
-        old-library-node-list)
+    (map 
+      (lambda (old-library-node)
+        (library-node-file-nodes-set! 
+          old-library-node 
+          (filter 
+            (lambda (file-node)
+              (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
+            (library-node-file-nodes old-library-node)))
+        (if (and (null? (library-node-file-nodes old-library-node)) 
+            (null? (library-node-children old-library-node)))
+          (delete-library-node-from-tree old-library-node)))
+      old-library-node-list)
 ;; END
-      (let ([new-library-identifier-list (get-library-identifier-list target-file-node)])
-        (map 
-          (lambda (library-identifier)
-            (if (walk-library library-identifier root-library-node)
-              (generate-library-node library-identifier root-library-node target-file-node)))
-          new-library-identifier-list)
-        (let* ([linkage (workspace-file-linkage workspace-instance)]
-            [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)]
-            [target-documents (map file-node-document (map (lambda(p) (walk-file root-file-node p)) path))]
-            [previous-documents (dedupe (list-ahead-of target-documents target-document))]
-            [tail-documents 
-              (filter 
-                (lambda(t) (not (equal? t target-document))) 
-                (dedupe (list-after target-documents target-document)))])
-          (cond 
-            [(equal? path-mode 'previous+single+tail) 
-              (map reader-lock (map document-lock (filter (lambda(p) (contain? tail-documents p)) previous-documents)))
-              (map writer-lock (map document-lock tail-documents))
-              (init-references workspace-instance path)
-              (map release-lock (map document-lock (filter (lambda(p) (contain? tail-documents p)) previous-documents)))
-              (map release-lock (map document-lock tail-documents))]
-            [(equal? path-mode 'single) (init-references workspace-instance `(,target-path))]
-            [(equal? path-mode 'previous+single) 
-              (map reader-lock (map document-lock previous-documents))
-              (init-references workspace-instance (append (list-ahead-of path target-path) `(,target-path)))
-              (map release-lock (map document-lock previous-documents))]
-            [(equal? path-mode 'previous) 
-              (map reader-lock (map document-lock previous-documents))
-              (init-references workspace-instance (list-ahead-of path target-path))
-              (map release-lock (map document-lock previous-documents))]
-            [(equal? path-mode 'single+tail) 
-              (map writer-lock (map document-lock tail-documents))
-              (init-references workspace-instance (append `(,target-path) (list-after path target-path)))
-              (map release-lock (map document-lock previous-documents))]
-            [(equal? path-mode 'tail) 
-              (map writer-lock (map document-lock tail-documents))
-              (init-references workspace-instance (list-after path target-path))
-              (map release-lock (map document-lock previous-documents))]
-            [else (raise 'illegle-path-mode)]))))))
+    (let ([new-library-identifier-list (get-library-identifier-list target-file-node)])
+      (map 
+        (lambda (library-identifier)
+          (if (walk-library library-identifier root-library-node)
+            (generate-library-node library-identifier root-library-node target-file-node)))
+        new-library-identifier-list)
+      (let* ([linkage (workspace-file-linkage workspace-instance)]
+          [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)]
+          [previous-path (list-ahead-of path target-path)]
+          [tail-path (list-after path target-path)]
+          [previous-path-batchs (shrink-paths linkage previous-path)]
+          [tail-path-batchs (shrink-paths linkage tail-path)])
+        (cond 
+          [(equal? path-mode 'previous+single+tail) 
+            (init-references workspace-instance previous-path-batchs)
+            (init-references workspace-instance (list `(,target-path)))
+            (init-references workspace-instance tail-path-batchs)]
+          [(equal? path-mode 'single) (init-references workspace-instance (list `(,target-path)))]
+          [(equal? path-mode 'previous+single) 
+            (init-references workspace-instance previous-path-batchs)
+            (init-references workspace-instance (list `(,target-path)))]
+          [(equal? path-mode 'previous) 
+            (init-references workspace-instance previous-path-batchs)]
+          [(equal? path-mode 'single+tail) 
+            (init-references workspace-instance (list `(,target-path)))
+            (init-references workspace-instance tail-path-batchs)]
+          [(equal? path-mode 'tail) 
+            (init-references workspace-instance tail-path-batchs)]
+          [else (raise 'illegle-path-mode)])))))
 
 ;; rules must be run as ordered
 (define (walk-and-process threaded? root-file-node document index-node)
@@ -221,7 +202,8 @@
   (define-process root-file-node document index-node)
   (define-record-type-process root-file-node document index-node)
   ;;2
-  (if threaded?
+  ;; It's seemed that now single thread is faster.
+  (if #f;threaded?
     (threaded-map 
       (lambda (func) (func root-file-node document index-node))
       (list 

@@ -1,6 +1,7 @@
 (library (scheme-langserver virtual-file-system index-node)
   (export 
     pick-index-node-from
+    pick-index-node-parent-of
 
     make-index-node
     index-node?
@@ -59,11 +60,24 @@
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
 
+; It's for partially indexing to speed up document synchronize. However, I notice that the semantic changing is within a document and not a index-node, which make comparing two indexing, copying identifier references and indexing changes much more difficult. Further works need more help.
+(define (pick-index-node-parent-of index-node-list position0 position1)
+  (let ([result (pick-index-node-from index-node-list position0)])
+    (if (null? result)
+      result
+      (let* ([start (index-node-start result)]
+          [end (index-node-end result)])
+        (if (and (<= start position0) (>= end position1))
+          result
+          (pick-index-node-parent-of `(,(index-node-parent result)) position0 position1))))))
+
 (define (pick-index-node-from index-node-list position)
-  (find index-node?
-    (map 
-      (lambda (index-node) (pick-index-node-by index-node position)) 
-      index-node-list)))
+  (let ([result 
+      (find index-node?
+        (map 
+          (lambda (index-node) (pick-index-node-by index-node position)) 
+          index-node-list))])
+    (if result result '())))
 
 (define (pick-index-node-by index-node position)
   (if (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position))

@@ -3,7 +3,7 @@
     "method": "textDocument/definition",
     "params": {
         "position" : {
-            "line": 82,
+            "line": 70,
             "character": 19 
         },
         "textDocument" : {

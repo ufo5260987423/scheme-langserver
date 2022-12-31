@@ -11,8 +11,12 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 ## Log
-1.0.9: Add parallel and synchronize mechanism, which can harshly speed up indexing.
+1.0.10: Fix bugs in 1.0.9.
+
+1.0.9: Abandoned: add parallel and synchronize mechanism, which can harshly speed up indexing.
+
 1.0.8: Build index as document synchronizing instead of workspace initializing.
+
 1.0.7: Catch syntax-* identifier bindings.
 
 ## Setup
@@ -96,6 +100,8 @@ https://github.com/ufo5260987423/scheme-langserver
 ]]   ,
   },
 }
+```
+
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 ## Status 
@@ -123,18 +129,19 @@ This project is still in early development, so you may run into rough edges with
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
 9. Cross-platform parallel indexing.
-10. Speed up document synchronizing.
+10. Self-made source code annotator to be compatible with .sps files.
 
 ### TODOs
 
-11. Renaming. 
-12. Fully compatible with r6rs standard.
-13. Macro expanding.
-14. Code eval.
-15. Code diagnostic.
-16. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
-17. Self-made source code annotator to be compatible with .sps files as https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280 mentioned.
-18. Type inference.
+11. Peephole optimization for API requests.
+12. Virtual identifier catching machine for .sps, .ss, .scm files.
+13. Renaming. 
+14. Fully compatible with r6rs standard.
+15. Macro expanding.
+16. Code eval.
+17. Code diagnostic.
+18. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
+19. Type inference.
 
 ## TODO:Contributing 
 

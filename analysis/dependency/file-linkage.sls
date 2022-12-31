@@ -3,6 +3,7 @@
     init-file-linkage
 
     file-linkage-path->id-map
+    file-linkage?
     file-linkage-id->path-map
     file-linkage-matrix
     file-linkage-take
