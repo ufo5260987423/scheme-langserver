@@ -98,7 +98,7 @@
 
 (define (get-content-length header-hashtable)
     (string->number (hashtable-ref header-hashtable "Content-Length" string=?)))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (read-content header-hashtable port)
     (let ([utf8-transcoder (make-transcoder (utf-8-codec))]
             [content-length (get-content-length header-hashtable)])
