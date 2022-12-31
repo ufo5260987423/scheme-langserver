@@ -14,7 +14,7 @@ This document will describe what Scheme-langserver did with [synchronize.sls](..
 ### What does Scheme-langserver hope synchronizing to do?
 1. To analyze static codes parallel, for rules catching identifiers.
 2. To respond API requests sequentially. 
-3. Schedule requests and optimize API responses. As [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) and [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#messageOrdering) said, many times we may cancel some requests with editor or by some API semantic definition. A peephole optimization should be applied. This is specifically useful for Lunar Vim and some other editors' document synchronizing, for they always produce several `TextDocument/didChange` reducible requests.
+3. Schedule requests and optimize API responses. As [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) and [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#messageOrdering) said, many times we may cancel some requests with editor or by some API semantic definition. A peephole optimization should be applied. This is specifically useful for [LunarVim](https://www.lunarvim.org/) and some other editors' document synchronizing, for they always produce several `TextDocument/didChange` reducible requests.
 
 ### What mechanism dose Scheme-langserver implement?
 Scheme-langserver is supposed to receive requests sequentially but response parallelly. This means all edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving. In addition, multi-threads should be involved at tiller data nodes(like [index-node.sls](../../virtual-file-system/index-node.sls)). And the following mechanisms are what we're using:
@@ -36,5 +36,3 @@ Because reader-writer-lock actually suppose that requests should be response par
 
 ### Parallel Identifier Catching
 With [shrinker.sls](../../analysis/dependency/shrinker.sls), identifier catching is divided into several batches. This means in [workspace.sls](../../analysis/workspace.sls), `threaded-map` can easily speed up working.
-
-### TODO:API Scheduler
