@@ -11,9 +11,12 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 ## Log
-1.0.10: 
+1.0.10: Fix bugs in 1.0.9.
+
 1.0.9: Abandoned: add parallel and synchronize mechanism, which can harshly speed up indexing.
+
 1.0.8: Build index as document synchronizing instead of workspace initializing.
+
 1.0.7: Catch syntax-* identifier bindings.
 
 ## Setup
