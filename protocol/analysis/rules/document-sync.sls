@@ -2,8 +2,6 @@
   (export 
     process-document-sync)
   (import 
-    (ufo-match) 
-
     (chezscheme)
     (slib queue)
     
@@ -15,26 +13,23 @@
     (scheme-langserver util association))
 
 (define (process-document-sync head-request queue)
-  (let* ([next-request 
-        (if (queue-empty? queue)
-          '()
-          (queue-front queue))]
-      [head-method (request-method head-request)]
-      [head-param (request-params head-request)]
-      [head-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref head-param 'textDocument))]
-      [head-path (uri->path (versioned-text-document-identifier-uri head-versioned-text-document-identifier))])
-    (if (null? next-request)
-      head-request
-      (let* ([next-method (request-method next-request)]
-          [next-param (request-params next-request)]
-          [next-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref next-param 'textDocument))]
-          [next-path (uri->path (versioned-text-document-identifier-uri next-versioned-text-document-identifier))])
-        (match `(,head-method ,next-method)
-          [("textDocument/didChange" "textDocument/didChange")
+(pretty-print 'process)
+  (let* ([head-method (request-method head-request)]
+      [head-param (request-params head-request)])
+    (if (and (not (queue-empty? queue)) (equal? head-method "textDocument/didChange"))
+      (let* ([next-request (queue-front queue)]
+          [next-method (request-method next-request)])
+        (if (equal? next-method "textDocument/didChange")
+          (let* ([head-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref head-param 'textDocument))]
+              [head-path (uri->path (versioned-text-document-identifier-uri head-versioned-text-document-identifier))]
+              [next-param (request-params next-request)]
+              [next-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref next-param 'textDocument))]
+              [next-path (uri->path (versioned-text-document-identifier-uri next-versioned-text-document-identifier))])
             (if (equal? next-path head-path)
               (private-process:changes->change head-request next-request)
-              head-request)]
-          [else head-request])))))
+              head-request))
+          head-request))
+      head-request)))
 
 (define (private-process:changes->change head-request next-request)
   (let* ([head-param (request-params head-request)]

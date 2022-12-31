@@ -2,8 +2,7 @@
   (export 
     init-request-queue
     request-queue-pop
-    request-queue-push
-    request-queue-peek)
+    request-queue-push)
   (import 
     (chezscheme)
     (slib queue)
@@ -24,30 +23,28 @@
         (let loop ()
           	(if (queue-empty? (request-queue-queue queue))
               	(begin
+(pretty-print 'pop-loop0)
                 	(condition-wait (request-queue-condition queue) (request-queue-mutex queue))
+(pretty-print 'pop-loop1)
                 	(loop))
                 (private-dequeue! (request-queue-queue queue))))))
 
 (define (request-queue-push queue item)
+(pretty-print 'push)
     (with-mutex (request-queue-mutex queue)
     	(enqueue! (request-queue-queue queue) item))
   	(condition-signal (request-queue-condition queue)))
 
-(define (request-queue-peek queue)
-    (with-mutex (request-queue-mutex queue)
-      (if (queue-empty? (request-queue-queue queue))
-        '()
-        (queue-front (request-queue-queue queue)))))
-
-(define (private-dequeue! queue)
-  (let loop ([request (dequeue! (request-queue-queue queue))])
-    (if (queue-empty? (request-queue-queue queue))
+(define (private-dequeue! pure-queue)
+  (let loop ([request (dequeue! pure-queue)])
+    (if (queue-empty? pure-queue)
       request
       (let ([result
           (filter
             (lambda (returned-request) (not (equal? returned-request request)))
             (map 
-              (lambda (func) (func request queue))
+              (lambda (func) 
+                (func request pure-queue))
               (list process-document-sync)))])
         (if (null? result)
           request

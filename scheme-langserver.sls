@@ -244,7 +244,12 @@
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool (make-mutex) request-queue '() #f)])
             (try
-              (if (not (null? thread-pool)) (thread-pool-add-job thread-pool (lambda () (process-request server-instance (request-queue-pop request-queue)))))
+              (if (not (null? thread-pool)) 
+                (thread-pool-add-job thread-pool 
+                  (lambda () 
+                    (let loop ()
+                      (process-request server-instance (request-queue-pop request-queue))
+                      (loop)))))
               (let loop ([request-message (read-message server-instance)])
                 (if (null? request-queue)
                   (process-request server-instance request-message)
