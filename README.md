@@ -126,11 +126,11 @@ This project is still in early development, so you may run into rough edges with
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
 9. Cross-platform parallel indexing.
-10. Speed up document synchronizing.
-11. Self-made source code annotator to be compatible with .sps files.
+10. Self-made source code annotator to be compatible with .sps files.
 
 ### TODOs
 
+11. Peephole optimization for API requests.
 12. Virtual identifier catching machine for .sps, .ss, .scm files.
 13. Renaming. 
 14. Fully compatible with r6rs standard.
