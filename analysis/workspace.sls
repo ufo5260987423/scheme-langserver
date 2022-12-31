@@ -62,6 +62,7 @@
     (mutable library-node)
     (mutable file-linkage)
     (immutable facet)
+    ;;todo: is this really needed?
     (immutable scheduler))
   (protocol
     (lambda (new)
