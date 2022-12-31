@@ -245,9 +245,7 @@
                     (make-server input-port output-port log-port '() '() '() #f))])
             (try
               (let loop ([message (read-message server-instance)])
-                (if (null? (server-thread-pool server-instance))
-                  (process-request server-instance message)
-                  (thread-pool-add-job (server-thread-pool server-instance) (lambda() (process-request server-instance message))))
+                (process-request server-instance message)
                 (loop (read-message server-instance)))
               (except c 
                 [else 
