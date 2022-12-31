@@ -62,12 +62,7 @@
     (mutable library-node)
     (mutable file-linkage)
     (immutable facet)
-    ;;todo: is this really needed?
-    (immutable scheduler))
-  (protocol
-    (lambda (new)
-      (lambda (file-node library-node file-linkage facet)
-        (new file-node library-node file-linkage facet '())))))
+    (immutable threaded?)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -99,7 +94,7 @@
             (init-references root-file-node root-library-node threaded? batches)
         ; (display "eee")
         ; (newline)
-            (make-workspace root-file-node root-library-node file-linkage identifier))])]))
+            (make-workspace root-file-node root-library-node file-linkage identifier threaded?))])]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -112,7 +107,7 @@
       (init-references 
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
-        (not (null? (workspace-scheduler workspace-instance))) 
+        (workspace-threaded? workspace-instance)
         target-paths)]
     [(root-file-node root-library-node threaded? target-paths)
       (let loop ([paths target-paths])
@@ -144,7 +139,6 @@
       index-node-list)))
 
 ;; target-file-node<-[linkage]-other-file-nodes
-;; TODO: add scheduler to linkage->path model
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)
   (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
