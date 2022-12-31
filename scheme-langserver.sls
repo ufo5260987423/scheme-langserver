@@ -10,7 +10,10 @@
     (scheme-langserver analysis workspace)
 
     (scheme-langserver protocol error-code) 
-    (scheme-langserver protocol message)
+    (scheme-langserver protocol request)
+    (scheme-langserver protocol response)
+    (scheme-langserver protocol server)
+    (scheme-langserver protocol analysis request-queue)
 
     (scheme-langserver protocol apis references)
     (scheme-langserver protocol apis completion)
@@ -240,9 +243,9 @@
           (let ([server-instance 
                   (if enable-multi-thread?
                     (if threaded?
-                      (make-server input-port output-port log-port (init-thread-pool 4 #t) (make-mutex) '() #f)
-                      (make-server input-port output-port log-port '() '() '() #f)) 
-                    (make-server input-port output-port log-port '() '() '() #f))])
+                      (make-server input-port output-port log-port (init-thread-pool 1 #t) (make-mutex) (init-request-queue) '() #f)
+                      (make-server input-port output-port log-port '() '() '() '() #f)) 
+                    (make-server input-port output-port log-port '() '() '() '() #f))])
             (try
               (let loop ([message (read-message server-instance)])
                 (process-request server-instance message)

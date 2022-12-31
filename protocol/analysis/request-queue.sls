@@ -1,5 +1,8 @@
 (library (scheme-langserver protocol analysis request-queue)
   (export 
+    init-request-queue
+    request-queue-pop
+    request-queue-push
     request-queue-peek)
   (import 
     (chezscheme)
@@ -7,24 +10,23 @@
 
     (scheme-langserver protocol analysis rules document-sync))
 
-(define-record-type request-request-queue 
+(define-record-type request-queue 
   	(fields 
 		  (immutable mutex)
 	  	(immutable condition)
-	  	(immutable queue)
-      (mutable timeout-second)))
+	  	(immutable queue)))
    
 (define (init-request-queue)
-  	(make-request-queue (make-mutex) (make-condition) (make-queue) 1))
+  	(make-request-queue (make-mutex) (make-condition) (make-queue)))
 
 (define (request-queue-pop queue)
     (with-mutex (request-queue-mutex queue)
         (let loop ()
           	(if (queue-empty? (request-queue-queue queue))
               	(begin
-                	(condition-wait (request-queue-condition queue) (queue-mutex queue))
+                	(condition-wait (request-queue-condition queue) (request-queue-mutex queue))
                 	(loop))
-                (prevate-dequeue! queue)))))
+                (private-dequeue! (request-queue-queue queue))))))
 
 (define (request-queue-push queue item)
     (with-mutex (request-queue-mutex queue)
@@ -37,7 +39,7 @@
         '()
         (queue-front (request-queue-queue queue)))))
 
-(define (prevate-dequeue! queue)
+(define (private-dequeue! queue)
   (let loop ([request (dequeue! (request-queue-queue queue))])
     (if (queue-empty? (request-queue-queue queue))
       request
@@ -50,5 +52,4 @@
         (if (null? result)
           request
           (loop result))))))
-
 )

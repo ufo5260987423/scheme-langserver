@@ -21,11 +21,11 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/protocol"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/message.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/request.sls"))]
             [document (file-node-document target-file-node)]
             [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text (make-position 155 10))))])
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text (make-position 25 12))))])
         (test-equal #f (null? index-node)))
 (test-end)
 
