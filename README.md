@@ -130,10 +130,10 @@ This project is still in early development, so you may run into rough edges with
 8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
 9. Cross-platform parallel indexing.
 10. Self-made source code annotator to be compatible with .sps files.
+11. Peephole optimization for API requests.
 
 ### TODOs
 
-11. Peephole optimization for API requests.
 12. Virtual identifier catching machine for .sps, .ss, .scm files.
 13. Renaming. 
 14. Fully compatible with r6rs standard.
@@ -175,7 +175,7 @@ https://github.com/ufo5260987423/scheme-langserver
 ### Recurring with Log 
 With above [output log](#output-log), you may use `tests/log-debug.sps` recurring bugs:
 1. Rename `{path-to-log}`(usually `~/scheme-langserver.log`) as `~/ready-for-analyse.log`;
-2. run `scheme --script tests/log-debug.sps`
+2. run `scheme --script tests/log-debug.sps`. If you want to re-produce the multi-thread environment, it would also be available to run `scheme --script tests/log-debug.sps`.
 
 ## Test
 Almost all key procedures and APIs are tested. My work is just so rough but useful, maybe you would like to find what I've done in `tests` directory or just run following command in `{scheme-langserver-root-directory}`
