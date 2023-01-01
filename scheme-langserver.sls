@@ -153,8 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
-  (let* (
-        [root-path (uri->path (assq-ref params 'rootUri))]
+  (let* ([root-path (uri->path (assq-ref params 'rootUri))]
         [client-capabilities (assq-ref params 'capabilities)]
         [textDocument (assq-ref params 'textDocument)]
         ; [renameProvider 

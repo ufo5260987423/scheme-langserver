@@ -13,7 +13,6 @@
     (scheme-langserver util association))
 
 (define (process-document-sync head-request queue)
-(pretty-print 'process)
   (let* ([head-method (request-method head-request)]
       [head-param (request-params head-request)])
     (if (and (not (queue-empty? queue)) (equal? head-method "textDocument/didChange"))
@@ -26,7 +25,9 @@
               [next-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref next-param 'textDocument))]
               [next-path (uri->path (versioned-text-document-identifier-uri next-versioned-text-document-identifier))])
             (if (equal? next-path head-path)
-              (private-process:changes->change head-request next-request)
+              (begin
+                (dequeue! queue)
+                (private-process:changes->change head-request next-request))
               head-request))
           head-request))
       head-request)))

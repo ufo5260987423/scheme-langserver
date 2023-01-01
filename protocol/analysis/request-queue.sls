@@ -23,14 +23,11 @@
         (let loop ()
           	(if (queue-empty? (request-queue-queue queue))
               	(begin
-(pretty-print 'pop-loop0)
                 	(condition-wait (request-queue-condition queue) (request-queue-mutex queue))
-(pretty-print 'pop-loop1)
                 	(loop))
                 (private-dequeue! (request-queue-queue queue))))))
 
 (define (request-queue-push queue item)
-(pretty-print 'push)
     (with-mutex (request-queue-mutex queue)
     	(enqueue! (request-queue-queue queue) item))
   	(condition-signal (request-queue-condition queue)))
@@ -48,5 +45,5 @@
               (list process-document-sync)))])
         (if (null? result)
           request
-          (loop result))))))
+          (loop (car result)))))))
 )
