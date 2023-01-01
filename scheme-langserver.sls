@@ -41,8 +41,12 @@
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
         ["exit" '()] 
-        ["shutdown" (send-message server-instance (shutdown server-instance id))]
-
+        ["shutdown" 
+          (if (null? (server-thread-pool server-instance))
+            (server-shutdown?-set! server-instance #t)
+            (with-mutex (server-mutex server-instance)
+              (server-shutdown?-set! server-instance #t)
+              (condition-broadcast (server-condition server-instance))))]
         ["textDocument/didOpen" 
           (try
             (did-open workspace params)
@@ -201,14 +205,6 @@
           (fail-response id server-error-start "server has been initialized"))))
     (success-response id (make-alist 'capabilities server-capabilities))))
 
-(define (shutdown server-instance id)
-(pretty-print 'shutdown)
-  (if (null? (server-thread-pool server-instance))
-    (server-shutdown?-set! server-instance #t)
-    (with-mutex (server-mutex server-instance)
-      (server-shutdown?-set! server-instance #t)
-      (condition-broadcast (server-condition server-instance)))))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
         [() 
@@ -253,8 +249,7 @@
                   (if (not (null? request-queue))
                     (with-mutex (server-mutex server-instance)
                       (if (not (server-shutdown? server-instance))
-                        (condition-wait (server-condition server-instance) (server-mutex server-instance)))
-                      (thread-pool-stop! (server-thread-pool server-instance))))
+                        (condition-wait (server-condition server-instance) (server-mutex server-instance)))))
                   (begin
                     (if (null? request-queue)
                       (process-request server-instance request-message)
@@ -263,6 +258,5 @@
               (except c 
                 [else 
                   (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
-                  (shutdown server-instance -1)])))]))
+                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)])))]))
 )
