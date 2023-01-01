@@ -1,4 +1,5 @@
 ## How dose scheme-langserver analyze API requests?
+Scheme-langserver equips a [request-queue](../../protocol/analysis/request-queue.sls) and a single-threaded thread-pool to apply [peephole optimization](https://dl.acm.org/doi/10.1145/364995.365000) to asynchronously analyze API requests. More specifically, optimization is now only applied to [notification](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#notificationMessage), because notification needn't send a response back.
 
 ### Text document synchronizing
 [Text document synchronizing APIs]( https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization) that `textDocument/didOpen`, `textDocument/didChange` and `textDocument/didClose`, a server must implement all three of them and receive request for documents, for which the content is managed in the client (e.g. they might have changed). Which means the API requests are sequential instead of parallel.
