@@ -117,19 +117,13 @@
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-          ; ["workspace/didChangeWatchedFiles"
-          ;  (??? id params)]
-        [_ (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
-  ; public static final string text_document_formatting = "textdocument/formatting";
-	; public static final string text_document_range_formatting = "textdocument/rangeformatting";
-	; public static final string text_document_on_type_formatting = "textdocument/ontypeformatting";
+        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";
 	; public static final string workspace_execute_command = "workspace/executecommand";
 	; public static final string workspace_symbol = "workspace/symbol";
 	; public static final string workspace_watched_files = "workspace/didchangewatchedfiles";
-	; public static final string document_symbol = "textdocument/documentsymbol";
 	; public static final string code_action = "textdocument/codeaction";
 	; public static final string typedefinition = "textdocument/typedefinition";
 	; public static final string document_highlight = "textdocument/documenthighlight";
@@ -137,23 +131,6 @@
 	; public static final string workspace_change_folders = "workspace/didchangeworkspacefolders";
 	; public static final string implementation = "textdocument/implementation";
 	; public static final string selection_range = "textdocument/selectionrange";
-
-;; not reply client!
-; (define (process-notification server-instance request)
-;   (let([method (request-method request)]
-;         [id (request-id request)]
-;         [params (request-params request)])
-;     (match method
-;       ["exit"
-;         (if (null? (server-mutex server-instance))
-;           (exit  (if (server-shutdown? server-instance) 1 0))
-;           (with-mutex (server-mutex server-instance)
-;             (exit  (if (server-shutdown? server-instance) 1 0))))]
-;       ; ["textDocument/didSave"
-;       ;  (text-document/didSave id params)]
-;       ; ["textDocument/rename"
-;       ;  (text-document/rename id params)]
-;       [_ (void)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
