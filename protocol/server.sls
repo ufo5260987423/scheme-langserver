@@ -13,6 +13,8 @@
     server-thread-pool
     server-input-port
     server-output-port
+    ;close
+    server-condition
     server-request-queue)
   (import (chezscheme))
 
@@ -27,7 +29,21 @@
         (immutable mutex)
         (immutable request-queue)
         (mutable workspace)
-        (mutable shutdown?)))
+        (mutable shutdown?)
+        (mutable condition))
+  (protocol
+    (lambda (new)
+      (lambda (input-port output-port log-port thread-pool request-queue workspace)
+        (new 
+          input-port 
+          output-port 
+          log-port 
+          thread-pool
+          (if (null? thread-pool) '() (make-mutex))
+          request-queue
+          workspace
+          #f
+          (make-condition))))))
 
 (define (do-log message server-instance)
     (if (not (null? (server-log-port server-instance)))

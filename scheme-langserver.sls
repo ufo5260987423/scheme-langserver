@@ -202,13 +202,13 @@
     (success-response id (make-alist 'capabilities server-capabilities))))
 
 (define (shutdown server-instance id)
+(pretty-print 'shutdown)
   (if (null? (server-thread-pool server-instance))
     (server-shutdown?-set! server-instance #t)
-    (begin
-      (thread-pool-stop! (server-thread-pool server-instance))
-      (with-mutex (server-mutex server-instance)
-        (server-shutdown?-set! server-instance #t))))
-    (success-response id '()))
+    (with-mutex (server-mutex server-instance)
+      (server-shutdown?-set! server-instance #t)
+      (condition-broadcast (server-condition server-instance))))
+  (success-response id '()))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
@@ -241,7 +241,7 @@
         [(input-port output-port log-port enable-multi-thread?) 
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool (make-mutex) request-queue '() #f)])
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '())])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 
@@ -250,15 +250,20 @@
                       (process-request server-instance (request-queue-pop request-queue))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
-                (if (null? request-queue)
-                  (process-request server-instance request-message)
-                  (request-queue-push request-queue request-message))
-                (loop (read-message server-instance)))
+                (if (null? request-message)
+                  (if (not (null? request-queue))
+                    (with-mutex (server-mutex server-instance)
+                      (if (not (server-shutdown? server-instance))
+                        (condition-wait (server-condition server-instance) (server-mutex server-instance)))
+                      (thread-pool-stop! (server-thread-pool server-instance))))
+                  (begin
+                    (if (null? request-queue)
+                      (process-request server-instance request-message)
+                      (request-queue-push request-queue request-message))
+                    (loop (read-message server-instance)))))
               (except c 
                 [else 
                   (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
                   (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
-                  (shutdown server-instance -1)]))
-            (newline)
-            (display "bye"))]))
+                  (shutdown server-instance -1)])))]))
 )

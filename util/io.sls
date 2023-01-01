@@ -6,7 +6,7 @@
 
         read-string
         write-string)
-    (import (rnrs) )
+    (import (rnrs))
 
 (define (write-lines lines path)
     (if (not (null? lines))
@@ -31,14 +31,14 @@
     (let loop ([tail '()] 
             [current-char (get-u8 port)])
         (cond 
+            [(eof-object? current-char)
+                (utf8->string (u8-list->bytevector (reverse tail)))]
             [(and 
                 (= (char->integer #\return ) current-char)
                 (= (char->integer #\newline) (lookahead-u8 port)))
                 (get-u8 port) ;; Consume \n
                 (utf8->string (u8-list->bytevector (reverse tail)))]
             [(= (char->integer #\newline) current-char)
-                (utf8->string (u8-list->bytevector (reverse tail)))]
-            [(eof-object? current-char)
                 (utf8->string (u8-list->bytevector (reverse tail)))]
             [else (loop (cons current-char tail) (get-u8 port))])))
 
