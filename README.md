@@ -123,7 +123,7 @@ This project is still in early development, so you may run into rough edges with
 3. Compatible with package manager: Akku.
 4. File changes synchronizing and corresponding index changing.
 5. Hover.
-6. References.
+6. References and document highlight (document-scoped references).
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")

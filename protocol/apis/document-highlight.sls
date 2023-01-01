@@ -1,6 +1,6 @@
-(library (scheme-langserver protocol apis references)
+(library (scheme-langserver protocol apis document-highlight)
   (export 
-    find-references)
+    find-highlight)
   (import 
     (chezscheme) 
 
@@ -23,8 +23,9 @@
 
     (only (srfi :13 strings) string-prefix?))
 
-; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_references
-(define (find-references workspace params)
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_documentHighlight
+; in fact, document-highlight is document-scoped find-references
+(define (find-highlight workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [position (alist->position (assq-ref params 'position))]
       [path (uri->path (text-document-uri text-document))]
@@ -41,20 +42,7 @@
             #f))])
     (if prefix
       (let* ([available-references (find-available-references-for document target-index-node prefix)]
-          [origin-documents (dedupe (map identifier-reference-document available-references))]
-          [origin-uris (map document-uri origin-documents)]
-          [origin-paths (map uri->path origin-uris)]
-          [path-to-list 
-            (apply append
-              (map 
-                (lambda (path)
-                  (file-linkage-to
-                    (workspace-file-linkage workspace) 
-                    path))
-                    origin-paths))]
-          [root-file-node (workspace-file-node workspace)]
-          [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
-          [target-documents (map file-node-document maybe-target-documents)]
+          [target-documents `(,document)]
           [predicate? 
             (lambda (maybe-symbol)
               (if (symbol? maybe-symbol)

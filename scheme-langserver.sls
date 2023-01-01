@@ -16,6 +16,7 @@
     (scheme-langserver protocol analysis request-queue)
 
     (scheme-langserver protocol apis references)
+    (scheme-langserver protocol apis document-highlight)
     (scheme-langserver protocol apis completion)
     (scheme-langserver protocol apis hover)
     (scheme-langserver protocol apis definition)
@@ -86,6 +87,13 @@
         ["textDocument/references" 
           (try
             (send-message server-instance (success-response id (find-references workspace params)))
+            (except c
+              [else 
+                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/documentHighlight" 
+          (try
+            (send-message server-instance (success-response id (find-highlight workspace params)))
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
@@ -162,7 +170,7 @@
               ; 'implementationProvider #t
               ; 'renameProvider renameProvider
               ; 'codeActionProvider #t
-              ; 'documentHighlightProvider #t
+              'documentHighlightProvider #t
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
               ; 'documentFormattingProvider #t
