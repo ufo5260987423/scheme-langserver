@@ -207,8 +207,7 @@
     (server-shutdown?-set! server-instance #t)
     (with-mutex (server-mutex server-instance)
       (server-shutdown?-set! server-instance #t)
-      (condition-broadcast (server-condition server-instance))))
-  (success-response id '()))
+      (condition-broadcast (server-condition server-instance)))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define init-server
     (case-lambda
