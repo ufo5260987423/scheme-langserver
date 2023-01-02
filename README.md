@@ -136,7 +136,7 @@ This project is still in early development, so you may run into rough edges with
 
 12. Virtual identifier catching machine for .sps, .ss, .scm files.
 13. Renaming. 
-14. Fully compatible with r6rs standard.
+14. Fully compatible with [r6rs standard](http://www.r6rs.org/).
 15. Macro expanding.
 16. Code eval.
 17. Code diagnostic.
