@@ -1,5 +1,5 @@
-(library (scheme-langserver analysis type-inferencer rnrs-chez-rules)
-  (export rnrs-rules)
+(library (scheme-langserver analysis type rnrs-chez-rules)
+  (export rnrs-chez-rules)
   (import (rnrs))
 
 (define rnrs-chez-rules '(

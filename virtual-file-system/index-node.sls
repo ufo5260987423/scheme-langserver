@@ -35,7 +35,13 @@
     (mutable children)
     (mutable references-export-to-other-node)
     (mutable references-import-in-this-node)
-    (mutable excluded-references)))
+    (mutable excluded-references)
+    (mutable should-have-type)
+    (mutable actural-have-type))
+    (protocol
+      (lambda (new)
+        (lambda (parent start end datum/annotations children export import exclude)
+          (new parent start end datum/annotations children export import exclude '() '())))))
 
 (define (init-index-node parent datum/annotation)
   (let* ([source (annotation-source datum/annotation)]

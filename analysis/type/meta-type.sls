@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type-inferencer meta-type)
+(library (scheme-langserver analysis type meta-type)
   (export 
     void? 
     something?)
