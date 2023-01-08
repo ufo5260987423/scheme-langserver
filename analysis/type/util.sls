@@ -26,13 +26,16 @@
         (>= numeric0 numeric1)
         #f))))
 
+;;numeric tower
 (define (private-type->numeric-type type0)
   (cond 
     [(equal? (car type0) 'fixnum?) 0]
     [(equal? (car type0) 'integer?) 1]
     [(equal? (car type0) 'flonum?) 2]
-    [(equal? (car type0) 'real?) 3]
-    [(equal? (car type0) 'number?) 4]
+    [(equal? (car type0) 'rational?) 3]
+    [(equal? (car type0) 'real?) 4]
+    [(equal? (car type0) 'complex?) 5]
+    [(equal? (car type0) 'number?) 6]
     [else #f]))
 
 (define (type-equal? type0 type1 equal-predicator)
