@@ -25,5 +25,4 @@
         (map private-process-or (cdr type)))
       `(,type))
     '()))
-
 )
