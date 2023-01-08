@@ -15,4 +15,4 @@ For scheme, programming would be too frustrating in the absence of both compile 
 Further, the known part is following [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0), that we have about 1808 forms to construct a rule-based type inferencer.
 
 ### Using predictor construct type representation
-Currently, the representation is an s-expression with predictor.
+Currently, the representation is an s-expression with predictor. And
