@@ -30,12 +30,14 @@
 (define (private-type->numeric-type type0)
   (cond 
     [(equal? (car type0) 'fixnum?) 0]
-    [(equal? (car type0) 'integer?) 1]
-    [(equal? (car type0) 'flonum?) 2]
-    [(equal? (car type0) 'rational?) 3]
-    [(equal? (car type0) 'real?) 4]
-    [(equal? (car type0) 'complex?) 5]
-    [(equal? (car type0) 'number?) 6]
+    [(equal? (car type0) 'bignum?) 1]
+    [(equal? (car type0) 'integer?) 2]
+    [(equal? (car type0) 'cflonum?) 3]
+    [(equal? (car type0) 'flonum?) 4]
+    [(equal? (car type0) 'rational?) 5]
+    [(equal? (car type0) 'real?) 6]
+    [(equal? (car type0) 'complex?) 7]
+    [(equal? (car type0) 'number?) 8]
     [else #f]))
 
 (define (type-equal? type0 type1 equal-predicator)
