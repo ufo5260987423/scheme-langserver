@@ -778,4 +778,5 @@
 (write (void? x))
 (write-char (void? x))
 (write-char (void? x))
+))
 )
