@@ -21,7 +21,7 @@
 
 (test-begin "test-type-satisfy>=")
     (test-equal #t
-        (type-satisfy? '(integer? x) '(integer? x)))
+        (type-satisfy>= '(integer? x) '(integer? x)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

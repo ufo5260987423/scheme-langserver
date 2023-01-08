@@ -1,10 +1,14 @@
 (library (scheme-langserver analysis type util)
   (export 
-    construct-lambda)
+    construct-lambda
+    type-equal?
+    type-satisfy>=)
   (import 
     (chezscheme)
     (scheme-langserver util sub-list)
-    (scheme-langserver util dedupe))
+    (scheme-langserver util dedupe)
+
+    (scheme-langserver analysis identifier reference))
 
 (define-syntax construct-lambda 
   (syntax-rules ()
@@ -24,11 +28,11 @@
 
 (define (private-type->numeric-type type0)
   (cond 
-    [(equal? (car type0) fixnum?) 0]
-    [(equal? (car type0) integer?) 1]
-    [(equal? (car type0) flonum?) 2]
-    [(equal? (car type0) real?) 3]
-    [(equal? (car type0) number?) 4]
+    [(equal? (car type0) 'fixnum?) 0]
+    [(equal? (car type0) 'integer?) 1]
+    [(equal? (car type0) 'flonum?) 2]
+    [(equal? (car type0) 'real?) 3]
+    [(equal? (car type0) 'number?) 4]
     [else #f]))
 
 (define (type-equal? type0 type1 equal-predicator)
@@ -43,8 +47,9 @@
 (define (private-process-or type)
   (if (list? type)
     (if (equal? 'or (car type))
-      (filter (lambda(x) (not (null? x)))
-        (map private-process-or (cdr type)))
+      (apply append 
+        (filter (lambda(x) (not (null? x)))
+          (map private-process-or (cdr type))))
       `(,type))
     '()))
 )
