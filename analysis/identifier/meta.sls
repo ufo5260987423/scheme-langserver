@@ -65,6 +65,10 @@
       (cond
          [(equal? 'or type-expression-rule) 'or]
          [(equal? 'void? type-expression-rule) 'void?]
+         [(equal? 'textual-output-port? type-expression-rule) 'textual-output-port?]
+         [(equal? 'textual-input-port? type-expression-rule) 'textual-input-port?]
+         [(equal? 'binary-input-port? type-expression-rule) 'binary-input-port?]
+         [(equal? 'binary-output-port? type-expression-rule) 'binary-output-port?]
          [(equal? 'something? type-expression-rule) 'something?]
          [(equal? input-symbol type-expression-rule) input-symbol]
          [else 
