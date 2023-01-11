@@ -1,6 +1,6 @@
 ## How dose scheme-langserver catch identifier bindings?
 
-Procedures and variable bindings are the fundamental building blocks of Scheme programs. In fact, most part of functionalities including auto-completion, goto definition, document symbol etc., all dependent on them. In this document, I'll describe what scheme-langserver do in analysis/identifier/rules directory. Following forms are from [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0). These form should be catched by define-record-type.sls, lambda.sls, let.sls and so one. 
+Procedures and variable bindings are the fundamental building blocks of Scheme programs. In fact, most part of functionalities including auto-completion, goto definition, document symbol etc., all dependent on them. In this document, I'll describe what scheme-langserver do in analysis/identifier/rules directory. Following forms are from [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0). These form should be caught by define-record-type.sls, lambda.sls, let.sls and so one. 
 
 ### Identifier binding forms in r6rs standard 
 In practice, these forms would produce [identifier-reference](../../analysis/identifier/reference.sls) and attach them to [index-nodes](../../virtual-file-system/index-node.sls). Specifically, one form would produce one unique identifier and attach it to `index-node-export-to-other-node`, `index-node-import-in-this-node`, and `index-node-excluded-references`. 
@@ -46,7 +46,6 @@ In practice, these forms would produce [identifier-reference](../../analysis/ide
 | syntax-case             | (syntax-case expr (literal ...) clause ...)                        |
 | syntax-rules            | (syntax-rules (literal ...) clause ...)                            |
 | with-syntax             | (with-syntax ((pattern expr) ...) body1 body2 ...)                 |
-
 
 NOTE: 
 1.  `define-top-level-syntax`, `define-top-level-value` would bind identifiers to environment instead of library. Detailed catching rule would be programmed when I'm ready. 

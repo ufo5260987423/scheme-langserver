@@ -14,5 +14,7 @@ For scheme, programming would be too frustrating in the absence of both compile 
 
 Further, the known part is following [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0), that we have about 1808 forms to construct a rule-based type inferencer.
 
-### Using predictor construct type representation
-Currently, the representation is an s-expression with predictor. And
+### Type attachment
+In scheme-langserver, type is usually attached to [`identifier-reference`'s `should-have-type` and `actrual-have-type` properties](../../analysis/identifier/reference.sls), and represented with a list consisted with predictors' `identifier-reference`, some meta type like `something?` and `void?` in [meta-type.sls](../../analysis/type/meta-type.sls), and a logic operator `'or`. According to how identifier is caught in [identifier.md](./identifier.md), different identifiers' type attachments are of different structure: procedures' are attached with one list with 2 parts, a return type and a list of parameter types; variables and pointers are attached with its value's type, including the literal or s-expression's return.
+
+
