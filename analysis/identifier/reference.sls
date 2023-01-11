@@ -9,6 +9,7 @@
     identifier-reference-document
     identifier-reference-library-identifier
     identifier-reference-type-expression
+    identifier-reference-type-expression-set!
     identifier-reference-index-node)
   (import 
     (chezscheme)
@@ -21,6 +22,7 @@
     (immutable document)
     (immutable index-node)
     (immutable library-identifier)
+    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void?
     (mutable type-expression)))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)

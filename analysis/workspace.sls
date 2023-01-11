@@ -89,11 +89,9 @@
               [file-linkage (init-file-linkage root-library-node)]
               [paths (get-init-reference-path file-linkage)]
               [batches (shrink-paths file-linkage paths)])
-        ; (display "aaa")
-        ; (newline)
+        ; (pretty-print 'aaa)
             (init-references root-file-node root-library-node threaded? batches)
-        ; (display "eee")
-        ; (newline)
+        ; (pretty-print 'eee)
             (make-workspace root-file-node root-library-node file-linkage identifier threaded?))])]))
 
 ;; head -[linkage]->files
@@ -127,12 +125,12 @@
     (map 
       (lambda (index-node)
         (clear-references-for index-node)
-        ; (pretty-print "bbb")
+        ; (pretty-print 'bbb)
         (import-process root-file-node root-library-node document index-node)
-        ; (pretty-print "ccc")
+        ; (pretty-print 'ccc)
         (walk-and-process threaded? root-file-node document index-node)
         (export-process root-file-node document index-node)
-        ; (pretty-print "ddd")
+        ; (pretty-print 'ddd)
         (document-reference-list-set! 
           document 
           (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
