@@ -35,11 +35,5 @@
       [params (cdr expression)])
     (guard-for document index-node current-head 
       '(rnrs)'(scheme)'(chezscheme)'(rnrs condition)'(rnrs base)'(rnrs files)'(rnrs syntax-case)'(rnrs exception)'(rnrs lists)'(rnrs bytevectors)'(rnrs control)'(rnrs unicode)'(rnrs enums)'(rnrs r5rs)'(rnrs eval)'(rnrs hashtables)'(rnrs sorting)'(rnrs programs)'(rnrs mutable-pairs)'(rnrs mutable-strings)'(rnrs io ports)'(rnrs io simple)'(rnrs arithmetic flonums)'(rnrs arithmetic bitwise)'(rnrs arithmetic fixnums)'(rnrs records syntactic)'(rnrs records procedure)'(rnrs records inspection)'(chezscheme csv7)'(scheme csv7))
-    
 ))
-
-(define (match-param-type params param-types)
-  (let loop ([body param-types]))
-)
-
 )

@@ -18,6 +18,10 @@
     index-node-references-import-in-this-node-set!
     index-node-excluded-references
     index-node-excluded-references-set!
+    index-node-should-have-type-set!
+    index-node-actural-have-type-set!
+    index-node-should-have-type
+    index-node-actural-have-type
 
     init-index-node
 
