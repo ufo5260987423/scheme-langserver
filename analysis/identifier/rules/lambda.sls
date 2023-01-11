@@ -61,7 +61,8 @@
               document
               index-node
               '()
-              'parameter)])
+              'parameter
+              '())])
         (index-node-references-export-to-other-node-set! 
           index-node
           (append 

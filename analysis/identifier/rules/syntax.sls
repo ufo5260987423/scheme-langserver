@@ -76,7 +76,8 @@
                 document
                 template-index-node
                 '()
-                'syntax-parameter)])
+                'syntax-parameter
+                '())])
           (index-node-references-export-to-other-node-set! 
             template-index-node
             (append 

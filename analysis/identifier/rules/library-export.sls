@@ -66,7 +66,8 @@
                   document
                   external-index-node
                   library-identifiers
-                  'pointer))))
+                  'pointer
+                  '()))))
 
           (if (not (null? (cdr children-index-nodes)))
             (loop 
@@ -88,7 +89,8 @@
                   document
                   index-node
                   library-identifiers
-                  'pointer))
+                  'pointer
+                  '()))
                 references))))]
       [else '()])))
 )

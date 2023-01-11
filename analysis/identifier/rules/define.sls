@@ -27,7 +27,8 @@
                 document 
                 (car key-index-nodes) 
                 library-identifiers
-                'procedure)]
+                'procedure
+                '())]
             [dummies (cdr key-index-nodes)])
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
@@ -48,7 +49,8 @@
                       document
                       dummy-index-node
                       '()
-                      'parameter)])
+                      'parameter
+                      '())])
                 (match dummy-expression
                   [(? symbol? dummy-identifier)
                     (index-node-references-export-to-other-node-set!
@@ -75,7 +77,8 @@
                 document 
                 (cadr (index-node-children index-node))
                 library-identifiers
-                'variable)])
+                'variable
+                '())])
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
             (append 
