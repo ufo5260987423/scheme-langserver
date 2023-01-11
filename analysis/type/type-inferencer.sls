@@ -5,26 +5,32 @@
     (chezscheme)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
+
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver analysis type meta-type)
     (scheme-langserver analysis type rnrs-meta-rules))
 
-(define (match index-node document)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [current-head (car expression)]
-      [basic (find (lambda(r) (equal? current-head (car r))) rnrs-chez-rules)])
-    (if basic
-      (try
-        (match-single index-node document basic)
-        (except c
-          [else 
-            (cond
-            ;;todo
-              [else ]
-            )
-          ])))))
+(define match
+  (case-lambda
+    ([document])
+    ([index-node document]
+      (let* ([ann (index-node-datum/annotations index-node)]
+          [expression (annotation-stripped ann)])
+        (if (list? expression)
+          (if (null? expression)
+            (index-node-actrual-have-type-set! index-node '(list? x))
+          )
+          ;;
+          (let* )
+        )
+
+          [current-head (car expression)]
+          [basic (find (lambda(r) (equal? current-head (car r))) rnrs-chez-rules)])
+      )
+    )
+  )
 
 (define (match-single index-node document rule)
   (let* ([return-type (cadr rule)]
