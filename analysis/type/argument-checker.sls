@@ -14,71 +14,85 @@
     (scheme-langserver analysis type util))
 
 ;;using dynamic programming
-(define (argument-checker-attach argument-index-nodes document parameter-rules root-identifiers)
-  (cond
-    [(and (null? argument-index-nodes) (null? parameter-rules)) #t]
-    [(or (not (null? argument-index-nodes)) (not (null? parameter-rules))) #f]
-    [else
-      (let* ([rule-segments (private-segment parameter-rules)]
-          [current-segment (car rule-segment)]
-          [current-index-node (car argument-index-node)]
-          [type-expression (private-type-expression-of segment)])
-        (cond
-          [(private-is-... current-segment)
-            (if (apply or 
-                (map
-                  (lambda (root-identifier)
-                    (check-argument-satisfy>= 
-                      type-exression current-index-node document 
-                      (index-node-actrua1l-have-type current-index-node) (identifier-reference-index-node root-identifier) (identifier-reference-document root-identifier)))
-                  root-identifiers))
-              (cond
-                [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
-                  #t]
-                [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
-                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
-                  #t]
-                [else #f])
-              (cond
-                [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers) #t]
-                [else #f]))]
-          [(private-is-**1 current-segment)
-            (if (apply or 
-                (map
-                  (lambda (root-identifier)
-                    (check-argument-satisfy>= 
-                      type-exression current-index-node document 
-                      (index-node-actrua1l-have-type current-index-node) (identifier-reference-index-node root-identifier) (identifier-reference-document root-identifier)))
-                  root-identifiers))
-              (cond
-                [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
-                  #t]
-                [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
-                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
-                  #t]
-                [else #f])
-              #f)]
-          [else 
-            (if (apply or 
-                (map
-                  (lambda (root-identifier)
-                    (check-argument-satisfy>= 
-                      type-exression current-index-node document 
-                      (index-node-actrua1l-have-type current-index-node) (identifier-reference-index-node root-identifier) (identifier-reference-document root-identifier)))
-                  root-identifiers))
-              (cond
-                [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
-                  #t]
-                [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
-                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
-                  #t]
-                [else #f])
-              #f)]))]))
+(define argument-checker-attach 
+  (case-lambda 
+    [(argument-index-nodes document root-identifiers) 
+      (map 
+        (lambda (root-identifier) 
+          (argument-checker-attach 
+            argument-index-nodes 
+            document 
+            (cdr (identifier-reference-type-expression root-identifier)) 
+            root-identifier))
+        (filter
+          (lambda(r)
+            (< 1 (identifier-reference-type-expression r)))
+          root-identifiers))]
+    [(argument-index-nodes document parameter-rules root-identifier)
+      (cond
+        [(and (null? argument-index-nodes) (null? parameter-rules)) #t]
+        [(or (not (null? argument-index-nodes)) (not (null? parameter-rules))) #f]
+        [else
+          (let* ([rule-segments (private-segment parameter-rules)]
+              [current-segment (car rule-segment)]
+              [current-index-node (car argument-index-node)]
+              [type-expression (private-type-expression-of segment)])
+            (cond
+              [(private-is-... current-segment)
+                (if (check-argument-satisfy>= 
+                    type-exression 
+                    current-index-node 
+                    document 
+                    (index-node-actrua1l-have-type current-index-node) 
+                    (identifier-reference-index-node root-identifier) 
+                    (identifier-reference-document root-identifier))
+                  (cond
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
+                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                      #t]
+                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
+                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                      #t]
+                    [else #f])
+                  (cond
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers) #t]
+                    [else #f]))]
+              [(private-is-**1 current-segment)
+                (if (check-argument-satisfy>= 
+                    type-exression 
+                    current-index-node 
+                    document 
+                    (index-node-actrua1l-have-type current-index-node) 
+                    (identifier-reference-index-node root-identifier) 
+                    (identifier-reference-document root-identifier))
+                  (cond
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
+                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                      #t]
+                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
+                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                      #t]
+                    [else #f])
+                  #f)]
+              [else 
+                (if (check-argument-satisfy>= 
+                    type-exression 
+                    current-index-node 
+                    document 
+                    (index-node-actrua1l-have-type current-index-node) 
+                    (identifier-reference-index-node root-identifier) 
+                    (identifier-reference-document root-identifier))
+                  (cond
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifier)
+                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                      #t]
+                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifier)
+                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                      #t]
+                    [else #f])
+                  #f)]))])]))
 
-(define (check-argument-satisfy>= index-node document parameter-rule root-identifiers)
+(define (check-argument-satisfy>= index-node document parameter-rule root-identifier)
   (let* ([should-have-type parameter-rule]
       [actrual-have-type (index-node-actrual-have-type index-node)]
       [intersection 

@@ -3,7 +3,8 @@
     construct-lambda
     type-intersection
     type-satisfy>=intersection
-    construct-type-expression-with-meta)
+    construct-type-expression-with-meta
+    collect-reference-should-have-type)
   (import 
     (chezscheme)
     (scheme-langserver util sub-list)
@@ -16,6 +17,22 @@
 (define-syntax construct-lambda 
   (syntax-rules ()
     [(_ body) (eval `(lambda(x) ,body))]))
+
+(define (collect-reference-should-have-type identifier index-node)
+  (if (null? (index-node-children index-node))
+    (if (equal? identifier (annotation-stripped (index-node-datum/annotations index-node)))
+      `(,(index-node-should-have-type index-node))
+      '())
+    (let ([maybe-result 
+          (dedupe 
+            (apply append 
+              (map 
+                (lambda(x) 
+                  (collect-reference-should-have-type identifier x)) 
+                (index-node-children index-node))))])
+      (if (< 1 (length maybe-result))
+        '(or ,@maybe-result)
+        maybe-result))))
 
 (define (construct-type-expression-with-meta meta-identifier)
   (let* ([target-meta (find-meta (identifier-reference-library-instance type0))]

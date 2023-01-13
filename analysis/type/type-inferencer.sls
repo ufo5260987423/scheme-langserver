@@ -8,7 +8,9 @@
     (scheme-langserver virtual-file-system document)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier meta))
+    (scheme-langserver analysis identifier meta)
+    
+    (scheme-langserver analysis type argument-checker))
 
 (define match
   (case-lambda
@@ -51,7 +53,10 @@
                         '()]))
                     (find-available-references-for document index-node expression))))])
           (begin
+            (map (lambda(i) (match i document)) (index-node-children index-node))
             ;;todo
             '()
+            (if (symbol? (car expression))
+              (argument-checker-attach (cdr (index-node-children index-node)) document (find-available-references-for document index-node (car expression))))
           ))))))
 )
