@@ -11,6 +11,8 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
 
+    (scheme-langserver virtual-file-system index-node)
+
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta))
 
@@ -35,7 +37,7 @@
         maybe-result))))
 
 (define (construct-type-expression-with-meta meta-identifier)
-  (let* ([target-meta (find-meta (identifier-reference-library-instance type0))]
+  (let* ([target-meta (find-meta '(rnrs))]
       [target-identifiers (find (lambda(x) (equal? x meta-identifier)) target-meta)])
     (if (null? target-identifiers)
       '(something? x)

@@ -34,22 +34,8 @@
               (append 
                 `(,(index-node-actrual-have-type (car (reverse (index-node-children index-node)))))
                 (index-node-actrual-have-type index-node))))]
-        [('lambda (? symbol? identifier) _ ... ) 
-          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let loop ([loop-parameter-nodes (cadr (index-node-children index-node))][result '()])
-            (if (null? loop-parameter-nodes)
-              (index-node-actrual-have-type-set! index-node result)
-              (let* ([current-index-node (car loop-parameter-nodes)]
-                  [identifier-reference (index-node-references-export-to-other-node current-index-node)]
-                  [type-expression (collect-reference-should-have-type identifier index-node)])
-                (index-node-actrual-have-type-set! current-index-node type-expression)
-                (identifier-reference-type-expression-set! identifier-reference type-expression)
-                (loop (cdr loop-parameter-nodes) (append result `(,type-expression)))))
-            (index-node-actural-have-type-set! 
-              index-node 
-              (append 
-                `(,(index-node-actrual-have-type (car (reverse (index-node-children index-node)))))
-                (index-node-actrual-have-type index-node))))]
+        ; [('lambda (? symbol? identifier) _ ... ) 
+        ;   (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) ]
         [('case-lambda (dummy0 ...) dummy1 ... ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])

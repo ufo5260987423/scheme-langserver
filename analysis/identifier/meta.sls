@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis meta)
+(library (scheme-langserver analysis identifier meta)
    (export 
       find-meta
       attach-type-identifiers)

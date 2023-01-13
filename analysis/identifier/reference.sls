@@ -25,8 +25,8 @@
     (immutable library-identifier)
     (immutable type)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
-    ;; NOTE: it won't index-node's type expression collection. Because, identifier's expression is directly construcuted by code, not by transform.
-    (mutable type-expression)))
+    ;; NOTE: it must be index-node's type expression collection, because of case-lambda
+    (mutable type-expressions)))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])

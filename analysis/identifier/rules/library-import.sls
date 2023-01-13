@@ -4,8 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver analysis meta)
-
+    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
