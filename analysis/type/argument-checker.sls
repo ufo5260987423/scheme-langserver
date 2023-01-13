@@ -34,10 +34,10 @@
                   root-identifiers))
               (cond
                 [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                  (index-node-should-have-type-set!  current-index-node current-rule)
+                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                   #t]
                 [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
-                  (index-node-should-have-type-set! current-index-node type-expression)
+                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                   #t]
                 [else #f])
               (cond
@@ -53,10 +53,10 @@
                   root-identifiers))
               (cond
                 [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                  (index-node-should-have-type-set!  current-index-node current-rule)
+                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                   #t]
                 [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
-                  (index-node-should-have-type-set! current-index-node type-expression)
+                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                   #t]
                 [else #f])
               #f)]
@@ -70,10 +70,10 @@
                   root-identifiers))
               (cond
                 [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                  (index-node-should-have-type-set!  current-index-node current-rule)
+                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                   #t]
                 [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
-                  (index-node-should-have-type-set! current-index-node type-expression)
+                  (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                   #t]
                 [else #f])
               #f)]))]))

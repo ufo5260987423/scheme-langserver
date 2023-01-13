@@ -23,8 +23,9 @@
     (immutable document)
     (immutable index-node)
     (immutable library-identifier)
-    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     (immutable type)
+    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
+    ;; NOTE: it won't index-node's type expression collection. Because, identifier's expression is directly construcuted by code, not by transform.
     (mutable type-expression)))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)

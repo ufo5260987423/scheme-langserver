@@ -8,38 +8,50 @@
     (scheme-langserver virtual-file-system document)
 
     (scheme-langserver analysis identifier reference)
-
-    (scheme-langserver analysis type meta-type)
-    (scheme-langserver analysis type rnrs-meta-rules))
+    (scheme-langserver analysis identifier meta))
 
 (define match
   (case-lambda
-    ([document])
+    ([document] (map (lambda(index-node) (match index-node document)) (document-index-nodes document)))
     ([index-node document]
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
-        (if (list? expression)
-          (if (null? expression)
-            (index-node-actrual-have-type-set! index-node '(list? x))
-          )
-          ;;
-          (let* )
-        )
-
-          [current-head (car expression)]
-          [basic (find (lambda(r) (equal? current-head (car r))) rnrs-chez-rules)])
-      )
-    )
-  )
-
-(define (match-single index-node document rule)
-  (let* ([return-type (cadr rule)]
-      [param-types (caddr rule)]
-      [ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [current-head (car expression)]
-      [params (cdr expression)])
-    (guard-for document index-node current-head 
-      '(rnrs)'(scheme)'(chezscheme)'(rnrs condition)'(rnrs base)'(rnrs files)'(rnrs syntax-case)'(rnrs exception)'(rnrs lists)'(rnrs bytevectors)'(rnrs control)'(rnrs unicode)'(rnrs enums)'(rnrs r5rs)'(rnrs eval)'(rnrs hashtables)'(rnrs sorting)'(rnrs programs)'(rnrs mutable-pairs)'(rnrs mutable-strings)'(rnrs io ports)'(rnrs io simple)'(rnrs arithmetic flonums)'(rnrs arithmetic bitwise)'(rnrs arithmetic fixnums)'(rnrs records syntactic)'(rnrs records procedure)'(rnrs records inspection)'(chezscheme csv7)'(scheme csv7))
-))
+        (if (null? (index-node-children index-node))
+          (cond
+            [(list? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'list?)))]
+            [(vector? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'vector?)))]
+            [(char? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'char?)))]
+            [(string? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'string?)))]
+            [(boolean? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'boolean?)))]
+            [(fixnum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'fixnum?)))]
+            [(bignum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'bignum?)))]
+            [(integer? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'integer?)))]
+            [(cflonum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'cflonum?)))]
+            [(flonum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'flonum?)))]
+            [(rational? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'rational?)))]
+            [(real? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'real?)))]
+            [(complex? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'complex?)))]
+            [(number? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'number?)))]
+            [(symbol? expression) 
+              (index-node-actrual-have-type-set! 
+                current-index-node 
+                (dedupe 
+                  (map 
+                    (lambda(identifier-reference)
+                      (cond
+                        [(and 
+                          (equal? 'procedure (identifier-reference-type identifier-reference)) 
+                          (> 1 (length (identifier-reference-type-expression identifier-reference))))
+                          (construct-type-expression-with-meta 'procedure?)]
+                        [(= 1 (length (identifier-reference-type-expression identifier-reference)))
+                          ;; according identifier-reference's finding strategy, their expression should be setted previously.
+                          (identifier-reference-type-expression identifier-reference)]
+                        [else 
+                          ;; other cases like syntax-transformer would raise invalid syntax exception
+                        '()]))
+                    (find-available-references-for document index-node expression))))])
+          (begin
+            ;;todo
+            '()
+          ))))))
 )

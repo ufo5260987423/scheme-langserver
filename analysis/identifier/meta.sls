@@ -54,7 +54,7 @@
                (identifier-reference-type-expression-set! 
                   identifier 
                   (if type-expression 
-                     type-expression 
+                     `(,type-expression)
                      '()))
                identifier))
          identifiers)))

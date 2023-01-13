@@ -2,7 +2,8 @@
   (export 
     construct-lambda
     type-intersection
-    type-satisfy>=intersection)
+    type-satisfy>=intersection
+    construct-type-expression-with-meta)
   (import 
     (chezscheme)
     (scheme-langserver util sub-list)
@@ -16,6 +17,15 @@
   (syntax-rules ()
     [(_ body) (eval `(lambda(x) ,body))]))
 
+(define (construct-type-expression-with-meta meta-identifier)
+  (let* ([target-meta (find-meta (identifier-reference-library-instance type0))]
+      [target-identifiers (find (lambda(x) (equal? x meta-identifier)) target-meta)])
+    (if (null? target-identifiers)
+      '(something? x)
+      (if (> (length target-identifiers) 1)
+        (append '(or) (map (lambda(id) `(,id x)) target-identifiers))
+        target-identifiers))))
+
 (define (type-satisfy>=intersection type-expression0 type-expression1)
   (type-intersection type-expression0 type-expression1 private-satisfy>=))
 
@@ -26,7 +36,13 @@
         [numeric1 (private-type->numeric-type type1)])
       (if (and numeric0 numeric1)
         (>= numeric0 numeric1)
-        (or (null? type1) (equal? type0 'something?))))))
+        (or 
+          (null? type1) 
+          (equal? type0 'something?)
+          (and 
+            (equal? (identifier-reference-identifier type0) (identifier-reference-identifier type1))
+            (equal? (identifier-reference-index-node type0) (identifier-reference-index-node type1)))
+          )))))
 
 ;;numeric tower
 (define (private-type->numeric-type type0)
