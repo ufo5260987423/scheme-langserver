@@ -8,9 +8,9 @@
     identifier-reference-identifier
     identifier-reference-document
     identifier-reference-library-identifier
-    identifier-reference-type-expression
+    identifier-reference-type-expressions
     identifier-reference-type
-    identifier-reference-type-expression-set!
+    identifier-reference-type-expressions-set!
     identifier-reference-index-node)
   (import 
     (chezscheme)

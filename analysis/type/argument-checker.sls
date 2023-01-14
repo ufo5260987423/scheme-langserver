@@ -19,15 +19,16 @@
     [(argument-index-nodes document root-identifiers) 
       (map 
         (lambda (root-identifier) 
-          (argument-checker-attach 
-            argument-index-nodes 
-            document 
-            (cdr (identifier-reference-type-expression root-identifier)) 
-            root-identifier))
-        (filter
-          (lambda(r)
-            (< 1 (identifier-reference-type-expression r)))
-          root-identifiers))]
+          (map 
+            (lambda (single-expression)
+              (if (not (null? (cdr single-expression))
+                (argument-checker-attach 
+                  argument-index-nodes 
+                  document 
+                  (cdr single-expression) 
+                  root-identifier))))
+            (identifier-reference-type-expressions root-identifier)))
+        root-identifiers)]
     [(argument-index-nodes document parameter-rules root-identifier)
       (cond
         [(and (null? argument-index-nodes) (null? parameter-rules)) #t]

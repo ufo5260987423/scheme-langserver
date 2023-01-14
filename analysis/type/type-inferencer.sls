@@ -38,20 +38,22 @@
               (index-node-actrual-have-type-set! 
                 current-index-node 
                 (dedupe 
-                  (map 
-                    (lambda(identifier-reference)
-                      (cond
-                        [(and 
-                          (equal? 'procedure (identifier-reference-type identifier-reference)) 
-                          (> 1 (length (identifier-reference-type-expression identifier-reference))))
-                          (construct-type-expression-with-meta 'procedure?)]
-                        [(= 1 (length (identifier-reference-type-expression identifier-reference)))
+                  (apply append
+                    (map 
+                      (lambda(identifier-reference)
+                        (map 
+                          (lambda(type-expression)
+                            (cond
+                              [(and 
+                                (equal? 'procedure (identifier-reference-type identifier-reference)) 
+                                (> 1 (length type-expression)))
+                                (construct-type-expression-with-meta 'procedure?)]
                           ;; according identifier-reference's finding strategy, their expression should be setted previously.
-                          (identifier-reference-type-expression identifier-reference)]
-                        [else 
+                              [(= 1 (length type-expression)) type-expression]
                           ;; other cases like syntax-transformer would raise invalid syntax exception
-                        '()]))
-                    (find-available-references-for document index-node expression))))])
+                              [else '()]))
+                            (identifier-reference-type-expressions identifier-reference)))
+                      (find-available-references-for document index-node expression)))))])
           (begin
             (map (lambda(i) (match i document)) (index-node-children index-node))
             ;;todo

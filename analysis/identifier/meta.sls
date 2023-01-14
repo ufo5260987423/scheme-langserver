@@ -50,8 +50,8 @@
          (lambda(identifier)
             (let* ([type-expression-rule
                      (find (lambda(rule) (equal? (car rule) (identifier-reference-identifier identifier))) rnrs-chez-rules)]
-                  [type-expression (attach-type-identifiers type-expression-rule `(,identifier) 'x)])
-               (identifier-reference-type-expression-set! 
+                  [type-expression (attach-type-identifiers type-expression-rule identifiers 'x)])
+               (identifier-reference-type-expressions-set! 
                   identifier 
                   (if type-expression 
                      `(,type-expression)

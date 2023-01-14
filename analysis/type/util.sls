@@ -66,7 +66,7 @@
 ;;numeric tower
 (define (private-type->numeric-type type0)
   (if (identifier-reference? type0)
-    (let ([target-meta (find-meta (identifier-reference-library-instance type0))]
+    (let ([target-meta (find-meta (identifier-reference-library-identifier type0))]
         [target-identifier (identifier-reference-identifier type0)])
       (if (null? target-meta)
         #f

@@ -27,7 +27,7 @@
                   [identifier-reference (index-node-references-export-to-other-node current-index-node)]
                   [type-expression (collect-reference-should-have-type identifier index-node)])
                 (index-node-actrual-have-type-set! current-index-node type-expression)
-                (identifier-reference-type-expression-set! identifier-reference type-expression)
+                (identifier-reference-type-expression-set! identifier-reference `(,type-expression))
                 (loop (cdr loop-parameter-nodes) (append result `(,type-expression)))))
             (index-node-actural-have-type-set! 
               index-node 
