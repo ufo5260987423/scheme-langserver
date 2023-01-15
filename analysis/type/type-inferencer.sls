@@ -60,7 +60,7 @@
               [param-node (cdr (index-node-children index-node))])
             (map (lambda(i) (match i document)) (index-node-children index-node))
             ;;todo
-            '()
+            (lambda-process document index-node)
             (cond
               [(symbol? head) 
                 (argument-checker-attach param-node document (find-available-references-for document index-node head))]
