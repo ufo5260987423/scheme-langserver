@@ -42,12 +42,8 @@
 
 (define (construct-type-expression-with-meta meta-identifier)
   (let* ([target-meta (find-meta '(rnrs))]
-      [target-identifiers (find (lambda(x) (equal? x meta-identifier)) target-meta)])
-    (if (null? target-identifiers)
-      '(something? x)
-      (if (> (length target-identifiers) 1)
-        (append '(or) (map (lambda(id) `(,id x)) target-identifiers))
-        target-identifiers))))
+      [target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) target-meta)])
+    `(,(if target-identifier target-identifier 'something?) x)))
 
 (define (type-satisfy>=intersection type-expression0 type-expression1)
   (type-intersection type-expression0 type-expression1 private-satisfy>=))

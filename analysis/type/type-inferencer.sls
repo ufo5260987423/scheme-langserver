@@ -58,7 +58,8 @@
                           ;; other cases like syntax-transformer would raise invalid syntax exception
                                 [else '()]))
                               (identifier-reference-type-expressions identifier-reference)))
-                        (find-available-references-for document index-node expression))))))])
+                        (find-available-references-for document index-node expression))))))]
+              [else '()])
           (let ([head (car expression)]
               [head-node (car (index-node-children index-node))]
               [param-node (cdr (index-node-children index-node))])
@@ -68,7 +69,7 @@
             (cond
               [(symbol? head) 
                 (argument-checker-attach param-node document (find-available-references-for document index-node head))]
-              [(list? head) 
+              [(and (list? head) (lambda? (index-node-actural-have-type head-node)))
                 (argument-checker-attach param-node document (cdr (index-node-actural-have-type head-node)) head-node document)]
               [else '()])))))))
 )
