@@ -48,15 +48,16 @@
                list-instance)])
       (map 
          (lambda(identifier)
-            (let* ([type-expression-rule
-                     (find (lambda(rule) (equal? (car rule) (identifier-reference-identifier identifier))) rnrs-chez-rules)]
-                  [type-expression (attach-type-identifiers type-expression-rule identifiers 'x)])
-               (identifier-reference-type-expressions-set! 
-                  identifier 
-                  (if type-expression 
-                     `(,type-expression)
-                     '()))
-               identifier))
+            (let loop ([type-expression-rules (filter (lambda(rule) (equal? (car rule) (identifier-reference-identifier identifier))) rnrs-chez-rules)])
+               (if (null? type-expression-rules)
+                  identifier
+                  (let ([type-expression (attach-type-identifiers (cdr (car type-expression-rules)) identifiers 'x)])
+                     (identifier-reference-type-expressions-set! 
+                        identifier 
+                        (append (identifier-reference-type-expressions identifier) 
+                           (if type-expression 
+                              (list `(,type-expression))
+                              '())))))))
          identifiers)))
 
 (define (attach-type-identifiers type-expression-rule identifiers input-symbol)

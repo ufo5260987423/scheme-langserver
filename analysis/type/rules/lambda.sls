@@ -34,8 +34,11 @@
               (append 
                 `(,(index-node-actrual-have-type (car (reverse (index-node-children index-node)))))
                 (index-node-actrual-have-type index-node))))]
-        ; [('lambda (? symbol? identifier) _ ... ) 
-        ;   (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) ]
+        [('lambda (? symbol? identifier) _ ... ) 
+          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+          (index-node-actural-have-type-set! 
+            index-node 
+            `(,(index-node-actrual-have-type (car (reverse (index-node-children index-node))) ((something? x)...))))]
         [('case-lambda (dummy0 ...) dummy1 ... ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
@@ -44,49 +47,27 @@
                   [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
                 (match grand-parent-expression 
                   [((param-identifier **1) body ...)
-                    (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))])
-                      (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children identifier-index-node-parent)])
-                        (if (null? param-identifier-index-node-list)
-                          (loop (cdr rest))
-                          (param-loop 
-                            (append exclude (private-process (car param-identifier-index-node-list) identifier-index-node-grand-parent exclude document)) 
-                            (cdr param-identifier-index-node-list)))))]
+                    (let loop-parameter ([loop-parameter-nodes (index-node-children (car (index-node-children identifier-index-node-grand-parent)))]
+                        [result '()])
+                      (if (null? loop-parameter-nodes)
+                        (let* ([tail-index-node (car (reverse (index-node-children identifier-index-node-grand-parent)))]
+                            [single-expression `(,(index-node-actrual-have-type tail-index-node) ,result)])
+                          (index-node-actural-have-type-set! 
+                            index-node 
+                            (append 
+                              (index-node-actrual-have-type index-node)
+                              `(,single-expression))
+                          (loop (cdr rest))))
+                        (index-node-actrual-have-type-set! index-node result)
+                        (let* ([current-index-node (car loop-parameter-nodes)]
+                            [identifier-reference (index-node-references-export-to-other-node current-index-node)]
+                            [type-expression (collect-reference-should-have-type identifier identifier-index-node-grand-parent)])
+                          (index-node-actrual-have-type-set! current-index-node type-expression)
+                          (identifier-reference-type-expression-set! identifier-reference `(,type-expression))
+                          (loop-parameter (cdr loop-parameter-nodes) (append result `(,type-expression))))))]
                   [else '()]
                 ))))]
         [else '()])
       (except c
         [else '()]))))
-
-(define (private-process index-node lambda-node exclude document )
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (if (symbol? expression)
-      (let ([reference 
-            (make-identifier-reference
-              expression
-              document
-              index-node
-              '()
-              'parameter
-              '())])
-        (index-node-references-export-to-other-node-set! 
-          index-node
-          (append 
-            (index-node-references-export-to-other-node index-node)
-            `(,reference)))
-
-        (index-node-references-import-in-this-node-set! 
-          lambda-node
-          (append 
-            (index-node-references-import-in-this-node lambda-node)
-            `(,reference)))
-
-        (index-node-excluded-references-set! 
-          (index-node-parent index-node)
-          (append 
-            (index-node-excluded-references index-node)
-            exclude
-            `(,reference)))
-        `(,reference))
-      '())))
 )

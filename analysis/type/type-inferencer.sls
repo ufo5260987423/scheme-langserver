@@ -20,45 +20,51 @@
           [expression (annotation-stripped ann)])
         (if (null? (index-node-children index-node))
           (cond
-            [(list? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'list?)))]
-            [(vector? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'vector?)))]
-            [(char? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'char?)))]
-            [(string? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'string?)))]
-            [(boolean? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'boolean?)))]
-            [(fixnum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'fixnum?)))]
-            [(bignum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'bignum?)))]
-            [(integer? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'integer?)))]
-            [(cflonum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'cflonum?)))]
-            [(flonum? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'flonum?)))]
-            [(rational? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'rational?)))]
-            [(real? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'real?)))]
-            [(complex? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'complex?)))]
-            [(number? expression) (index-node-actrual-have-type-set! index-node `(,(construct-type-expression-with-meta 'number?)))]
+            [(list? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'list?))]
+            [(vector? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'vector?))]
+            [(char? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'char?))]
+            [(string? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'string?))]
+            [(boolean? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'boolean?))]
+            [(fixnum? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'fixnum?))]
+            [(bignum? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'bignum?))]
+            [(integer? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'integer?))]
+            [(cflonum? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'cflonum?))]
+            [(flonum? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'flonum?))]
+            [(rational? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'rational?))]
+            [(real? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'real?))]
+            [(complex? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'complex?))]
+            [(number? expression) (index-node-actrual-have-type-set! index-node (construct-type-expression-with-meta 'number?))]
             [(symbol? expression) 
               (index-node-actrual-have-type-set! 
                 current-index-node 
-                (dedupe 
-                  (apply append
-                    (map 
-                      (lambda(identifier-reference)
-                        (map 
-                          (lambda(type-expression)
-                            (cond
-                              [(and 
-                                (equal? 'procedure (identifier-reference-type identifier-reference)) 
-                                (> 1 (length type-expression)))
-                                (construct-type-expression-with-meta 'procedure?)]
+                (append '(or)
+                  (dedupe 
+                    (apply append
+                      (map 
+                        (lambda(identifier-reference)
+                          (map 
+                            (lambda(type-expression)
+                              (cond
+                                [(and 
+                                  (equal? 'procedure (identifier-reference-type identifier-reference)) 
+                                  (= 2 (length type-expression)))
+                                  (construct-type-expression-with-meta 'procedure?)]
                           ;; according identifier-reference's finding strategy, their expression should be setted previously.
-                              [(= 1 (length type-expression)) type-expression]
+                                [(= 1 (length type-expression)) type-expression]
                           ;; other cases like syntax-transformer would raise invalid syntax exception
-                              [else '()]))
-                            (identifier-reference-type-expressions identifier-reference)))
-                      (find-available-references-for document index-node expression)))))])
-          (begin
+                                [else '()]))
+                              (identifier-reference-type-expressions identifier-reference)))
+                        (find-available-references-for document index-node expression))))))]
+          (let ([head (car expression)]
+              [head-node (car (index-node-children index-node))]
+              [param-node (cdr (index-node-children index-node))])
             (map (lambda(i) (match i document)) (index-node-children index-node))
             ;;todo
             '()
-            (if (symbol? (car expression))
-              (argument-checker-attach (cdr (index-node-children index-node)) document (find-available-references-for document index-node (car expression))))
-          ))))))
+            (cond
+              [(symbol? head) 
+                (argument-checker-attach param-node document (find-available-references-for document index-node head))]
+              [(list? head) 
+                (argument-checker-attach param-node document (cdr (index-node-actural-type-expression head-node)) head-node document)]
+              [else '()]))))))))
 )

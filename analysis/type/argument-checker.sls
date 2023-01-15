@@ -25,11 +25,18 @@
                 (argument-checker-attach 
                   argument-index-nodes 
                   document 
-                  (cdr single-expression) 
+                  (cadr single-expression) 
                   root-identifier))))
             (identifier-reference-type-expressions root-identifier)))
         root-identifiers)]
     [(argument-index-nodes document parameter-rules root-identifier)
+      (argument-checker-attach 
+        argument-index-nodes 
+        document 
+        parameter-rules 
+        (identifier-reference-index-node root-identifier) 
+        (identifier-reference-document root-identifier))]
+    [(argument-index-nodes document parameter-rules reference-index-node reference-document)
       (cond
         [(and (null? argument-index-nodes) (null? parameter-rules)) #t]
         [(or (not (null? argument-index-nodes)) (not (null? parameter-rules))) #f]
@@ -45,8 +52,8 @@
                     current-index-node 
                     document 
                     (index-node-actrua1l-have-type current-index-node) 
-                    (identifier-reference-index-node root-identifier) 
-                    (identifier-reference-document root-identifier))
+                    reference-index-node
+                    reference-document)
                   (cond
                     [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
@@ -64,8 +71,8 @@
                     current-index-node 
                     document 
                     (index-node-actrua1l-have-type current-index-node) 
-                    (identifier-reference-index-node root-identifier) 
-                    (identifier-reference-document root-identifier))
+                    reference-index-node
+                    reference-document)
                   (cond
                     [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
@@ -81,8 +88,8 @@
                     current-index-node 
                     document 
                     (index-node-actrua1l-have-type current-index-node) 
-                    (identifier-reference-index-node root-identifier) 
-                    (identifier-reference-document root-identifier))
+                    reference-index-node
+                    reference-document)
                   (cond
                     [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifier)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))

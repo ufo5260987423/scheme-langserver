@@ -1,5 +1,6 @@
 (library (scheme-langserver analysis type util)
   (export 
+    lambda?
     construct-lambda
     type-intersection
     type-satisfy>=intersection
@@ -20,10 +21,13 @@
   (syntax-rules ()
     [(_ body) (eval `(lambda(x) ,body))]))
 
+(define (lambda? (body)
+  (= 2 (length body))))
+
 (define (collect-reference-should-have-type identifier index-node)
   (if (null? (index-node-children index-node))
     (if (equal? identifier (annotation-stripped (index-node-datum/annotations index-node)))
-      `(,(index-node-should-have-type index-node))
+      (index-node-should-have-type index-node)
       '())
     (let ([maybe-result 
           (dedupe 

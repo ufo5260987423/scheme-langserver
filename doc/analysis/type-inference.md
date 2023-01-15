@@ -15,6 +15,9 @@ For scheme, programming would be too frustrating in the absence of both compile 
 Further, the known part is following [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0), that we have about 1808 forms to construct a rule-based type inferencer.
 
 ### Type attachment
-In scheme-langserver, type is usually attached to [`identifier-reference`'s `should-have-type` and `actrual-have-type` properties](../../analysis/identifier/reference.sls), and represented with a list consisted with predictors' `identifier-reference`, some meta type like `something?` and `void?` in [meta-type.sls](../../analysis/type/meta-type.sls), and a logic operator `'or`. According to how identifier is caught in [identifier.md](./identifier.md), different identifiers' type attachments are of different structure: procedures' are attached with one list with 2 parts, a return type and a list of parameter types; variables and pointers are attached with its value's type, including the literal or s-expression's return.
-
-
+In scheme-langserver, type is usually attached to [index-node](../../virtual-file-system/index-node.sls)'s `should-have-type` and `actrual-have-type`, and [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`. Here are some limitations should be obeyed:
+1. Each type expression is consisted as `((return type) ((parameter type)...))` or `((parameter type)...)`.
+2. Type attachment occurs after [identifier catchment](./identifier.md). And leaves of index should be firstly typed, compound structures including lists, vectors, procedure apply and syntax transform should be deduced from leaves.
+3. For index-node's `actual-have-type`, it's a pure type expression. If it encountered multi-times attachment, they should be compounded as an `or` expression.
+4. For index-node's `should-have-type`, it's a list of type expressions. Especially for procedures' arguments, there may be several conflict procedures, and one procedure's different arguments should align type expressions across the whole procedure applying.
+5. For identifier's `type-expressions`, apparently, it's a list of type expressions because of case-lambda and procedure reload.
