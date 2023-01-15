@@ -47,10 +47,10 @@
                               (cond
                                 [(and 
                                   (equal? 'procedure (identifier-reference-type identifier-reference)) 
-                                  (= 2 (length type-expression)))
+                                  (lambda? type-expression))
                                   (construct-type-expression-with-meta 'procedure?)]
                           ;; according identifier-reference's finding strategy, their expression should be setted previously.
-                                [(= 1 (length type-expression)) type-expression]
+                                [(not (lambda? type-expression)) type-expression]
                           ;; other cases like syntax-transformer would raise invalid syntax exception
                                 [else '()]))
                               (identifier-reference-type-expressions identifier-reference)))
