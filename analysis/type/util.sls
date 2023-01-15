@@ -21,8 +21,8 @@
   (syntax-rules ()
     [(_ body) (eval `(lambda(x) ,body))]))
 
-(define (lambda? (body)
-  (= 2 (length body))))
+(define (lambda? body)
+  (= 2 (length body)))
 
 (define (collect-reference-should-have-type identifier index-node)
   (if (null? (index-node-children index-node))
