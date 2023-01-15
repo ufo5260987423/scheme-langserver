@@ -38,6 +38,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
     (scheme-langserver analysis dependency shrinker)
+    (scheme-langserver analysis type type-inferencer)
 
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier rules define-record-type)
@@ -134,7 +135,8 @@
         (document-reference-list-set! 
           document 
           (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-      index-node-list)))
+      index-node-list)
+    (type-inference-for document)))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)

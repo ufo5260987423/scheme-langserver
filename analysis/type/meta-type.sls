@@ -5,7 +5,7 @@
   (import (chezscheme))
 
 (define (void? x)
-  (equal? (void?) x))
+  (equal? (void) x))
 
 (define (something? x) #t)
 

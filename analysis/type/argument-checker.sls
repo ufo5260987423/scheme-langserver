@@ -21,12 +21,12 @@
         (lambda (root-identifier) 
           (map 
             (lambda (single-expression)
-              (if (not (null? (cdr single-expression))
+              (if (not (null? (cdr single-expression)))
                 (argument-checker-attach 
                   argument-index-nodes 
                   document 
                   (cadr single-expression) 
-                  root-identifier))))
+                  root-identifier)))
             (identifier-reference-type-expressions root-identifier)))
         root-identifiers)]
     [(argument-index-nodes document parameter-rules root-identifier)
@@ -42,72 +42,50 @@
         [(or (not (null? argument-index-nodes)) (not (null? parameter-rules))) #f]
         [else
           (let* ([rule-segments (private-segment parameter-rules)]
-              [current-segment (car rule-segment)]
-              [current-index-node (car argument-index-node)]
-              [type-expression (private-type-expression-of segment)])
+              [current-segment (car rule-segments)]
+              [current-index-node (car argument-index-nodes)]
+              [current-rule (car current-segment)]
+              [type-expression (private-type-expression-of current-segment)])
             (cond
               [(private-is-... current-segment)
-                (if (check-argument-satisfy>= 
-                    type-exression 
-                    current-index-node 
-                    document 
-                    (index-node-actrua1l-have-type current-index-node) 
-                    reference-index-node
-                    reference-document)
+                (if (check-argument-satisfy>= type-expression (index-node-actural-have-type current-index-node))
                   (cond
-                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
-                      (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) reference-index-node reference-document)
+                      (index-node-should-have-type-set!  current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                       #t]
-                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
+                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules reference-index-node reference-document)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                       #t]
                     [else #f])
                   (cond
-                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers) #t]
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) reference-index-node reference-document) #t]
                     [else #f]))]
               [(private-is-**1 current-segment)
-                (if (check-argument-satisfy>= 
-                    type-exression 
-                    current-index-node 
-                    document 
-                    (index-node-actrua1l-have-type current-index-node) 
-                    reference-index-node
-                    reference-document)
+                (if (check-argument-satisfy>= type-expression (index-node-actural-have-type current-index-node))
                   (cond
-                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifiers)
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) reference-index-node reference-document)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                       #t]
-                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifiers)
+                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules reference-index-node reference-document)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                       #t]
                     [else #f])
                   #f)]
               [else 
-                (if (check-argument-satisfy>= 
-                    type-exression 
-                    current-index-node 
-                    document 
-                    (index-node-actrua1l-have-type current-index-node) 
-                    reference-index-node
-                    reference-document)
+                (if (check-argument-satisfy>= type-expression (index-node-actural-have-type current-index-node))
                   (cond
-                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) root-identifier)
+                    [(argument-checker-attach (cdr argument-index-nodes) document (cddr parameter-rules) reference-index-node reference-document)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                       #t]
-                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules root-identifier)
+                    [(argument-checker-attach (cdr argument-index-nodes) document parameter-rules reference-index-node reference-document)
                       (index-node-should-have-type-set! current-index-node (dedupe (append (index-node-should-have-type current-index-node) `(,current-rule))))
                       #t]
                     [else #f])
                   #f)]))])]))
 
-(define (check-argument-satisfy>= index-node document parameter-rule root-identifier)
-  (let* ([should-have-type parameter-rule]
-      [actrual-have-type (index-node-actrual-have-type index-node)]
-      [intersection 
-        (type-satisfy>=intersection 
-          should-have-type (identifier-reference-index-node root-identifier) (identifier-reference-document root-identifier) 
-          actrual-have-type index-node document)])
-    (if (null? actrual-have-type)
+(define (check-argument-satisfy>= should-have-type actural-have-type)
+  (let* ([intersection (type-satisfy>=intersection should-have-type actural-have-type)])
+    (if (null? actural-have-type)
       #t
       (not (null? intersection)))))
 
@@ -126,18 +104,26 @@
             (raise "wrong rule")
             (begin
               (if (or 
-                  (equal? (car (car (reverse result)) '...))
-                  (equal? (car (car (reverse result)) '**1)))
+                  (contain? (car (reverse result)) '...)
+                  (contain? (car (reverse result)) '**1))
                 (raise "wrong rule")
-                (loop (cdr loop-body) (append (reverse (cdr (reverse result)) `(,(car (reverse result)) ...)))))))]
+                (loop 
+                  (cdr loop-body) 
+                  (append 
+                    (reverse (cdr (reverse result))) 
+                    `(,@(car (reverse result)) ...))))))]
         [(equal? (car loop-body) '**1) 
           (if (null? result)
             (raise "wrong rule")
             (begin
               (if (or 
-                  (equal? (car (car (reverse result)) '...))
-                  (equal? (car (car (reverse result)) '**1)))
+                  (contain? (car (reverse result)) '...)
+                  (contain? (car (reverse result)) '**1))
                 (raise "wrong rule")
-                (loop (cdr loop-body) (append (reverse (cdr (reverse result)) `(,(car (reverse result)) **1)))))))]
+                (loop 
+                  (cdr loop-body) 
+                  (append 
+                    (reverse (cdr (reverse result))) 
+                    `(,@(car (reverse result)) **1))))))]
         [else (loop (cdr loop-body) (append result `(,(car loop-body))))]))))
 )
