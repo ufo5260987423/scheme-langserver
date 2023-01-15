@@ -57,7 +57,8 @@
                         (append (identifier-reference-type-expressions identifier) 
                            (if type-expression 
                               (list `(,type-expression))
-                              '())))))))
+                              '())))
+                     identifier))))
          identifiers)))
 
 (define (attach-type-identifiers type-expression-rule identifiers input-symbol)

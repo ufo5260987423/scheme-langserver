@@ -89,9 +89,9 @@
               [file-linkage (init-file-linkage root-library-node)]
               [paths (get-init-reference-path file-linkage)]
               [batches (shrink-paths file-linkage paths)])
-        (pretty-print 'aaa)
+        ; (pretty-print 'aaa)
             (init-references root-file-node root-library-node threaded? batches)
-        (pretty-print 'eee)
+        ; (pretty-print 'eee)
             (make-workspace root-file-node root-library-node file-linkage identifier threaded?))])]))
 
 ;; head -[linkage]->files
