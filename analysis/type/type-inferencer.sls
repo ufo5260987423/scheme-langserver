@@ -67,6 +67,8 @@
             (map (lambda(i) (type-inference-for i document)) (index-node-children index-node))
             ;;todo
             (lambda-process document index-node)
+            (define-process document index-node)
+
             (cond
               [(symbol? head) 
                 (argument-checker-attach param-node document (find-available-references-for document index-node head))]
