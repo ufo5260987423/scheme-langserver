@@ -24,7 +24,6 @@
               [identifier-list identifiers]
               [result '()])
             (if (null? loop-parameter-nodes)
-              (index-node-actural-have-type-set! index-node result)
               (let* ([identifier (car identifier-list)]
                   [current-index-node (car loop-parameter-nodes)]
                   [identifier-reference (index-node-references-export-to-other-node current-index-node)]
@@ -34,14 +33,12 @@
                 (loop (cdr loop-parameter-nodes) (cdr identifier-list) (append result `(,type-expression)))))
             (index-node-actural-have-type-set! 
               index-node 
-              (append 
-                `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))))
-                (index-node-actural-have-type index-node))))]
+              `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))) ,result)))]
         [('lambda (? symbol? identifier) _ ... ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
           (index-node-actural-have-type-set! 
             index-node 
-            (append (index-node-actural-have-type (car (reverse (index-node-children index-node)))) '(((something? x) ...)))) ]
+            `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))) '((something? x) ...))) ]
         [('case-lambda (dummy0 ...) dummy1 ... ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])

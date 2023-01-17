@@ -12,6 +12,7 @@
     (scheme-langserver analysis identifier meta)
     
     (scheme-langserver analysis type rules lambda)
+    (scheme-langserver analysis type rules define)
 
     (scheme-langserver analysis type argument-checker)
     (scheme-langserver analysis type util))

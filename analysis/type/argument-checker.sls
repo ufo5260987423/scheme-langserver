@@ -37,6 +37,7 @@
         (identifier-reference-index-node root-identifier) 
         (identifier-reference-document root-identifier))]
     [(argument-index-nodes document parameter-rules reference-index-node reference-document)
+    ; (pretty-print 'a)
       (cond
         [(and (null? argument-index-nodes) (null? parameter-rules)) #t]
         [(or (not (null? argument-index-nodes)) (not (null? parameter-rules))) #f]
