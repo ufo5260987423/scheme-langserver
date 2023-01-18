@@ -25,7 +25,7 @@
               [result '()])
             (if (null? loop-parameter-nodes)
               (let* ([target-node (car (index-node-children (cadr (index-node-children index-node))))]
-                  [target-exported-reference (car (index-node-references-export-to-other-node target-node))]
+                  [target-exported-reference (index-node-references-export-to-other-node target-node)]
                   [end-node (car (reverse (index-node-children index-node)))]
                   [end-type (index-node-actural-have-type end-node)]
                   [should-have-type `(,end-type ,result)])
