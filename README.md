@@ -10,6 +10,9 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 
 Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
+
+>NOTE: 
+This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
 ## Log
 1.0.10: Fix bugs in 1.0.9.
 
