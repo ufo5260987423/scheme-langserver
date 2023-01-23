@@ -14,6 +14,38 @@ For scheme, programming would be too frustrating in the absence of both compile 
 
 Further, the known part is following [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0), that we have about 1808 forms to construct a rule-based type inferencer.
 
+### Hindley–Milner Type System
+#### Variable Access
+$$ \frac{(x:\sigma) \in \Gamma}{\Gamma \vdash (x:\sigma)} $$
+
+#### Application
+$$\frac{\Gamma \vdash (e_1:(\tau_1 \to \tau_2)) \quad\quad \Gamma \vdash (e_2 : \tau_1) }{\Gamma \vdash ((e_1\ e_2) : \tau_2)}$$
+
+#### Abstract
+$$\frac{(\Gamma, \;(x:\tau_1)) \vdash (e:\tau_2)}{\Gamma \vdash ((\lambda\ x\ .\ e) : (\tau_1 \to \tau_2))} $$
+
+#### Variable Declaration
+$$\frac{\Gamma \vdash (e_1:\sigma) \quad\quad (\Gamma,\,(x:\sigma)) \vdash (e_2:\tau)}{\Gamma \vdash ((\mathtt{let}\ (x = e_1)\ \mathtt{in}\ e_2) : \tau)} $$
+
+#### Subtype
+$$\frac{\Gamma \vdash (e: \sigma_1) \quad\quad \sigma_1 \sqsubseteq \sigma_2}{\Gamma \vdash (e : \sigma_2)}$$
+
+#### Type Generalize
+$$\frac{\Gamma \vdash (e: \sigma) \quad\quad \alpha \notin \mathtt{free}(\Gamma)}{\Gamma \vdash (e:(\forall\ \alpha\ .\ \sigma))}$$
+
+#### How to understand?
+According to [this page](https://stackoverflow.com/questions/12532552/what-part-of-hindley-milner-do-you-not-understand/12535304#12535304):
+1. The horizontal bar means that "[above] implies [below]".
+2. If there are multiple expressions in [above], then consider them anded together; all of the [above] must be true in order to guarantee the [below].
+3. $:$ means has type 
+4. $\in$ means is in. (Likewise $\not\in$ means "is not in".)
+5. $\Gamma$ is usually used to refer to an environment or context; in this case it can be thought of as a set of type annotations, pairing an identifier with its type. Therefore $x : \sigma \in \Gamma$ means that the environment $\Gamma$ includes the fact that $x$ has type $\sigma$.
+6. $\vdash$ can be read as proves or determines. $\Gamma \vdash x:\sigma$ means that the environment $\Gamma$ determines that $x$ has type $\sigma$.
+7. $,$ is a way of including specific additional assumptions into an environment $\Gamma$. 
+8. Therefore, $\Gamma, x : \sigma \vdash e : \tau'$ means that environment $\Gamma$, with the additional, overriding assumption that $x$ has type $\tau$, proves that $e$ has type $\tau'$.
+
+### Implementation
+I use [Schelog](https://github.com/ds26gte/schelog), an embedding of logic programming a la Prolog in Scheme, to implement Hindley–Milner Type System.  It contains the full repertoire of Prolog features, including meta-logical and second-order (“set”) predicates, leaving out only those features that could be more easily and more efficiently done with Scheme sub-expressions. 
 ### Type attachment
 In scheme-langserver, type is usually attached to [index-node](../../virtual-file-system/index-node.sls)'s `should-have-type` and `actrual-have-type`, and [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`. Here are some limitations should be obeyed:
 1. Each type expression is consisted as `((return type) ((parameter type)...))` or `((parameter type)...)`.
