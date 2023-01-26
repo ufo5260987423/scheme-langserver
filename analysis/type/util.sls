@@ -98,12 +98,13 @@
 
 (define (private-dry-rule type) (map (lambda(x) (car x)) (private-process-or type)))
 
-(define (private-process-or type)
-  (if (list? type)
-    (if (equal? 'or (car type))
+
+(define (expand-or type-expression)
+  (if (list? type-expression)
+    (if (equal? 'or (car type-expression))
       (apply append 
         (filter (lambda(x) (not (null? x)))
-          (map private-process-or (cdr type))))
-      `(,type))
+          (map private-process-or (cdr type-expression))))
+      `(,type-expression))
     '()))
 )
