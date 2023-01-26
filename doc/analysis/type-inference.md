@@ -73,7 +73,11 @@ Transformation is about how to say [type expressions](#type-representation-in-pr
 Interleaving with identifier catching, these 3 predicates sets would be updated like this:
 1. For variables or expression like $x$, $\lambda\ x\ .\ e$ or others, their type predicates can be formed as `('variable-index-node/special-form 'type-representation)` and insert into an identifier-scoped predicates caching `%at-this-scope`.
 2. For identifier initialization like `(define ... )`, using `%assert` add new predicates.
-3. For record definition, insert its corresponding predicator to `%type-satisfiction-at-this-scope` and calculate satisfaction formed as `(type-representation-a type-representation-b)`.
+3. For record definition, insert its corresponding predicator to `%type-satisfication-at-this-scope` and calculate satisfaction formed as `(type-representation-a type-representation-b)`.
 4. For unknown type expressions, marking them with unknown element and calculate with Schelog.
 
-#### Getting Unknown Type-expression
+#### Getting Unknown Type
+Here are 3 ways to get unknown type:
+1. By record defining with type generalize rule.
+2. By multi-case lambda matching with procedure application rule.
+3. With variable access rule.
