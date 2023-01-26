@@ -2,12 +2,6 @@
   (export construct/extend-predicates)
   (import 
     (chezscheme)
-    (scheme-langserver util sub-list)
-    (scheme-langserver util dedupe)
-    (scheme-langserver util contain)
-
-    (scheme-langserver analysis reference)
-
     (rebottled schelog))
 
 (define construct/extend-predicates
