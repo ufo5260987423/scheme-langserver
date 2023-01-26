@@ -61,10 +61,7 @@ Each type expression is consisted with some type predictors like `number?`, and 
 
 A further detailed constraint for type representation is from the Subtype rule and Type generalize rule.
 
-### Schelog 
-Scheme-langserver use [Schelog](https://github.com/ds26gte/schelog), an embedding of logic programming a la Prolog in Scheme, to implement Hindley-Milner Type System.  It contains the full repertoire of Prolog features, including meta-logical and second-order ("set") predicates, leaving out only those features that could be more easily and more efficiently done with Scheme sub-expressions. 
-
-#### Transformation of Type Representation
+### Transformation of Type Representation
 Transformation is about how to say [type expressions](#type-representation-in-practice) in Schelog's tongue. In [Hindley-Milner Type System](#hindley–milner-type-system), it roughly has 3 kinds of predicates including:
 1. $x:\sigma$ for non-procedures.
 2. $(\lambda\ x\ .\ e) : (\tau_1 \to \tau_2)$ for procedures.
@@ -74,10 +71,4 @@ Interleaving with identifier catching, these 3 predicates sets would be updated 
 1. For variables or expression like $x$, $\lambda\ x\ .\ e$ or others, their type predicates can be formed as `('variable-index-node/special-form 'type-representation)` and insert into an identifier-scoped predicates caching `%at-this-scope`.
 2. For identifier initialization like `(define ... )`, using `%assert` add new predicates.
 3. For record definition, insert its corresponding predicator to `%type-satisfication-at-this-scope` and calculate satisfaction formed as `(type-representation-a type-representation-b)`.
-4. For unknown type expressions, marking them with unknown element and calculate with Schelog.
-
-#### Getting Unknown Type
-Here are 3 ways to get unknown type:
-1. By record defining with type generalize rule.
-2. By multi-case lambda matching with procedure application rule.
-3. With variable access rule.
+4. For unknown type expressions, here are 3 ways to get it: 1st, by record defining with type generalize rule; 2nd, by multi-case lambda matching with procedure application rule; 3rd, with variable access rule. For the last two, my own way is to list available rules and getting unknown type by substitution.
