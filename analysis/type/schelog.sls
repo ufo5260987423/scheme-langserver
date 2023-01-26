@@ -1,5 +1,9 @@
 (library (scheme-langserver analysis type schelog.sls)
-  (export construct/extend-predicates)
+  (export 
+    construct/extend-predicates
+    collect-type-satisfication-and-build-numeric-tower
+    construct-variable-type-predicates
+    construct-type-satisfication-predicates)
   (import 
     (chezscheme)
     (rebottled schelog)
