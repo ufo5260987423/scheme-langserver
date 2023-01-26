@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type schelog.sls)
+(library (scheme-langserver analysis type schelog)
   (export 
     construct/extend-predicates
     collect-type-satisfication-and-build-numeric-tower
@@ -14,11 +14,16 @@
 (define construct/extend-predicates
   (case-lambda 
     [() (%rel ())]
-    [(set head . rst)
+    [(set head rest)
       (map 
-        (lambda (tail)
-          (%assert set [(head tail)]))
-      rst)]))
+        (lambda (target)
+          ;dedupe
+          (if (%which ()
+              (set head target))
+            '()
+            (%assert set `[(,head ,tail)])))
+        rest)
+      set]))
 
 (define (collect-type-satisfication-and-build-numeric-tower identifier-reference-list)
   (let* ([all-types
@@ -50,7 +55,7 @@
       [complex?s (filter (lambda (t) (equal? 'complex? (identifier-reference-identifier header))) targets)]
       [number?s (filter (lambda (t) (equal? 'number? (identifier-reference-identifier header))) targets)]
       
-      [set0 (private-for-numeric-tower set number?s complex?x)]
+      [set0 (private-for-numeric-tower set number?s complex?s)]
       [set1 (private-for-numeric-tower set0 (append number?s complex?s) real?x)]
       [set2 (private-for-numeric-tower set1 (append number?s complex?s real?x) rational?s)]
       [set3 (private-for-numeric-tower set2 (append number?s complex?s real?x rational?s) flonum?s)]

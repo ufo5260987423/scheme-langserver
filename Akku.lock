@@ -56,12 +56,6 @@
     (content
       (sha256
         "dffb043bfdbe3bcd42ad0475a61338eec4fd1b1e68bcce17c30d6e6605f2d632")))
-  ((name (rebottled schelog))
-    (location
-      (url "http://snow-fort.org/s/peterlane.info/peter/rebottled/schelog/20150602/rebottled-schelog-20150602.tgz"))
-    (content
-      (sha256
-        "7da22ea8b90c28a8c1812cf6fa43b0f30bfdf8629d5b8a7863b766f297eca7c5")))
   ((name "ufo-threaded-function")
     (location
       (url "https://archive.akkuscm.org/archive/pkg/u/ufo-threaded-function_1.0.2_repack.tar.xz"))
