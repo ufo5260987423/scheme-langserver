@@ -43,8 +43,21 @@
 
 (define construct-type-satisfiction-predicates
   (case-lambda 
-    [(type-expressions) 
-      (construct-type-satisfiction-predicates (construct/extend-predicates type-expressions))]
-    [(set type-expressions)
-    ]))
+    [(type) 
+      (construct-type-satisfiction-predicates 
+        (construct/extend-predicates 
+          (construct/extend-predicates) 
+          'something?
+          '())
+        'something?
+        type)]
+    [(set satifiction-head typequery returns an answer that is a list of bindings, one for each logic variable mentioned in its second subform. Thus,
+
+(%which (what)
+)
+      (let loop ([current (%which (what) (set what satification-head))]
+          [result set])
+        (if current
+          (loop (%more) (construct/extend-predicates set (cadar current) type))
+          set))]))
 )
