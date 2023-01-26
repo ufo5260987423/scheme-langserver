@@ -14,7 +14,7 @@
 (atan (number? x) ((real? x) (real? x)))
 (call-with-bytevector-output-port (void? x) ((procedure? x)))
 (call-with-bytevector-output-port (void? x) ((procedure? x) (transcoder? x)))
-(call-with-current-continuation (void? x) ((procedure?x)))
+(call-with-current-continuation (something? x) ((procedure? x)))
 (call-with-input-file (void? x) ((string? x) (procedure? x)))
 (call/1cc (something? x) ((procedure? x)))
 (call/cc (something? x) ((procedure? x)))
