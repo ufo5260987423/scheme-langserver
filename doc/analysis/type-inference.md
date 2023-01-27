@@ -36,6 +36,9 @@ $$\frac{\Gamma \vdash (e_1:\sigma) \quad\quad (\Gamma,\,(x:\sigma)) \vdash (e_2:
 This rule is usually used for checking types' satisfying of $\sigma_1$ and $\sigma_2$.
 $$\frac{\Gamma \vdash (e: \sigma_1) \quad\quad \sigma_1 \sqsubseteq \sigma_2}{\Gamma \vdash (e : \sigma_2)}$$
 
+>NOTE: for tail recursion like $(lambda (x)(if ... e_1:\tau_1 , recursion :\tau_2): \tau_3$, we have $(or \ \tau_1 \ \tau_2) \sqsubseteq \tau_3 $ and 
+$\tau_2 \sqsubseteq (or \ \tau_1 \ \tau_2) $, so that $\tau_3=\tau_2=\tau_1$.(Maybe I'm wrong, but it's just convenient.)
+
 6. Type Generalize
 This rule is usually used for type's gernalization, is especially for record type inherient.
 $$\frac{\Gamma \vdash (e: \sigma) \quad\quad \alpha \notin \mathtt{free}(\Gamma)}{\Gamma \vdash (e:(\forall\ \alpha\ .\ \sigma))}$$
