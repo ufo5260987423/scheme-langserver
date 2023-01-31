@@ -19,21 +19,6 @@
     
     (scheme-langserver minikanren))
 
-(define (lookupo gamma x t)
-  (fresh ()
-    (symbolo x)
-    (conde
-      ((fresh (e gamma^ _)
-         (== `((,x poly ,e ,gamma^) . ,_) gamma)
-         (!-o gamma^ e t)))
-      ((fresh (_)
-         (== `((,x : ,t) . ,_) gamma)))                         
-      ((fresh (y _ gamma^)
-         (== `((,y . ,_) . ,gamma^) gamma)
-         (=/= x y)
-         (symbolo y)
-         (lookupo gamma^ x t))))))
-
 (define type-inference-for 
   (case-lambda
     ([document] (map (lambda(index-node) (type-inference-for index-node document)) (document-index-node-list document)))
