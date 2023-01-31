@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis type type-linkage)
   (export 
-    collect-type-satisfication-and-build-numeric-tower)
+    collect-type-satisfication-and-build-numeric-tower
+    assert-recursive)
   (import 
     (chezscheme)
     (rebottled schelog)
