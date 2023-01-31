@@ -1,4 +1,9 @@
 (library (scheme-langserver minikanren)
+    (export 
+      numbero
+      symbolo 
+      fresh
+      conde)
     (import (chezscheme))
 
 ;;; 28 November 02014 WEB
