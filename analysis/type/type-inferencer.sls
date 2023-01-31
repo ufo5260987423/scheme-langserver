@@ -27,6 +27,7 @@
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
         (if (null? (index-node-children index-node))
+        ; Variable Access Rule
           (cond
             [(list? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'list?))]
             [(vector? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'vector?))]
