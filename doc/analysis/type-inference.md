@@ -36,14 +36,12 @@ $$\frac{\Gamma \vdash (e_1:\sigma) \quad\quad (\Gamma,\,(x:\sigma)) \vdash (e_2:
 This rule is usually used for checking types' satisfying of $\sigma_1$ and $\sigma_2$.
 $$\frac{\Gamma \vdash (e: \sigma_1) \quad\quad \sigma_1 \sqsubseteq \sigma_2}{\Gamma \vdash (e : \sigma_2)}$$
 
->NOTE: for tail recursion like $(lambda (x)(if ... e_1:\tau_1 , recursion :\tau_2): \tau_3$, we have $(or \ \tau_1 \ \tau_2) \sqsubseteq \tau_3 $ and 
-$\tau_2 \sqsubseteq (or \ \tau_1 \ \tau_2) $, so that $\tau_3=\tau_2=\tau_1$.(Maybe I'm wrong, but it's just convenient.)
-
 6. Type Generalize
 This rule is usually used for type's gernalization, is especially for record type inherient.
 $$\frac{\Gamma \vdash (e: \sigma) \quad\quad \alpha \notin \mathtt{free}(\Gamma)}{\Gamma \vdash (e:(\forall\ \alpha\ .\ \sigma))}$$
 
-### How to Understand?
+
+#### How to Understand?
 According to [this page](https://stackoverflow.com/questions/12532552/what-part-of-hindley-milner-do-you-not-understand/12535304#12535304):
 1. The horizontal bar means that "[above] implies [below]".
 2. If there are multiple expressions in [above], then consider them anded together; all of the [above] must be true in order to guarantee the [below].
@@ -54,7 +52,9 @@ According to [this page](https://stackoverflow.com/questions/12532552/what-part-
 7. $,$ is a way of including specific additional assumptions into an environment $\Gamma$. 
 8. Therefore, $\Gamma, x : \sigma \vdash e : \tau'$ means that environment $\Gamma$, with the additional, overriding assumption that $x$ has type $\tau$, proves that $e$ has type $\tau'$.
 
-### Type Representation in Practice
+#### Implementation
+Scheme-langserver use [this repository](https://github.com/webyrd/hindley-milner-type-inferencer) and apply [this repository](https://github.com/michaelballantyne/faster-minikanren) to rule-system's minikanren implementation. 
+#### Type Representation in Practice
 Each type expression is consisted with some type predictors like `number?`, and some flow control operator like `or`. Based on their different library scopes, all application identifiers are [identifier-reference](../../analysis/identifier/reference.sls). And they're formed as `((return type) ((parameter type)...))` for [Application Rule](#hindleymilner-type-system) or `((parameter type)...)` for [Variable Access Rule](#hindleymilner-type-system). Here are some other tips:
 1. In scheme-langserver, type is usually attached to [index-node](../../virtual-file-system/index-node.sls)'s `should-have-type` and `actrual-have-type`, and [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`.  
 2. Type attachment occurs after [identifier catchment](./identifier.md). And leaves of index should be firstly typed, compound structures including lists, vectors, procedure apply and syntax transform should be deduced from leaves. 
@@ -64,7 +64,7 @@ Each type expression is consisted with some type predictors like `number?`, and 
 
 A further detailed constraint for type representation is from the Subtype rule and Type generalize rule.
 
-### Transformation of Type Representation
+#### Transformation of Type Representation
 Transformation is about how to say [type expressions](#type-representation-in-practice) in Schelog's tongue. In [Hindley-Milner Type System](#hindley–milner-type-system), it roughly has 3 kinds of predicates including:
 1. $x:\sigma$ for non-procedures.
 2. $(\lambda\ x\ .\ e) : (\tau_1 \to \tau_2)$ for procedures.
