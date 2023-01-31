@@ -22,7 +22,8 @@
 (define type-inference-for 
   (case-lambda
     ([document] (map (lambda(index-node) (type-inference-for index-node document)) (document-index-node-list document)))
-    ([index-node document]
+    ([document index-node] (type-inference-for document index-node '()))
+    ([document index-node index-node-path])
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
         (if (null? (index-node-children index-node))
@@ -66,7 +67,7 @@
           (let ([head (car expression)]
               [head-node (car (index-node-children index-node))]
               [param-node (cdr (index-node-children index-node))])
-            (map (lambda(i) (type-inference-for i document)) (index-node-children index-node))
+            (map (lambda(i) (type-inference-for i document (append index-node-path `(,index-node)))) (index-node-children index-node))
             ;;todo
             (lambda-process document index-node)
             (define-process document index-node)
@@ -76,5 +77,6 @@
                 (argument-checker-attach param-node document (find-available-references-for document index-node head))]
               [(and (list? head) (lambda? (index-node-actural-have-type head-node)))
                 (argument-checker-attach param-node document (cdr (index-node-actural-have-type head-node)) head-node document)]
-              [else '()])))))))
+              [else '()]))))
+              ))
 )
