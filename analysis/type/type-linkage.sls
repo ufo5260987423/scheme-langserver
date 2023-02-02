@@ -4,7 +4,6 @@
     assert-recursive)
   (import 
     (chezscheme)
-    (rebottled schelog)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type util)
 

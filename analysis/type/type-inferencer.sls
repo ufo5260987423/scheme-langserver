@@ -18,9 +18,10 @@
     (scheme-langserver analysis type argument-checker)
     (scheme-langserver analysis type util)
     
-    (scheme-langserver minikanren))
+    ; (scheme-langserver minikanren)
+    )
 
-;; it's actrually the walk procedure in minikanren
+;; it's acturally the walk procedure in minikanren
 ;; We regard the indexes and references as a graph of existed variable and values. Of course, 
 ;; index-nodes denoted themselves, and corresponding actural-have-type/type-expressions denoted values and type notions.
 (define type-inference-for 
@@ -60,10 +61,10 @@
                       (apply append
                         (map identifier-reference-type-expressions (find-available-references-for document index-node expression))))))]
               [else '()])
-            actrual-have-type)
-          (let ([head (car expression)]
+            actural-have-type)
+          (let* ([head (car expression)]
               [head-node (car children)]
-              [head-node-actrual-have-type (index-node-actrual-have-type head-node)]
+              [head-node-actural-have-type (index-node-actural-have-type head-node)]
               [param-nodes (cdr children)])
             (map 
               (lambda(i) (type-inference-for document i))
@@ -75,10 +76,11 @@
             (define-process document index-node)
 
           ;; Application Rule
-            (cond
-              [(symbol? head) 
-                (argument-checker-attach param-node document (find-available-references-for document index-node head))]
-              [(and (list? head) (lambda? (index-node-actural-have-type head-node)))
-                (argument-checker-attach param-node document (cdr (index-node-actural-have-type head-node)) head-node document)]
-              [else '()])))))))
+            ; (cond
+            ;   [(symbol? head) 
+            ;     (argument-checker-attach param-node document (find-available-references-for document index-node head))]
+            ;   [(and (list? head) (lambda? (index-node-actural-have-type head-node)))
+            ;     (argument-checker-attach param-node document (cdr (index-node-actural-have-type head-node)) head-node document)]
+            ;   [else '()])
+              ))))))
 )

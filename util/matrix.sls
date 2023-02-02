@@ -4,6 +4,7 @@
         matrix-take
         matrix-set!
         matrix-to
+        matrix-from
         find-cycle
         encode 
         decode)

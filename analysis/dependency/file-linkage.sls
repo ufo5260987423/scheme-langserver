@@ -155,7 +155,7 @@
             (lambda (current-from)
               (filter 
                 (lambda (id) (not (contain? result id)))
-                (linkage-matrix-from matrix current-from)))
+                (matrix-from matrix current-from)))
             iterator))])
       (if (null? children)
         result
