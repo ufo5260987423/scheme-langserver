@@ -136,7 +136,9 @@
           document 
           (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
       index-node-list)
-    (type-inference-for document)))
+      ;;todo
+    ; (type-inference-for document)
+    ))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 (define (refresh-workspace-for workspace-instance target-file-node text path-mode)

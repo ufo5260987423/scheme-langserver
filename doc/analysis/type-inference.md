@@ -73,3 +73,5 @@ Interleaving with identifier catching, these 3 predicates sets would be updated 
 2. For identifier initialization like `(define ... )`, using `%assert` add new predicates.
 3. For record definition, insert its corresponding predicator to `%type-satisfication-at-this-scope` and calculate satisfaction formed as `(type-representation-a type-representation-b)`.
 4. For unknown type expressions, here are 3 ways to get it: 1st, by record defining with type generalize rule; 2nd, by multi-case lambda matching with procedure application rule; 3rd, with variable access rule. For the last two, my own way is to list available rules and getting unknown type by substitution.
+
+### KEY TECHNIQUE: Triangular Substitution
