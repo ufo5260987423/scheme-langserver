@@ -48,9 +48,10 @@
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
                   parent-index-node
-                  (append 
-                    (index-node-references-import-in-this-node parent-index-node)
-                    references)))))]
+                  (sort-identifier-references
+                    (append 
+                      (index-node-references-import-in-this-node parent-index-node)
+                      references))))))]
         [('load (? string? path)) 
           (guard-for document index-node 'load '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([target-file-node 
@@ -76,9 +77,10 @@
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
                   parent-index-node
-                  (append 
-                    (index-node-references-import-in-this-node parent-index-node)
-                    references)))))]
+                  (sort-identifier-references
+                    (append 
+                      (index-node-references-import-in-this-node parent-index-node)
+                      references))))))]
         [('load-library (? string? path)) 
           (guard-for document index-node 'load-library '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([target-file-node 
@@ -104,9 +106,10 @@
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
                   parent-index-node
-                  (append 
-                    (index-node-references-import-in-this-node parent-index-node)
-                    references)))))]
+                  (sort-identifier-references
+                    (append 
+                      (index-node-references-import-in-this-node parent-index-node)
+                      references))))))]
         [else '()])
       (except c
         [else '()]))))

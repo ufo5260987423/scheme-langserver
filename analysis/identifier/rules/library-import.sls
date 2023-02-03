@@ -68,15 +68,17 @@
 
               (index-node-references-import-in-this-node-set! 
                 current-index-node
-                (append 
-                  (index-node-references-import-in-this-node current-index-node)
-                  current-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node current-index-node)
+                    current-references)))
               
               (index-node-references-import-in-this-node-set! 
                 grand-parent-index-node 
-                (append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
-                  current-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node grand-parent-index-node)
+                    current-references)))
 
               (loop 
                 (cdr importion-index-node) 
@@ -88,12 +90,13 @@
       [('except (library-identifier **1) identifier **1) 
         (index-node-references-import-in-this-node-set! 
           grand-parent-index-node 
-          (append 
-            (index-node-references-import-in-this-node grand-parent-index-node)
-            (filter
-              (lambda (reference) 
-                (if (find (lambda(id) (not (equal? id (identifier-reference-identifier reference)))) identifier) #t #f))
-              (import-references root-library-node library-identifier))))
+          (sort-identifier-references
+            (append 
+              (index-node-references-import-in-this-node grand-parent-index-node)
+              (filter
+                (lambda (reference) 
+                  (if (find (lambda(id) (not (equal? id (identifier-reference-identifier reference)))) identifier) #t #f))
+                (import-references root-library-node library-identifier)))))
 
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
@@ -113,9 +116,10 @@
 
               (index-node-references-import-in-this-node-set! 
                 current-index-node
-                (append 
-                  (index-node-references-import-in-this-node current-index-node)
-                  current-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node current-index-node)
+                    current-references)))
               (loop 
                 (cdr importion-index-node) 
                 (cdr identifiers) 
@@ -129,7 +133,7 @@
               (map 
                 (lambda (reference) 
                   (make-identifier-reference
-                    (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference)))
+                    (string->symbol (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference))))
                     (identifier-reference-document reference)
                     (identifier-reference-index-node reference)
                     (identifier-reference-library-identifier reference)
@@ -139,9 +143,10 @@
           ;;todo: add something to export-to-other-node for current-index-node?
           (index-node-references-import-in-this-node-set! 
             grand-parent-index-node 
-            (append 
-              (index-node-references-import-in-this-node grand-parent-index-node)
-              prefixed-references)))]
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node grand-parent-index-node)
+                prefixed-references))))]
       [('rename (library-identifier **1) (external-name internal-name) **1 ) 
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
@@ -176,15 +181,17 @@
 
               (index-node-references-import-in-this-node-set! 
                 current-internal-node
-                (append 
-                  (index-node-references-import-in-this-node current-internal-node)
-                  current-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node current-internal-node)
+                    current-references)))
 
               (index-node-references-import-in-this-node-set! 
                 grand-parent-index-node 
-                (append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
-                  renamed-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node grand-parent-index-node)
+                    renamed-references)))
 
               (index-node-references-export-to-other-node-set! 
                 current-external-node
@@ -233,21 +240,24 @@
 
               (index-node-references-import-in-this-node-set! 
                 current-internal-node
-                (append 
-                  (index-node-references-import-in-this-node current-internal-node)
-                  current-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node current-internal-node)
+                    current-references)))
 
               (index-node-references-import-in-this-node-set! 
                 grand-parent-index-node 
-                (append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
-                  current-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node grand-parent-index-node)
+                    current-references)))
 
               (index-node-references-import-in-this-node-set! 
                 grand-parent-index-node 
-                (append 
-                  (index-node-references-import-in-this-node grand-parent-index-node)
-                  renamed-references))
+                (sort-identifier-references
+                  (append 
+                    (index-node-references-import-in-this-node grand-parent-index-node)
+                    renamed-references)))
 
               (index-node-references-export-to-other-node-set! 
                 current-external-node
@@ -265,9 +275,10 @@
       [(library-identifier **1) 
         (index-node-references-import-in-this-node-set! 
           grand-parent-index-node 
-          (append 
-            (index-node-references-import-in-this-node grand-parent-index-node)
-            (filter identifier-reference? (import-references root-library-node library-identifier))))]
+          (sort-identifier-references
+            (append 
+              (index-node-references-import-in-this-node grand-parent-index-node)
+              (filter identifier-reference? (import-references root-library-node library-identifier)))))]
       [else '()])))
 
 (define (import-references root-library-node library-identifier)

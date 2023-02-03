@@ -10,7 +10,7 @@
                     [length-b (string-length string-b)])
                 (if (or (>= index-a length-a)
                         (>= index-b length-b))
-                    (< length-a length-b)
+                    (<= length-a length-b)
                     (let ([char-a (string-ref string-a index-a)]
                             [char-b (string-ref string-b index-b)])
                         (if (char=? char-a char-b)

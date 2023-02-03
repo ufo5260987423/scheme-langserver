@@ -11,11 +11,16 @@
     identifier-reference-type-expressions
     identifier-reference-type
     identifier-reference-type-expressions-set!
-    identifier-reference-index-node)
+    identifier-reference-index-node
+    
+    sort-identifier-references)
   (import 
     (chezscheme)
     (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system index-node))
+    (scheme-langserver virtual-file-system index-node)
+
+    (scheme-langserver util binary-search)
+    (scheme-langserver util natural-order-compare))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
   (fields
@@ -27,6 +32,14 @@
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
+
+(define (sort-identifier-references identifier-references)
+  (sort 
+    (lambda (target1 target2) 
+      (natural-order-compare 
+        (symbol->string (identifier-reference-identifier target1))
+        (symbol->string (identifier-reference-identifier target2))))
+    identifier-references))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])
@@ -57,10 +70,13 @@
     [(document current-index-node identifier exclude)
       (let* ([current-exclude (append exclude (index-node-excluded-references current-index-node))]
           [tmp-result0
-            (filter
-              (lambda (reference)
-                (equal? identifier (identifier-reference-identifier reference)))
-              (index-node-references-import-in-this-node current-index-node))]
+            (binary-search
+              (list->vector (index-node-references-import-in-this-node current-index-node))
+              (lambda (reference0 reference1)
+                (natural-order-compare 
+                  (symbol->string (identifier-reference-identifier reference0))
+                  (symbol->string (identifier-reference-identifier reference1))))
+              (make-identifier-reference identifier '() '() '() '() '()))]
           [tmp-result 
             (filter
               (lambda (reference)

@@ -107,9 +107,10 @@
                     reference-list))
                 (index-node-references-import-in-this-node-set! 
                   identifier-parent-index-node
-                  (append 
-                    (index-node-references-import-in-this-node identifier-parent-index-node)
-                    include))
+                  (sort-identifier-references
+                    (append 
+                      (index-node-references-import-in-this-node identifier-parent-index-node)
+                      include)))
                 (loop (append include reference-list) (cdr rest)))))]
         [('let*-values (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let*-values '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -126,9 +127,10 @@
                     reference-list))
                 (index-node-references-import-in-this-node-set! 
                   identifier-parent-index-node
-                  (append 
-                    (index-node-references-import-in-this-node identifier-parent-index-node)
-                    include))
+                  (sort-identifier-references
+                    (append 
+                      (index-node-references-import-in-this-node identifier-parent-index-node)
+                      include)))
                 (loop (append include reference-list) (cdr rest)))))]
         [('letrec (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
@@ -156,9 +158,10 @@
                     [reference-list (private-process identifier-index-node index-node '() document 'variable)])
                 (index-node-references-import-in-this-node-set! 
                   identifier-parent-index-node
-                  (append 
-                    (index-node-references-import-in-this-node identifier-parent-index-node)
-                    include))
+                  (sort-identifier-references
+                    (append 
+                      (index-node-references-import-in-this-node identifier-parent-index-node)
+                      include)))
                 (loop (append include reference-list) (cdr rest)))))]
         [else '()])
       (except c
@@ -183,9 +186,10 @@
 
     (index-node-references-import-in-this-node-set! 
       let-node
-      (append 
-        (index-node-references-import-in-this-node let-node)
-          `(,reference)))
+      (sort-identifier-references
+        (append 
+          (index-node-references-import-in-this-node let-node)
+            `(,reference))))
 
     (index-node-excluded-references-set! 
       (index-node-parent index-node)

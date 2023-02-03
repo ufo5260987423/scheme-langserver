@@ -37,9 +37,10 @@
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             (index-node-parent index-node) 
-            (append 
-              (index-node-references-import-in-this-node (index-node-parent index-node))
-              `(,reference)))
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node (index-node-parent index-node))
+                `(,reference))))
           (map 
             (lambda (dummy-index-node)
               (let* ([dummy-ann (index-node-datum/annotations dummy-index-node)]
@@ -60,9 +61,10 @@
                         `(,dummy-reference)))
                     (index-node-references-import-in-this-node-set!
                       index-node
-                      (append 
-                        (index-node-references-import-in-this-node index-node)
-                        `(,dummy-reference)))
+                      (sort-identifier-references
+                        (append 
+                          (index-node-references-import-in-this-node index-node)
+                          `(,dummy-reference))))
 
                     (index-node-excluded-references-set! 
                       omg-index-node
@@ -86,9 +88,10 @@
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             (index-node-parent index-node)
-            (append 
-              (index-node-references-import-in-this-node (index-node-parent index-node))
-              `(,reference))))]
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node (index-node-parent index-node))
+                `(,reference)))))]
       [('define-syntax ((? symbol? identifier) dummy0 ... ) dummy1 ... ) 
         (let* ([omg-index-node (cadr (index-node-children index-node))]
             [key-index-nodes (index-node-children omg-index-node)]
@@ -107,9 +110,10 @@
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             (index-node-parent index-node) 
-            (append 
-              (index-node-references-import-in-this-node (index-node-parent index-node))
-              `(,reference)))
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node (index-node-parent index-node))
+                `(,reference))))
           (map 
             (lambda (dummy-index-node)
               (let* ([dummy-ann (index-node-datum/annotations dummy-index-node)]
@@ -130,9 +134,10 @@
                         `(,dummy-reference)))
                     (index-node-references-import-in-this-node-set!
                       index-node
-                      (append 
-                        (index-node-references-import-in-this-node index-node)
-                        `(,dummy-reference)))
+                      (sort-identifier-references
+                        (append 
+                          (index-node-references-import-in-this-node index-node)
+                          `(,dummy-reference))))
 
                     (index-node-excluded-references-set! 
                       omg-index-node
@@ -156,9 +161,10 @@
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             (index-node-parent index-node)
-            (append 
-              (index-node-references-import-in-this-node (index-node-parent index-node))
-              `(,reference))))]
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node (index-node-parent index-node))
+                `(,reference)))))]
       [else '()])))
 
 (define (car* pair)

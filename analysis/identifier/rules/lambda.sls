@@ -71,9 +71,10 @@
 
         (index-node-references-import-in-this-node-set! 
           lambda-node
-          (append 
-            (index-node-references-import-in-this-node lambda-node)
-            `(,reference)))
+          (sort-identifier-references 
+            (append 
+              (index-node-references-import-in-this-node lambda-node)
+              `(,reference))))
 
         (index-node-excluded-references-set! 
           (index-node-parent index-node)

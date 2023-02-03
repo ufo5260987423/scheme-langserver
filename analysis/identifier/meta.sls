@@ -43,9 +43,10 @@
 
 (define (private-process library-instance list-instance)
    (let ([identifiers
-            (map 
-               (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '())) 
-               list-instance)])
+            (sort-identifier-references 
+               (map 
+                  (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '())) 
+                  list-instance))])
       (map 
          (lambda(identifier)
             (let loop ([type-expression-rules (filter (lambda(rule) (equal? (car rule) (identifier-reference-identifier identifier))) rnrs-chez-rules)])

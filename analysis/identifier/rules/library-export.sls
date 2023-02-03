@@ -50,12 +50,13 @@
 
           (index-node-references-import-in-this-node-set! 
             external-index-node
-            (append 
-              (index-node-references-import-in-this-node external-index-node)
-              (find-available-references-for 
-                document
-                internal-index-node 
-                (annotation-stripped (index-node-datum/annotations internal-index-node)))))
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node external-index-node)
+                (find-available-references-for 
+                  document
+                  internal-index-node 
+                  (annotation-stripped (index-node-datum/annotations internal-index-node))))))
 
           (index-node-references-export-to-other-node-set! 
             external-index-node

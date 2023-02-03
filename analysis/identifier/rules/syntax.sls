@@ -86,9 +86,10 @@
 
           (index-node-references-import-in-this-node-set! 
             index-node
-            (append 
-              (index-node-references-import-in-this-node index-node)
-              `(,reference)))
+            (sort-identifier-references
+              (append 
+                (index-node-references-import-in-this-node index-node)
+                `(,reference))))
           reference))
       symbols)))
 
