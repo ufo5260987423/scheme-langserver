@@ -9,20 +9,6 @@
     (srfi :64 testing) 
     (scheme-langserver analysis type logic))
 
-; (define-syntax define-auxiliary-keyword
-;     (syntax-rules ()
-;       [(_ name)
-;        (define-syntax name 
-;          (lambda (x)
-;            (syntax-violation #f "misplaced use of auxiliary keyword" x)))]))
-
-; (define-syntax define-auxiliary-keywords
-;     (syntax-rules ()
-;       [(_ name* ...)
-;        (begin (define-auxiliary-keyword name*) ...)]))
-
-; (define-auxiliary-keywords _)
-
 (define (!-o gamma expr type)
   (conde
     ((symbolo expr)
