@@ -30,7 +30,6 @@
 ;;; abandons E, if it succeeds.  If there is no failure by then, there were no eigen
 ;;; violations.
 
-;it's corresponding empty-a in origin version
 ;c->constraint
 ;return an empty constraint store
 ; Constraint store object.
