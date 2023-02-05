@@ -302,7 +302,7 @@
          ((fresh (q) g0 g ...
             (lambdag@ (final-c)
               (let ((z ((reify q) final-c)))
-                (choice z empty-f))))
+                (cons z empty-f))))
           empty-c))))
     ((_ n (q0 q1 q ...) g0 g ...)
      (run n (x) (fresh (q0 q1 q ...) g0 g ... (== `(,q0 ,q1 ,q ...) x))))))
@@ -363,17 +363,19 @@
 ; first answer produced by c-inf is enough to satisfy the query.
 ;here, f^ means following stream
 ;c means current stream
+;we can find that: a stream is consisted with many closure
+; and all closure is to extend current stream by adding new f to the head
 (define (mplus stream f)
     (case-inf stream 
       (() (f))
       ((f^) (lambda () (mplus (f) f^)))
       ;choice is acturally cons
       ; extend current stream c-inf
-      ((c) (choice c f))
+      ((c) (cons c f))
       ;extend and continue result?
       ;with respect to case-inf, origin contiuation is (car cadr)
       ;in this clause, will be (car (cadr caddr)...)
-      ((c f^) (choice c (lambda () (mplus (f) f^))))))
+      ((c f^) (cons c (lambda () (mplus (f) f^))))))
 
 
 ;3.4
@@ -429,14 +431,6 @@
 ;p52
 ;e.g.:(unit a)->stream just contain a
 (define unit (lambda (c) c))
-
-;3.3
-;p52
-;c-> contraint
-;f-> chunk (function with no arguments)
-;e.g.: (unit c) can be represented as (choice c (lambdaf@()(mzero))) ,but they are not equal.
-;N.B.: in this implementation, the value stream is regarded as a contraint
-(define choice (lambda (c f) (cons c f)))
 
 (define tagged?
   (lambda (S Y y^)
