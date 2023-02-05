@@ -54,14 +54,6 @@
 
 ;3.3
 ;p52
-;it's to extend stream with inc
-(define-syntax inc
-  (syntax-rules ()
-    ((_ e) (lambda () e))))
-
-
-;3.3
-;p52
 ;For minikanren, a goal g is a function that maps a substitution s to an ordered sequence of zero or more values
 ;these values are almost always substitutions
 ;To create this function g, notate lambda as lambdag@.
@@ -252,6 +244,7 @@
     ((_ e (() e0) ((f^) e1) ((c^) e2) ((c f) e3))
      (let ([stream e])
        (cond
+       ;when reach the end of stream
          ((not stream) e0)
          ((procedure? stream)  (let ((f^ stream)) e1))
          ((not (and (pair? stream)
@@ -265,7 +258,7 @@
   (syntax-rules ()
     ((_ (x ...) g0 g ...)
      (lambdag@ (c : B E S D Y N T)
-       (inc
+       (lambda ()
          (let ([x (var 'x)] ...)
            (let ((B (append `(,x ...) B)))
              (bind* (g0 `(,B ,E ,S ,D ,Y ,N ,T)) g ...))))))))
@@ -291,7 +284,7 @@
     (case-inf stream 
       (() (mzero))
       ;apply current stream to g
-      ((f) (inc (bind (f) goal)))
+      ((f) (lambda () (bind (f) goal)))
       ((c) (goal c))
       ((c f) (mplus (goal c) (lambda () (bind (f) goal))))))
 
@@ -343,14 +336,16 @@
 ;p54
 ;conde is a goal constructor that combines successive conde clauses using mplus∗ .
 ;and all of the stream values will be interleaved
+; (conde [g:Goal ...] ...+) -> Goal
 (define-syntax conde
   (syntax-rules ()
     ((_ (g0 g ...) (g1 g^ ...) ...)
      (lambdag@ (c)
-       (inc
+       (lambda ()
          (mplus*
            (bind* (g0 c) g ...)
-           (bind* (g1 c) g^ ...) ...))))))
+           (bind* (g1 c) g^ ...) 
+           ...))))))
 ;3.3
 ;p54
 ;append new things to stream
@@ -371,7 +366,7 @@
 (define (mplus stream f)
     (case-inf stream 
       (() (f))
-      ((f^) (inc (mplus (f) f^)))
+      ((f^) (lambda () (mplus (f) f^)))
       ;choice is acturally cons
       ; extend current stream c-inf
       ((c) (choice c f))
@@ -388,7 +383,7 @@
   (syntax-rules ()
     ((_ (g0 g ...) (g1 g^ ...) ...)
      (lambdag@ (c)
-       (inc
+       (lambda ()
          (ifa ((g0 c) g ...)
               ((g1 c) g^ ...) ...))))))
 ;the same
@@ -399,7 +394,7 @@
      (let loop ((c-inf e))
        (case-inf c-inf
          (() (ifa b ...))
-         ((f) (inc (loop (f))))
+         ((f) (lambda () (loop (f))))
          ((a) (bind* c-inf g ...))
          ((a f) (bind* c-inf g ...)))))))
 
@@ -411,7 +406,7 @@
   (syntax-rules ()
     ((_ (g0 g ...) (g1 g^ ...) ...)
      (lambdag@ (c)
-       (inc
+       (lambda ()
          (ifu ((g0 c) g ...)
               ((g1 c) g^ ...) ...))))))
 ;the same
@@ -422,7 +417,7 @@
      (let loop ((c-inf e))
        (case-inf c-inf
          (() (ifu b ...))
-         ((f) (inc (loop (f))))
+         ((f) (lambda () (loop (f))))
          ((c) (bind* c-inf g ...))
          ((c f) (bind* (unit c) g ...)))))))
 ;3.3
