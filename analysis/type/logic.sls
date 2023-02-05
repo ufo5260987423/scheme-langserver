@@ -212,13 +212,6 @@
 ;3.3
 ;p53
 ;Its goal is to distinguish mzero, unit, choice, inc
-;It's surposed that stream producing never stop.
-;c-inf is the supposed stream, c means it's a constrant
-;e->non-stopped stream
-;e0->stopped end
-;e1->attach current function to f^ and apply it in e1
-;e3->if a-inf is a complete pair as (... function), would apply a and f to e3
-;e2->other cases
 
 ; SearchStream: #f | SuspendedStream | State | (Pair State SuspendedStream)
 ; SuspendedStream: (-> SearchStream)
@@ -243,12 +236,15 @@
     ((_ e (() e0) ((f^) e1) ((c^) e2) ((c f) e3))
      (let ([stream e])
        (cond
-       ;when reach the end of stream
+       ;mzero->#f
          ((not stream) e0)
+       ;unit->(lambda(c) c)
          ((procedure? stream)  (let ((f^ stream)) e1))
+        ;choice->cons
          ((not (and (pair? stream)
                  (procedure? (cdr stream))))
           (let ((c^ stream)) e2))
+          ;inc->closure
          (else (let ([c (car stream)] [f (cdr stream)])
                  e3)))))))
 
