@@ -1,8 +1,11 @@
 (library (scheme-langserver analysis type logic)
   (export 
     conde
+
     symbolo
     numbero
+    absento
+
     ==
     =/=
     fresh
@@ -44,15 +47,8 @@
 ;it's to extend stream with inc
 (define-syntax inc
   (syntax-rules ()
-    ((_ e) (lambdaf@ () e))))
+    ((_ e) (lambda () e))))
 
-;3.3
-;p52
-;to construct stream, notate lambda as lambdaf@
-; a closure to absorbe corresponding context
-(define-syntax lambdaf@
-  (syntax-rules ()
-    ((_ () e) (lambda () e))))
 
 ;3.3
 ;p52
@@ -201,7 +197,7 @@
            (eigen-occurs-check e* (cdr x) s)))
         (else #f)))))
 
-(define empty-f (lambdaf@ () (mzero)))
+(define empty-f (lambda () (mzero)))
 
 ;3.1
 ;p46
@@ -292,7 +288,7 @@
       ;apply current c-inf to g
       ((f) (inc (bind (f) g)))
       ((c) (g c))
-      ((c f) (mplus (g c) (lambdaf@ () (bind (f) g)))))))
+      ((c f) (mplus (g c) (lambda () (bind (f) g)))))))
 
 ;3.3
 ; p56
@@ -303,7 +299,7 @@
   (syntax-rules ()
     ((_ n (q) g0 g ...)
      (take n
-       (lambdaf@ ()
+       (lambda ()
        ;N.B.: here write a procedure-application like (proc empty-c)
          ((fresh (q) g0 g ...
             (lambdag@ (final-c)
@@ -358,7 +354,7 @@
   (syntax-rules ()
     ((_ e) e)
     ((_ e0 e ...) (mplus e0
-                    (lambdaf@ () (mplus* e ...))))))
+                    (lambda () (mplus* e ...))))))
 
 ;3.3
 ;p54
@@ -378,7 +374,7 @@
       ;extend and continue result?
       ;with respect to case-inf, origin contiuation is (car cadr)
       ;in this clause, will be (car (cadr caddr)...)
-      ((c f^) (choice c (lambdaf@ () (mplus (f) f^)))))))
+      ((c f^) (choice c (lambda () (mplus (f) f^)))))))
 
 ;Suppose a dynamic window with width 7
 ;It's corresponding with emtpy-c
