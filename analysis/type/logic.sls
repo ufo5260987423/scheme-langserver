@@ -10,8 +10,7 @@
     =/=
     fresh
     run
-    run*
-    )
+    run*)
   (import (chezscheme))
 ;;; 28 November 02014 WEB
 ;;;
@@ -40,7 +39,18 @@
 ; when that element changes.
 (define empty-c '(() () () () () () ()))
 
-(define eigen-tag (vector 'eigen-tag))
+;Suppose a dynamic window with width 7
+;It's corresponding with emtpy-c
+(define c->B (lambda (c) (car c)))
+(define c->E (lambda (c) (cadr c)))
+;S->list 0f substitutions
+(define c->S (lambda (c) (caddr c)))
+; D->list of disequality constraints
+(define c->D (lambda (c) (cadddr c)))
+(define c->Y (lambda (c) (cadddr (cdr c))))
+(define c->N (lambda (c) (cadddr (cddr c))))
+;T->type constraint
+(define c->T (lambda (c) (cadddr (cdddr c))))
 
 ;3.3
 ;p52
@@ -74,27 +84,26 @@
 
 ;3.1 
 ;p47
-;right hand side
 ;in substitution ((y 5) (x y))
 ; this is called triangular substitution, 
 ; advantage: extension remains a constant-time operation
 ; disadvantage: variable lookup is expensive
 ; chapter 4 explore serveral ways to improve the efficency
-(define rhs
-  (lambda (pr)
-    (cdr pr)))
 
-;3.1 
-;p47
+; Association object.
+; Describes an association mapping the lhs to the rhs. Returned by
+; unification to describe the associations that were added to the
+; substitution (whose representation is opaque) and used to represent
+; disequality constraints.
 ;left hand side
-;return the logic variable
-(define lhs
-  (lambda (pr)
-    (car pr)))
+(define lhs car)
+;right hand side
+(define rhs cdr)
 
-(define eigen-var
-  (lambda ()
-    (vector eigen-tag)))
+(define eigen-tag (vector 'eigen-tag))
+
+(define (eigen-var) (vector eigen-tag))
+
 
 (define eigen?
   (lambda (x)
@@ -102,16 +111,13 @@
 
 ;p46 3.1
 ; var is for logic variable
-(define var
-  (lambda (dummy)
-    (vector dummy)))
+(define (var dummy) (vector dummy))
 
 ;p46 3.1
-(define var?
-  (lambda (x)
+(define (var? x)
   ;eigen-tag is specific vector
   ; a var is not a eigen-tag
-    (and (vector? x) (not (eq? (vector-ref x 0) eigen-tag)))))
+    (and (vector? x) (not (eq? (vector-ref x 0) eigen-tag))))
 
 ;3.1 
 ;p48
@@ -126,12 +132,11 @@
 ;N.B.: It's holy the wholy same to origin version
 ;return a procedure contain origin S (wrapped with lambda to keep context), this means with respect to S and substitute with new pr.
 ; Term, Substitution -> Term
-(define walk
-  (lambda (u S)
+(define (walk logic-variable substitution-list)
     (cond
-      ((and (var? u) (assq u S)) =>
-       (lambda (pr) (walk (rhs pr) S)))
-      (else u))))
+      ((and (var? logic-variable) (assq logic-variable substitution-list)) =>
+       (lambda (pr) (walk (rhs pr) substitution-list)))
+      (else logic-variable)))
 
 ;8.3
 ;p96
@@ -245,22 +250,23 @@
 (define-syntax case-inf
   (syntax-rules ()
     ((_ e (() e0) ((f^) e1) ((c^) e2) ((c f) e3))
-     (let ((c-inf e))
+     (let ([stream e])
        (cond
-         ((not c-inf) e0)
-         ((procedure? c-inf)  (let ((f^ c-inf)) e1))
-         ((not (and (pair? c-inf)
-                 (procedure? (cdr c-inf))))
-          (let ((c^ c-inf)) e2))
-         (else (let ((c (car c-inf)) (f (cdr c-inf)))
+         ((not stream) e0)
+         ((procedure? stream)  (let ((f^ stream)) e1))
+         ((not (and (pair? stream)
+                 (procedure? (cdr stream))))
+          (let ((c^ stream)) e2))
+         (else (let ([c (car stream)] [f (cdr stream)])
                  e3)))))))
 
+; (fresh (x:id ...) g:Goal ...+) -> Goal
 (define-syntax fresh
   (syntax-rules ()
     ((_ (x ...) g0 g ...)
      (lambdag@ (c : B E S D Y N T)
        (inc
-         (let ((x (var 'x)) ...)
+         (let ([x (var 'x)] ...)
            (let ((B (append `(,x ...) B)))
              (bind* (g0 `(,B ,E ,S ,D ,Y ,N ,T)) g ...))))))))
 
@@ -281,14 +287,13 @@
 ;bind combines succsessive goals
 ; SearchStream, Goal -> SearchStream
 ;g->goal
-(define bind
-  (lambda (c-inf g)
-    (case-inf c-inf
+(define (bind stream goal)
+    (case-inf stream 
       (() (mzero))
-      ;apply current c-inf to g
-      ((f) (inc (bind (f) g)))
-      ((c) (g c))
-      ((c f) (mplus (g c) (lambda () (bind (f) g)))))))
+      ;apply current stream to g
+      ((f) (inc (bind (f) goal)))
+      ((c) (goal c))
+      ((c f) (mplus (goal c) (lambda () (bind (f) goal))))))
 
 ;3.3
 ; p56
@@ -363,9 +368,8 @@
 ; first answer produced by c-inf is enough to satisfy the query.
 ;here, f^ means following stream
 ;c means current stream
-(define mplus
-  (lambda (c-inf f)
-    (case-inf c-inf
+(define (mplus stream f)
+    (case-inf stream 
       (() (f))
       ((f^) (inc (mplus (f) f^)))
       ;choice is acturally cons
@@ -374,20 +378,8 @@
       ;extend and continue result?
       ;with respect to case-inf, origin contiuation is (car cadr)
       ;in this clause, will be (car (cadr caddr)...)
-      ((c f^) (choice c (lambda () (mplus (f) f^)))))))
+      ((c f^) (choice c (lambda () (mplus (f) f^))))))
 
-;Suppose a dynamic window with width 7
-;It's corresponding with emtpy-c
-(define c->B (lambda (c) (car c)))
-(define c->E (lambda (c) (cadr c)))
-;S->list 0f substitutions
-(define c->S (lambda (c) (caddr c)))
-; D->list of disequality constraints
-(define c->D (lambda (c) (cadddr c)))
-(define c->Y (lambda (c) (cadddr (cdr c))))
-(define c->N (lambda (c) (cadddr (cddr c))))
-;T->type constraint
-(define c->T (lambda (c) (cadddr (cdddr c))))
 
 ;3.4
 ; p58
@@ -871,8 +863,7 @@
 ;8.2
 ;p113
 ;origin version is 3.3 p53
-(define ==
-  (lambda (u v)
+(define (== u v)
     (lambdag@ (c : B E S D Y N T)
       (cond
         ((unify u v S) =>
@@ -880,7 +871,7 @@
            (cond
              ((==fail-check B E S0 D Y N T) (mzero))
              (else (unit `(,B ,E ,S0 ,D ,Y ,N ,T))))))
-        (else (mzero))))))
+        (else (mzero)))))
 
 (define succeed (== #f #f))
 
