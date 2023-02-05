@@ -40,15 +40,16 @@
 
 ;Suppose a dynamic window with width 7
 ;It's corresponding with emtpy-c
+;B-> list of variables; its appending only just occures in fresh
 (define c->B (lambda (c) (car c)))
 (define c->E (lambda (c) (cadr c)))
-;S->list 0f substitutions
+;S->list 0f substitutions; it only changed in reify-S
 (define c->S (lambda (c) (caddr c)))
-; D->list of disequality constraints
+; D->list of disequality constraints; it only changed in =/=, drop-from-D-b/c-T and so on;
 (define c->D (lambda (c) (cadddr c)))
 (define c->Y (lambda (c) (cadddr (cdr c))))
 (define c->N (lambda (c) (cadddr (cddr c))))
-;T->type constraint
+;T->type constraint; only change in drop-N-b/c-dup-var and so one
 (define c->T (lambda (c) (cadddr (cdddr c))))
 
 ;3.3
@@ -464,7 +465,7 @@
 ;3.2
 ;p51
 ;v-> walk*-ed term
-;s->starts out as empty-s
+;S->starts out as empty-s
 ;return a reifyed name substitution, associating logic variables to distinct symbols of the form _.n
 (define reify-S
   (lambda  (v S)
