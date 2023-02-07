@@ -47,7 +47,7 @@
 (define c->S (lambda (c) (caddr c)))
 ; D->list of disequality constraints; it only changed in =/=, drop-from-D-b/c-T and so on;
 (define c->D (lambda (c) (cadddr c)))
-; N->list of symbols ; it only changed in symbolo;
+; Y->list of symbols ; it only changed in symbolo;
 (define c->Y (lambda (c) (cadddr (cdr c))))
 ; N->list of numbers; it only changed in numbero;
 (define c->N (lambda (c) (cadddr (cddr c))))
