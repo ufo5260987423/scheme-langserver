@@ -18,8 +18,7 @@
     (scheme-langserver analysis type argument-checker)
     (scheme-langserver analysis type util)
     
-    ; (scheme-langserver minikanren)
-    )
+    (scheme-langserver analysis type logic))
 
 ;; it's acturally the walk procedure in minikanren
 ;; We regard the indexes and references as a graph of existed variable and values. Of course, 
@@ -32,7 +31,7 @@
           [expression (annotation-stripped ann)]
           [parent (index-node-parent index-node)]
           [children (index-node-children index-node)]
-          [actural-have-type (index-node-actural-have-type index-node)])
+          [actural-have-type (lambda () (index-node-actural-have-type index-node))])
         (if (null? children)
         ; Variable Access Rule
         ;x:\sigma
@@ -60,8 +59,7 @@
                     (dedupe 
                       (apply append
                         (map identifier-reference-type-expressions (find-available-references-for document index-node expression))))))]
-              [else '()])
-            actural-have-type)
+              [else '()]))
           (let* ([head (car expression)]
               [head-node (car children)]
               [head-node-actural-have-type (index-node-actural-have-type head-node)]
@@ -82,5 +80,6 @@
             ;   [(and (list? head) (lambda? (index-node-actural-have-type head-node)))
             ;     (argument-checker-attach param-node document (cdr (index-node-actural-have-type head-node)) head-node document)]
             ;   [else '()])
-              ))))))
+              )
+          (actural-have-type))))))
 )
