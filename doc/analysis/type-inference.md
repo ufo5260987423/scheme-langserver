@@ -40,8 +40,7 @@ $$\frac{\Gamma \vdash (e: \sigma_1) \quad\quad \sigma_1 \sqsubseteq \sigma_2}{\G
 This rule is usually used for type's gernalization, is especially for record type inherient.
 $$\frac{\Gamma \vdash (e: \sigma) \quad\quad \alpha \notin \mathtt{free}(\Gamma)}{\Gamma \vdash (e:(\forall\ \alpha\ .\ \sigma))}$$
 
-
-### How to Understand?
+### How to Understand
 According to [this page](https://stackoverflow.com/questions/12532552/what-part-of-hindley-milner-do-you-not-understand/12535304#12535304):
 1. The horizontal bar means that "[above] implies [below]".
 2. If there are multiple expressions in [above], then consider them anded together; all of the [above] must be true in order to guarantee the [below].
@@ -52,26 +51,24 @@ According to [this page](https://stackoverflow.com/questions/12532552/what-part-
 7. $,$ is a way of including specific additional assumptions into an environment $\Gamma$. 
 8. Therefore, $\Gamma, x : \sigma \vdash e : \tau'$ means that environment $\Gamma$, with the additional, overriding assumption that $x$ has type $\tau$, proves that $e$ has type $\tau'$.
 
-### Type Representation in Practice
-Each type expression is consisted with some type predictors like `number?`, and some flow control operator like `or`. Based on their different library scopes, all application identifiers are [identifier-reference](../../analysis/identifier/reference.sls). And they're formed as `((return type) ((parameter type)...))` for [Application Rule](#hindleymilner-type-system) or `((parameter type)...)` for [Variable Access Rule](#hindleymilner-type-system). Here are some other tips:
+### Scoped Type Expression
+Each type expression is consisted with [identifier-references](../../analysis/identifier/reference.sls) of type predictors like `number?`, control operator like `or`, and some inner predictors like `something?`. They're formed as `((return type) ((parameter type)...))` for [Application Rule](#hindleymilner-type-system) or `((parameter type)...)` for [Variable Access Rule](#hindleymilner-type-system). 
+
 1. In scheme-langserver, type is usually attached to [index-node](../../virtual-file-system/index-node.sls)'s `should-have-type` and `actrual-have-type`, and [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`.  
 2. Type attachment occurs after [identifier catchment](./identifier.md). And leaves of index should be firstly typed, compound structures including lists, vectors, procedure apply and syntax transform should be deduced from leaves. 
 3. For index-node's `actual-have-type`, it's a pure type expression. If it encountered multi-times attachments, they should be compounded as an `or` expression.
 4. For index-node's `should-have-type`, it's a list of type expressions. Especially for procedures' arguments, there may be several conflict procedures, and one procedure's different arguments should align type expressions across the whole procedure applying.  
 5. For identifier's `type-expressions`, apparently, it's a list of type expressions because of case-lambda and procedure reload.
 
-A further detailed constraint for type representation is from the Subtype rule and Type generalize rule.
+### Implementation
+Intuitively, we can deduce types by tagging r6rs-procedures. However, here a key problem is recursion like 
+```scheme
+(define (sum-0 i) 
+    (if (zero? i)
+        i
+        (+ i (sum-0 (- i 1)))))
+```
 
-### Transformation of Type Representation
-Transformation is about how to say [type expressions](#type-representation-in-practice) in Schelog's tongue. In [Hindley-Milner Type System](#hindley–milner-type-system), it roughly has 3 kinds of predicates including:
-1. $x:\sigma$ for non-procedures.
-2. $(\lambda\ x\ .\ e) : (\tau_1 \to \tau_2)$ for procedures.
-3. $\sigma_1 \sqsubseteq \sigma_2$ for type satisfaction.
+In this case, `sum-0`'s return type is the type of `i` or `(+ i (sum-0 (- i 1)))`, its type depend on itself. Taking [hindley-milner-type-inferencer](https://github.com/webyrd/hindley-milner-type-inferencer) as an example, it developed [miniKanren](http://minikanren.org/) a DSL(Domain specific language) to reify type expression. However, it's seemed procedures have more than one argument must be $\beta$-reduced and causes heavily labors on code transformation. 
 
-Interleaving with identifier catching, these 3 predicates sets would be updated like this:
-1. For variables or expression like $x$, $\lambda\ x\ .\ e$ or others, their type predicates can be formed as `('variable-index-node/special-form 'type-representation)` and insert into an identifier-scoped predicates caching `%at-this-scope`.
-2. For identifier initialization like `(define ... )`, using `%assert` add new predicates.
-3. For record definition, insert its corresponding predicator to `%type-satisfication-at-this-scope` and calculate satisfaction formed as `(type-representation-a type-representation-b)`.
-4. For unknown type expressions, here are 3 ways to get it: 1st, by record defining with type generalize rule; 2nd, by multi-case lambda matching with procedure application rule; 3rd, with variable access rule. For the last two, my own way is to list available rules and getting unknown type by substitution.
-
-### KEY TECHNIQUE: Triangular Substitution
+Our final implementation is roughly rewriting and shrinking [miniKanren](http://minikanren.org/). After [identifier catching](./identifier.md) in a singular [document](../../virtual-file-system/document.sls) code, we transform [index-node](../../virtual-file-system/index-node.sls) tree into triangular substitution list. Then, each [index-node](../../virtual-file-system/index-node.sls)'s `actural-have-type` and correspond [identifier-reference](../../analysis/identifier/reference.sls)'s `type-expressions` can be reified.

@@ -17,9 +17,7 @@
     (scheme-langserver analysis type rules define)
 
     (scheme-langserver analysis type argument-checker)
-    (scheme-langserver analysis type util)
-    
-    (scheme-langserver analysis type logic))
+    (scheme-langserver analysis type util))
 
 ;; it's acturally the walk procedure in minikanren
 ;; We regard the indexes and references as a graph of existed variable and values. Of course, 
