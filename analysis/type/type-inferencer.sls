@@ -12,6 +12,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     
+    (scheme-langserver analysis type rules trivial)
     (scheme-langserver analysis type rules lambda)
     (scheme-langserver analysis type rules define)
 
@@ -23,63 +24,76 @@
 ;; it's acturally the walk procedure in minikanren
 ;; We regard the indexes and references as a graph of existed variable and values. Of course, 
 ;; index-nodes denoted themselves, and corresponding actural-have-type/type-expressions denoted values and type notions.
+;;todo: first, construct type-tree, for procedure, it's like ((return-type-corresponding-index-node) ((first param-index-node)(second param-index-node)))
+;; try to get result type by substitution
 (define type-inference-for 
-  (case-lambda
-    ([document] (map (lambda(index-node) (type-inference-for index-node document)) (document-index-node-list document)))
-    ([document index-node] 
-      (let* ([ann (index-node-datum/annotations index-node)]
-          [expression (annotation-stripped ann)]
-          [parent (index-node-parent index-node)]
-          [children (index-node-children index-node)]
-          [actural-have-type (lambda () (index-node-actural-have-type index-node))])
-        (if (null? children)
-        ; Variable Access Rule
-        ;x:\sigma
-          (if (null? actural-have-type)
-            (cond
-              [(list? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'list?))]
-              [(vector? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'vector?))]
-              [(char? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'char?))]
-              [(string? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'string?))]
-              [(boolean? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'boolean?))]
-              [(fixnum? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'fixnum?))]
-              [(bignum? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'bignum?))]
-              [(integer? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'integer?))]
-              [(cflonum? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'cflonum?))]
-              [(flonum? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'flonum?))]
-              [(rational? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'rational?))]
-              [(real? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'real?))]
-              [(complex? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'complex?))]
-              [(number? expression) (index-node-actural-have-type-set! index-node (construct-type-expression-with-meta 'number?))]
-            ;maybe here's a empty type-expression
-              [(symbol? expression) 
-                (index-node-actural-have-type-set! 
-                  index-node 
-                  (append '(or)
-                    (dedupe 
-                      (apply append
-                        (map identifier-reference-type-expressions (find-available-references-for document index-node expression))))))]
-              [else '()]))
-          (let* ([head (car expression)]
-              [head-node (car children)]
-              [head-node-actural-have-type (index-node-actural-have-type head-node)]
-              [param-nodes (cdr children)])
+  (case-lambda 
+    [(document) 
+      (map 
+        (lambda (index-node) 
+          (let ([substitutions (private-construct-substitution-list index-node document)])
+            (type-inference-for index-node substitutions)
             (map 
-              (lambda(i) (type-inference-for document i))
-              children)
-            ;;todo
-            ; (if-process document index-node)
-            ; (cond-process document index-node)
-            (lambda-process document index-node)
-            (define-process document index-node)
+              (lambda (index-node) 
+                (type-inference-for index-node substitutions))
+              (index-node-children index-node))))
+        (document-index-node-list document))]
+    [(index-node substitutions)
+      (let* ([tree (private-walk index-node substitutions)]
+          [reified (dedupe (private-reify tree))])
+        (index-node-actural-have-type-set! index-node reified))]))
 
-          ;; Application Rule
-            ; (cond
-            ;   [(symbol? head) 
-            ;     (argument-checker-attach param-node document (find-available-references-for document index-node head))]
-            ;   [(and (list? head) (lambda? (index-node-actural-have-type head-node)))
-            ;     (argument-checker-attach param-node document (cdr (index-node-actural-have-type head-node)) head-node document)]
-            ;   [else '()])
-              )
-          (actural-have-type))))))
+(define (private-construct-substitution-list document index-node)
+  (let* ([ann (index-node-datum/annotations index-node)]
+      [children (index-node-children index-node)]
+      [tmp-substitution-list 
+        (let loop ([body 
+              (list trivial-process lambda-process define-process)]
+            [result '()])
+          (if (or (null? body) (not (zero? (length result))))
+            result
+            (loop (cdr body) (append result ((car body) document index-node)))))]
+      [children-substitution-list 
+        (apply append (map (lambda (child) (private-construct-substitution-list document child)) children))])
+    (append tmp-substitution-list children-substitution-list)))
+
+(define (private-reify tree)
+  (cond
+    [(list? tree) (map private-reify tree)]
+    [(index-node? tree) '(something? x)]
+    [else tree]))
+
+(define private-walk 
+  (case-lambda
+    [(index-node substitution-list) (private-walk index-node substitution-list)]
+    [(index-node substitution-list path) 
+      (if (contain? path index-node)
+        '()
+        (let ([targets (map cadr (filter (lambda (target) (equal? index-node (car target))) substitution-list))]
+            [current-path (append path `(,index-node))])
+          (let loop ([dry-body (private-dry-tree targets)]
+              [result targets])
+            (if (null? dry-body)
+              result
+              (loop 
+                (cdr dry-body) 
+                (dedupe 
+                  (apply append
+                    (map 
+                      (lambda (t) (private-substitute (car dry-body) t result))
+                      (private-walk (car dry-body) substitution-list (append current-path `(,(car dry-body))))))))))))]))
+
+(define (private-dry-tree target)
+  (if (list? target)
+    (dedupe (apply append (map private-dry-tree target)))
+    (if (index-node? target)
+      `(,target)
+      '())))
+
+(define (private-substitute origin target tree)
+  (if (equal? tree origin)
+    target
+    (if (list? tree)
+      (map (lambda (sub-tree) (private-substitute origin target sub-tree)) tree)
+      tree)))
 )
