@@ -32,15 +32,15 @@
           (if target-index-node 
             (if (null? (index-node-children target-index-node)) 
               (annotation-stripped (index-node-datum/annotations target-index-node)) 
-              ""))]
-        [available-reference (find-available-references-for document target-index-node prefix)])
+              '()))])
       (list->vector 
         (map identifier-reference->location->alist 
           (filter 
             (lambda (r)
               (not (null? (identifier-reference-document r))))
-            available-reference)
-          )))))
+            (if (null? prefix)
+              (find-available-references-for document target-index-node)
+              (find-available-references-for document target-index-node prefix))))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)

@@ -1,6 +1,6 @@
 (library (scheme-langserver util natural-order-compare)
     (export natural-order-compare)
-    (import (rnrs) )
+    (import (rnrs))
 
 (define natural-order-compare 
     (case-lambda 

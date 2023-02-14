@@ -1,11 +1,9 @@
 (library (scheme-langserver analysis identifier meta)
    (export 
-      find-meta
-      attach-type-identifiers)
+      find-meta)
    (import 
       (rnrs)
-      (scheme-langserver analysis identifier reference)
-      (scheme-langserver analysis type rnrs-meta-rules))
+      (scheme-langserver analysis identifier reference))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
    (cond
@@ -42,47 +40,10 @@
       [else '()]))
 
 (define (private-process library-instance list-instance)
-   (let ([identifiers
-            (sort-identifier-references 
-               (map 
-                  (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '())) 
-                  list-instance))])
+   (sort-identifier-references 
       (map 
-         (lambda(identifier)
-            (let loop ([type-expression-rules (filter (lambda(rule) (equal? (car rule) (identifier-reference-identifier identifier))) rnrs-chez-rules)])
-               (if (null? type-expression-rules)
-                  identifier
-                  (let ([type-expression (attach-type-identifiers (cdr (car type-expression-rules)) identifiers 'x)])
-                     (identifier-reference-type-expressions-set! 
-                        identifier 
-                        (append (identifier-reference-type-expressions identifier) 
-                           (if type-expression 
-                              (list `(,type-expression))
-                              '())))
-                     identifier))))
-         identifiers)))
-
-(define (attach-type-identifiers type-expression-rule identifiers input-symbol)
-   (if (list? type-expression-rule)
-      (map (lambda (type-expression-rule-single) (attach-type-identifiers type-expression-rule-single identifiers input-symbol)) type-expression-rule)
-      (cond
-         [(equal? 'or type-expression-rule) 'or]
-         [(equal? 'void? type-expression-rule) 'void?]
-         [(equal? 'textual-output-port? type-expression-rule) 'textual-output-port?]
-         [(equal? 'textual-input-port? type-expression-rule) 'textual-input-port?]
-         [(equal? 'binary-input-port? type-expression-rule) 'binary-input-port?]
-         [(equal? 'binary-output-port? type-expression-rule) 'binary-output-port?]
-         [(equal? 'something? type-expression-rule) 'something?]
-         [(equal? input-symbol type-expression-rule) input-symbol]
-         [else 
-            (let ([result 
-                     (find 
-                        (lambda(identifier) 
-                           (equal? type-expression-rule (identifier-reference-identifier identifier))) 
-                        identifiers)])
-               (if result 
-                  result
-                  'something?))])))
+         (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '())) 
+         list-instance)))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)
