@@ -12,8 +12,7 @@
 
 (define (trivial-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
+      [expression (annotation-stripped ann)])
     (cond
       [(list? expression) (list `(,index-node ,(construct-type-expression-with-meta 'list?)))]
       [(vector? expression) (list `(,index-node ,(construct-type-expression-with-meta 'vector?)))]

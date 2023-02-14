@@ -13,13 +13,14 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (lambda-process document index-node)
+(define (lambda-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('lambda (identifiers **1) _ ... ) 
+        [('lambda (identifiers **1) _ **1 ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+
           (let loop ([loop-parameter-nodes (cadr (index-node-children index-node))]
               [identifier-list identifiers]
               [result '()])
@@ -34,19 +35,19 @@
             (index-node-actural-have-type-set! 
               index-node 
               `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))) ,result)))]
-        [('lambda (? symbol? identifier) _ ... ) 
+        [('lambda (? symbol? identifier) _ **1 ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
           (index-node-actural-have-type-set! 
             index-node 
             `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))) '((something? x) ...))) ]
-        [('case-lambda (dummy0 ...) dummy1 ... ) 
+        [('case-lambda (dummy0 ...) dummy1 **1 ) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (cdr (index-node-children index-node))])
             (if (not (null? rest))
               (let* ([identifier-index-node-grand-parent (car rest)]
                   [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
                 (match grand-parent-expression 
-                  [((param-identifiers **1) body ...)
+                  [((param-identifiers **1) body **1)
                     (let loop-parameter ([loop-parameter-nodes (index-node-children (car (index-node-children identifier-index-node-grand-parent)))]
                         [identifier-list param-identifiers]
                         [result '()])

@@ -67,7 +67,12 @@
     [(index-node substitution-list path) 
       (if (contain? path index-node)
         '()
-        (let ([targets (map cadr (filter (lambda (target) (equal? index-node (car target))) substitution-list))]
+        (let ([targets 
+              (map 
+                cadr 
+                (filter 
+                  (lambda (target) (equal? index-node (car target))) 
+                  substitution-list))]
             [current-path (append path `(,index-node))])
           (let loop ([dry-body (private-dry-tree targets)]
               [result targets])
@@ -79,7 +84,10 @@
                   (apply append
                     (map 
                       (lambda (t) (private-substitute (car dry-body) t result))
-                      (private-walk (car dry-body) substitution-list (append current-path `(,(car dry-body))))))))))))]))
+                      (private-walk 
+                        (car dry-body) 
+                        substitution-list 
+                        (append current-path `(,(car dry-body))))))))))))]))
 
 (define (private-dry-tree target)
   (if (list? target)
