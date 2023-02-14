@@ -46,7 +46,9 @@
       [children (index-node-children index-node)]
       [tmp-substitution-list 
         (let loop ([body 
-              (list trivial-process lambda-process define-process)]
+              (list trivial-process 
+              ; lambda-process define-process
+              )]
             [result '()])
           (if (or (null? body) (not (zero? (length result))))
             result
