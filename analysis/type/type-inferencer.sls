@@ -29,7 +29,7 @@
     [(document) 
       (map 
         (lambda (index-node) 
-          (let ([substitutions (private-construct-substitution-list index-node document)])
+          (let ([substitutions (private-construct-substitution-list document index-node)])
             (type-inference-for index-node substitutions)
             (map 
               (lambda (index-node) 
@@ -52,7 +52,7 @@
             [result '()])
           (if (or (null? body) (not (zero? (length result))))
             result
-            (loop (cdr body) (append result ((car body) document index-node)))))]
+            (loop (cdr body) (append result ((car body) document index-node result)))))]
       [children-substitution-list 
         (apply append (map (lambda (child) (private-construct-substitution-list document child)) children))])
     (append tmp-substitution-list children-substitution-list)))

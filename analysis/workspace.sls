@@ -137,7 +137,7 @@
           (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
       index-node-list)
       ;;todo
-    ; (type-inference-for document)
+    (type-inference-for document)
     ))
 
 ;; target-file-node<-[linkage]-other-file-nodes
