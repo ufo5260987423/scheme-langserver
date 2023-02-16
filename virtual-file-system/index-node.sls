@@ -24,9 +24,7 @@
     index-node-actural-have-type
 
     init-index-node
-
-    is-first-child
-
+    is-first-child?
     clear-references-for)
   (import (chezscheme))
 
@@ -67,7 +65,7 @@
         '()))
     node))
 
-(define (is-first-child index-node)
+(define (is-first-child? index-node)
   (if (null? (index-node-parent index-node))
     #f
     (equal? index-node (car (index-node-parent index-node)))))

@@ -16,7 +16,9 @@
     text-document-language-id
     text-document-version
 
+    make-text-edit
     alist->text-edit 
+    text-edit->alist-with-newText
     text-edit-range
     text-edit-text
 
