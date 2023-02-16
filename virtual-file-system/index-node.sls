@@ -68,7 +68,7 @@
 (define (is-first-child? index-node)
   (if (null? (index-node-parent index-node))
     #f
-    (equal? index-node (car (index-node-parent index-node)))))
+    (equal? index-node (car (index-node-children (index-node-parent index-node))))))
 
 (define (clear-references-for index-node)
   (index-node-references-export-to-other-node-set! index-node '())
