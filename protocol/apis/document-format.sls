@@ -36,6 +36,7 @@
       [document (file-node-document file-node)]
       [text (document-text document)]
       [result (code-format (document-index-node-list document) text "")])
+    (pretty-print 'format)
     (try
       (vector (text-edit->alist-with-newText (make-text-edit (make-range 0 (string-length text)) result)))
       (except e 
