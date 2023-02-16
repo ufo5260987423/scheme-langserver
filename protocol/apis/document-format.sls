@@ -24,7 +24,6 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_formatting
 (define (document-format workspace params)
-    (pretty-print 'format0)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [path (uri->path (text-document-uri text-document))]
       [maybe (walk-file (workspace-file-node workspace) path)]
@@ -37,7 +36,6 @@
       [document (file-node-document file-node)]
       [text (document-text document)]
       [result (code-format (document-index-node-list document) text "")])
-    (pretty-print 'format1)
     (try
       (vector 
         (text-edit->alist-with-newText 
@@ -86,7 +84,6 @@
 (define (code-format list-of-index-nodes origin-text output-text)
   (let loop ([body list-of-index-nodes] 
       [result output-text])
-    (pretty-print 'format3)
     (if (null? body)
       (let* ([line-start (private-line-start result)]
           [append-start (private-append-start result line-start)])
@@ -94,7 +91,6 @@
       (loop (cdr body) (private-transform (car body) origin-text result)))))
 
 (define (private-transform index-node origin-text output-text)
-    (pretty-print 'format5)
   (let* ([children (index-node-children index-node)]
       [start (index-node-start index-node)]
       [end (- (index-node-end index-node) 1)]
@@ -114,7 +110,6 @@
             [(is-first-child? index-node) ""]
             [(null? (index-node-parent index-node)) ""]
             [else " "]))])
-    (pretty-print 'format6)
     (if (null? children)
       (string-append output-text insert-spaces (substring origin-text start end))
       (let* ([first-child (car children)]
@@ -128,7 +123,6 @@
           [middle-append-start (private-append-start result-with-middle middle-line-start)]
           [end-string (substring origin-text end (+ end 1))]
           [result-with-end (string-append (substring result-with-middle 0 middle-append-start) end-string)])
-    (pretty-print 'format7)
         (string-append result-with-end end-string)))))
 
 (define (private-ancestor->indent-space index-node)
