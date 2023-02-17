@@ -97,6 +97,7 @@
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'getter
+                    '()
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
@@ -105,6 +106,7 @@
                     set-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'setter
+                    '()
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
@@ -133,6 +135,7 @@
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'getter
+                    '()
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
@@ -141,6 +144,7 @@
                     set-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'setter
+                    '()
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
@@ -169,6 +173,7 @@
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'getter
+                    '()
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
@@ -177,6 +182,7 @@
                     set-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'setter
+                    '()
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
@@ -204,6 +210,7 @@
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'getter
+                    '()
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
@@ -223,6 +230,7 @@
                     get-index-node
                     (get-nearest-ancestor-library-identifier index-node)
                     'getter
+                    '()
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
@@ -256,6 +264,7 @@
                 constructor-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'constructor
+                '()
                 '())]
             [predicator-identifier-reference
               (make-identifier-reference 
@@ -264,6 +273,7 @@
                 predicator-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
+                '()
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
@@ -306,6 +316,7 @@
                 constructor-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'constructor
+                '()
                 '())]
             [predicator-identifier-reference
               (make-identifier-reference 
@@ -314,6 +325,7 @@
                 predicator-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
+                '()
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
@@ -356,6 +368,7 @@
                 constructor-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'constructor
+                '()
                 '())]
             [predicator-identifier-reference
               (make-identifier-reference 
@@ -364,6 +377,7 @@
                 predicator-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
+                '()
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
@@ -406,6 +420,7 @@
                 constructor-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'constructor
+                '()
                 '())]
             [predicator-identifier-reference
               (make-identifier-reference 
@@ -414,6 +429,7 @@
                 predicator-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
+                '()
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node

@@ -68,6 +68,7 @@
                   external-index-node
                   library-identifiers
                   'pointer
+                  '()
                   '()))))
 
           (if (not (null? (cdr children-index-nodes)))
@@ -91,6 +92,7 @@
                   index-node
                   library-identifiers
                   'pointer
+                  '()
                   '()))
                 references))))]
       [else '()])))

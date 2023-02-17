@@ -28,6 +28,7 @@
                 (car key-index-nodes) 
                 library-identifiers
                 'procedure
+                '()
                 '())]
             [dummies (cdr key-index-nodes)])
           (index-node-references-export-to-other-node-set! 
@@ -51,6 +52,7 @@
                       dummy-index-node
                       '()
                       'parameter
+                      '()
                       '())])
                 (match dummy-expression
                   [(? symbol? dummy-identifier)
@@ -80,6 +82,7 @@
                 (cadr (index-node-children index-node))
                 library-identifiers
                 'syntax-variable
+                '()
                 '())])
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)
@@ -101,6 +104,7 @@
                 (car key-index-nodes) 
                 library-identifiers
                 'syntax
+                '()
                 '())]
             [dummies (cdr key-index-nodes)])
           (index-node-references-export-to-other-node-set! 
@@ -124,6 +128,7 @@
                       dummy-index-node
                       '()
                       'syntax-parameter
+                      '()
                       '())])
                 (match dummy-expression
                   [(? symbol? dummy-identifier)
@@ -153,6 +158,7 @@
                 (cadr (index-node-children index-node))
                 library-identifiers
                 'syntax-variable
+                '()
                 '())])
           (index-node-references-export-to-other-node-set! 
             (identifier-reference-index-node reference)

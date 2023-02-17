@@ -135,6 +135,7 @@
                     (identifier-reference-index-node reference)
                     (identifier-reference-library-identifier reference)
                     'pointer
+                    reference
                     '())) 
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
@@ -173,6 +174,7 @@
                         (identifier-reference-index-node reference)
                         (identifier-reference-library-identifier reference)
                         'pointer
+                        reference
                         '())) 
                     current-references)])
 
@@ -232,6 +234,7 @@
                         (identifier-reference-index-node reference)
                         (identifier-reference-library-identifier reference)
                         'pointer
+                        reference
                         '())) 
                     current-references)])
 

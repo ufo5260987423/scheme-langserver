@@ -77,6 +77,7 @@
                 template-index-node
                 '()
                 'syntax-parameter
+                '()
                 '())])
           (index-node-references-export-to-other-node-set! 
             template-index-node

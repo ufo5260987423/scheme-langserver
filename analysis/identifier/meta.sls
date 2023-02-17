@@ -42,7 +42,7 @@
 (define (private-process library-instance list-instance)
    (sort-identifier-references 
       (map 
-         (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '())) 
+         (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '() '())) 
          list-instance)))
 
 (define rnrs (private-process '(rnrs) '(

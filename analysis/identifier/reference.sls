@@ -10,6 +10,7 @@
     identifier-reference-library-identifier
     identifier-reference-type-expressions
     identifier-reference-type
+    identifier-reference-parent
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
     
@@ -29,6 +30,7 @@
     (immutable index-node)
     (immutable library-identifier)
     (immutable type)
+    (immutable parent)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
@@ -43,14 +45,28 @@
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])
-    (if (null? candidates)
-      (raise "no such identifier")
-      (let ([candidate (car candidates)])
-        (if (null? library-identifier-rest)
-          candidate
-          (if (find (lambda (r) (equal? r (identifier-reference-library-identifier candidate))) library-identifier-rest)
-            candidate
-            (raise "no such identifier for specific libraries")))))))
+    (if (private-check-library-identifier? candidates library-identifier-rest)
+      #t
+      (let loop ([body 
+            (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
+              (map identifier-reference-parent (find-available-references-for document current-index-node)))])
+        (if (null? body)
+          (raise "no such identifier for specific libraries")
+          (if (private-check-library-identifier? body library-identifier-rest)
+            #t
+            (loop 
+              (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
+                (map identifier-reference-parent body)))))))))
+
+(define (private-check-library-identifier? candidates library-identifier-rest)
+  (if (null? candidates)
+    #f
+    (let ([candidate (car candidates)])
+      (if (null? library-identifier-rest)
+        candidate
+        (if (find (lambda (r) (equal? r (identifier-reference-library-identifier candidate))) library-identifier-rest)
+        candidate
+          #f)))))
 
 (define find-available-references-for
   (case-lambda
@@ -76,7 +92,7 @@
                 (natural-order-compare 
                   (symbol->string (identifier-reference-identifier reference0))
                   (symbol->string (identifier-reference-identifier reference1))))
-              (make-identifier-reference identifier '() '() '() '() '()))]
+              (make-identifier-reference identifier '() '() '() '() '() '()))]
           [tmp-result 
             (filter
               (lambda (reference)
