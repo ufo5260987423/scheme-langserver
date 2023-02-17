@@ -22,7 +22,6 @@
     (scheme-langserver protocol apis definition)
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
-    (scheme-langserver protocol apis document-format)
 
     (scheme-langserver util association)
     (scheme-langserver util path))
@@ -66,14 +65,6 @@
         ["textDocument/didChange" 
           (try
             (did-change workspace params)
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-
-        ["textDocument/formatting" 
-          (try
-            (send-message server-instance (success-response id (document-format workspace params)))
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
@@ -183,7 +174,7 @@
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
               ; 'documentFormattingProvider #t
-              'documentRangeFormattingProvider #t
+              'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
               ; 'foldingRangeProvider #t
