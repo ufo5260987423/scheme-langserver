@@ -46,7 +46,8 @@
             (lambda (dummy-index-node)
               (let* ([dummy-ann (index-node-datum/annotations dummy-index-node)]
                   [dummy-expression (annotation-stripped dummy-ann)]
-                  [dummy-reference (make-identifier-reference
+                  [dummy-reference 
+                    (make-identifier-reference
                       dummy-expression
                       document
                       dummy-index-node

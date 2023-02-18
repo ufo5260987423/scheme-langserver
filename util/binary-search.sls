@@ -17,8 +17,8 @@
                             [previous (binary-search vector-instance order-compare target start mid)])
                         (if (and 
                                 (null? previous) 
-                                (not (= mid start)))
-                            (binary-search vector-instance order-compare target mid end)
+                                (not (= mid end)))
+                            (binary-search vector-instance order-compare target (+ mid 1) end)
                             previous))]
                 ['()])]))
 
