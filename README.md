@@ -69,7 +69,7 @@ https://github.com/ufo5260987423/scheme-langserver
   },
 }
 ```
-Then configure your `~/.config/lvim/init.lua` and add following codes like:
+Then configure your `~/.config/lvim/config.lua` and add following codes like:
 ```lua
 require 'lspconfig'.scheme_langserver.setup {}
 ```
