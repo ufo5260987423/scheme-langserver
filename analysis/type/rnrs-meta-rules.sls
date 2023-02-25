@@ -1,8 +1,15 @@
 (library (scheme-langserver analysis type rnrs-meta-rules)
   (export rnrs-chez-rules)
-  (import (rnrs))
+  (import 
+    (chezscheme)
+    (scheme-langserver util natural-order-compare))
 
-(define rnrs-chez-rules '(
+(define rnrs-chez-rules (sort 
+  (lambda (target1 target2)
+    (natural-order-compare 
+      (symbol->string (car target1))
+      (symbol->string (car target2))))
+  '(
 (abort void?())
 (abort void? (something?))
 (abort-handler boolean?())
@@ -795,5 +802,5 @@
 (write void?())
 (write-char void?())
 (write-char void?())
-))
+)))
 )

@@ -3,7 +3,9 @@
       find-meta)
    (import 
       (rnrs)
-      (scheme-langserver analysis identifier reference))
+      (scheme-langserver util binary-search)
+      (scheme-langserver analysis identifier reference)
+      (scheme-langserver analysis type rnrs-meta-rules))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
    (cond
@@ -42,7 +44,22 @@
 (define (private-process library-instance list-instance)
    (sort-identifier-references 
       (map 
-         (lambda (identifier-pair) (make-identifier-reference (car identifier-pair) '() '() library-instance '() '() '())) 
+         (lambda (identifier-pair) 
+            (make-identifier-reference 
+               (car identifier-pair) 
+               '() 
+               '() 
+               library-instance 
+               (cadr identifier-pair)
+               '() 
+               (map cdr
+                  (binary-search
+                     (list->vector rnrs-chez-rules)
+                     (lambda (target0 target1)
+                        (natural-order-compare 
+                           (symbol->string (car target0))
+                           (symbol->string (car target1))))
+                     (list (car identifier-pair))))))
          list-instance)))
 
 (define rnrs (private-process '(rnrs) '(
