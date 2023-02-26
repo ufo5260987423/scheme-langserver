@@ -1,6 +1,6 @@
 (library (scheme-langserver analysis type walk-engine)
   (export 
-    walk
+    reify
     add
     remove)
   (import 
@@ -17,18 +17,39 @@
     (ufo-match))
 
 
-(define walk-*
+(define reify
   (case-lambda 
-    [(substitutions target) (walk-* substitutions target '())]
+    ;suppose target is atom
+    [(substitutions target) (reify substitutions target '())]
     [(substitutions target paths)
-      (cond
-        [(null? target) '()]
-        [(contain? paths target) '()]
-        [(list? target) (map (lambda (sub-target) (walk-* substitutions sub-target paths)) target)]
-        [else 
-          (walk-*
-            (map private-digest (walk substitutions target))
-            `(,@path ,target)) ])]))
+      (let loop ([body 
+            (filter 
+              (lambda (new-dry)
+                (not (contain? paths new-dry)))
+              (private-dry target))]
+          [result `(,target)])
+        (if (null? body)
+          (let* ([new-paths `(,@paths ,@body)]
+              [return-result (map (lambda (item) (reify substitutions item new-paths)) result)])
+            return-result)
+          (let* ([current (car body)]
+              [walk-result (walk substitutions current)])
+            (loop 
+              (cdr body)
+              (map 
+                (lambda (single-substitution) 
+                  (map 
+                    (lambda (single-target)
+                      (private-substitute single-target single-substitution))
+                    result))
+                walk-result)))))]))
+
+(define (private-substitute origin single-substitution)
+  (cond 
+  ;correspond to walk-left
+    [(equal? origin (car single-substitution)) (private-digest single-substitution)]
+    [(list? origin) (map (lambda (item) (private-substitute item single-substitution) origin)]
+    [else origin])))
 
 (define (private-digest target-substitutions)
   (match target-substitutions
@@ -40,6 +61,13 @@
     [(head ': (? identifier-reference? tail)) tail]
     [((? identifier-reference head) '< (? identifier-reference tail)) tail]
     ; [((? identifier-reference head) '> (? identifier-reference tail)) ]
+    [else '()]))
+
+(define (private-dry target)
+  (cond 
+    [(list? target) (apply append (map private-dry target))]
+    [(index-node? target) `(,target)]
+    [(identifier-reference? target) `(,target)]
     [else '()]))
 
 (define (walk substitutions target)

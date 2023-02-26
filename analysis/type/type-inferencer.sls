@@ -19,9 +19,7 @@
     (scheme-langserver analysis type argument-checker)
     (scheme-langserver analysis type util))
 
-;; it's acturally the walk procedure in minikanren
-;; We regard the indexes and references as a graph of existed variable and values. Of course, 
-;; index-nodes denoted themselves, and corresponding actural-have-type/type-expressions denoted values and type notions.
+;; We regard the indexes and references as a graph of existed variable and values. 
 ;;todo: first, construct type-tree, for procedure, it's like ((return-type-corresponding-index-node) ((first param-index-node)(second param-index-node)))
 ;; try to get result type by substitution
 (define type-inference-for 
