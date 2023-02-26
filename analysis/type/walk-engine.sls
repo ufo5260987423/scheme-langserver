@@ -22,27 +22,27 @@
     ;suppose target is atom
     [(substitutions target) (reify substitutions target '())]
     [(substitutions target paths)
-      (let loop ([body 
-            (filter 
-              (lambda (new-dry)
-                (not (contain? paths new-dry)))
-              (private-dry target))]
-          [result `(,target)])
+      (let loop ([body (private-dry target)]
+          [result `(,target)]
+          [new-paths paths])
         (if (null? body)
-          (let* ([new-paths `(,@paths ,@body)]
-              [return-result (map (lambda (item) (reify substitutions item new-paths)) result)])
-            return-result)
+          (if (= (length paths) (new-paths)))
+            result
+            (apply append (map (lambda (item) (reify substitutions item new-paths)) result))
           (let* ([current (car body)]
               [walk-result (walk substitutions current)])
             (loop 
               (cdr body)
-              (map 
-                (lambda (single-substitution) 
-                  (map 
-                    (lambda (single-target)
-                      (private-substitute single-target single-substitution))
-                    result))
-                walk-result)))))]))
+              (if (contain? new-paths current)
+                result
+                (map 
+                  (lambda (single-substitution) 
+                    (map 
+                      (lambda (single-target)
+                        (private-substitute single-target single-substitution))
+                      result))
+                  walk-result))
+              (dedupe `(,@new-paths ,current))))))]))
 
 (define (private-substitute origin single-substitution)
   (cond 
