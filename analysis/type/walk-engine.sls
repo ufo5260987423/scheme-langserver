@@ -20,17 +20,23 @@
 (define reify
   (case-lambda 
     ;suppose target is atom
+    ;in substitutions we have following forms
+    ; [((? variable? head) '= tail) tail] tail is supposed as list of variables
+    ; [((? index-node? head) ': (? variable? tail)) tail]
+    ; [((? variable? head) ': (? identifier-reference? tail)) tail]
+    ; this following two are for type rules
+    ; [((? identifier-reference? head) '< (? identifier-reference? tail)) tail]
+    ; [((? identifier-reference? head) '> (? identifier-reference? tail)) tail]
     [(substitutions target) (reify substitutions target '())]
     [(substitutions target paths)
       (let loop ([body (private-dry target)]
           [result `(,target)]
           [new-paths paths])
         (if (null? body)
-          (if (= (length paths) (new-paths)))
+          (if (= (length paths) (new-paths))
             result
-            (apply append (map (lambda (item) (reify substitutions item new-paths)) result))
-          (let* ([current (car body)]
-              [walk-result (walk substitutions current)])
+            (apply append (map (lambda (item) (reify substitutions item new-paths)) result)))
+          (let* ([current (car body)])
             (loop 
               (cdr body)
               (if (contain? new-paths current)
@@ -41,27 +47,21 @@
                       (lambda (single-target)
                         (private-substitute single-target single-substitution))
                       result))
-                  walk-result))
+                  (walk substitutions current)))
               (dedupe `(,@new-paths ,current))))))]))
 
 (define (private-substitute origin single-substitution)
   (cond 
-  ;correspond to walk-left
-    [(equal? origin (car single-substitution)) (private-digest single-substitution)]
-    [(list? origin) (map (lambda (item) (private-substitute item single-substitution) origin)]
+    ;correspond to walk-left
+    [(equal? origin (car single-substitution)) 
+      (match target-substitutions
+        [((? variable? head) '= tail) tail]
+        [((? index-node? head) ': (? variable? tail)) tail]
+        [((? variable? head) ': (? identifier-reference? tail)) tail]
+        [else origin])]
+    [(list? origin) 
+      (map (lambda (item) (private-substitute item single-substitution) origin)]
     [else origin])))
-
-(define (private-digest target-substitutions)
-  (match target-substitutions
-    ; [(? index-node? target) `(,target ,@(walk-* substitutions target (append paths target)))]
-    ; [(? variable? target) `(,target ,@(walk-* substitutions target (append paths target)))]
-    ; head is acturally the target for our privaate-walk-left
-    [(head '= tail) tail]
-    [((? index-node? head) ': (? variable? tail)) tail]
-    [(head ': (? identifier-reference? tail)) tail]
-    [((? identifier-reference head) '< (? identifier-reference tail)) tail]
-    ; [((? identifier-reference head) '> (? identifier-reference tail)) ]
-    [else '()]))
 
 (define (private-dry target)
   (cond 
