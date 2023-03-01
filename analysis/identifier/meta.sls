@@ -5,6 +5,7 @@
       (rnrs)
       (scheme-langserver util binary-search)
       (scheme-langserver analysis identifier reference)
+      (scheme-langserver analysis type util)
       (scheme-langserver analysis type rnrs-meta-rules))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (find-meta list-instance)
@@ -52,7 +53,9 @@
                library-instance 
                (cadr identifier-pair)
                '() 
-               (map cdr
+               (map 
+                  (lambda (pair)
+                     (construct-type-expression-with-meta (cdr pair)))
                   (binary-search
                      (list->vector rnrs-chez-rules)
                      (lambda (target0 target1)

@@ -39,9 +39,11 @@
         maybe-result))))
 
 (define (construct-type-expression-with-meta meta-identifier)
-  (let* ([target-meta (find-meta '(rnrs))]
-      [target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) target-meta)])
-    `(,(if target-identifier target-identifier 'something?) x)))
+  (if (list? meta-identifier)
+    (map construct-type-expression-with-meta meta-identifier)
+    (let* ([target-meta (find-meta '(rnrs))]
+        [target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) target-meta)])
+      (if target-identifier target-identifier meta-identifier))))
 
 (define (expand-or type-expression)
   (if (list? type-expression)
