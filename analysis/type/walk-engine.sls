@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis type walk-engine)
   (export 
+    walk:index-node->single-variable-list
+    walk:supper-type-list
     reify
     add
     remove)
@@ -15,7 +17,6 @@
     (scheme-langserver analysis type variable)
 
     (ufo-match))
-
 
 (define reify
   (case-lambda 
@@ -70,6 +71,32 @@
     [(identifier-reference? target) `(,target)]
     [else '()]))
 
+(define (walk:index-node->single-variable-list substitutions index-node)
+  (apply append (map 
+    (lambda (substitution)
+      (match substitution
+        [((? index-node? head) ': (? variable? tail)) 
+          (if (equal? index-node head)
+            `(,tail)
+            '())]
+        [else '()]))
+    substitutions)))
+
+(define (walk:supper-type-list substitutions identifier-refeference)
+  (apply append (map 
+    (lambda (substitution)
+      (match substitution
+        [((? identifier-reference? head) '< (? identifier-reference? tail)) 
+          (if (equal? identifier-reference head)
+            (dedupe `(,@(walk:supper-type-list substitutions tail) ,tail))
+            '())]
+        [((? identifier-reference? head) '> (? identifier-reference? tail)) 
+          (if (equal? identifier-reference tail)
+            (dedupe `(,@(walk:supper-type-list substitutions head) ,head))
+            '())]
+        [else '()]))
+    substitutions)))
+
 (define (walk substitutions target)
   ; (dedupe `(,@(private-walk-left substitutions target) ,@(private-walk-right substitutions target)))
   (private-walk-left substitutions target))
@@ -90,7 +117,11 @@
 
 (define (remove-from-substitution substitutions target)
   (if (list? target)
-    (fold-left (lambda (item) (remove-from-substitution substitutions item)) target)
+    (fold-left 
+      (lambda (substitutions-tmp item) 
+        (remove-from-substitution substitutions-tmp item)) 
+      substitutions
+      target)
     (filter
       (lambda (substitution) (not (contain? (private-dry substitution) target)))
       substitutions)))
