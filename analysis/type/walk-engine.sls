@@ -61,8 +61,8 @@
         [((? variable? head) ': (? identifier-reference? tail)) tail]
         [else origin])]
     [(list? origin) 
-      (map (lambda (item) (private-substitute item single-substitution) origin)]
-    [else origin])))
+      (map (lambda (item) (private-substitute item single-substitution) origin))]
+    [else origin]))
 
 (define (private-dry target)
   (cond 
