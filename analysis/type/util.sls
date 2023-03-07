@@ -13,18 +13,10 @@
     (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type walk-engine))
 
 (define (lambda? body)
   (= 2 (length body)))
-
-(define (construct-type-expression-with-meta meta-identifier)
-  (if (list? meta-identifier)
-    (map construct-type-expression-with-meta meta-identifier)
-    (let* ([target-meta (find-meta '(rnrs))]
-        [target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) target-meta)])
-      (if target-identifier target-identifier meta-identifier))))
 
 (define add-applyable-lambda-types-to-substitutions
   (case-lambda

@@ -1,13 +1,14 @@
 (library (scheme-langserver analysis identifier meta)
    (export 
+      construct-type-expression-with-meta
       find-meta)
    (import 
       (rnrs)
       (scheme-langserver util binary-search)
+      (scheme-langserver util natural-order-compare)
       (scheme-langserver analysis identifier reference)
-      (scheme-langserver analysis type util)
       (scheme-langserver analysis type rnrs-meta-rules))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (find-meta list-instance)
    (cond
       [(equal? list-instance '(rnrs)) rnrs]
@@ -43,27 +44,43 @@
       [else '()]))
 
 (define (private-process library-instance list-instance)
-   (sort-identifier-references 
-      (map 
-         (lambda (identifier-pair) 
-            (make-identifier-reference 
-               (car identifier-pair) 
-               '() 
-               '() 
-               library-instance 
-               (cadr identifier-pair)
-               '() 
-               (map 
-                  (lambda (pair)
-                     (construct-type-expression-with-meta (cdr pair)))
-                  (binary-search
-                     (list->vector rnrs-chez-rules)
-                     (lambda (target0 target1)
-                        (natural-order-compare 
-                           (symbol->string (car target0))
-                           (symbol->string (car target1))))
-                     (list (car identifier-pair))))))
-         list-instance)))
+   (let ([target
+            (map 
+               (lambda (identifier-pair) 
+                  (make-identifier-reference 
+                     (car identifier-pair) 
+                     '() 
+                     '() 
+                     library-instance 
+                     (cadr identifier-pair)
+                     '() 
+                     '()))
+               list-instance)])
+      (sort-identifier-references 
+         (map 
+            (lambda (identifier-reference)
+               (identifier-reference-type-expressions-set!
+                  identifier-reference
+                  (private-construct-type-expression-with-meta 
+                     (binary-search
+                        (list->vector rnrs-chez-rules)
+                        (lambda (target0 target1)
+                           (natural-order-compare 
+                              (symbol->string (car target0))
+                              (symbol->string (car target1))))
+                        (list (identifier-reference-identifier identifier-reference)))
+                     target))
+               identifier-reference)
+            target))))
+
+(define (construct-type-expression-with-meta meta-identifier)
+   (private-construct-type-expression-with-meta meta-identifier rnrs))
+
+(define (private-construct-type-expression-with-meta meta-identifier list-instance)
+  (if (list? meta-identifier)
+    (map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)
+    (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
+      (if target-identifier target-identifier meta-identifier))))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)
