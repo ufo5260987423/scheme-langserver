@@ -49,6 +49,6 @@
       ;               (identifier-reference-type-expressions identifier-reference))
       ;             (list `(,index-node ,(identifier-reference-index-node identifier-reference)))))
       ;         (find-available-references-for document index-node expression)))]
-          [else '()]))
-        '())))
+          [else '()])
+        '()))))
 )

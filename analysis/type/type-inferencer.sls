@@ -33,7 +33,10 @@
   (document-substitution-list-set! document 
     (append 
       private-initial-type-constraints 
-      (private-construct-substitution-list document (document-index-node-list document)))))
+      (map 
+        (lambda (index-node)
+          (private-construct-substitution-list document index-node))
+        (document-index-node-list document)))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
 (define private-initial-type-constraints
