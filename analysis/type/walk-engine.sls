@@ -28,6 +28,7 @@
     ; this following two are for type rules
     ; [((? identifier-reference? head) '< (? identifier-reference? tail)) tail]
     ; [((? identifier-reference? head) '> (? identifier-reference? tail)) tail]
+    ; [((? identifier-reference? head) '< 'something?) tail]
     [(substitutions target) (reify substitutions target '())]
     [(substitutions target paths)
       (let loop ([body (private-dry target)]
@@ -55,7 +56,7 @@
   (cond 
     ;correspond to walk-left
     [(equal? origin (car single-substitution)) 
-      (match target-substitutions
+      (match single-substitution
         [((? variable? head) '= tail) tail]
         [((? index-node? head) ': (? variable? tail)) tail]
         [((? variable? head) ': (? identifier-reference? tail)) tail]

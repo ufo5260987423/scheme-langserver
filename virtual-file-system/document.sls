@@ -8,7 +8,9 @@
     document-index-node-list
     document-index-node-list-set!
     document-reference-list
-    document-reference-list-set!)
+    document-reference-list-set!
+    document-substitution-list
+    document-substitution-list-set!)
   (import (rnrs))
 
 (define-record-type document 
@@ -16,5 +18,10 @@
     (immutable uri)
     (mutable text)
     (mutable index-node-list)
-    (mutable reference-list)))
+    (mutable reference-list)
+    (mutable substitution-list))
+  (protocol
+    (lambda (new)
+      (lambda (uri text index-node-list reference-list)
+        (new uri text index-node-list reference-list '())))))
 )
