@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis type variable)
   (export 
-    )
+    make-variable
+    variable?)
   (import 
     (uuid)
     (chezscheme))
