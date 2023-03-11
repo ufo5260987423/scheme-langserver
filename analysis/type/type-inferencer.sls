@@ -15,8 +15,8 @@
     (scheme-langserver analysis identifier meta)
     
     (scheme-langserver analysis type rules trivial)
-    (scheme-langserver analysis type rules lambda)
-    (scheme-langserver analysis type rules define)
+    ; (scheme-langserver analysis type rules lambda)
+    ; (scheme-langserver analysis type rules define)
 
     (scheme-langserver analysis type util)
     (scheme-langserver analysis type walk-engine))
@@ -25,8 +25,8 @@
 ;;todo: first, construct type-tree, for procedure, it's like ((return-type-corresponding-index-node) ((first param-index-node)(second param-index-node)))
 ;; try to get result type by substitution
 (define (type-inference-for index-node document)
-  (let* ([tree (private-walk index-node substitutions)]
-        [reified (dedupe (private-reify tree))])
+  (let* ([substitutions (document-substitution-list document)]
+        [reified (dedupe (reify substitutions index-node))])
     (index-node-actural-have-type-set! index-node reified)))
 
 (define (construct-substitution-list-for document)
@@ -36,7 +36,7 @@
       (private-construct-substitution-list document (document-index-node-list document)))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
-(define private-initial-type-constrains
+(define private-initial-type-constraints
   (append 
     (map 
       (lambda (identifier) `(,(construct-type-expression-with-meta identifier) < something?))
@@ -70,33 +70,5 @@
       [children-substitution-list 
         (apply append (map (lambda (child) (private-construct-substitution-list document child)) children))])
     (append tmp-substitution-list children-substitution-list)))
-
-(define private-walk 
-  (case-lambda
-    [(index-node substitution-list) (private-walk index-node substitution-list)]
-    [(index-node substitution-list path) 
-      (if (contain? path index-node)
-        '()
-        (let ([targets 
-              (map 
-                cadr 
-                (filter 
-                  (lambda (target) (equal? index-node (car target))) 
-                  substitution-list))]
-            [current-path (append path `(,index-node))])
-          (let loop ([dry-body (private-dry-tree targets)]
-              [result targets])
-            (if (null? dry-body)
-              result
-              (loop 
-                (cdr dry-body) 
-                (dedupe 
-                  (apply append
-                    (map 
-                      (lambda (t) (private-substitute (car dry-body) t result))
-                      (private-walk 
-                        (car dry-body) 
-                        substitution-list 
-                        (append current-path `(,(car dry-body))))))))))))]))
 
 )

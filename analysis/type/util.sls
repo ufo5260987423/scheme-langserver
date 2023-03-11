@@ -1,9 +1,7 @@
 (library (scheme-langserver analysis type util)
   (export 
     lambda?
-    construct-lambda
-    construct-type-expression-with-meta
-    collect-reference-should-have-type)
+    add-applyable-lambda-types-to-substitutions)
   (import 
     (chezscheme)
     (scheme-langserver util sub-list)
@@ -71,13 +69,16 @@
         ;1
         [(and (null? rest-segments) (null? rest-index-nodes) (private-is-... current-segment)) substitutions]
         ;2
+        ;**1 has been consumed
         [(and (null? rest-segments) (null? rest-index-nodes) (private-is-**1 current-segment) last?) substitutions]
         ;3
+        ;**1 haven't been consumed
         [(and (null? rest-segments) (null? rest-index-nodes) (private-is-**1 current-segment) (not last?)) '()]
         ;4
-        [(and (null? rest-segments) (null? rest-index-nodes)) '()]
+        [(and (null? rest-segments) (null? rest-index-nodes)) substitutions]
 
         ;5
+        ;rest-index-node haven't been ran out
         [(and (null? rest-segments) (private-is-... current-segment)) 
           (private-add-applyable-lambda-types-to-substitutions 
             substitutions 
@@ -87,6 +88,7 @@
             (cdr rest-index-nodes)
             last?)]
         ;6
+        ;rest-index-node haven't been ran out
         [(and (null? rest-segments) (private-is-**1 current-segment)) 
           (private-add-applyable-lambda-types-to-substitutions 
             substitutions 
@@ -96,7 +98,8 @@
             (cdr rest-index-nodes)
             last?)]
         ;7
-        [(and (null? rest-segments)) '()]
+        ;rest-index-node haven't been ran out
+        [(null? rest-segments) '()]
 
         ;8
         [(and (null? rest-index-nodes) (private-is-... current-segment)) 
@@ -104,7 +107,6 @@
             substitutions 
             (car rest-segments) 
             (cdr rest-segments) 
-            current-index-node
             rest-index-nodes
             #f)]
         ;9
@@ -115,7 +117,6 @@
             substitutions 
             (car rest-segments) 
             (cdr rest-segments) 
-            current-index-node
             rest-index-nodes
             #f)]
         ;11
@@ -133,18 +134,19 @@
         ;13
         [(and (private-is-**1 current-segment) last?) 
           (let ([tmp-result 
+                ;be greedy
                 (private-add-applyable-lambda-types-to-substitutions 
                   substitutions 
-                  (car rest-segments) 
-                  (cdr rest-segments)
+                  current-segment 
+                  rest-segments 
                   (car rest-index-nodes) 
                   (cdr rest-index-nodes)
-                  #f)])
+                  #t)])
             (if (null? tmp-result)
               (private-add-applyable-lambda-types-to-substitutions 
                 substitutions 
-                current-segment 
-                rest-segments 
+                (car rest-segments) 
+                (cdr rest-segments)
                 (car rest-index-nodes) 
                 (cdr rest-index-nodes)
                 #f)
@@ -152,18 +154,19 @@
         ;14
         [(and (private-is-... current-segment)) 
           (let ([tmp-result 
+                ;be greedy
                 (private-add-applyable-lambda-types-to-substitutions 
                   substitutions 
-                  (car rest-segments) 
-                  (cdr rest-segments)
+                  current-segment 
+                  rest-segments 
                   (car rest-index-nodes) 
                   (cdr rest-index-nodes)
-                  #f)])
+                  #t)])
             (if (null? tmp-result)
               (private-add-applyable-lambda-types-to-substitutions 
                 substitutions 
-                current-segment 
-                rest-segments 
+                (car rest-segments) 
+                (cdr rest-segments)
                 (car rest-index-nodes) 
                 (cdr rest-index-nodes)
                 #f)
@@ -185,7 +188,7 @@
           [extended-substitutions `(,@substitutions ,@new-substitutions)])
         (cond
           ;jump in from: 5 14
-          ;may jump in from: 8 10 13 14
+          ;may jump in from: 13 14
           [(private-is-... current-segment)
             (private-add-applyable-lambda-types-to-substitutions 
               extended-substitutions
@@ -194,7 +197,7 @@
               (cdr rest-index-nodes)
               #t)]
           ;jump in from: 6 12 13
-          ;may jump in from: 8 10 13 14
+          ;may jump in from: 13 14
           [(private-is-**1 current-segment)
             (let ([tmp-result0 
                   (private-add-applyable-lambda-types-to-substitutions 
@@ -212,12 +215,13 @@
                   #f)
                 '()))]
           ;jump in from: 15
-          ;may jump in from: 8 10 13 14
+          ;may jump in from: 13 14
           [else 
-            (add-applyable-lambda-types-to-substitutions 
+            (private-add-applyable-lambda-types-to-substitutions 
               extended-substitutions 
               current-segment 
-              rest-rule-segments 
+              rest-segments 
+              rest-index-nodes
               #f)]))]))
 
 (define (private-is-... segment) (equal? '... (car (reverse segment))))

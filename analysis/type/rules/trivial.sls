@@ -7,6 +7,7 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type util)
     (scheme-langserver analysis type variable)
+    (scheme-langserver analysis type walk-engine)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -15,10 +16,10 @@
 (define (trivial-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
-      [varibale (make-variable)]
-      [new-substitutions (append substitutions `(,index-node : variable))])
-    (append new-substitutions
-      (if (null? (index-node-children? index-node))
+      [variable (make-variable)]
+      [new-substitutions (add-to-substitutions substitutions `(,index-node : variable))])
+    (add-to-substitutions new-substitutions
+      (if (null? (index-node-children index-node))
         (cond
           ;todo: detailed literal analysis may be done in the future.
           [(list? expression) `(,variable : ,(construct-type-expression-with-meta 'list?))]

@@ -1,10 +1,11 @@
 (library (scheme-langserver analysis type walk-engine)
   (export 
+    walk
     walk:index-node->single-variable-list
     walk:supper-type-list
     reify
-    add
-    remove)
+    add-to-substitutions
+    remove-from-substitutions)
   (import 
     (chezscheme)
 
@@ -62,7 +63,7 @@
         [((? variable? head) ': (? identifier-reference? tail)) tail]
         [else origin])]
     [(list? origin) 
-      (map (lambda (item) (private-substitute item single-substitution) origin))]
+      (map (lambda (item) (private-substitute item single-substitution)) origin)]
     [else origin]))
 
 (define (private-dry target)
@@ -83,7 +84,7 @@
         [else '()]))
     substitutions)))
 
-(define (walk:supper-type-list substitutions identifier-refeference)
+(define (walk:supper-type-list substitutions identifier-reference)
   (apply append (map 
     (lambda (substitution)
       (match substitution
@@ -103,32 +104,27 @@
   (private-walk-left substitutions target))
 
 (define (private-walk-left substitutions left)
-  (map caddr (filter (lambda(substitution) (equal? (car substitution left)) substitutions))))
+  (map caddr (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)))
 
 (define (private-walk-right substitutions right)
-  (map car (filter (lambda(substitution) (equal? (caddr substitution right)) substitutions))))
+  (map car (filter (lambda (substitution) (equal? (caddr substitution) right)) substitutions)))
 
 (define add-to-substitutions 
   (case-lambda 
     [(target) (list target)]
     [(substitutions target)
       (if (contain? substitutions target)
-        substitution
+        substitutions
         `(,@substitutions ,target))]))
 
-(define (remove-from-substitution substitutions target)
+(define (remove-from-substitutions substitutions target)
   (if (list? target)
     (fold-left 
       (lambda (substitutions-tmp item) 
-        (remove-from-substitution substitutions-tmp item)) 
+        (remove-from-substitutions substitutions-tmp item)) 
       substitutions
       target)
     (filter
       (lambda (substitution) (not (contain? (private-dry substitution) target)))
       substitutions)))
-
-(define (private-dry target)
-  (if (list? target)
-    (apply append (map private-dry target))
-    `(,target)))
 )
