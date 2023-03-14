@@ -17,6 +17,7 @@
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type type-inferencer)
     (scheme-langserver analysis type variable)
 
@@ -41,8 +42,7 @@
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 70)))])
         (construct-substitution-list-for target-document)
-        (type-inference-for target-index-node target-document)
-        (test-equal #f (null? (document-substitution-list target-document))))
+        (test-equal (construct-type-expression-with-meta 'fixnum?) (car (type-inference-for target-index-node target-document))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

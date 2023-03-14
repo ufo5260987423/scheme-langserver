@@ -36,7 +36,7 @@
           [result `(,target)]
           [new-paths paths])
         (if (null? body)
-          (if (= (length paths) (length new-paths))
+          (if (equal? paths new-paths)
             result
             (apply append (map (lambda (item) (reify substitutions item new-paths)) result)))
           (let* ([current (car body)])
@@ -46,10 +46,11 @@
                 result
                 (map 
                   (lambda (single-substitution) 
-                    (map 
-                      (lambda (single-target)
-                        (private-substitute single-target single-substitution))
-                      result))
+                    (apply append 
+                      (map 
+                        (lambda (single-target)
+                          (private-substitute single-target single-substitution))
+                        result)))
                   (walk substitutions current)))
               (dedupe `(,@new-paths ,current))))))]))
 
@@ -72,8 +73,9 @@
     [(list? target) (apply append (map private-dry target))]
     [(index-node? target) `(,target)]
     [(identifier-reference? target) `(,target)]
-    [(equal? 'something? target) `(,target)]
-    [else '()]))
+    [(variable? target) `(,target)]
+    [(equal? target 'something?) '(something?)]
+    [else `(,target)]))
 
 (define (walk:index-node->single-variable-list substitutions index-node)
   (apply append (map 

@@ -25,9 +25,7 @@
 ;;todo: first, construct type-tree, for procedure, it's like ((return-type-corresponding-index-node) ((first param-index-node)(second param-index-node)))
 ;; try to get result type by substitution
 (define (type-inference-for index-node document)
-  (let* ([substitutions (document-substitution-list document)]
-        [reified (dedupe (reify substitutions index-node))])
-    (index-node-actural-have-type-set! index-node reified)))
+  (dedupe (reify (document-substitution-list document) index-node)))
 
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
