@@ -30,13 +30,16 @@
     (index-node-actural-have-type-set! index-node reified)))
 
 (define (construct-substitution-list-for document)
-  (document-substitution-list-set! document 
+  (document-substitution-list-set! 
+    document 
     (append 
       private-initial-type-constraints 
-      (map 
-        (lambda (index-node)
-          (private-construct-substitution-list document index-node))
-        (document-index-node-list document)))))
+      (apply 
+        append
+        (map 
+          (lambda (index-node)
+            (private-construct-substitution-list document index-node))
+          (document-index-node-list document))))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
 (define private-initial-type-constraints
@@ -62,14 +65,13 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [children (index-node-children index-node)]
       [tmp-substitution-list 
-        (let loop ([body 
-              (list trivial-process 
-              ; lambda-process define-process
-              )]
-            [result '()])
-          (if (or (null? body) (not (zero? (length result))))
-            result
-            (loop (cdr body) (append result ((car body) document index-node result)))))]
+        (fold-left
+          (lambda (result proc)
+            (proc document index-node result))
+          '()
+          (list trivial-process 
+            ; lambda-process define-process
+          ))]
       [children-substitution-list 
         (apply append (map (lambda (child) (private-construct-substitution-list document child)) children))])
     (append tmp-substitution-list children-substitution-list)))

@@ -74,7 +74,8 @@
             target))))
 
 (define (construct-type-expression-with-meta meta-identifier)
-   (private-construct-type-expression-with-meta meta-identifier rnrs))
+   ;;chezscheme is the super set of rnrs
+   (private-construct-type-expression-with-meta meta-identifier chezscheme))
 
 (define (private-construct-type-expression-with-meta meta-identifier list-instance)
   (if (list? meta-identifier)

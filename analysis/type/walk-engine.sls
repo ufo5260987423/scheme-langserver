@@ -36,7 +36,7 @@
           [result `(,target)]
           [new-paths paths])
         (if (null? body)
-          (if (= (length paths) (new-paths))
+          (if (= (length paths) (length new-paths))
             result
             (apply append (map (lambda (item) (reify substitutions item new-paths)) result)))
           (let* ([current (car body)])
@@ -61,6 +61,7 @@
         [((? variable? head) '= tail) tail]
         [((? index-node? head) ': (? variable? tail)) tail]
         [((? variable? head) ': (? identifier-reference? tail)) tail]
+        [((? variable? head) ': 'something?) 'something?]
         [else origin])]
     [(list? origin) 
       (map (lambda (item) (private-substitute item single-substitution)) origin)]
@@ -71,6 +72,7 @@
     [(list? target) (apply append (map private-dry target))]
     [(index-node? target) `(,target)]
     [(identifier-reference? target) `(,target)]
+    [(equal? 'something? target) `(,target)]
     [else '()]))
 
 (define (walk:index-node->single-variable-list substitutions index-node)
@@ -104,10 +106,10 @@
   (private-walk-left substitutions target))
 
 (define (private-walk-left substitutions left)
-  (map caddr (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)))
+  (filter (lambda (substitution) (equal? (car substitution) left)) substitutions))
 
 (define (private-walk-right substitutions right)
-  (map car (filter (lambda (substitution) (equal? (caddr substitution) right)) substitutions)))
+  (filter (lambda (substitution) (equal? (caddr substitution) right)) substitutions))
 
 (define add-to-substitutions 
   (case-lambda 
@@ -115,7 +117,9 @@
     [(substitutions target)
       (if (contain? substitutions target)
         substitutions
-        `(,@substitutions ,target))]))
+        (if (null? target)
+          substitutions
+          `(,@substitutions ,target)))]))
 
 (define (remove-from-substitutions substitutions target)
   (if (list? target)

@@ -17,7 +17,7 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [variable (make-variable)]
-      [new-substitutions (add-to-substitutions substitutions `(,index-node : variable))])
+      [new-substitutions (add-to-substitutions substitutions `(,index-node : ,variable))])
     (add-to-substitutions new-substitutions
       (if (null? (index-node-children index-node))
         (cond
