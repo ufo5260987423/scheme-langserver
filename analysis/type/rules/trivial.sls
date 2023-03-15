@@ -36,9 +36,9 @@
           [(real? expression) `(,variable : ,(construct-type-expression-with-meta 'real?))]
           [(complex? expression) `(,variable : ,(construct-type-expression-with-meta 'complex?))]
           [(number? expression) `(,variable : ,(construct-type-expression-with-meta 'number?))]
-          [(symbol? expression) 
-          `(,variable : ,(construct-type-expression-with-meta 'number?))
-          ]
+          ; [(symbol? expression) 
+          ; `(,variable : ,(construct-type-expression-with-meta 'number?))
+          ; ]
           [(symbol? expression) 
             (apply 
               append 
@@ -52,7 +52,6 @@
 (define (private-process identifier-reference variable)
   (if (null? (identifier-reference-parent identifier-reference))
     (let* ([target-document (identifier-reference-document identifier-reference)]
-        [target-substitution-list (document-substitution-list target-document)]
         [target-index-node (identifier-reference-index-node identifier-reference)])
       ;it's in r6rs librar?
       (if (null? target-index-node)
@@ -66,6 +65,6 @@
               (if (is-pure-identifier-reference-misture? reified)
                 `(,variable : ,reified)
                 `(,variable = ,reified)))
-            (reify target-substitution-list target-index-node)))))
+            (reify (document-substitution-list target-document) target-index-node)))))
     (private-process (identifier-reference-parent identifier-reference) variable)))
 )
