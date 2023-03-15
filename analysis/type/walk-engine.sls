@@ -32,27 +32,43 @@
     ; [((? identifier-reference? head) '< 'something?) tail]
     [(substitutions target) (reify substitutions target '())]
     [(substitutions target paths)
-      (let loop ([body (private-dry target)]
-          [result `(,target)]
-          [new-paths paths])
-        (if (null? body)
-          (if (equal? paths new-paths)
-            result
-            (apply append (map (lambda (item) (reify substitutions item new-paths)) result)))
-          (let* ([current (car body)])
-            (loop 
-              (cdr body)
-              (if (contain? new-paths current)
-                result
-                (map 
-                  (lambda (single-substitution) 
-                    (apply append 
+      ; (pretty-print 'test1)
+      ; (pretty-print (index-node? target))
+      ; (pretty-print (variable? target))
+      ; (pretty-print 'test2)
+      ; (pretty-print paths)
+      (let* ([initial `(,target)]
+          [dryed (private-dry target)]
+          [ready-for-recursive-result
+            (fold-left 
+              (lambda (result current)
+                (if (contain? paths current)
+                  result 
+                  (append 
+                    result
+                    (apply 
+                      append
                       (map 
-                        (lambda (single-target)
-                          (private-substitute single-target single-substitution))
-                        result)))
-                  (walk substitutions current)))
-              (dedupe `(,@new-paths ,current))))))]))
+                        (lambda (single-substitution) 
+                          (map 
+                            (lambda (single-target)
+                              ; (pretty-print 'test3)
+                              ; (pretty-print single-substitution)
+                              (private-substitute single-target single-substitution))
+                            result))
+                        (walk substitutions current)))
+                        )
+                        ))
+              initial
+              dryed)])
+        ; (pretty-print 'test4)
+        ; (pretty-print ready-for-recursive-result)
+        ; (pretty-print 'test5)
+        ; (pretty-print (append paths dryed))
+        (if (equal? ready-for-recursive-result initial)
+          initial
+          (apply append (map (lambda (item) (reify substitutions item (append paths dryed))) ready-for-recursive-result))))
+          ]))
 
 (define (private-substitute origin single-substitution)
   (cond 
@@ -61,11 +77,9 @@
       (match single-substitution
         [((? variable? head) '= tail) tail]
         [((? index-node? head) ': (? variable? tail)) tail]
-        [((? variable? head) ': (? identifier-reference? tail)) tail]
-        [((? variable? head) ': 'something?) 'something?]
+        [((? variable? head) ': tail) tail]
         [else origin])]
-    [(list? origin) 
-      (map (lambda (item) (private-substitute item single-substitution)) origin)]
+    [(list? origin) (map (lambda (item) (private-substitute item single-substitution)) origin)]
     [else origin]))
 
 (define (private-dry target)

@@ -62,13 +62,15 @@
                (identifier-reference-type-expressions-set!
                   identifier-reference
                   (private-construct-type-expression-with-meta 
-                     (binary-search
-                        (list->vector rnrs-chez-rules)
-                        (lambda (target0 target1)
-                           (natural-order-compare 
-                              (symbol->string (car target0))
-                              (symbol->string (car target1))))
-                        (list (identifier-reference-identifier identifier-reference)))
+                     (map 
+                        cdr
+                        (binary-search
+                           (list->vector rnrs-chez-rules)
+                           (lambda (target0 target1)
+                              (natural-order-compare 
+                                 (symbol->string (car target0))
+                                 (symbol->string (car target1))))
+                           (list (identifier-reference-identifier identifier-reference))))
                      target))
                identifier-reference)
             target))))
