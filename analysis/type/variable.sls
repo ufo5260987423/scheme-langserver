@@ -1,10 +1,12 @@
 (library (scheme-langserver analysis type variable)
   (export 
     make-variable
-    variable?)
+    variable?
+    is-pure-variable-misture?)
   (import 
     (uuid)
-    (chezscheme))
+    (chezscheme)
+    (scheme-langserver util contain))
 
 (define-record-type variable
   (fields
@@ -13,4 +15,9 @@
     (lambda (new)
       (lambda ()
         (new (random-uuid))))))
+
+(define (is-pure-variable-misture? expression)
+  (if (list? expression)
+    (not (contain? (map is-pure-variable-misture? expression) #f))
+    (variable? expression)))
 )

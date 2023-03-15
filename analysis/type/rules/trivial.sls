@@ -36,19 +36,36 @@
           [(real? expression) `(,variable : ,(construct-type-expression-with-meta 'real?))]
           [(complex? expression) `(,variable : ,(construct-type-expression-with-meta 'complex?))]
           [(number? expression) `(,variable : ,(construct-type-expression-with-meta 'number?))]
-      ; [(symbol? expression) 
-      ;     (apply 
-      ;       append 
-      ;       (map 
-      ;         (lambda (identifier-reference)
-      ;         ;its in r6rs library
-      ;           (if (null? (identifier-reference-index-node identifier-reference))
-      ;             (map 
-      ;               (lambda (type-expression)
-      ;                 `(,index-node ,type-expression))
-      ;               (identifier-reference-type-expressions identifier-reference))
-      ;             (list `(,index-node ,(identifier-reference-index-node identifier-reference)))))
-      ;         (find-available-references-for document index-node expression)))]
+          [(symbol? expression) 
+          `(,variable : ,(construct-type-expression-with-meta 'number?))
+          ]
+          [(symbol? expression) 
+            (apply 
+              append 
+              (map 
+                (lambda (identifier-reference) 
+                  (private-process identifier-reference variable))
+                (find-available-references-for document index-node expression)))]
           [else '()])
         '()))))
+
+(define (private-process identifier-reference variable)
+  (if (null? (identifier-reference-parent identifier-reference))
+    (let* ([target-document (identifier-reference-document identifier-reference)]
+        [target-substitution-list (document-substitution-list target-document)]
+        [target-index-node (identifier-reference-index-node identifier-reference)])
+      ;it's in r6rs librar?
+      (if (null? target-index-node)
+        (map 
+          (lambda (expression)
+            `(,variable : ,expression))
+          (identifier-reference-type-expressions identifier-reference))
+        (apply append
+          (map 
+            (lambda (reified)
+              (if (is-pure-identifier-reference-misture? reified)
+                `(,variable : ,reified)
+                `(,variable = ,reified)))
+            (reify target-substitution-list target-index-node)))))
+    (private-process (identifier-reference-parent identifier-reference) variable)))
 )

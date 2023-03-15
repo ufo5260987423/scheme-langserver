@@ -14,13 +14,15 @@
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
     
-    sort-identifier-references)
+    sort-identifier-references
+    is-pure-identifier-reference-misture?)
   (import 
     (chezscheme)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver util binary-search)
+    (scheme-langserver util contain)
     (scheme-langserver util natural-order-compare))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
@@ -34,6 +36,11 @@
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
+
+(define (is-pure-identifier-reference-misture? expression)
+  (if (list? expression)
+    (not (contain? (map is-pure-identifier-reference-misture? expression) #f))
+    (identifier-reference? expression)))
 
 (define (sort-identifier-references identifier-references)
   (sort 

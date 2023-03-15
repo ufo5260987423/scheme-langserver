@@ -23,7 +23,7 @@
   (case-lambda 
     ;suppose target is atom
     ;in substitutions we have following forms
-    ; [((? variable? head) '= tail) tail] tail is supposed as list of variables
+    ; [((? variable? head) '= tail) tail] tail is supposed as list of variables or misture of variables and identifier-references
     ; [((? index-node? head) ': (? variable? tail)) tail]
     ; [((? variable? head) ': (? identifier-reference? tail)) tail]
     ; this following two are for type rules
