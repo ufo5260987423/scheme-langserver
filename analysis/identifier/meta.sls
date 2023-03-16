@@ -9,7 +9,13 @@
       (scheme-langserver analysis identifier reference)
       (scheme-langserver analysis type rnrs-meta-rules))
 
+(define initialized? #f)
+
 (define (find-meta list-instance)
+   (if (not initialized?)
+      (begin
+         (init-type-expressions)
+         (set! initialized? #t)))
    (cond
       [(equal? list-instance '(rnrs)) rnrs]
       [(equal? list-instance '(scheme)) scheme] 
@@ -44,19 +50,15 @@
       [else '()]))
 
 (define (private-process library-instance list-instance)
-   (let ([target
-            (map 
-               (lambda (identifier-pair) 
-                  (make-identifier-reference 
-                     (car identifier-pair) 
-                     '() 
-                     '() 
-                     library-instance 
-                     (cadr identifier-pair)
-                     '() 
-                     '()))
-               list-instance)])
-      (sort-identifier-references 
+   (sort-identifier-references 
+      (map 
+         (lambda (identifier-pair) 
+            (make-identifier-reference (car identifier-pair) '() '() library-instance (cadr identifier-pair) '() '()))
+         list-instance)))
+
+(define (init-type-expressions)
+   (map 
+      (lambda (list-instance)
          (map 
             (lambda (identifier-reference)
                (identifier-reference-type-expressions-set!
@@ -71,9 +73,18 @@
                                  (symbol->string (car target0))
                                  (symbol->string (car target1))))
                            (list (identifier-reference-identifier identifier-reference))))
-                     target))
-               identifier-reference)
-            target))))
+                     chezscheme)))
+            list-instance))
+      (list rnrs scheme chezscheme rnrs-condition rnrs-base 
+rnrs-files rnrs-syntax-case rnrs-exception rnrs-lists 
+rnrs-bytevectors rnrs-control rnrs-unicode rnrs-enums 
+rnrs-r5rs rnrs-eval rnrs-hashtables rnrs-sorting 
+rnrs-programs rnrs-mutable-pairs rnrs-mutable-strings 
+rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums 
+rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
+rnrs-records-syntactic rnrs-records-procedure 
+rnrs-records-inspection chezscheme-csv7 scheme-csv7)))
+
 
 (define (construct-type-expression-with-meta meta-identifier)
    ;;chezscheme is the super set of rnrs

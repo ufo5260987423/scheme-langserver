@@ -70,12 +70,6 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
             [check-base (construct-type-expression-with-meta '(boolean? (real? real? **1)))])
         (construct-substitution-list-for target-document)
-        (pretty-print (car (reverse (type-inference-for target-index-node target-document)))) 
-        (pretty-print check-base) 
-        (pretty-print 
-            (equal? 
-                (car (reverse (type-inference-for target-index-node target-document))) 
-                check-base))
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
 (test-end)
 
