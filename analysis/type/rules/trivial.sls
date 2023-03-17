@@ -61,10 +61,7 @@
             (identifier-reference-type-expressions identifier-reference))]
         ;local
         [(equal? document target-document)
-          (map 
-            (lambda (should-be-variable)
-              `(,variable = ,(caddr should-be-variable)))
-            (walk (document-substitution-list target-document) target-index-node))]
+          (list `(,variable = ,target-index-node))]
         ;import
         [else 
           (map 

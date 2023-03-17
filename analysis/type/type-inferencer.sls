@@ -75,6 +75,7 @@
             children))])
     (fold-left
       (lambda (current-substitutions proc)
+        ; (pretty-print proc)
         (filter
           (lambda (a) (not (null? a)))
           (proc document index-node current-substitutions)))
