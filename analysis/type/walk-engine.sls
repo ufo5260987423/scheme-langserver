@@ -61,9 +61,7 @@
                               ; (pretty-print single-substitution)
                               (private-substitute single-target single-substitution))
                             result))
-                        (walk substitutions current)))
-                        )
-                        ))
+                        (walk substitutions current))))))
               initial
               dryed)])
         ; (pretty-print 'test4)
@@ -72,8 +70,7 @@
         ; (pretty-print (append paths dryed))
         (if (equal? ready-for-recursive-result initial)
           initial
-          (apply append (map (lambda (item) (reify substitutions item (append paths dryed))) ready-for-recursive-result))))
-          ]))
+          (apply append (map (lambda (item) (reify substitutions item (append paths dryed))) ready-for-recursive-result))))]))
 
 (define (private-substitute origin single-substitution)
   (cond 
@@ -107,7 +104,7 @@
       (walk substitutions left-index-node))))
 
 (define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
-  (let ([variables-list
+  (letrec ([variables-list
         (map 
           (lambda (index-node)
             (walk substitutions index-node))

@@ -14,7 +14,9 @@
     (scheme-langserver analysis type walk-engine))
 
 (define (lambda? body)
-  (= 2 (length body)))
+  (if (list? body)
+    (= 2 (length body))
+    #f))
 
 (define add-applyable-lambda-types-to-substitutions
   (case-lambda

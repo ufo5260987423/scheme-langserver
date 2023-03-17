@@ -9,6 +9,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type util)
+    (scheme-langserver analysis type walk-engine)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -47,11 +48,12 @@
               (map 
                 (lambda (product)
                   `(,(car product) = ,(cadr product)))
-                (cartesian-product loop-variable loop-prodcure-details))
+                (cartesian-product loop-variables loop-procedure-details))
               ;for key value index-nodes
               (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))]
         [('let (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+; (pretty-print 'let-process)
           (let* ([variables (walk substitutions index-node)]
 
               [return-index-node (car (reverse children))]
@@ -59,6 +61,7 @@
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
+; (pretty-print 'let-process0)
             (append 
               substitutions 
               ;for let index-node

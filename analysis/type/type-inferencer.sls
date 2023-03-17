@@ -7,6 +7,7 @@
 
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
+    (scheme-langserver util cartesian-product)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -14,6 +15,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     
+    (scheme-langserver analysis type rules let)
     (scheme-langserver analysis type rules trivial)
     ; (scheme-langserver analysis type rules lambda)
     ; (scheme-langserver analysis type rules define)
@@ -36,7 +38,10 @@
         append
         (map 
           (lambda (index-node)
-            (private-construct-substitution-list document index-node))
+            (let ([base (private-construct-substitution-list document index-node)])
+              (filter (lambda (item) (not (null? item))) (append base (private-application-process document index-node base)))
+              ; base
+              ))
           (document-index-node-list document))))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
@@ -60,18 +65,49 @@
       `(,(construct-type-expression-with-meta 'complex?) < ,(construct-type-expression-with-meta 'number?)))))
 
 (define (private-construct-substitution-list document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [children (index-node-children index-node)]
+  (let* ([children (index-node-children index-node)]
       [tmp-substitution-list 
         (fold-left
-          (lambda (result proc)
-            (proc document index-node result))
+          (lambda (current-substitutions proc)
+            (filter 
+              (lambda (a) (not (null? a)))
+              (proc document index-node current-substitutions)))
           '()
-          (list trivial-process 
+          ;Sequence order is very important!
+          (list 
+            trivial-process 
+            let-process
             ; lambda-process define-process
-          ))]
+            ))]
       [children-substitution-list 
-        (apply append (map (lambda (child) (private-construct-substitution-list document child)) children))])
+        (apply 
+          append 
+          (map 
+            (lambda (child) 
+              (private-construct-substitution-list document child))
+            children))])
     (append tmp-substitution-list children-substitution-list)))
 
+(define (private-application-process document index-node substitutions)
+  (let* ([variables (walk substitutions index-node)]
+      [children (index-node-children index-node)]
+      [extended-substitutions
+        (filter 
+          (lambda (item) (not (null? item)))
+          (map (lambda (child) (private-application-process document child substitutions)) children))])
+    (if (null? children)
+      extended-substitutions
+      (let* ([head-index-node (car children)]
+          [reified-head-result (reify (append substitutions extended-substitutions) head-index-node)]
+          [filtered-lambdas (filter lambda? reified-head-result)])
+        (if (null? filtered-lambdas)
+          extended-substitutions
+          (append 
+            extended-substitutions
+            (map 
+              (lambda (pair)
+                (list (car pair) '= (cadr pair)))
+              (cartesian-product 
+                variables
+                (map car filtered-lambdas)))))))))
 )
