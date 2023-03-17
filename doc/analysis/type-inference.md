@@ -17,11 +17,11 @@ Further, the known part is following [the summary from csug 9.5](https://cisco.g
 ### Hindley-Milner Type System
 A Hindley-Milner (HM) type system is a classical type system for the lambda calculus with parametric polymorphism. Among HM's more notable properties are its completeness and its ability to infer the most general types of a given program without programmer-supplied type annotations or other hints. Algorithm W is an efficient type inference method in practice, and has been successfully applied on large code bases, although it has a high theoretical complexity. The followings are detailed rules:
 1. Variable Access 
-This rule is usually used for getting type of variable `e1`.
+This rule is usually used for getting type of variable `e1`. You can find its implementation in [let.sls](../../analysis/type/rules/let.sls) and may other files in the future.
 $$ \frac{(x:\sigma) \in \Gamma}{\Gamma \vdash (x:\sigma)} $$ 
 
 2. Application
-This rule is usually used for applying procedure `e1` to `e2` like `(e1 e2)` and get this expression's type.
+This rule is usually used for applying procedure `e1` to `e2` like `(e1 e2)` and get this expression's type. You can find its implementation in [application.sls](../../analysis/type/rules/application.sls) and may other files in the future.
 $$\frac{\Gamma \vdash (e_1:(\tau_1 \to \tau_2)) \quad\quad \Gamma \vdash (e_2 : \tau_1) }{\Gamma \vdash ((e_1\ e_2) : \tau_2)}$$
 
 3. Abstract
@@ -29,7 +29,7 @@ This rule is usually used for defining procedure's type like `(lambda (x) e)`.
 $$\frac{(\Gamma, \;(x:\tau_1)) \vdash (e:\tau_2)}{\Gamma \vdash ((\lambda\ x\ .\ e) : (\tau_1 \to \tau_2))} $$
 
 4. Variable Declaration
-This rule is usually used for refering varable's type with `define`,`let` and many others in [identifier.md](./identifier.md).
+This rule is usually used for refering varable's type with `define`,`let` and many others in [identifier.md](./identifier.md). You can find detailed implementation in [let.sls](../../analysis/type/rules/let.sls) and may other files in the future.
 $$\frac{\Gamma \vdash (e_1:\sigma) \quad\quad (\Gamma,\,(x:\sigma)) \vdash (e_2:\tau)}{\Gamma \vdash ((\mathtt{let}\ (x = e_1)\ \mathtt{in}\ e_2) : \tau)} $$
 
 5. Subtype
@@ -51,26 +51,5 @@ According to [this page](https://stackoverflow.com/questions/12532552/what-part-
 7. $,$ is a way of including specific additional assumptions into an environment $\Gamma$. 
 8. Therefore, $\Gamma, x : \sigma \vdash e : \tau'$ means that environment $\Gamma$, with the additional, overriding assumption that $x$ has type $\tau$, proves that $e$ has type $\tau'$.
 
-### Scoped Type Expression
-Each type expression is consisted with [identifier-references](../../analysis/identifier/reference.sls) of type predictors like `number?`, control operator like `or`, and some inner predictors like `something?`. They're formed as `((return type) ((parameter type)...))` for [Application Rule](#hindleymilner-type-system) or `((parameter type)...)` for [Variable Access Rule](#hindleymilner-type-system). 
-
-1. In scheme-langserver, type is usually attached to [index-node](../../virtual-file-system/index-node.sls)'s `should-have-type` and `actrual-have-type`, and [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`.  
-2. Type attachment occurs after [identifier catchment](./identifier.md). And leaves of index should be firstly typed, compound structures including lists, vectors, procedure apply and syntax transform should be deduced from leaves. 
-3. For index-node's `actual-have-type`, it's a pure type expression. If it encountered multi-times attachments, they should be compounded as an `or` expression.
-4. For index-node's `should-have-type`, it's a list of type expressions. Especially for procedures' arguments, there may be several conflict procedures, and one procedure's different arguments should align type expressions across the whole procedure applying.  
-5. For identifier's `type-expressions`, apparently, it's a list of type expressions because of case-lambda and procedure reload.
-
 ### Implementation
-Intuitively, we can deduce types by tagging r6rs-procedures. However, here a key problem is recursion like 
-```scheme
-(define (sum-0 i) 
-    (if (zero? i)
-        i
-        (+ i (sum-0 (- i 1)))))
-```
-
-In this case, `sum-0`'s return type is the type of `i` or `(+ i (sum-0 (- i 1)))`, its type depend on itself. Taking [hindley-milner-type-inferencer](https://github.com/webyrd/hindley-milner-type-inferencer) as an example, it developed [miniKanren](http://minikanren.org/) a DSL(Domain specific language) to reify type expression. However, it's seemed procedures have more than one argument must be $\beta$-reduced and causes heavily labors on code transformation. 
-
-Our final implementation is roughly rewriting and shrinking [miniKanren](http://minikanren.org/). After [identifier catching](./identifier.md) in a singular [document](../../virtual-file-system/document.sls) code, we transform [index-node](../../virtual-file-system/index-node.sls) tree into triangular substitution list. Then, each [index-node](../../virtual-file-system/index-node.sls)'s `actural-have-type` and correspond [identifier-reference](../../analysis/identifier/reference.sls)'s `type-expressions` can be reified.
-
-Another problem in above case is raised by typing argument `i`, it can not be answered by simple substitution. However, personally I think there are some simplest approaches to "gather" evidence: for `zero?`, type of its single argument has been typed as `(number? x)` in [rnrs-meta-rules.sls](../../analysis/type/rnrs-meta-rules.sls). If there were no other conflicts, the type of `i` would directly be supposed as `(number? x)`, And conflict detection process can be executed with [type-linkage.sls](../../analysis/type/type-linkage.sls). This feature may need more discussed.
+Detailed implementations are in [type folder](../../analysis/type/). It's roughly an ill deductive inference machine. Each type expression is consisted with [identifier-references](../../analysis/identifier/reference.sls) of type predictors like `number?`, control operator like `or`, and some inner predictors like `something?`. They're formed as `((return type) ((parameter type)...))` for [Application Rule](#hindleymilner-type-system) or `((parameter type)...)` for [Variable Access Rule](#hindleymilner-type-system). In scheme-langserver, type is usually attached to [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`. So that type inferencing can be scoped in single file.
