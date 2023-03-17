@@ -14,6 +14,6 @@
                     list1))])
         (if (null? rest)
             current
-            (apply cartesian-product `(,current @,rest)))))
+            (apply cartesian-product `(,current ,@rest)))))
 
 )
