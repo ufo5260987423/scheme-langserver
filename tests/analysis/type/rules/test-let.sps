@@ -26,7 +26,7 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "test type rule: let")
+(test-begin "test variable declaration")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
