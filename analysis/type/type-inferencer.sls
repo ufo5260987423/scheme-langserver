@@ -17,6 +17,7 @@
     
     (scheme-langserver analysis type rules let)
     (scheme-langserver analysis type rules trivial)
+    (scheme-langserver analysis type rules application)
     ; (scheme-langserver analysis type rules lambda)
     ; (scheme-langserver analysis type rules define)
 
@@ -24,7 +25,6 @@
     (scheme-langserver analysis type walk-engine))
 
 ;; We regard the indexes and references as a graph of existed variable and values. 
-;;todo: first, construct type-tree, for procedure, it's like ((return-type-corresponding-index-node) ((first param-index-node)(second param-index-node)))
 ;; try to get result type by substitution
 (define (type-inference-for index-node document)
   (dedupe (reify (document-substitution-list document) index-node)))
@@ -38,9 +38,9 @@
         append
         (map 
           (lambda (index-node)
-            (let ([base (private-construct-substitution-list document index-node)])
-              (filter (lambda (item) (not (null? item))) (append base (private-application-process document index-node base)))
-              ; base
+            (let ([base (private-construct-substitution-list document index-node '())])
+              ; (filter (lambda (item) (not (null? item))) (append base (private-application-process document index-node base)))
+              base
               ))
           (document-index-node-list document))))))
 
@@ -64,50 +64,24 @@
       `(,(construct-type-expression-with-meta 'real?) < ,(construct-type-expression-with-meta 'complex?))
       `(,(construct-type-expression-with-meta 'complex?) < ,(construct-type-expression-with-meta 'number?)))))
 
-(define (private-construct-substitution-list document index-node)
+(define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]
-      [tmp-substitution-list 
-        (fold-left
-          (lambda (current-substitutions proc)
-            (filter 
-              (lambda (a) (not (null? a)))
-              (proc document index-node current-substitutions)))
-          '()
-          ;Sequence order is very important!
-          (list 
-            trivial-process 
-            let-process
-            ; lambda-process define-process
-            ))]
-      [children-substitution-list 
+      [children-substitution-list
         (apply 
           append 
           (map 
             (lambda (child) 
-              (private-construct-substitution-list document child))
+              (private-construct-substitution-list document child base-substitution-list))
             children))])
-    (append tmp-substitution-list children-substitution-list)))
-
-(define (private-application-process document index-node substitutions)
-  (let* ([variables (walk substitutions index-node)]
-      [children (index-node-children index-node)]
-      [extended-substitutions
-        (filter 
-          (lambda (item) (not (null? item)))
-          (map (lambda (child) (private-application-process document child substitutions)) children))])
-    (if (null? children)
-      extended-substitutions
-      (let* ([head-index-node (car children)]
-          [reified-head-result (reify (append substitutions extended-substitutions) head-index-node)]
-          [filtered-lambdas (filter lambda? reified-head-result)])
-        (if (null? filtered-lambdas)
-          extended-substitutions
-          (append 
-            extended-substitutions
-            (map 
-              (lambda (pair)
-                (list (car pair) '= (cadr pair)))
-              (cartesian-product 
-                variables
-                (map car filtered-lambdas)))))))))
+    (fold-left
+      (lambda (current-substitutions proc)
+        (filter
+          (lambda (a) (not (null? a)))
+          (proc document index-node current-substitutions)))
+      children-substitution-list
+      (list 
+        trivial-process
+        let-process
+        application-process
+      ))))
 )

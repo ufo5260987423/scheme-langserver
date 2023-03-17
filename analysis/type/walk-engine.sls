@@ -94,14 +94,12 @@
     [else `(,target)]))
 
 (define (construct-substitutions-between-index-nodes substitutions left-index-node right-index-node symbol)
-  (apply append 
-    (map 
-      (lambda (left-variable)
-        (map 
-          (lambda (right-variable)
-            (list left-variable symbol right-variable))
-          (walk substitutions right-index-node)))
-      (walk substitutions left-index-node))))
+  (map 
+    (lambda (pair)
+      (list (car pair) symbol (cadr pair)))
+    (cartesian-product 
+      (filter variable? (map (lambda (single) (car (reverse single))) (walk substitutions left-index-node)))
+      (filter variable? (map (lambda (single) (car (reverse single))) (walk substitutions right-index-node))))))
 
 (define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
   (letrec ([variables-list
