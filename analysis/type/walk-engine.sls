@@ -5,13 +5,18 @@
     walk:supper-type-list
     reify
     add-to-substitutions
-    remove-from-substitutions)
+    remove-from-substitutions
+
+    construct-substitutions-between-index-nodes
+    construct-parameter-variable-products-with
+    construct-lambdas-with)
   (import 
     (chezscheme)
 
     (scheme-langserver util sub-list)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
+    (scheme-langserver util cartesian-product)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis identifier reference)
@@ -90,6 +95,32 @@
     [(variable? target) `(,target)]
     [(equal? target 'something?) '(something?)]
     [else `(,target)]))
+
+(define (construct-substitutions-between-index-nodes substitutions left-index-node right-index-node symbol)
+  (apply append 
+    (map 
+      (lambda (left-variable)
+        (map 
+          (lambda (right-variable)
+            (list left-variable symbol right-variable))
+          (walk substitutions right-index-node)))
+      (walk substitutions left-index-node))))
+
+(define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
+  (let ([variables-list
+        (map 
+          (lambda (index-node)
+            (walk substitutions index-node))
+          parameter-index-nodes)]
+        [flat-pair 
+        (lambda (pair) 
+          (if (pair? pair)
+            (apply append (map flat-pair pair))
+            pair))])
+    (apply cartesian-product variables-list)))
+
+(define (construct-lambdas-with return-variables parameter-variable-products)
+  (cartesian-product return-variables parameter-variable-products))
 
 (define (walk:index-node->single-variable-list substitutions index-node)
   (apply append (map 
