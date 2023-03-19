@@ -16,7 +16,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 (define (application-process document index-node substitutions)
-  (let* ([variables (map caddr (walk substitutions index-node))]
+  (let* ([variables (walk:index-node->single-variable-list substitutions index-node)]
       [children (index-node-children index-node)])
     (if (null? children)
       substitutions

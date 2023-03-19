@@ -98,14 +98,14 @@
     (lambda (pair)
       (list (car pair) symbol (cadr pair)))
     (cartesian-product 
-      (filter variable? (map (lambda (single) (car (reverse single))) (walk substitutions left-index-node)))
-      (filter variable? (map (lambda (single) (car (reverse single))) (walk substitutions right-index-node))))))
+      (walk:index-node->single-variable-list substitutions left-index-node)
+      (walk:index-node->single-variable-list substitutions right-index-node))))
 
 (define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
   (letrec ([variables-list
         (map 
           (lambda (index-node)
-            (walk substitutions index-node))
+            (walk:index-node->single-variable-list substitutions index-node))
           parameter-index-nodes)]
         [flat-pair 
         (lambda (pair) 

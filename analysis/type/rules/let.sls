@@ -23,10 +23,8 @@
       (match expression
         [('let (? symbol? loop-identifier) (((? symbol? identifier) value ) ... ) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (caddr children))]
@@ -36,7 +34,7 @@
 
               ;(? symbol? loop-identifier)
               [loop-index-node (cadr children)]
-              [loop-variables (walk substitutions loop-index-node)]
+              [loop-variables (walk:index-node->single-variable-list substitutions loop-index-node)]
               ;((return-variable (parameter-variable ...)) **1)
               [loop-procedure-details (construct-lambdas-with return-variables parameter-variable-products)])
             (append 
@@ -53,10 +51,8 @@
               (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
         [('let (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -117,10 +113,8 @@
         ;         (loop (cdr rest)))))]
         [('let* (((? symbol? identifier) value) ... ) _ **1 ) 
           (guard-for document index-node 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -152,10 +146,8 @@
         ;         (loop (append include reference-list) (cdr rest)))))]
         [('letrec (((? symbol? identifier) value ) ... ) _ **1) 
           (guard-for document index-node 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -168,10 +160,8 @@
               (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
         [('letrec-syntax (((? symbol? identifier) value) ... ) _ **1) 
           (guard-for document index-node 'letrec-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -184,10 +174,8 @@
               (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
         [('letrec* (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
