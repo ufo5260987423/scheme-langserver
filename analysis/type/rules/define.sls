@@ -40,7 +40,7 @@
                 (cartesian-product identifier-variables lambda-details))))]
         [('define (? symbol? identifiers) tail) 
           (guard-for document index-node 'define '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([identifier-index-node (car (cadr (index-node-children index-node)))]
+          (let* ([identifier-index-node (cadr (index-node-children index-node))]
               [tail-index-node (car (reverse (index-node-children index-node)))])
             (append 
               substitutions
