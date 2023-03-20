@@ -19,6 +19,7 @@
     (scheme-langserver analysis type rules let)
     (scheme-langserver analysis type rules lambda)
     (scheme-langserver analysis type rules trivial)
+    (scheme-langserver analysis type rules define)
     (scheme-langserver analysis type rules application)
     ; (scheme-langserver analysis type rules define)
 
@@ -86,6 +87,7 @@
         trivial-process
 
         ;their position and order, I don't care.
+        define-process
         let-process
         if-process
         lambda-process
