@@ -15,6 +15,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     
+    (scheme-langserver analysis type rules if)
     (scheme-langserver analysis type rules let)
     (scheme-langserver analysis type rules lambda)
     (scheme-langserver analysis type rules trivial)
@@ -81,9 +82,15 @@
           (proc document index-node current-substitutions)))
       children-substitution-list
       (list 
+        ;this should be the first
         trivial-process
+
+        ;their position and order, I don't care.
         let-process
+        if-process
         lambda-process
+
+        ;this should be the last
         application-process
       ))))
 )

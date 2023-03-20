@@ -26,20 +26,17 @@
 
     (scheme-langserver protocol alist-access-object))
 
-; (test-begin "test lambda access")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-;             [target-document (file-node-document target-file-node)]
-;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 5 4)))]
-;             [check-base (construct-type-expression-with-meta 'integer?)]
-;             )
-;         (construct-substitution-list-for target-document)
-;         (pretty-print (length (type-inference-for target-index-node target-document)))
-;         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base))
-;         )
-; (test-end)
+(test-begin "test lambda access")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 5 4)))])
+        (construct-substitution-list-for target-document)
+        (let ([result (caddr (cddddr (type-inference-for target-index-node target-document)))])
+            (test-equal #t (construct-type-expression-with-meta 'boolean?) (car result))))
+(test-end)
 
-; (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
+(exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
