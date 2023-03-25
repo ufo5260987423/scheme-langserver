@@ -27,15 +27,11 @@
         (if (null? filtered-lambdas)
           substitutions
           ;application rule
-          (let ([applicated-substitution 
-                (append 
-                  substitutions
-                  (map 
-                    (lambda (pair) (list (car pair) '= (cadr pair)))
-                    (cartesian-product variables (map car filtered-lambdas))))])
-            ;gradule typing: unsafe convertion
-            (lambda-templates->new-substitution-list 
-              applicated-substitution 
-              filtered-lambdas 
-              rest-index-nodes)))))))
+          (append 
+            substitutions
+            (map 
+              (lambda (pair) (list (car pair) '= (cadr pair)))
+              (cartesian-product 
+                variables 
+                (map car filtered-lambdas)))))))))
 )

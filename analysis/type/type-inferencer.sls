@@ -45,13 +45,20 @@
               extended-base))
           (document-index-node-list document))))))
 
+;gradule typing: unsafe convertion
 (define (private-implicit-converte substitutions index-node)
   (let ([children (index-node-children index-node)])
     (if (null? children)
       substitutions
-      substitutions
-    )
-  ))
+      (let* ([base (fold-left private-implicit-converte substitutions children)]
+          [head-index-node (car children)]
+          [rest-index-nodes (cdr children)]
+          [reified-head-result (reify base head-index-node)]
+          [filtered-lambdas (filter lambda? reified-head-result)])
+        (lambda-templates->new-substitution-list 
+          base 
+          filtered-lambdas 
+          rest-index-nodes)))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
 (define private-initial-type-constraints
