@@ -40,11 +40,18 @@
         append
         (map 
           (lambda (index-node)
-            (let ([base (private-construct-substitution-list document index-node '())])
-              ; (filter (lambda (item) (not (null? item))) (append base (private-application-process document index-node base)))
-              base
-              ))
+            (let* ([base (private-construct-substitution-list document index-node '())]
+                [extended-base (private-implicit-converte base index-node)])
+              extended-base))
           (document-index-node-list document))))))
+
+(define (private-implicit-converte substitutions index-node)
+  (let ([children (index-node-children index-node)])
+    (if (null? children)
+      substitutions
+      substitutions
+    )
+  ))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
 (define private-initial-type-constraints
@@ -82,6 +89,9 @@
           (lambda (a) (not (null? a)))
           (proc document index-node current-substitutions)))
       children-substitution-list
+      ;all these processor except trivial-process must add its result to current index-node
+      ;such as for (app param ...), app's result type could be (return-type (param-type ...))
+      ;must extend substitution with (current-index-node-variable = return-type)
       (list 
         ;this should be the first
         trivial-process

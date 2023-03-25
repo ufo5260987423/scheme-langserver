@@ -21,16 +21,21 @@
     (if (null? children)
       substitutions
       (let* ([head-index-node (car children)]
+          [rest-index-nodes (cdr children)]
           [reified-head-result (reify substitutions head-index-node)]
           [filtered-lambdas (filter lambda? reified-head-result)])
         (if (null? filtered-lambdas)
           substitutions
-          (append 
-            substitutions
-            (map 
-              (lambda (pair)
-                (list (car pair) '= (cadr pair)))
-              (cartesian-product 
-                variables
-                (map car filtered-lambdas)))))))))
+          ;application rule
+          (let ([applicated-substitution 
+                (append 
+                  substitutions
+                  (map 
+                    (lambda (pair) (list (car pair) '= (cadr pair)))
+                    (cartesian-product variables (map car filtered-lambdas))))])
+            ;gradule typing: unsafe convertion
+            (lambda-templates->new-substitution-list 
+              applicated-substitution 
+              filtered-lambdas 
+              rest-index-nodes)))))))
 )

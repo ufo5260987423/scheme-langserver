@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis type util)
   (export 
     lambda?
-    add-applyable-lambda-types-to-substitutions)
+    lambda-templates->new-substitution-list)
   (import 
     (chezscheme)
     (scheme-langserver util sub-list)
@@ -18,36 +18,19 @@
     (= 2 (length body))
     #f))
 
-(define add-applyable-lambda-types-to-substitutions
-  (case-lambda
-    [(substitutions application-index-node) 
-      (let* ([children (index-node-children application-index-node)]
-        [head-index-node (car children)]
-        [rest-children (cdr children)]
-        [head-variable-list (walk:index-node->single-variable-list head-index-node)])
-        (fold-left
-          (lambda (substitutions-tmp head-variable)
-            (add-applyable-lambda-types-to-substitutions 
-              substitutions-tmp
-              head-variable
-              rest-children))
-          substitutions
-          head-variable-list))]
-    [(substitutions head-variable rest-index-node-list) 
-      (if (null? rest-index-node-list)
-        substitutions
-        (fold-left
-          (lambda (substitutions-tmp rule-segments)
-            (private-add-applyable-lambda-types-to-substitutions 
-              substitutions-tmp
-              rule-segments
-              rest-index-node-list))
-          substitutions
-          (map 
-            (lambda (lambda-types) (private-segment (cadr lambda-types))) 
-            (filter lambda? (walk substitutions head-variable)))))]))
+(define (lambda-templates->new-substitution-list substitutions lambda-templatess rest-index-node-list) 
+  (if (null? rest-index-node-list)
+    substitutions
+    (fold-left
+      (lambda (substitutions-tmp rule-segments)
+        (private-lambda-templates->new-substitution-list 
+          substitutions-tmp
+          rule-segments
+          rest-index-node-list))
+      substitutions
+      (map private-segment lambda-templatess))))
 
-(define private-add-applyable-lambda-types-to-substitutions
+(define private-lambda-templates->new-substitution-list
   (case-lambda 
     ;only for initialization
     ;porque se-calher normalmente há um current-segment por initialized procedure
@@ -57,7 +40,7 @@
         [(null? rest-segments) '()]
         [(null? rest-index-nodes) '()]
         [else 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             (car rest-segments) 
             (cdr rest-segments) 
@@ -82,7 +65,7 @@
         ;5
         ;rest-index-node haven't been ran out
         [(and (null? rest-segments) (private-is-... current-segment)) 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             current-segment 
             rest-segments 
@@ -92,7 +75,7 @@
         ;6
         ;rest-index-node haven't been ran out
         [(and (null? rest-segments) (private-is-**1 current-segment)) 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             current-segment 
             rest-segments 
@@ -105,7 +88,7 @@
 
         ;8
         [(and (null? rest-index-nodes) (private-is-... current-segment)) 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             (car rest-segments) 
             (cdr rest-segments) 
@@ -115,7 +98,7 @@
         [(and (null? rest-index-nodes) (private-is-**1 current-segment) (not last?)) '()]
         ;10
         [(and (null? rest-index-nodes) (private-is-**1 current-segment) last?) 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             (car rest-segments) 
             (cdr rest-segments) 
@@ -126,7 +109,7 @@
 
         ;12
         [(and (private-is-**1 current-segment) (not last?)) 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             current-segment 
             rest-segments 
@@ -137,7 +120,7 @@
         [(and (private-is-**1 current-segment) last?) 
           (let ([tmp-result 
                 ;be greedy
-                (private-add-applyable-lambda-types-to-substitutions 
+                (private-lambda-templates->new-substitution-list 
                   substitutions 
                   current-segment 
                   rest-segments 
@@ -145,7 +128,7 @@
                   (cdr rest-index-nodes)
                   #t)])
             (if (null? tmp-result)
-              (private-add-applyable-lambda-types-to-substitutions 
+              (private-lambda-templates->new-substitution-list 
                 substitutions 
                 (car rest-segments) 
                 (cdr rest-segments)
@@ -157,7 +140,7 @@
         [(and (private-is-... current-segment)) 
           (let ([tmp-result 
                 ;be greedy
-                (private-add-applyable-lambda-types-to-substitutions 
+                (private-lambda-templates->new-substitution-list 
                   substitutions 
                   current-segment 
                   rest-segments 
@@ -165,7 +148,7 @@
                   (cdr rest-index-nodes)
                   #t)])
             (if (null? tmp-result)
-              (private-add-applyable-lambda-types-to-substitutions 
+              (private-lambda-templates->new-substitution-list 
                 substitutions 
                 (car rest-segments) 
                 (cdr rest-segments)
@@ -175,7 +158,7 @@
               tmp-result))]
         ;15
         [else 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
             current-segment 
             rest-segments 
@@ -192,7 +175,7 @@
           ;jump in from: 5 14
           ;may jump in from: 13 14
           [(private-is-... current-segment)
-            (private-add-applyable-lambda-types-to-substitutions 
+            (private-lambda-templates->new-substitution-list 
               extended-substitutions
               current-segment 
               rest-segments 
@@ -202,14 +185,14 @@
           ;may jump in from: 13 14
           [(private-is-**1 current-segment)
             (let ([tmp-result0 
-                  (private-add-applyable-lambda-types-to-substitutions 
+                  (private-lambda-templates->new-substitution-list 
                     extended-substitutions
                     current-segment 
                     rest-segments 
                     (cdr rest-index-nodes)
                     #t)])
               (if (and last? (null? tmp-result0))
-                (private-add-applyable-lambda-types-to-substitutions 
+                (private-lambda-templates->new-substitution-list 
                   substitutions
                   (car rest-segments)
                   (cdr rest-segments)
@@ -219,7 +202,7 @@
           ;jump in from: 15
           ;may jump in from: 13 14
           [else 
-            (private-add-applyable-lambda-types-to-substitutions 
+            (private-lambda-templates->new-substitution-list 
               extended-substitutions 
               current-segment 
               rest-segments 
