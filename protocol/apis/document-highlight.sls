@@ -61,30 +61,4 @@
                       (document-index-node-list document))))
                 target-documents)))))
           '#())))
-
-(define (find-references-in document index-node available-references predicate?)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-expression ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(? predicate? maybe-symbol) 
-        (let ([result 
-              (find 
-                (lambda (candidate-reference) 
-                  (if (find (lambda (cr) (equal? cr candidate-reference)) available-references)
-                    #t
-                    #f))
-                (find-available-references-for document index-node maybe-symbol))])
-          (if result
-            `(,(make-location
-              (document-uri document) 
-              (make-range
-                (int+text->position (index-node-start index-node) (document-text document))
-                (int+text->position (index-node-end index-node) (document-text document)))))
-            '()))]
-      [else 
-        (if (null? children)
-          '()
-          (apply append
-            (map (lambda (child-index-node) (find-references-in document child-index-node available-references predicate?)) children)))])))
 )
