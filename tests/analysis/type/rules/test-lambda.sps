@@ -52,12 +52,7 @@
             [check-base1 (construct-type-expression-with-meta '(boolean? (string? string?)))])
         (construct-substitution-list-for target-document)
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base0))
-
-        (pretty-print 'procedure)
-        (pretty-print (filter (lambda (item) (= 2(length (cadr item)))) (filter lambda? (type-inference-for target-index-node target-document))))
-
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base1))
-        )
+        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base1)))
 (test-end)
 
 (test-begin "cross clause type access")

@@ -56,8 +56,9 @@
           [head-index-node (car children)]
           [rest-index-nodes (cdr children)]
           [reified-head-result (reify base head-index-node)]
-          [filtered-lambdas (dedupe (filter lambda? reified-head-result))])
-        (lambda-templates->new-substitution-list base filtered-lambdas rest-index-nodes)))))
+          [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
+          [return-variable-list (walk:index-node->single-variable-list substitutions index-node)])
+        (lambda-templates->new-substitution-list base filtered-lambdas return-variable-list rest-index-nodes)))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
 (define private-initial-type-constraints

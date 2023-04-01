@@ -39,7 +39,7 @@
       body)
     (identifier-reference? body)))
 
-(define (lambda-templates->new-substitution-list substitutions lambda-templates rest-index-node-list) 
+(define (lambda-templates->new-substitution-list substitutions lambda-templates return-variable-list rest-index-node-list) 
   (if (null? rest-index-node-list)
     substitutions
     (fold-left
@@ -52,7 +52,13 @@
                 rest-index-node-list)])
           (if (null? tmp)
             substitutions
-            tmp)))
+            (append
+              tmp 
+              (map 
+                (lambda (return-variable)
+                  `(,return-variable = ,(car rule-segments)))
+                return-variable-list))
+            )))
       substitutions
       (map private-segment lambda-templates))))
 
