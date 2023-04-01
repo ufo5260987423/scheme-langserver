@@ -103,17 +103,20 @@
       (walk:index-node->single-variable-list substitutions right-index-node))))
 
 (define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
-  (letrec ([variables-list
+  (let ([l (length parameter-index-nodes)]
+        [variables-list
         (map 
           (lambda (index-node)
             (walk:index-node->single-variable-list substitutions index-node))
-          parameter-index-nodes)]
-        [flat-tree
-        (lambda (tree) 
-          (if (pair? tree)
-            (append (flat-tree (car tree)) (flat-tree (cadr tree)))
-            (list tree)))])
-    (map flat-tree (apply cartesian-product variables-list))))
+          parameter-index-nodes)])
+    (if (or (zero? l) (= 1 l))
+      (map list variables-list)
+      (letrec ([flat-tree
+            (lambda (tree) 
+              (if (pair? tree)
+                (append (flat-tree (car tree)) (flat-tree (cadr tree)))
+                (list tree)))])
+        (map flat-tree (apply cartesian-product variables-list))))))
 
 (define (construct-lambdas-with return-variables parameter-variable-products)
   (cartesian-product return-variables parameter-variable-products))
