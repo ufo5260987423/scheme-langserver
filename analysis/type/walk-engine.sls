@@ -108,12 +108,12 @@
           (lambda (index-node)
             (walk:index-node->single-variable-list substitutions index-node))
           parameter-index-nodes)]
-        [flat-pair 
-        (lambda (pair) 
-          (if (pair? pair)
-            (apply append (map flat-pair pair))
-            pair))])
-    (apply cartesian-product variables-list)))
+        [flat-tree
+        (lambda (tree) 
+          (if (pair? tree)
+            (append (flat-tree (car tree)) (flat-tree (cadr tree)))
+            (list tree)))])
+    (map flat-tree (apply cartesian-product variables-list))))
 
 (define (construct-lambdas-with return-variables parameter-variable-products)
   (cartesian-product return-variables parameter-variable-products))
