@@ -1,7 +1,9 @@
 (library (scheme-langserver analysis type util)
   (export 
     lambda?
-    lambda-templates->new-substitution-list)
+    lambda-templates->new-substitution-list
+    pure-identifier-reference?
+    pure-variable?)
   (import 
     (chezscheme)
     (scheme-langserver util sub-list)
@@ -18,6 +20,24 @@
   (if (list? body)
     (= 2 (length body))
     #f))
+
+(define (pure-variable? body)
+  (if (list? body)
+    (fold-left 
+      (lambda (flag item)
+        (and flag (pure-variable? item)))
+      #t
+      body)
+    (variable? body)))
+
+(define (pure-identifier-reference? body)
+  (if (list? body)
+    (fold-left 
+      (lambda (flag item)
+        (and flag (pure-identifier-reference? item)))
+      #t
+      body)
+    (identifier-reference? body)))
 
 (define (lambda-templates->new-substitution-list substitutions lambda-templates rest-index-node-list) 
   (if (null? rest-index-node-list)

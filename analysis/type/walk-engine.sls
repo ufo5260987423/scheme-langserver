@@ -81,7 +81,10 @@
         [((? index-node? head) ': (? variable? tail)) tail]
         [((? variable? head) ': tail) tail]
         [else origin])]
-    [(list? origin) (map (lambda (item) (private-substitute item single-substitution)) origin)]
+    [(list? origin)
+      ; (pretty-print 'private)
+      ; (pretty-print origin)
+     (map (lambda (item) (private-substitute item single-substitution)) origin)]
     [else origin]))
 
 (define (private-dry target)
