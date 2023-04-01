@@ -172,7 +172,7 @@
                 (filter variable? (reify substitutions current-index-node)))]
           [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
           ;default extension
-          [extended-substitutions (append substitutions new-substitutions)]
+          [extended-substitutions (dedupe (append substitutions new-substitutions))]
           [result
             (private-lambda-templates->new-substitution-list 
               extended-substitutions
