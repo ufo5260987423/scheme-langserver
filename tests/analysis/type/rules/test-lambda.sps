@@ -40,7 +40,7 @@
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
 (test-end)
 
-(test-begin "procedure type access")
+(test-begin "case-lambda procedure type access")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -50,10 +50,27 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
             [check-base0 (construct-type-expression-with-meta '(boolean? (string? string? integer? integer?)))]
             [check-base1 (construct-type-expression-with-meta '(boolean? (string? string?)))])
-
+        (construct-substitution-list-for target-document)
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base0))
-        ; (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base1))
+
+        (pretty-print 'procedure)
+        (pretty-print (filter (lambda (item) (= 2(length (cadr item)))) (filter lambda? (type-inference-for target-index-node target-document))))
+
+        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base1))
         )
+(test-end)
+
+(test-begin "cross clause type access")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 14)))]
+            [check-base (construct-type-expression-with-meta 'string? )])
+        (construct-substitution-list-for target-document)
+        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
