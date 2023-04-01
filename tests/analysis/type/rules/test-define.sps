@@ -34,11 +34,7 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))])
-        (pretty-print 'test)
         (construct-substitution-list-for target-document)
-        (pretty-print (length (document-substitution-list target-document)))
-        (pretty-print 'bbb)
-        (pretty-print (length (type-inference-for target-index-node target-document)))
         (let ([result (cadddr (cddddr (type-inference-for target-index-node target-document)))])
             (test-equal #t (construct-type-expression-with-meta 'boolean?) (car result))))
 (test-end)

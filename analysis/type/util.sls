@@ -11,7 +11,8 @@
     (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type walk-engine))
+    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type variable))
 
 (define (lambda? body)
   (if (list? body)
@@ -23,22 +24,33 @@
     substitutions
     (fold-left
       (lambda (substitutions-tmp rule-segments)
-        (private-lambda-templates->new-substitution-list 
-          substitutions-tmp
-          rule-segments
-          rest-index-node-list))
+        (let ([tmp 
+              (private-lambda-templates->new-substitution-list 
+                substitutions-tmp
+                ;lambda-template->parameter-templates
+                (cadr rule-segments)
+                rest-index-node-list)])
+          (if (null? tmp)
+            substitutions
+            tmp)))
       substitutions
       (map private-segment lambda-templates))))
 
+;return '() substitutions or extended-substitutions
+;and '() represent an error
 (define private-lambda-templates->new-substitution-list
   (case-lambda 
-    ;only for initialization
-    ;porque se-calher normalmente há um current-segment por initialized procedure
+    ;process null values
+    ;if current-segment in other clause is available, they won't jump in this clause
     [(substitutions rest-segments rest-index-nodes)
-      (cond
+      (cond 
         [(and (null? rest-segments) (null? rest-index-nodes)) substitutions]
+
+        ;rest-segments is null and rest-index-nodes is not null
         [(null? rest-segments) '()]
-        [(null? rest-index-nodes) '()]
+
+        ;rest-segments is not null and rest-index-nodes is null
+        ;and both of them are not null
         [else 
           (private-lambda-templates->new-substitution-list 
             substitutions 
@@ -46,182 +58,128 @@
             (cdr rest-segments) 
             rest-index-nodes
             #f)])]
-    ;process null value 
-    ;jump from other two clause
-    ;directly reach termination at 1 2 3 4 7 9 11
+    ;jump from above clause
+    ;suppose current-segment is not null
+    ;suppose rest-index-nodes is not null
+    ;rest-segments may be null
+    ;this clause won't extend substitutions
+    ;this clause won't check whether rest-segments is null
     [(substitutions current-segment rest-segments rest-index-nodes last?)
-  (pretty-print 'aaa)
       (cond
-        ;1
-        [(and (null? rest-segments) (null? rest-index-nodes) (private-is-... current-segment)) substitutions]
-        ;2
-        ;**1 has been consumed
-        [(and (null? rest-segments) (null? rest-index-nodes) (private-is-**1 current-segment) last?) substitutions]
-        ;3
-        ;**1 haven't been consumed
-        [(and (null? rest-segments) (null? rest-index-nodes) (private-is-**1 current-segment) (not last?)) '()]
-        ;4
-        [(and (null? rest-segments) (null? rest-index-nodes)) substitutions]
+        [(and (private-is-... current-segment) (null? rest-index-nodes))
+          ;skip current-segment is available
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            rest-segments
+            rest-index-nodes)]
+        [(private-is-... current-segment)
+          (let ([tmp
+                (private-lambda-templates->new-substitution-list 
+                  substitutions
+                  current-segment
+                  rest-segments
+                  (car rest-index-nodes)
+                  (cdr rest-index-nodes)
+                  last?)])
+            (if (null? tmp)
+              ;skip current-segment is available
+              (private-lambda-templates->new-substitution-list 
+                substitutions
+                rest-segments
+                rest-index-nodes)
+              tmp))]
 
-        ;5
-        ;rest-index-node haven't been ran out
-        [(and (null? rest-segments) (private-is-... current-segment)) 
-  (pretty-print 'aaa0)
+        [(and (private-is-**1 current-segment) (null? rest-index-nodes) last?)
+          ;skip current-segment is available
           (private-lambda-templates->new-substitution-list 
-            substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes)
-            last?)]
-        ;6
-        ;rest-index-node haven't been ran out
-        [(and (null? rest-segments) (private-is-**1 current-segment)) 
-  (pretty-print 'aaa1)
-          (private-lambda-templates->new-substitution-list 
-            substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes)
-            last?)]
-        ;7
-        ;rest-index-node haven't been ran out
-        [(null? rest-segments) '()]
-
-        ;8
-        [(and (null? rest-index-nodes) (private-is-... current-segment)) 
-  (pretty-print 'aaa2)
-          (private-lambda-templates->new-substitution-list 
-            substitutions 
-            (car rest-segments) 
-            (cdr rest-segments) 
-            rest-index-nodes
-            #f)]
-        ;9
-        [(and (null? rest-index-nodes) (private-is-**1 current-segment) (not last?)) '()]
-        ;10
-        [(and (null? rest-index-nodes) (private-is-**1 current-segment) last?) 
-  (pretty-print 'aaa3)
-          (private-lambda-templates->new-substitution-list 
-            substitutions 
-            (car rest-segments) 
-            (cdr rest-segments) 
-            rest-index-nodes
-            #f)]
-        ;11
-        [(and (null? rest-index-nodes)) '()]
-
-        ;12
-        [(and (private-is-**1 current-segment) (not last?)) 
-  (pretty-print 'aaa4)
-          (private-lambda-templates->new-substitution-list 
-            substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes)
-            #f)]
-        ;13
+            substitutions
+            rest-segments
+            rest-index-nodes)]
+        [(and (private-is-**1 current-segment) (null? rest-index-nodes) (not last?)) '()]
         [(and (private-is-**1 current-segment) last?) 
-  (pretty-print 'aaa5)
-          (let ([tmp-result 
-                ;be greedy
+          (let ([tmp
                 (private-lambda-templates->new-substitution-list 
-                  substitutions 
-                  current-segment 
-                  rest-segments 
-                  (car rest-index-nodes) 
+                  substitutions
+                  current-segment
+                  rest-segments
+                  (car rest-index-nodes)
                   (cdr rest-index-nodes)
-                  #t)])
-            (if (null? tmp-result)
+                  last?)])
+            (if (null? tmp)
+              ;skip current-segment is available
               (private-lambda-templates->new-substitution-list 
-                substitutions 
-                (car rest-segments) 
-                (cdr rest-segments)
-                (car rest-index-nodes) 
-                (cdr rest-index-nodes)
-                #f)
-              tmp-result))]
-        ;14
-        [(and (private-is-... current-segment)) 
-  (pretty-print 'aaa6)
-          (let ([tmp-result 
-                ;be greedy
-                (private-lambda-templates->new-substitution-list 
-                  substitutions 
-                  current-segment 
-                  rest-segments 
-                  (car rest-index-nodes) 
-                  (cdr rest-index-nodes)
-                  #t)])
-            (if (null? tmp-result)
-              (private-lambda-templates->new-substitution-list 
-                substitutions 
-                (car rest-segments) 
-                (cdr rest-segments)
-                (car rest-index-nodes) 
-                (cdr rest-index-nodes)
-                #f)
-              tmp-result))]
-        ;15
+                substitutions
+                rest-segments
+                rest-index-nodes)
+              tmp))]
+        [(and (private-is-**1 current-segment) (not last?)) 
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            current-segment
+            rest-segments
+            (car rest-index-nodes)
+            (cdr rest-index-nodes)
+            last?)]
+
+        [last? 
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            rest-segments
+            rest-index-nodes)]
+        [(null? rest-index-nodes) '()]
         [else 
-  (pretty-print 'aaa7)
           (private-lambda-templates->new-substitution-list 
             substitutions 
             current-segment 
             rest-segments 
             (car rest-index-nodes) 
             (cdr rest-index-nodes) 
-            #f)])]
-    ;add to substitutions
+            last?)])]
+    ;do actural substitution extending
+    ;current-segment is not null
+    ;current-index-node is not null
+    ;rest-segments may be null
+    ;rest-index-nodes may be null
+    ;jump from above last clause
+    ;jump into above two clauses
     [(substitutions current-segment rest-segments current-index-node rest-index-nodes last?)
-  (pretty-print 'ccc)
       (let* ([type (private-type-of current-segment)]
-          [variable-list (walk:index-node->single-variable-list substitutions current-index-node)]
-          [new-substitutions (map (lambda (single-variable) `(,current-index-node : ,single-variable)) variable-list)]
-          [extended-substitutions `(,@substitutions ,@new-substitutions)])
-  (pretty-print 'ccc0)
-        (cond
-          ;jump in from: 5 14
-          ;may jump in from: 13 14
-          [(private-is-... current-segment)
-  (pretty-print 'ccc1)
+          [variable-list 
+              (filter 
+                (lambda (item) 
+                  (not (equal? type item))) 
+                ;this will import parameters' variable
+                (filter variable? (reify substitutions current-index-node)))]
+          [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
+          ;default extension
+          [extended-substitutions (append substitutions new-substitutions)]
+          [result
             (private-lambda-templates->new-substitution-list 
               extended-substitutions
-              current-segment 
-              rest-segments 
-              (cdr rest-index-nodes)
-              #t)]
-          ;jump in from: 6 12 13
-          ;may jump in from: 13 14
-          [(private-is-**1 current-segment)
-  (pretty-print 'ccc2)
-            (let ([tmp-result0 
-                  (private-lambda-templates->new-substitution-list 
-                    extended-substitutions
-                    current-segment 
-                    rest-segments 
-                    (cdr rest-index-nodes)
-                    #t)])
-              (if (and last? (null? tmp-result0))
-                (private-lambda-templates->new-substitution-list 
-                  substitutions
-                  (car rest-segments)
-                  (cdr rest-segments)
-                  (cdr rest-index-nodes)
-                  #f)
-                '()))]
-          ;jump in from: 15
-          ;may jump in from: 13 14
-          [else 
-  (pretty-print 'ccc3)
-            (private-lambda-templates->new-substitution-list 
-              extended-substitutions 
-              current-segment 
-              rest-segments 
-              rest-index-nodes
-              #f)]))]))
+              rest-segments
+              rest-index-nodes)])
+        ;well, null means failure
+        (if (null? result)
+          ;attach current-segment to next index-node
+          (cond
+            ;mas, não há index-node disponível
+            [(null? rest-index-nodes) '()]
+            [(private-is-... current-segment)
+              (private-lambda-templates->new-substitution-list 
+                extended-substitutions
+                current-segment 
+                rest-segments 
+                rest-index-nodes
+                #t)]
+            [(private-is-**1 current-segment)
+              (private-lambda-templates->new-substitution-list 
+                extended-substitutions
+                current-segment 
+                rest-segments 
+                rest-index-nodes
+                #t)]
+            [else '()])
+          result))]))
 
 (define (private-is-... segment) 
   (if (list? segment)

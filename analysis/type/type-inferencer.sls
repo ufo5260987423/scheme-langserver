@@ -32,47 +32,32 @@
   (dedupe (reify (document-substitution-list document) index-node)))
 
 (define (construct-substitution-list-for document)
-  (document-substitution-list-set! 
-    document 
-    (append 
-      private-initial-type-constraints 
-      (apply 
-        append
-        (map 
-          (lambda (index-node)
-            (let* ([base (private-construct-substitution-list document index-node '())]
-                [extended-base (private-implicit-converte base index-node)])
-              extended-base))
-          (document-index-node-list document))))))
+  (let ([base 
+        (append 
+          private-initial-type-constraints 
+          (apply 
+            append
+            (map 
+              (lambda (index-node) (private-construct-substitution-list document index-node '()))
+              (document-index-node-list document))))])
+    (document-substitution-list-set! 
+      document 
+      (fold-left 
+        private-add-implicit-convertions
+        base
+        (document-index-node-list document)))))
 
 ;gradule typing: unsafe convertion
-(define (private-implicit-converte substitutions index-node)
-  ; (let ([exported-identifier-references (index-node-references-export-to-other-node index-node)]
-  ;     [has-parameter? 
-  ;       (fold-left 
-  ;         (lambda (prev-result identifier-reference)
-  ;           (and prev-result (equal? 'parameter (identifier-reference-type))))
-  ;         #t
-  ;         exporeted-identifier-references)])
-  ;   (if (or (null? exported-identifier-references) (not has-parameter?))
-  ;     substitutions
-  ;     (if 
-  ;         )
-  ;   )
-  ;   (if (or (null? children) (null? parent))
-  ;     substitutions
-  ;     (let* ([base (fold-left private-implicit-converte substitutions children)]
-  ;         [head-index-node (car children)]
-  ;         [rest-index-nodes (cdr children)]
-  ;         [reified-head-result (reify base head-index-node)]
-  ;         [filtered-lambdas (filter lambda? reified-head-result)])
-  ;       (lambda-templates->new-substitution-list 
-  ;         base 
-  ;         filtered-lambdas 
-  ;         rest-index-nodes)))
-  substitutions
-          ; )
-          )
+(define (private-add-implicit-convertions substitutions index-node)
+  (let ([children (index-node-children index-node)])
+    (if (null? children)
+      substitutions
+      (let* ([base (fold-left private-add-implicit-convertions substitutions children)]
+          [head-index-node (car children)]
+          [rest-index-nodes (cdr children)]
+          [reified-head-result (reify base head-index-node)]
+          [filtered-lambdas (dedupe (filter lambda? reified-head-result))])
+        (lambda-templates->new-substitution-list base filtered-lambdas rest-index-nodes)))))
 
 ;consistent with meta.sls rnrs-meta-rules.sls
 (define private-initial-type-constraints
