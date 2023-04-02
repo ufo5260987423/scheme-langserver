@@ -16,7 +16,7 @@ Your donation will make this world better. Also, you can issue your advice and I
 This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
 
 ## Recent Status
-I'm now working on type-inference branch. And it will be an ill Hindley-Milner Type System. Variable access/declaration rule has passed (you can verify it with `test/analysis/type/rules/test-let.sps`). Detailed documentation will be complete next month. 
+I'm now working on type-inference branch. And it will be a Gradual Typing System. Variable access/declaration rule has passed (you can verify it with `test/analysis/type/rules/test-lambda.sps` and many other tests). Detailed documentation will be complete next month. 
 
 ## Log
 1.0.10: Fix bugs in 1.0.9.
