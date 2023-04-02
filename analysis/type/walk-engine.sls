@@ -119,7 +119,10 @@
         (map flat-tree (apply cartesian-product variables-list))))))
 
 (define (construct-lambdas-with return-variables parameter-variable-products)
-  (cartesian-product return-variables parameter-variable-products))
+  (map 
+    (lambda (item)
+      (list (car item) '<- (cadr item)))
+    (cartesian-product return-variables parameter-variable-products)))
 
 (define (walk:index-node->single-variable-list substitutions index-node)
   (apply append (map 

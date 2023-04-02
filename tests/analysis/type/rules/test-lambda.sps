@@ -48,8 +48,8 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
-            [check-base0 (construct-type-expression-with-meta '(boolean? (string? string? integer? integer?)))]
-            [check-base1 (construct-type-expression-with-meta '(boolean? (string? string?)))])
+            [check-base0 (construct-type-expression-with-meta '(boolean? <- (string? string? integer? integer?)))]
+            [check-base1 (construct-type-expression-with-meta '(boolean? <- (string? string?)))])
         (construct-substitution-list-for target-document)
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base0))
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base1)))

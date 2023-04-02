@@ -38,8 +38,7 @@
                   (list (car pair) '= (cadr pair)))
                 (cartesian-product
                   variables
-                  (construct-lambdas-with return-variables parameter-variable-products))))
-              )]
+                  (construct-lambdas-with return-variables parameter-variable-products)))))]
         [('case-lambda clause **1) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([variables (walk:index-node->single-variable-list substitutions index-node)]

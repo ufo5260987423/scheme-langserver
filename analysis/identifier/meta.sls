@@ -65,7 +65,11 @@
                   identifier-reference
                   (private-construct-type-expression-with-meta 
                      (map 
-                        cdr
+                        (lambda (item)
+                           (let ([tmp (cdr item)])
+                              (if (null? tmp)
+                                 tmp
+                                 `(,(car tmp) <- ,(cadr tmp)))))
                         (binary-search
                            (list->vector rnrs-chez-rules)
                            (lambda (target0 target1)

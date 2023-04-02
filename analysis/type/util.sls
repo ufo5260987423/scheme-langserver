@@ -6,6 +6,8 @@
     pure-variable?)
   (import 
     (chezscheme)
+    (ufo-match)
+
     (scheme-langserver util sub-list)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
@@ -18,7 +20,9 @@
 
 (define (lambda? body)
   (if (list? body)
-    (= 2 (length body))
+    (match body
+      [(head '<- tail) #t]
+      [else #f])
     #f))
 
 (define (pure-variable? body)
@@ -48,7 +52,7 @@
               (private-lambda-templates->new-substitution-list 
                 substitutions-tmp
                 ;lambda-template->parameter-templates
-                (cadr rule-segments)
+                (caddr rule-segments)
                 rest-index-node-list)])
           (if (null? tmp)
             substitutions
