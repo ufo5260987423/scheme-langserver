@@ -18,10 +18,6 @@
     index-node-references-import-in-this-node-set!
     index-node-excluded-references
     index-node-excluded-references-set!
-    index-node-should-have-type-set!
-    index-node-actural-have-type-set!
-    index-node-should-have-type
-    index-node-actural-have-type
 
     init-index-node
     is-first-child?
@@ -39,13 +35,7 @@
     (mutable children)
     (mutable references-export-to-other-node)
     (mutable references-import-in-this-node)
-    (mutable excluded-references)
-    (mutable should-have-type)
-    (mutable actural-have-type))
-    (protocol
-      (lambda (new)
-        (lambda (parent start end datum/annotations children export import exclude)
-          (new parent start end datum/annotations children export import exclude '() '())))))
+    (mutable excluded-references)))
 
 (define (init-index-node parent datum/annotation)
   (let* ([source (annotation-source datum/annotation)]
