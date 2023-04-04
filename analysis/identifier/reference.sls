@@ -14,6 +14,8 @@
     identifier-reference-parent
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
+
+    identifier-reference-initialization-index-node
     
     sort-identifier-references
     is-pure-identifier-reference-misture?)
@@ -36,6 +38,7 @@
     (immutable identifier)
     (immutable document)
     (immutable index-node)
+    (immutable initialization-index-node)
     (immutable library-identifier)
     (immutable type)
     (immutable parent)
@@ -105,7 +108,7 @@
                 (natural-order-compare 
                   (symbol->string (identifier-reference-identifier reference0))
                   (symbol->string (identifier-reference-identifier reference1))))
-              (make-identifier-reference identifier '() '() '() '() '() '()))]
+              (make-identifier-reference identifier '() '() '() '() '() '() '()))]
           [tmp-result 
             (filter
               (lambda (reference)

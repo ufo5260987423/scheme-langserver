@@ -27,7 +27,7 @@
               [third-index-node (caddr children)]
               [third-head-index-node (car (index-node-children third-index-node))]
               [expression0-index-node (caddr (index-node-children third-head-index-node))])
-            (clause-process document third-index-node expression0-index-node '()))]
+            (clause-process index-node document third-index-node expression0-index-node '()))]
         [('with-syntax ((pattern expression) **1) body ...)
           (guard-for document index-node 'with-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([pattern-expression-index-node (cadr (index-node-children index-node))])
@@ -35,6 +35,7 @@
               (if (not (null? pattern-expressions))
                 (begin
                   (clause-process 
+                    index-node
                     document 
                     (cadr (index-node-children (car pattern-expressions))) 
                     (car (index-node-children (car pattern-expressions))) 
@@ -47,20 +48,20 @@
           (let ([rest (cddr (index-node-children index-node))])
             ;(a b)
             (map (lambda (clause-index-node)
-              (clause-process document clause-index-node (car (index-node-children clause-index-node)) literals))
+              (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
               rest))]
         [('syntax-case to-match (literals ...) (a b ...) **1) 
           (guard-for document index-node 'syntax-case '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([rest (cdddr (index-node-children index-node))])
             ;(a b)
             (map (lambda (clause-index-node)
-              (clause-process document clause-index-node (car (index-node-children clause-index-node)) literals))
+              (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
               rest))]
         [else '()])
       (except c
         [else '()]))))
 
-(define (clause-process document index-node template-index-node literals)
+(define (clause-process initialization-index-node document index-node template-index-node literals)
   (let* ([ann (index-node-datum/annotations template-index-node)]
       [expression (annotation-stripped ann)]
       [symbols 
@@ -75,6 +76,7 @@
                 symbol
                 document
                 template-index-node
+                initialization-index-node
                 '()
                 'syntax-parameter
                 '()

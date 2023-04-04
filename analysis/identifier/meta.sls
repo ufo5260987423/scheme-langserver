@@ -53,7 +53,7 @@
    (sort-identifier-references 
       (map 
          (lambda (identifier-pair) 
-            (make-identifier-reference (car identifier-pair) '() '() library-instance (cadr identifier-pair) '() '()))
+            (make-identifier-reference (car identifier-pair) '() '() '() library-instance (cadr identifier-pair) '() '()))
          list-instance)))
 
 (define (init-type-expressions)

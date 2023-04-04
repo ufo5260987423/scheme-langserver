@@ -24,22 +24,22 @@
     (match expression
       [('library (library-identifiers **1) _ **1 ) 
         (map 
-          (lambda (child-node) (match-export root-file-node document library-identifiers child-node))
+          (lambda (child-node) (match-export index-node root-file-node document library-identifiers child-node))
           (index-node-children index-node))]
       [else '()])
     index-node))
 
-(define (match-export root-file-node document library-identifiers index-node)
+(define (match-export initialization-index-node root-file-node document library-identifiers index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
       [('export dummy **1 ) 
         (map 
-          (lambda (child-node) (match-clause root-file-node document library-identifiers child-node)) 
+          (lambda (child-node) (match-clause initialization-index-node root-file-node document library-identifiers child-node)) 
           (cdr (index-node-children index-node)))]
       [else '()])))
 
-(define (match-clause root-file-node document library-identifiers index-node)
+(define (match-clause initialization-index-node root-file-node document library-identifiers index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
@@ -66,6 +66,7 @@
                   (annotation-stripped (index-node-datum/annotations external-index-node))
                   document
                   external-index-node
+                  initialization-index-node 
                   library-identifiers
                   'pointer
                   '()
@@ -90,6 +91,7 @@
                   expression
                   document
                   index-node
+                  initialization-index-node 
                   library-identifiers
                   'pointer
                   '()
