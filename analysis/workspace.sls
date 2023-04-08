@@ -199,24 +199,18 @@
 
 ;; rules must be run as ordered
 (define (walk-and-process threaded? root-file-node document index-node)
-  ;;1
-  (define-process root-file-node document index-node)
-  (define-record-type-process root-file-node document index-node)
-  ;;2
-  ;; It's seemed that now single thread is faster.
-  (if #f;threaded?
-    (threaded-map 
-      (lambda (func) (func root-file-node document index-node))
-      (list 
-        let-process 
-        lambda-process 
-        syntax-process 
-        load-process))
-    (begin 
-      (let-process root-file-node document index-node)
-      (lambda-process root-file-node document index-node)
-      (syntax-process root-file-node document index-node)
-      (load-process root-file-node document index-node)))
+  (find 
+    (lambda (func)
+      (not (null? (func root-file-node document index-node))))
+    (list 
+      ;;1
+      define-process
+      define-record-type-process
+      ;;2
+      let-process
+      lambda-process
+      syntax-process
+      load-process))
 
   (map 
     (lambda (child-index-node) 
