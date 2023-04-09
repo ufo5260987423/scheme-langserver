@@ -140,7 +140,16 @@
     ))
 
 ;; target-file-node<-[linkage]-other-file-nodes
-(define (refresh-workspace-for workspace-instance target-file-node text path-mode)
+(define refresh-workspace-for 
+  (case-lambda 
+    [(workspace-instance target-file-node text path-mode)
+      (refresh-workspace-for 
+        workspace-instance 
+        target-file-node 
+        text 
+        (make-vector (string-length (document-text (file-node-document target-file-node))))
+        path-mode) ]
+    [(workspace-instance target-file-node text shrinked-mapper-vector path-mode)]
   (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
       [root-library-node (workspace-library-node workspace-instance)]
@@ -195,7 +204,7 @@
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'tail) 
             (init-references workspace-instance tail-path-batchs)]
-          [else (raise 'illegle-path-mode)])))))
+          [else (raise 'illegle-path-mode)]))))))
 
 ;; rules must be run as ordered
 (define (walk-and-process threaded? root-file-node document index-node)
