@@ -51,10 +51,11 @@
 (define (did-change workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
+      [document-text (document-text (file-node-document file-node))]
       [body (lambda() 
           (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
-              [text (document-text (file-node-document file-node))]
-              [align-list (list (private-generate-vector 0 (string-length text)))])
+              [text document-text]
+              [align-list (list (private-generate-vector 0 (string-length document-text)))])
             (if (null? content-changes)
               (try
                 (refresh-workspace-for workspace file-node text 'single+tail)
@@ -87,11 +88,11 @@
 (define (private-shrink-list->vector origin-align-list)
   (if (null? origin-align-list)
     '#()
-    (let ([tail-result (private-shrink (cdr origin-align-list))]
+    (let ([tail-result (private-shrink-list->vector (cdr origin-align-list))]
         [head (car origin-align-list)])
       (if (null? (vector->list tail-result))
         head
-        (vector->map
+        (vector-map
           (lambda (item) 
             (if (= -1 item)
               -1

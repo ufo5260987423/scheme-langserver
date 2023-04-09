@@ -37,7 +37,8 @@
   (fields
     (immutable identifier)
     (immutable document)
-    (immutable index-node)
+    ;only mutable for transform
+    (mutable index-node)
     (immutable initialization-index-node)
     (immutable library-identifier)
     (immutable type)
@@ -45,6 +46,61 @@
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
+
+(define (transform document origin-index-node-list target-index-node-list mapper-vector)
+  (if (null? origin-index-node-list)
+    '()
+    (let* ([head (car origin-index-node-list)]
+        [children (index-node-children head)]
+        [imported-reference (index-node-references-import-in-this-node head)]
+        [exported-reference (index-node-references-export-to-other-node head)]
+        [exclude-reference (index-node-excluded-references head)])
+      (if (and 
+          (null? imported-reference)
+          (null? exported-reference)
+          (null? exclude-reference))
+        '()
+        (let ([target-index-node (pick-index-node-with-mapper head target-index-node-list mapper-vector)])
+          (if (index-node? target-index-node)
+            (begin
+              (map 
+                (lambda (child) (transform child target-index-node-list mapper-vector))
+                children)
+              (transform (cdr origin-index-node-list) target-index-node-list mapper-vector)
+              (index-node-excluded-references-set!
+                target-index-node
+                (append 
+                  (index-node-excluded-references target-index-node)
+                  (filter 
+                    (lambda (item)
+                      (index-node? (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)))
+                    exclude-reference)))
+              (index-node-references-import-in-this-node-set!
+                target-index-node
+                (append 
+                  (index-node-references-import-in-this-node target-index-node)
+                  (filter 
+                    (lambda (item)
+                      (index-node? (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)))
+                    imported-reference)))
+              (map 
+                (lambda (item) (private-export-transform item document target-index-node-list mapper-vector))
+                exported-reference))
+            '()))))))
+
+;only for export identifier-references
+(define (private-export-transform identifier-reference location-document target-index-node-list mapper-vector)
+  (let ([document (identifier-reference-document identifier-reference)]
+      [index-node (identifier-reference-index-node identifier-reference)])
+    (let ([target-index-node (pick-index-node-with-mapper index-node target-index-node-list mapper-vector)])
+      (if (index-node? target-index-node)
+        (begin
+          (identifier-reference-index-node-set! identifier-reference target-index-node)
+          (index-node-references-export-to-other-node-set! 
+            target-index-node
+            (append 
+              (index-node-references-export-to-other-node target-index-node)
+              identifier-reference)))))))
 
 (define (is-pure-identifier-reference-misture? expression)
   (if (list? expression)

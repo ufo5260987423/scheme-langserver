@@ -2,6 +2,7 @@
   (export 
     pick-index-node-from
     pick-index-node-parent-of
+    pick-index-node-with-mapper 
 
     make-index-node
     index-node?
@@ -21,8 +22,12 @@
 
     init-index-node
     is-first-child?
+    is-leaf?
+    cover?
     clear-references-for)
-  (import (chezscheme))
+  (import 
+    (chezscheme)
+    (scheme-langserver util dedupe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node
@@ -55,6 +60,12 @@
         '()))
     node))
 
+(define (is-leaf? index-node)
+  (null? (index-node-children index-node)))
+
+(define (cover? index-node position)
+  (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position)))
+
 (define (is-first-child? index-node)
   (if (null? (index-node-parent index-node))
     #f
@@ -64,6 +75,20 @@
   (index-node-references-export-to-other-node-set! index-node '())
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
+
+(define (pick-index-node-with-mapper origin-index-node target-index-node-list mapper-vector)
+  (let ([start (index-node-start origin-index-node)]
+      [end (index-node-end origin-index-node)])
+    (let loop ([i start]
+        [mapper (vector-ref mapper-vector start)])
+      (if (< i end)
+        (if (= -1 mapper)
+          '()
+          (loop (+ i 1) (vector-ref mapper-vector (+ i 1))))
+        (pick-index-node-parent-of 
+          target-index-node-list
+          (vector-ref mapper-vector start)
+          (vector-ref mapper-vector end))))))
 
 ; It's for partially indexing to speed up document synchronize. However, I notice that the semantic changing is within a document and not a index-node, which make comparing two indexing, copying identifier references and indexing changes much more difficult. Further works need more help.
 (define (pick-index-node-parent-of index-node-list position0 position1)
