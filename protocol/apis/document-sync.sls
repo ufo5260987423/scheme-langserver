@@ -92,17 +92,23 @@
       (if (null? (vector->list tail-result))
         head
         (vector->map
-          (lambda (item) (vector-ref tail-result item))
+          (lambda (item) 
+            (if (= -1 item)
+              -1
+              (vector-ref tail-result item)))
           head)))))
 
 (define (private-align start origin-end target-end origin-align-list)
   (let ([origin-align-vector (cadr (reverse origin-align-list))])
     (let loop ([i start])
-      (if (< i (vector-length origin-align-vector))
-        (begin
-          (vector-set! origin-align-vector i (+ target-end (- i start)))
-          (loop (+ 1 i)))
-        origin-align-list))))
+      (cond
+        [(< i origin-end) 
+          (vector-set! origin-align-vector i -1)
+          (loop (+ 1 i))]
+        [(< i (vector-length origin-align-vector))
+          (vector-set! origin-align-vector i (+ target-end (- i origin-end)))
+          (loop (+ 1 i))]
+        [else origin-align-list]))))
 
 (define (private-generate-vector start end)
   (let ([result (vector (- end start))])
