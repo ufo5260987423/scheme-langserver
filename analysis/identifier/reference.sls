@@ -16,6 +16,8 @@
     identifier-reference-index-node
 
     identifier-reference-initialization-index-node
+
+    transform
     
     sort-identifier-references
     is-pure-identifier-reference-misture?)
@@ -64,10 +66,8 @@
         (let ([target-index-node (pick-index-node-with-mapper head target-index-node-list mapper-vector)])
           (if (index-node? target-index-node)
             (begin
-              (map 
-                (lambda (child) (transform child target-index-node-list mapper-vector))
-                children)
-              (transform (cdr origin-index-node-list) target-index-node-list mapper-vector)
+              (transform document children target-index-node-list mapper-vector target-index-node-blacklist)
+              (transform document (cdr origin-index-node-list) target-index-node-list mapper-vector target-index-node-blacklist)
               (index-node-excluded-references-set!
                 target-index-node
                 (append 

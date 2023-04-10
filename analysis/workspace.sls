@@ -124,43 +124,24 @@
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         (document-reference-list-set! document '())
-        (map 
-          (lambda (index-node)
-            (clear-references-for index-node)
-            ; (pretty-print 'bbb)
-            (import-process root-file-node root-library-node document index-node)
-            ; (pretty-print 'ccc)
-            (walk-and-process threaded? root-file-node document index-node)
-            (export-process root-file-node document index-node)
-            ; (pretty-print 'ddd)
-            (document-reference-list-set! 
-              document 
-              (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-          index-node-list)
-          ;;todo
-          ; (type-inference-for document)
-          )]
-    [(root-file-node root-library-node threaded? target-path shrinked-mapper-vector)
-      (let* ([current-file-node (walk-file root-file-node target-path)]
-          [document (file-node-document current-file-node)]
-          ;suppose this list has synchronized with origin node list
-          [index-node-list (document-index-node-list document)])
-        (map 
-          (lambda (index-node)
-            (clear-references-for index-node)
-            ; (pretty-print 'bbb)
-            (import-process root-file-node root-library-node document index-node)
-            ; (pretty-print 'ccc)
-            (walk-and-process threaded? root-file-node document index-node)
-            (export-process root-file-node document index-node)
-            ; (pretty-print 'ddd)
-            (document-reference-list-set! 
-              document 
-              (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-          index-node-list)
-          ;;todo
-          ; (type-inference-for document)
-        )]))
+        (private-init-references root-file-node root-library-node threaded? document index-node-list))]
+    [(root-file-node root-library-node threaded? document target-index-nodes)
+      (map 
+        (lambda (index-node)
+          (clear-references-for index-node)
+          ; (pretty-print 'bbb)
+          (import-process root-file-node root-library-node document index-node)
+          ; (pretty-print 'ccc)
+          (walk-and-process threaded? root-file-node document index-node)
+          (export-process root-file-node document index-node)
+          ; (pretty-print 'ddd)
+          (document-reference-list-set! 
+            document 
+            (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+        target-index-nodes)
+        ;;todo
+        ; (type-inference-for document)
+        ]))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 (define refresh-workspace-for 
@@ -182,6 +163,7 @@
             old-library-identifier-list))]
       [target-document (file-node-document target-file-node)]
       [target-path (uri->path (document-uri target-document))]
+      [old-index-nodes (document-index-node-list target-document)]
       [new-index-nodes (map (lambda (item) (init-index-node '() item)) (source-file->annotations text target-path))])
     (document-text-set! target-document text)
     (document-index-node-list-set! target-document new-index-nodes)
@@ -217,9 +199,13 @@
           [(equal? path-mode 'previous+single+tail) 
             (init-references workspace-instance previous-path-batchs)
             (private-init-references root-file-node root-library-node threaded? target-path)
+            (private-init-references root-file-node root-library-node threaded? target-path)
+            ; (transform document old-index-nodes new-index-nodes shrinked-mapper-vector ready-to-synchronize-index-node)
+            ; (private-init-references )
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'single) 
-            (private-init-references root-file-node root-library-node threaded? target-path)]
+            (private-init-references root-file-node root-library-node threaded? target-path)
+            ]
           [(equal? path-mode 'previous+single) 
             (init-references workspace-instance previous-path-batchs)
             (private-init-references root-file-node root-library-node threaded? target-path) ]
