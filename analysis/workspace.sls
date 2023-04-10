@@ -117,27 +117,50 @@
               batch)
             (loop (cdr paths)))))]))
 
-(define (private-init-references root-file-node root-library-node threaded? target-path)
-  (let* ([current-file-node (walk-file root-file-node target-path)]
-      [document (file-node-document current-file-node)]
-      [index-node-list (document-index-node-list document)])
-    (document-reference-list-set! document '())
-    (map 
-      (lambda (index-node)
-        (clear-references-for index-node)
-        ; (pretty-print 'bbb)
-        (import-process root-file-node root-library-node document index-node)
-        ; (pretty-print 'ccc)
-        (walk-and-process threaded? root-file-node document index-node)
-        (export-process root-file-node document index-node)
-        ; (pretty-print 'ddd)
-        (document-reference-list-set! 
-          document 
-          (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
-      index-node-list)
-      ;;todo
-    ; (type-inference-for document)
-    ))
+(define private-init-references 
+  (case-lambda 
+    [(root-file-node root-library-node threaded? target-path)
+      (let* ([current-file-node (walk-file root-file-node target-path)]
+          [document (file-node-document current-file-node)]
+          [index-node-list (document-index-node-list document)])
+        (document-reference-list-set! document '())
+        (map 
+          (lambda (index-node)
+            (clear-references-for index-node)
+            ; (pretty-print 'bbb)
+            (import-process root-file-node root-library-node document index-node)
+            ; (pretty-print 'ccc)
+            (walk-and-process threaded? root-file-node document index-node)
+            (export-process root-file-node document index-node)
+            ; (pretty-print 'ddd)
+            (document-reference-list-set! 
+              document 
+              (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+          index-node-list)
+          ;;todo
+          ; (type-inference-for document)
+          )]
+    [(root-file-node root-library-node threaded? target-path shrinked-mapper-vector)
+      (let* ([current-file-node (walk-file root-file-node target-path)]
+          [document (file-node-document current-file-node)]
+          ;suppose this list has synchronized with origin node list
+          [index-node-list (document-index-node-list document)])
+        (map 
+          (lambda (index-node)
+            (clear-references-for index-node)
+            ; (pretty-print 'bbb)
+            (import-process root-file-node root-library-node document index-node)
+            ; (pretty-print 'ccc)
+            (walk-and-process threaded? root-file-node document index-node)
+            (export-process root-file-node document index-node)
+            ; (pretty-print 'ddd)
+            (document-reference-list-set! 
+              document 
+              (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+          index-node-list)
+          ;;todo
+          ; (type-inference-for document)
+        )]))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 (define refresh-workspace-for 
@@ -147,7 +170,7 @@
         workspace-instance 
         target-file-node 
         text 
-        (make-vector (string-length (document-text (file-node-document target-file-node))))
+        (vector-map (lambda (item) -1) (make-vector (string-length (document-text (file-node-document target-file-node)))))
         path-mode)]
     [(workspace-instance target-file-node text shrinked-mapper-vector path-mode)
   (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
@@ -187,20 +210,23 @@
           [previous-path (list-ahead-of path target-path)]
           [tail-path (list-after path target-path)]
           [previous-path-batchs (shrink-paths linkage previous-path)]
-          [tail-path-batchs (shrink-paths linkage tail-path)])
+          [tail-path-batchs (shrink-paths linkage tail-path)]
+          [threaded?  (workspace-threaded? workspace-instance)]
+          [ready-to-synchronize-index-node (pick-index-node-cover-mapper new-index-nodes shrinked-mapper-vector)])
         (cond 
           [(equal? path-mode 'previous+single+tail) 
             (init-references workspace-instance previous-path-batchs)
-            (init-references workspace-instance (list `(,target-path)))
+            (private-init-references root-file-node root-library-node threaded? target-path)
             (init-references workspace-instance tail-path-batchs)]
-          [(equal? path-mode 'single) (init-references workspace-instance (list `(,target-path)))]
+          [(equal? path-mode 'single) 
+            (private-init-references root-file-node root-library-node threaded? target-path)]
           [(equal? path-mode 'previous+single) 
             (init-references workspace-instance previous-path-batchs)
-            (init-references workspace-instance (list `(,target-path)))]
+            (private-init-references root-file-node root-library-node threaded? target-path) ]
           [(equal? path-mode 'previous) 
             (init-references workspace-instance previous-path-batchs)]
           [(equal? path-mode 'single+tail) 
-            (init-references workspace-instance (list `(,target-path)))
+            (private-init-references root-file-node root-library-node threaded? target-path)
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'tail) 
             (init-references workspace-instance tail-path-batchs)]

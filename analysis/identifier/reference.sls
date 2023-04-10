@@ -47,7 +47,7 @@
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
 
-(define (transform document origin-index-node-list target-index-node-list mapper-vector)
+(define (transform document origin-index-node-list target-index-node-list mapper-vector target-index-node-blacklist)
   (if (null? origin-index-node-list)
     '()
     (let* ([head (car origin-index-node-list)]
@@ -55,6 +55,7 @@
         [imported-reference (index-node-references-import-in-this-node head)]
         [exported-reference (index-node-references-export-to-other-node head)]
         [exclude-reference (index-node-excluded-references head)])
+      (document-reference-list-set! document '())
       (if (and 
           (null? imported-reference)
           (null? exported-reference)
@@ -73,7 +74,11 @@
                   (index-node-excluded-references target-index-node)
                   (filter 
                     (lambda (item)
-                      (index-node? (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)))
+                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)])
+                        (and 
+                          (index-node? tmp) 
+                          (not (contain? target-index-node-blacklist tmp)) 
+                          (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     exclude-reference)))
               (index-node-references-import-in-this-node-set!
                 target-index-node
@@ -81,7 +86,11 @@
                   (index-node-references-import-in-this-node target-index-node)
                   (filter 
                     (lambda (item)
-                      (index-node? (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)))
+                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)])
+                        (and 
+                          (index-node? tmp) 
+                          (not (contain? target-index-node-blacklist tmp)) 
+                          (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     imported-reference)))
               (map 
                 (lambda (item) (private-export-transform item document target-index-node-list mapper-vector))

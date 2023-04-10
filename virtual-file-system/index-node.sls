@@ -3,6 +3,7 @@
     pick-index-node-from
     pick-index-node-parent-of
     pick-index-node-with-mapper 
+    pick-index-node-cover-mapper
 
     make-index-node
     index-node?
@@ -23,6 +24,7 @@
     init-index-node
     is-first-child?
     is-leaf?
+    is-ancestor?
     cover?
     clear-references-for)
   (import 
@@ -66,6 +68,13 @@
 (define (cover? index-node position)
   (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position)))
 
+(define (is-ancestor? ancestor target)
+  (if (null? target)
+    #f
+    (if (equal? ancestor (index-node-parent target))
+      #t
+      (is-ancestor? ancestor (index-node-parent target)))))
+
 (define (is-first-child? index-node)
   (if (null? (index-node-parent index-node))
     #f
@@ -76,15 +85,45 @@
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
 
+(define (pick-index-node-cover-mapper target-index-node-list mapper-vector)
+  (let ([start (index-node-start (car target-index-node-list))]
+      [end (index-node-end (car (reverse target-index-node-list)))]
+      [v-l (vector-length mapper-vector)])
+    (let loop ([i start]
+        [result '()])
+      (if (and (< i v-l) (< i end))
+        (loop
+          (+ i 1)
+          (if (= -1 (vector-ref mapper-vector i))
+            (if (null? result)
+              `(,(list i i))
+              (let* ([r (reverse result)]
+                  [last (car r)]
+                  [heads (reverse (cdr r))]
+                  [s (car last)]
+                  [e (cadr last)])
+                (if (= i (+ 1 e))
+                  (append heads `(,(list s i)))
+                  (append result `(,(list i i))))))
+            result))
+        (dedupe 
+          (append 
+            (map 
+              (lambda (item) 
+                (pick-index-node-parent-of target-index-node-list (car item) (+ 1 (cadr item))))
+              result)
+            (if (< v-l end)
+              (pick-index-node-parent-of target-index-node-list v-l end)
+              '())))))))
+
 (define (pick-index-node-with-mapper origin-index-node target-index-node-list mapper-vector)
   (let ([start (index-node-start origin-index-node)]
       [end (index-node-end origin-index-node)])
-    (let loop ([i start]
-        [mapper (vector-ref mapper-vector start)])
+    (let loop ([i start])
       (if (< i end)
-        (if (= -1 mapper)
+        (if (= -1 (vector-ref mapper-vector i))
           '()
-          (loop (+ i 1) (vector-ref mapper-vector (+ i 1))))
+          (loop (+ i 1)))
         (pick-index-node-parent-of 
           target-index-node-list
           (vector-ref mapper-vector start)
@@ -92,14 +131,14 @@
 
 ; It's for partially indexing to speed up document synchronize. However, I notice that the semantic changing is within a document and not a index-node, which make comparing two indexing, copying identifier references and indexing changes much more difficult. Further works need more help.
 (define (pick-index-node-parent-of index-node-list position0 position1)
-  (let ([result (pick-index-node-from index-node-list position0)])
-    (if (null? result)
-      result
-      (let* ([start (index-node-start result)]
-          [end (index-node-end result)])
-        (if (and (<= start position0) (>= end position1))
-          result
-          (pick-index-node-parent-of `(,(index-node-parent result)) position0 position1))))))
+  (let ([f
+      (dedupe (filter 
+        (lambda (item) (and (<= (index-node-start item) position0) (>= (index-node-end item) position1)))
+        index-node-list))])
+    (if (null? f)
+      '()
+      (let ([c (pick-index-node-parent-of (apply append (map index-node-children index-node-list)) position0 position1)])
+        (if (null? c) f c)))))
 
 (define (pick-index-node-from index-node-list position)
   (let ([result 
