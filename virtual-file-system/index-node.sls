@@ -108,10 +108,11 @@
             result))
         (dedupe 
           (append 
-            (map 
-              (lambda (item) 
-                (pick-index-node-parent-of target-index-node-list (car item) (+ 1 (cadr item))))
-              result)
+            (apply append 
+              (map 
+                (lambda (item) 
+                  (pick-index-node-parent-of target-index-node-list (car item) (+ 1 (cadr item))))
+                result))
             (if (< v-l end)
               (pick-index-node-parent-of target-index-node-list v-l end)
               '())))))))

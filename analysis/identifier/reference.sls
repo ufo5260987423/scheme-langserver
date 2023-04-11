@@ -57,7 +57,6 @@
         [imported-reference (index-node-references-import-in-this-node head)]
         [exported-reference (index-node-references-export-to-other-node head)]
         [exclude-reference (index-node-excluded-references head)])
-      (document-reference-list-set! document '())
       (if (and 
           (null? imported-reference)
           (null? exported-reference)
