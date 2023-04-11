@@ -142,7 +142,7 @@
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name) "-set"))
+                    (string->symbol (string-append record-name-string (symbol->string name) "-set!"))
                     document
                     set-index-node
                     initialization-index-node
@@ -182,7 +182,7 @@
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name) "-set"))
+                    (string->symbol (string-append record-name-string (symbol->string name) "-set!"))
                     document
                     set-index-node
                     initialization-index-node
