@@ -88,10 +88,11 @@
 (define (pick-index-node-cover-mapper target-index-node-list mapper-vector)
   (let ([start (index-node-start (car target-index-node-list))]
       [end (index-node-end (car (reverse target-index-node-list)))]
-      [v-l (vector-length mapper-vector)])
+      [v-l (vector-length mapper-vector)]
+      [vector-end (vector-ref mapper-vector (- (vector-length mapper-vector) 1))])
     (let loop ([i start]
         [result '()])
-      (if (and (< i v-l) (< i end))
+      (if (< i v-l)
         (loop
           (+ i 1)
           (if (= -1 (vector-ref mapper-vector i))
@@ -106,16 +107,12 @@
                   (append heads `(,(list s i)))
                   (append result `(,(list i i))))))
             result))
-        (dedupe 
-          (append 
-            (apply append 
-              (map 
-                (lambda (item) 
-                  (pick-index-node-parent-of target-index-node-list (car item) (+ 1 (cadr item))))
-                result))
-            (if (< v-l end)
-              (pick-index-node-parent-of target-index-node-list v-l end)
-              '())))))))
+        (dedupe
+          (apply append 
+            (map 
+              (lambda (item) 
+                (pick-index-node-parent-of target-index-node-list (car item) (+ 1 (cadr item))))
+              result)))))))
 
 (define (pick-index-node-with-mapper origin-index-node target-index-node-list mapper-vector)
   (let ([start (index-node-start origin-index-node)]

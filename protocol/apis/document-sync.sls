@@ -55,10 +55,10 @@
       [body (lambda() 
           (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
               [text document-text]
-              [align-list (list (private-generate-vector 0 (string-length document-text)))])
+              [align-list (list (private-generate-vector (string-length document-text)))])
             (if (null? content-changes)
               (try
-                (refresh-workspace-for workspace file-node text 'single+tail)
+                (refresh-workspace-for workspace file-node text (private-shrink-list->vector align-list) 'single+tail)
                 (except e [else '()]))
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
@@ -80,7 +80,13 @@
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
                   (string-replace text temp-text start end)
-                  (private-align start end (+ start (string-length temp-text)) (append align-list (private-generate-vector 0 (+ start (string-length temp-text))))))))))])
+                  (private-align 
+                    start 
+                    end 
+                    (+ start (string-length temp-text)) 
+                    (append 
+                      align-list 
+                      (list (private-generate-vector (+ start (string-length temp-text) (- (string-length text) end)))))))))))])
     (try
       (body)
       (except e [else '()]))))
@@ -111,13 +117,12 @@
           (loop (+ 1 i))]
         [else origin-align-list]))))
 
-(define (private-generate-vector start end)
-  (let ([result (vector (- end start))])
-    (fold-left
-      (lambda (i)
-        (vector-set! vector (- i start) i)
-        (+ 1 i))
-      start
-      (vector->list result))
-    result))
+(define (private-generate-vector length)
+  (let ([result (make-vector length)])
+    (let loop ([i 0])
+      (if (< i length)
+        (begin
+          (vector-set! result i i)
+          (loop (+ i 1)))
+        result))))
 )

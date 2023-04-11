@@ -198,7 +198,7 @@
           [filtered-identifier-references 
             (filter 
               (lambda (identifier-reference)
-                (let ([index-node (identifier-reference-index-node identifier-reference)])
+                (let ([index-node (identifier-reference-initialization-index-node identifier-reference)])
                   (and 
                     (not (contain? ready-to-synchronize-index-node index-node)) 
                     (find (lambda (p) (is-ancestor? p index-node)) ready-to-synchronize-index-node))))

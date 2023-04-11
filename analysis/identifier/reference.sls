@@ -39,9 +39,10 @@
   (fields
     (immutable identifier)
     (immutable document)
-    ;only mutable for transform
+    ;these two only mutable for transform
     (mutable index-node)
-    (immutable initialization-index-node)
+    (mutable initialization-index-node)
+
     (immutable library-identifier)
     (immutable type)
     (immutable parent)
@@ -73,7 +74,7 @@
                   (index-node-excluded-references target-index-node)
                   (filter 
                     (lambda (item)
-                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)])
+                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
                         (and 
                           (index-node? tmp) 
                           (not (contain? target-index-node-blacklist tmp)) 
@@ -85,7 +86,7 @@
                   (index-node-references-import-in-this-node target-index-node)
                   (filter 
                     (lambda (item)
-                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-index-node item) target-index-node-list mapper-vector)])
+                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
                         (and 
                           (index-node? tmp) 
                           (not (contain? target-index-node-blacklist tmp)) 
@@ -99,10 +100,13 @@
 ;only for export identifier-references
 (define (private-export-transform identifier-reference location-document target-index-node-list mapper-vector)
   (let ([document (identifier-reference-document identifier-reference)]
+      [initialization-index-node (identifier-reference-initialization-index-node identifier-reference)]
       [index-node (identifier-reference-index-node identifier-reference)])
-    (let ([target-index-node (pick-index-node-with-mapper index-node target-index-node-list mapper-vector)])
-      (if (index-node? target-index-node)
+    (let ([target-initialization-index-node (pick-index-node-with-mapper initialization-index-node target-index-node-list mapper-vector)]
+        [target-index-node (pick-index-node-with-mapper index-node target-index-node-list mapper-vector)])
+      (if (and (index-node? target-index-node) (index-node? target-initialization-index-node))
         (begin
+          (identifier-reference-initialization-index-node-set! identifier-reference target-initialization-index-node)
           (identifier-reference-index-node-set! identifier-reference target-index-node)
           (index-node-references-export-to-other-node-set! 
             target-index-node
