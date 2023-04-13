@@ -73,3 +73,12 @@ Based on library framework, `export` and `import` would transfer identifier-refe
 
 ### Identifier binding for self-made macro
 As like [try.sls](../../util/try.sls), they also produce identifiers as expanding macros. A patch will be fixed in the future.
+
+### Why does identifier catching interleave index fully updating?
+This question is somehow asked maybe they think would speed up auto-complete for long scheme code programming. Their basic idea is that whether the old caught identifiers can be smoothly transformed from old indexed code to newly updated indexed code. Apparently, copy and paste seems to cost less than `match` macro. However, it faced a serious problem that any seemed-locally updating may globally affect whole syntax tree, because code editing is orthogonal with index-nodes tree, and practically, is orthogonal with identifier catching. 
+
+In relation with this, all index node in old code, before it transformed its caught identifiers to new code, two criterions must be followed:
+1. Its ancestors must prove similar context with old code, because identifiers imported by ancestors may affect the catching mechanism.
+2. Its sibling and children must be consisted with old identifiers. Because some identifier definition macros (like `define`) beyond themselves but fully overlap within their common parent node. And children may affect identifiers' detail.
+
+To be a simple conclusion, these criterions are not more efficient than fully updated. But maybe more work can be done.
