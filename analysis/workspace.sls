@@ -193,38 +193,21 @@
           [tail-path (list-after path target-path)]
           [previous-path-batchs (shrink-paths linkage previous-path)]
           [tail-path-batchs (shrink-paths linkage tail-path)]
-          [threaded?  (workspace-threaded? workspace-instance)]
-          [ready-to-synchronize-index-node (pick-index-node-cover-mapper new-index-nodes shrinked-mapper-vector)]
-          [filtered-identifier-references 
-            (filter 
-              (lambda (identifier-reference)
-                (let ([index-node (identifier-reference-initialization-index-node identifier-reference)])
-                  (and 
-                    (not (contain? ready-to-synchronize-index-node index-node)) 
-                    (find (lambda (p) (is-ancestor? p index-node)) ready-to-synchronize-index-node))))
-              (document-reference-list target-document))])
+          [threaded?  (workspace-threaded? workspace-instance)])
         (cond 
           [(equal? path-mode 'previous+single+tail) 
             (init-references workspace-instance previous-path-batchs)
-            ; (document-reference-list-set! target-document filtered-identifier-references)
-            ; (transform target-document old-index-nodes new-index-nodes shrinked-mapper-vector ready-to-synchronize-index-node)
-            (private-init-references root-file-node root-library-node threaded? target-document ready-to-synchronize-index-node)
+            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes)
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'single) 
-            ; (document-reference-list-set! target-document filtered-identifier-references)
-            ; (transform target-document old-index-nodes new-index-nodes shrinked-mapper-vector ready-to-synchronize-index-node)
-            (private-init-references root-file-node root-library-node threaded? target-document ready-to-synchronize-index-node) ]
+            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes)]
           [(equal? path-mode 'previous+single) 
             (init-references workspace-instance previous-path-batchs)
-            ; (document-reference-list-set! target-document filtered-identifier-references)
-            ; (transform target-document old-index-nodes new-index-nodes shrinked-mapper-vector ready-to-synchronize-index-node)
-            (private-init-references root-file-node root-library-node threaded? target-document ready-to-synchronize-index-node) ]
+            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes)]
           [(equal? path-mode 'previous) 
             (init-references workspace-instance previous-path-batchs)]
           [(equal? path-mode 'single+tail) 
-            ; (document-reference-list-set! target-document filtered-identifier-references)
-            ; (transform target-document old-index-nodes new-index-nodes shrinked-mapper-vector ready-to-synchronize-index-node)
-            (private-init-references root-file-node root-library-node threaded? target-document ready-to-synchronize-index-node)
+            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes) 
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'tail) 
             (init-references workspace-instance tail-path-batchs)]
