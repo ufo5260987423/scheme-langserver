@@ -4,7 +4,6 @@
   (import 
     (chezscheme) 
     (ufo-thread-pool) 
-    (ufo-thread-pool util try) 
     (ufo-match) 
 
     (scheme-langserver analysis workspace)
@@ -23,6 +22,7 @@
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
 
+    (scheme-langserver util try) 
     (scheme-langserver util association)
     (scheme-langserver util path))
 
@@ -219,6 +219,7 @@
               (make-transcoder (utf-8-codec))) 
             (equal? enable-multi-thread? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
+          ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '())])

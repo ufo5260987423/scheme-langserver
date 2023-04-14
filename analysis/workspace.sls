@@ -22,6 +22,7 @@
   (import 
     (ufo-match)
     (ufo-threaded-function)
+    (ufo-thread-pool) 
 
     (chezscheme) 
     (only (srfi :13 strings) string-suffix?)
@@ -34,12 +35,12 @@
     (scheme-langserver util sub-list)
 
     (scheme-langserver analysis util)
+    (scheme-langserver analysis tokenizer)
     
-    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
     (scheme-langserver analysis dependency shrinker)
 
-    (scheme-langserver analysis tokenizer)
+    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules define-record-type)
     (scheme-langserver analysis identifier rules library-define)
     (scheme-langserver analysis identifier rules library-export)
@@ -62,7 +63,8 @@
     (mutable library-node)
     (mutable file-linkage)
     (immutable facet)
-    (immutable threaded?)))
+    ;only for identifer catching and type inference
+    (immutable thread-pool)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -88,11 +90,12 @@
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)]
               [paths (get-init-reference-path file-linkage)]
-              [batches (shrink-paths file-linkage paths)])
+              [batches (shrink-paths file-linkage paths)]
+              [thread-pool (if threaded? (init-thread-pool 2 #t) '())])
         ; (pretty-print 'aaa)
-            (init-references root-file-node root-library-node threaded? batches)
+            (init-references root-file-node root-library-node thread-pool batches)
         ; (pretty-print 'eee)
-            (make-workspace root-file-node root-library-node file-linkage identifier threaded?))])]))
+            (make-workspace root-file-node root-library-node file-linkage identifier thread-pool))])]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -105,34 +108,34 @@
       (init-references 
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
-        (workspace-threaded? workspace-instance)
+        (workspace-thread-pool workspace-instance)
         target-paths)]
-    [(root-file-node root-library-node threaded? target-paths)
+    [(root-file-node root-library-node thread-pool target-paths)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
-            ((if threaded? threaded-map map)
+            ((if (null? thread-pool) map threaded-map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node threaded? path))
+                (private-init-references root-file-node root-library-node thread-pool path))
               batch)
             (loop (cdr paths)))))]))
 
 (define private-init-references 
   (case-lambda 
-    [(root-file-node root-library-node threaded? target-path)
+    [(root-file-node root-library-node thread-pool target-path)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         (document-reference-list-set! document '())
-        (private-init-references root-file-node root-library-node threaded? document index-node-list))]
-    [(root-file-node root-library-node threaded? document target-index-nodes)
+        (private-init-references root-file-node root-library-node thread-pool document index-node-list))]
+    [(root-file-node root-library-node thread-pool document target-index-nodes)
       (map 
         (lambda (index-node)
           (clear-references-for index-node)
           ; (pretty-print 'bbb)
           (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)
-          (walk-and-process threaded? root-file-node document index-node)
+          (walk-and-process thread-pool root-file-node document index-node)
           (export-process root-file-node document index-node)
           ; (pretty-print 'ddd)
           (document-reference-list-set! 
@@ -193,28 +196,28 @@
           [tail-path (list-after path target-path)]
           [previous-path-batchs (shrink-paths linkage previous-path)]
           [tail-path-batchs (shrink-paths linkage tail-path)]
-          [threaded?  (workspace-threaded? workspace-instance)])
+          [thread-pool (workspace-thread-pool workspace-instance)])
         (cond 
           [(equal? path-mode 'previous+single+tail) 
             (init-references workspace-instance previous-path-batchs)
-            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes)
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes)
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'single) 
-            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes)]
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes)]
           [(equal? path-mode 'previous+single) 
             (init-references workspace-instance previous-path-batchs)
-            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes)]
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes)]
           [(equal? path-mode 'previous) 
             (init-references workspace-instance previous-path-batchs)]
           [(equal? path-mode 'single+tail) 
-            (private-init-references root-file-node root-library-node threaded? target-document new-index-nodes) 
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes) 
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'tail) 
             (init-references workspace-instance tail-path-batchs)]
           [else (raise 'illegle-path-mode)]))))]))
 
 ;; rules must be run as ordered
-(define (walk-and-process threaded? root-file-node document index-node)
+(define (walk-and-process thread-pool root-file-node document index-node)
   (find 
     (lambda (func)
       (not (null? (func root-file-node document index-node))))
@@ -230,7 +233,7 @@
 
   (map 
     (lambda (child-index-node) 
-      (walk-and-process threaded? root-file-node document child-index-node)) 
+      (walk-and-process thread-pool root-file-node document child-index-node)) 
     (index-node-children index-node)))
 
 (define (init-virtual-file-system path parent my-filter)
