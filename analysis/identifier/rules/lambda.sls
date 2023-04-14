@@ -37,6 +37,8 @@
               (let* ([identifier-index-node-grand-parent (car rest)]
                   [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
                 (match grand-parent-expression 
+                  ; Because case-lambda has many clauses, and some maybe don't contain any parameters
+                  [(() body ...) (loop (cdr rest))]
                   [((param-identifier **1) body ...)
                     (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))])
                       (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children identifier-index-node-parent)])
