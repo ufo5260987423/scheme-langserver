@@ -13,40 +13,44 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (trivial-process document index-node substitutions)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [variable (make-variable)]
-      [new-substitutions (add-to-substitutions substitutions `(,index-node : ,variable))])
-    (fold-left 
-      add-to-substitutions 
-      new-substitutions
-      (if (null? (index-node-children index-node))
-        (cond
-          ;todo: detailed literal analysis may be done in the future.
-          [(list? expression) (list `(,variable : ,(construct-type-expression-with-meta 'list?)))]
-          [(vector? expression) (list `(,variable : ,(construct-type-expression-with-meta 'vector?)))]
-          [(char? expression) (list `(,variable : ,(construct-type-expression-with-meta 'char?)))]
-          [(string? expression) (list `(,variable : ,(construct-type-expression-with-meta 'string?)))]
-          [(boolean? expression) (list `(,variable : ,(construct-type-expression-with-meta 'boolean?)))]
-          [(fixnum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'fixnum?)))]
-          [(bignum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'bignum?)))]
-          [(integer? expression) (list `(,variable : ,(construct-type-expression-with-meta 'integer?)))]
-          [(cflonum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'cflonum?)))]
-          [(flonum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'flonum?)))]
-          [(rational? expression) (list `(,variable : ,(construct-type-expression-with-meta 'rational?)))]
-          [(real? expression) (list `(,variable : ,(construct-type-expression-with-meta 'real?)))]
-          [(complex? expression) (list `(,variable : ,(construct-type-expression-with-meta 'complex?)))]
-          [(number? expression) (list `(,variable : ,(construct-type-expression-with-meta 'number?)))]
-          [(symbol? expression) 
-            (apply 
-              append 
-              (map 
-                (lambda (identifier-reference) 
-                  (private-process document identifier-reference variable))
-                (find-available-references-for document index-node expression)))]
-          [else '()])
-        '()))))
+(define trivial-process 
+  (case-lambda 
+    [(document index-node substitutions) 
+      (let* ([ann (index-node-datum/annotations index-node)]
+          [expression (annotation-stripped ann)]
+          [variable (make-variable)]
+          [new-substitutions (add-to-substitutions substitutions `(,index-node : ,variable))])
+        (fold-left 
+          add-to-substitutions 
+          new-substitutions
+          (if (null? (index-node-children index-node))
+            (trivial-process document index-node variable expression new-substitutions)
+            '())))]
+    [(document index-node variable expression substitutions)
+      (cond
+        ;todo: detailed literal analysis may be done in the future.
+        [(list? expression) (list `(,variable : ,(construct-type-expression-with-meta 'list?)))]
+        [(vector? expression) (list `(,variable : ,(construct-type-expression-with-meta 'vector?)))]
+        [(char? expression) (list `(,variable : ,(construct-type-expression-with-meta 'char?)))]
+        [(string? expression) (list `(,variable : ,(construct-type-expression-with-meta 'string?)))]
+        [(boolean? expression) (list `(,variable : ,(construct-type-expression-with-meta 'boolean?)))]
+        [(fixnum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'fixnum?)))]
+        [(bignum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'bignum?)))]
+        [(integer? expression) (list `(,variable : ,(construct-type-expression-with-meta 'integer?)))]
+        [(cflonum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'cflonum?)))]
+        [(flonum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'flonum?)))]
+        [(rational? expression) (list `(,variable : ,(construct-type-expression-with-meta 'rational?)))]
+        [(real? expression) (list `(,variable : ,(construct-type-expression-with-meta 'real?)))]
+        [(complex? expression) (list `(,variable : ,(construct-type-expression-with-meta 'complex?)))]
+        [(number? expression) (list `(,variable : ,(construct-type-expression-with-meta 'number?)))]
+        [(symbol? expression) 
+          (apply 
+            append 
+            (map 
+              (lambda (identifier-reference) 
+                (private-process document identifier-reference variable))
+              (find-available-references-for document index-node expression)))]
+        [else '()])]))
 
 (define (private-process document identifier-reference variable)
   (if (null? (identifier-reference-parent identifier-reference))
