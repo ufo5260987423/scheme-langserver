@@ -24,13 +24,11 @@
           add-to-substitutions 
           new-substitutions
           (if (null? (index-node-children index-node))
-            (trivial-process document index-node variable expression new-substitutions)
+            (trivial-process document index-node variable expression new-substitutions #f #t)
             '())))]
-    [(document index-node variable expression substitutions)
+    [(document index-node variable expression substitutions allow-unquote? unquoted?)
       (cond
-        ;todo: detailed literal analysis may be done in the future.
-        [(list? expression) (list `(,variable : ,(construct-type-expression-with-meta 'list?)))]
-        [(vector? expression) (list `(,variable : ,(construct-type-expression-with-meta 'vector?)))]
+        ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,(construct-type-expression-with-meta 'char?)))]
         [(string? expression) (list `(,variable : ,(construct-type-expression-with-meta 'string?)))]
         [(boolean? expression) (list `(,variable : ,(construct-type-expression-with-meta 'boolean?)))]
@@ -43,14 +41,101 @@
         [(real? expression) (list `(,variable : ,(construct-type-expression-with-meta 'real?)))]
         [(complex? expression) (list `(,variable : ,(construct-type-expression-with-meta 'complex?)))]
         [(number? expression) (list `(,variable : ,(construct-type-expression-with-meta 'number?)))]
-        [(symbol? expression) 
+
+        [(and (symbol? expression) unquoted?)
           (apply 
             append 
             (map 
               (lambda (identifier-reference) 
                 (private-process document identifier-reference variable))
               (find-available-references-for document index-node expression)))]
+        [(symbol? expression) (list `(,variable : ,(construct-type-expression-with-meta 'symbol?)))]
+
+        ;here, must be a list or vector
+        [(and (private-quasiquote? expression) unquoted?)
+          (trivial-process 
+            document 
+            index-node 
+            variable 
+            (cadr expression) 
+            substitutions 
+            #t 
+            #f)]
+        [(private-quote? expression) 
+          (trivial-process 
+            document 
+            index-node 
+            variable 
+            (cadr expression) 
+            substitutions 
+            #f 
+            #f)]
+        [(and (private-unquote? expression) allow-unquote? (not unquoted?))
+          (trivial-process 
+            document 
+            index-node 
+            variable 
+            (cadr expression) 
+            substitutions 
+            #f 
+            #t)]
+        [(and (private-unquote-slicing? expression) (or (not allow-unquote?) unquoted?)) '()]
+
+        [(or (list? expression) (vector? expression))
+          (let* ([is-list? (list? expression)]
+              [final-result
+                (fold-left 
+                  (lambda (ahead-result current-expression)
+                    (if (and (private-unquote-slicing? current-expression) allow-unquote? (not unquoted?))
+                      (let loop ([body (cdr current-expression)]
+                          [current-result ahead-result])
+                        (if (null? body)
+                          current-result
+                          (let* ([current-item (car body)]
+                              [v (make-variable)]
+                              [r (trivial-process document index-node v current-item substitutions #f #t)]
+                              [first `(,@(car current-result) ,v)]
+                              [last `(,@(cadr current-result) ,@r)])
+                            (loop (cdr body) `(,first ,last)))))
+                      (let* ([v (make-variable)]
+                          [r (trivial-process document index-node v current-expression substitutions allow-unquote? unquoted?)]
+                          [first `(,@(car ahead-result) ,v)]
+                          [last `(,@(cadr ahead-result) ,@r)])
+                        `(,first ,last))))
+                    '(()())
+                  (if is-list? expression (vector->list expression)))]
+              [variable-list (if is-list? (car final-result) (list->vector (car final-result)))]
+              [extend-substitution-list (cadr final-result)])
+            `(,@extend-substitution-list (,variable = ,variable-list)))]
         [else '()])]))
+
+(define (private-unquote-slicing? expression)
+  (if (list? expression)
+    (if (= 1 (length expression))
+      (equal? 'quasiquote-slicing (car expression))
+      #f)
+    #f))
+
+(define (private-unquote? expression)
+  (if (list? expression)
+    (if (= 1 (length expression))
+      (equal? 'quasiquote (car expression))
+      #f)
+    #f))
+
+(define (private-quote? expression)
+  (if (list? expression)
+    (if (= 1 (length expression))
+      (equal? 'quote (car expression))
+      #f)
+    #f))
+
+(define (private-quasiquote? expression)
+  (if (list? expression)
+    (if (= 1 (length expression))
+      (equal? 'quasiquote (car expression))
+      #f)
+    #f))
 
 (define (private-process document identifier-reference variable)
   (if (null? (identifier-reference-parent identifier-reference))
