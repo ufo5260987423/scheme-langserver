@@ -1,4 +1,4 @@
-## Engineering intuition for Type Inference in scheme-langserver
+## Engineering intuition for Type Inference in Scheme-langserver
 
 Many languages like Java and Typescript, have functioned a type system to prevent the occurrence of execution errors during the running of a program, where variables can be given types by the [Hindley-Milner Type System](https://github.com/webyrd/hindley-milner-type-inferencer) or [System F](https://en.wikipedia.org/wiki/System_F). However, these systems are not omniscient and omnipotent. 
 
@@ -14,7 +14,28 @@ function(a: number){return 1+a}
 
 Many counterparts adapt their syntax and demand type information by literally annotating as above Typescript code. But scheme-langserver has found another possible way that consumes [r6rs](http://www.r6rs.org/)-based code and digests their supposed type specification: recalling the above scheme code, apparently, the `+` within r6rs context should have type of `(number? <- (number? ...))`, in which the `<-` indicates this is a type of procedure, left-hand side is the return's type, and the `(number? ...)` is a type list of parameter(s). The `a` can be easily fixed in this `+`'s parameter with type `number?`, and in this document, scheme-langserver is going to describe a type system using this implicit information from [r6rs](http://www.r6rs.org/).
 
-### Hindley-Milner Type System
+This document will introduce how scheme-langserver: 
+1. represents simple and compound types;
+2. attaches type expressions to index;
+3. walks the index and finds results;
+4. publishes diagnostic information referencing [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_publishDiagnostics).
+
+### Type Representation
+Let's consider the type of literals and here 4 trivial cases:
+1. A simple case is like `#t`,`3`, `"string"` and `'a`, in which they all match corresponding basic type predictors `boolean?`, `number?` (also `integer?` and `fixnum?`), `string?` and `symbol?`. So that scheme-langserver will match such literals and using these predictors as their type annotation.
+2. A compound case is like list literal `'(1 2 3)` and vector literal `#(1 2 3)`, in which scheme-langserver will match them with `'(number? number? number )` and `'#(number? number? number )`. Directly, another much more complicated example `'(1 a "e")` will be assigned with `'(number? symbol? string?)`.
+3. An implicit case is given by [r6rs](http://www.r6rs.org/), in which I recognize 1108 forms of procedures and manually assign them type expression. Recalling the above `+` procedure case, `(number? <- (number? ...))`, `<-` indicate it's a procedure or in lisp's tongue, lambda calculus. It receives 0 parameters or something with `number?` type, and returns a `number?`-typed value, using some shortcut markers include `**1` as `+` in regular expression and `...` as `*` in this case.
+4. A general case is `something?` for universal type. For example, all predictors' parameter has type of `something?`.
+
+Finally, it's roughly knows that types have its context. This makes differences because in different library may have same-named predicator. So scheme-langserver involves [identifier-references](../analysis/identifier.md) in order to take place of such predictors in above cases. A procedure `construct-type-expression-with-meta` can be used for this process. And `something?` is an inner predictor won't take part in the transformation.
+
+
+<!-- 3. Type expressions are scoped in [`document`](../../virtual-file-system/document.sls). This means once time $\Gamma$ machine can only digest one document and type is usually attached to [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`. It much benefits the code indexing. -->
+
+### Attaching Type to Index
+Apparently, the hardest core of type inference is consuming codes matching predictors, and after a bunch of cracks and crashes, splitting out codes match other predictors. In scheme-langserver, an index is across all codes, scoped within [document](../../virtual-file-system/document.sls) and denoted with [index-node](../../virtual-file-system/index-node.sls), so an intuitive idea is attaching types to index-node. So, in this section, we introduced the Hindley-Milner type system which told you something can respond LSP requests.
+
+#### Hindley-Milner Type System
 A Hindley-Milner (HM) type system is a classical type system for the lambda calculus with parametric polymorphism. Among HM's more notable properties are its completeness and its ability to infer the most general types of a given program without programmer-supplied type annotations or other hints. Algorithm W is an efficient type inference method in practice, and has been successfully applied on large code bases, although it has a high theoretical complexity. The followings are detailed rules:
 1. Variable Access 
 This rule is usually used for getting type of variable `e1`. You can find its implementation in [let.sls](../../analysis/type/rules/let.sls) and may other files in the future.
@@ -56,13 +77,6 @@ According to [this page](https://stackoverflow.com/questions/12532552/what-part-
 8. $,$ is a way of including specific additional assumptions into an environment $\Gamma$. 
 9.  Therefore, $\Gamma, x : \sigma \vdash e : \tau'$ means that environment $\Gamma$, with the additional, overriding assumption that $x$ has type $\tau$, proves that $e$ has type $\tau'$.
 
-#### Engineering Intuition and Type Representation
-Apparently, the hardest core of type inference is the $\Gamma$ which represent a machine digesting static code, consuming codes matching predictors, and after a bunch of cracks and crashes, splitting out codes match other predictors. We hope the latest ones code tell us something about types and HM-system indicates how it is possible.
-
-It's roughly knows, types have its context, which means our types' representation should involve [identifier-references](../analysis/identifier.md); types correspond to different data structures, including procedures(lambda expression), lists, and vectors (records pairs, and many others to be considering); and types maybe recursively dependent on themselves. For these, scheme-langserver constructs type expression following these regulations:
-1. Each type expression is consisted with [identifier-references](../../analysis/identifier/reference.sls) of type predictors like `number?`, some inner predictors like `something?`, some structure marker, like `<-` for lambdas, `()` for lists and `#()` for vectors and shortcut marker include `**1` as `+` in regular expression and `...` as `*`.
-2. They're formed as `(return type <- ((parameter type) ...))` for [Application Rule](#hindleymilner-type-system) or `((parameter type)...)` for [Variable Access Rule](#hindleymilner-type-system). 
-3. Type expressions are scoped in [`document`](../../virtual-file-system/document.sls). This means once time $\Gamma$ machine can only digest one document and type is usually attached to [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`. It much benefits the code indexing.
 
 ### Unification Machine
 In logic and computer science, unification is an algorithmic process of solving equations between symbolic expressions. That means in HM-system, predictors above and below the horizon construct the two sides of an equation into which we hope to translate static codes. And depending on which expressions are allowed to occur in an equation set, and which expressions are considered equal, several frameworks of unification are distinguished. Intuitively, this machine is a complex graph database: each node is a predictor, and directed edges linked them. We classify these edges into different relationships and hope to raise an algorithm which will act like a spider walking on this net.
@@ -79,7 +93,7 @@ The [detailed process](../../analysis/type/type-inferencer.sls) is in [Robinson'
 3. Substitute the left side with right side, and conserve all the transformation;
 4. Do 2-3 several loops until there're no new substitutions and output the result;
 
-### Gradual Typing and Implicit Conversion
+#### Gradual Typing and Implicit Conversion
 Hindley-Milner Type System is not omniscient and omnipotent. For scheme and many other untyped languages, type inference for following codes acting very differently to Java, C and many other typed languages:
 ```scheme
 (lambda (a) (+ 1 a))
