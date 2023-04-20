@@ -1,16 +1,18 @@
 ## Engineering intuition for Type Inference in scheme-langserver
 
-A program variable can assume a range of values during the execution of a program. An upper bound of such a range is called a type of the variable. Many languages have functioned a type system to prevent the occurrence of execution errors during the running of a program. However, scheme is not the "typed language" where variables can be given (nontrivial) types: it doesn't have types or, equivalently, have a single universal type that contains all values. 
+Many languages like Java and Typescript, have functioned a type system to prevent the occurrence of execution errors during the running of a program, where variables can be given types by the [Hindley-Milner Type System](https://github.com/webyrd/hindley-milner-type-inferencer) or [System F](https://en.wikipedia.org/wiki/System_F). However, these systems are not omniscient and omnipotent. 
 
-It is also useful to distinguish between two kinds of execution errors: the ones that cause the computation to stop immediately, and the ones that go unnoticed (for a while) and later cause arbitrary behavior. The former are called trapped errors, whereas the latter are untrapped errors. A program fragment is safe if it does not cause untrapped errors to occur. Languages where all program fragments are safe are called safe languages. Therefore, safe languages rule out the most insidious form of execution errors: the ones that may go unnoticed. Untyped languages may enforce safety by performing run time checks. Typed languages may enforce safety by statically rejecting all programs that are potentially unsafe. Typed languages may also use a mixture of run time and static checks.
+As for scheme, an "untyped language", for which many type annotation information won't be trivially given in static code, an intuitive case is given as following: it doesn't have types or, equivalently, have a single universal type that contains all values and the inference mechanism. 
+```scheme
+(lambda (a) (+ 1 a))
+```
 
+Because, the parameter `a` isn't literally annotated with any type as Typescript.
+```typescript
+function(a: number){return 1+a}
+```
 
-|        | Typed | Untyped   |
-|--------|-------|-----------|
-| Safe   | Java  | Scheme    |
-| Unsafe | C     | Assembler |
-
-For scheme, programming would be too frustrating in the absence of both compile time and run time checks to protect against corruption, and scheme-langserver would implement a usable type inferencer instead of a fully decidable one. Unlike [hindley-milner-type-inferencer](https://github.com/webyrd/hindley-milner-type-inferencer) and many other implementations, scheme-langserver's type inferencer have to respond LSP requests which interleave code position information, like in completion, goto definition and many others, and consume [r6rs](http://www.r6rs.org/)-based code without any specific type annotations. Instead, according to [Poly Type Inference in Scheme](https://core.ac.uk/download/pdf/38891838.pdf), the first step is to implement First-order Type System. And, according to [Gradual Typing for Functional Languages](https://www.cs.indiana.edu/~lkuper/talks/gradual/gradual.pdf), it would base on the intuition that the structure of a type may be partially known/unknown at compile-time and the job of the type system is to catch incompatibilities between the known parts of types. Further, the known part is following [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0), that we have about 1808 forms to construct a rule-based type inferencer.
+Many counterparts adapt their syntax and demand type information by literally annotating as above Typescript code. But scheme-langserver has found another possible way that consumes [r6rs](http://www.r6rs.org/)-based code and digests their supposed type specification: recalling the above scheme code, apparently, the `+` within r6rs context should have type of `(number? <- (number? ...))`, in which the `<-` indicates this is a type of procedure, left-hand side is the return's type, and the `(number? ...)` is a type list of parameter(s). The `a` can be easily fixed in this `+`'s parameter with type `number?`, and in this document, scheme-langserver is going to describe a type system using this implicit information from [r6rs](http://www.r6rs.org/).
 
 ### Hindley-Milner Type System
 A Hindley-Milner (HM) type system is a classical type system for the lambda calculus with parametric polymorphism. Among HM's more notable properties are its completeness and its ability to infer the most general types of a given program without programmer-supplied type annotations or other hints. Algorithm W is an efficient type inference method in practice, and has been successfully applied on large code bases, although it has a high theoretical complexity. The followings are detailed rules:

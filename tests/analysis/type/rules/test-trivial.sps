@@ -31,4 +31,17 @@
         (test-equal #t (contain? (reify substitutions variable) check-base)))
 (test-end)
 
+(test-begin "literal vector")
+    (let* ([expression '#(1)]
+            [document '()]
+            [index-node '()]
+            [substitutions '()]
+            [variable (make-variable)]
+            [allow-unquote? #f]
+            [unquoted? #t]
+            [check-base (construct-type-expression-with-meta '#(fixnum?))]
+            [substitutions (trivial-process document index-node variable expression substitutions allow-unquote? unquoted?)])
+        (test-equal #t (contain? (reify substitutions variable) check-base)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

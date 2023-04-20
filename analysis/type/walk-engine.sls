@@ -83,11 +83,14 @@
         [else origin])]
     [(list? origin)
      (map (lambda (item) (private-substitute item single-substitution)) origin)]
+    [(vector? origin)
+     (vector-map (lambda (item) (private-substitute item single-substitution)) origin)]
     [else origin]))
 
 (define (private-dry target)
   (cond 
     [(list? target) (apply append (map private-dry target))]
+    [(vector? target) (apply append (map private-dry (vector->list target)))]
     [(index-node? target) `(,target)]
     [(identifier-reference? target) `(,target)]
     [(variable? target) `(,target)]
