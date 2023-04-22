@@ -27,8 +27,7 @@
     (scheme-langserver analysis type walk-engine))
 
 ; (define (find-type-conflicts index-node document)
-;   (let ([types (filter is-pure-identifier-reference-misture? (type-inference-for index-node document))]
-;       )
+;   (let ([types (filter is-pure-identifier-reference-misture? (type-inference-for index-node document))])
 ;     (if (< (length types) 2)
 
 ;     )

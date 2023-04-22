@@ -128,7 +128,7 @@
 (define (is-pure-identifier-reference-misture? expression)
   (if (list? expression)
     (not (contain? (map is-pure-identifier-reference-misture? expression) #f))
-    (identifier-reference? expression)))
+    (or (equal? '**1 expression) (equal? '... expression) (identifier-reference? expression))))
 
 (define (sort-identifier-references identifier-references)
   (sort 
