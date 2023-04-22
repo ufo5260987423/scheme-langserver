@@ -12,8 +12,6 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
 
-    (scheme-langserver virtual-file-system index-node)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type walk-engine)
     (scheme-langserver analysis type variable))
@@ -43,8 +41,8 @@
       body)
     (identifier-reference? body)))
 
-(define (lambda-templates->new-substitution-list substitutions lambda-templates return-variable-list rest-index-node-list) 
-  (if (null? rest-index-node-list)
+(define (lambda-templates->new-substitution-list substitutions lambda-templates return-variable-list ready-list) 
+  (if (null? ready-list)
     substitutions
     (fold-left
       (lambda (substitutions-tmp rule-segments)
@@ -53,7 +51,7 @@
                 substitutions-tmp
                 ;lambda-template->parameter-templates
                 (caddr rule-segments)
-                rest-index-node-list)])
+                ready-list)])
           (if (null? tmp)
             substitutions
             (append
@@ -72,114 +70,114 @@
   (case-lambda 
     ;process null values
     ;if current-segment in other clause is available, they won't jump in this clause
-    [(substitutions rest-segments rest-index-nodes)
+    [(substitutions rest-segments ready-list)
       (cond 
-        [(and (null? rest-segments) (null? rest-index-nodes)) substitutions]
+        [(and (null? rest-segments) (null? ready-list)) substitutions]
 
-        ;rest-segments is null and rest-index-nodes is not null
+        ;rest-segments is null and ready-list is not null
         [(null? rest-segments) '()]
 
-        ;rest-segments is not null and rest-index-nodes is null
+        ;rest-segments is not null and ready-list is null
         ;and both of them are not null
         [else 
           (private-lambda-templates->new-substitution-list 
             substitutions 
             (car rest-segments) 
             (cdr rest-segments) 
-            rest-index-nodes
+            ready-list
             #f)])]
     ;jump from above clause
     ;suppose current-segment is not null
-    ;suppose rest-index-nodes is not null
+    ;suppose ready-list is not null
     ;rest-segments may be null
     ;this clause won't extend substitutions
     ;this clause won't check whether rest-segments is null
-    [(substitutions current-segment rest-segments rest-index-nodes last?)
+    [(substitutions current-segment rest-segments ready-list last?)
       (cond
-        [(and (private-is-... current-segment) (null? rest-index-nodes))
+        [(and (private-is-... current-segment) (null? ready-list))
           ;skip current-segment is available
           (private-lambda-templates->new-substitution-list 
             substitutions
             rest-segments
-            rest-index-nodes)]
+            ready-list)]
         [(private-is-... current-segment)
           (let ([tmp
                 (private-lambda-templates->new-substitution-list 
                   substitutions
                   current-segment
                   rest-segments
-                  (car rest-index-nodes)
-                  (cdr rest-index-nodes)
+                  (car ready-list)
+                  (cdr ready-list)
                   last?)])
             (if (null? tmp)
               ;skip current-segment is available
               (private-lambda-templates->new-substitution-list 
                 substitutions
                 rest-segments
-                rest-index-nodes)
+                ready-list)
               tmp))]
 
-        [(and (private-is-**1 current-segment) (null? rest-index-nodes) last?)
+        [(and (private-is-**1 current-segment) (null? ready-list) last?)
           ;skip current-segment is available
           (private-lambda-templates->new-substitution-list 
             substitutions
             rest-segments
-            rest-index-nodes)]
-        [(and (private-is-**1 current-segment) (null? rest-index-nodes) (not last?)) '()]
+            ready-list)]
+        [(and (private-is-**1 current-segment) (null? ready-list) (not last?)) '()]
         [(and (private-is-**1 current-segment) last?) 
           (let ([tmp
                 (private-lambda-templates->new-substitution-list 
                   substitutions
                   current-segment
                   rest-segments
-                  (car rest-index-nodes)
-                  (cdr rest-index-nodes)
+                  (car ready-list)
+                  (cdr ready-list)
                   last?)])
             (if (null? tmp)
               ;skip current-segment is available
               (private-lambda-templates->new-substitution-list 
                 substitutions
                 rest-segments
-                rest-index-nodes)
+                ready-list)
               tmp))]
         [(and (private-is-**1 current-segment) (not last?)) 
           (private-lambda-templates->new-substitution-list 
             substitutions
             current-segment
             rest-segments
-            (car rest-index-nodes)
-            (cdr rest-index-nodes)
+            (car ready-list)
+            (cdr ready-list)
             last?)]
 
         [last? 
           (private-lambda-templates->new-substitution-list 
             substitutions
             rest-segments
-            rest-index-nodes)]
-        [(null? rest-index-nodes) '()]
+            ready-list)]
+        [(null? ready-list) '()]
         [else 
           (private-lambda-templates->new-substitution-list 
             substitutions 
             current-segment 
             rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes) 
+            (car ready-list) 
+            (cdr ready-list) 
             last?)])]
     ;do actural substitution extending
     ;current-segment is not null
-    ;current-index-node is not null
+    ;current is not null
     ;rest-segments may be null
-    ;rest-index-nodes may be null
+    ;ready-list may be null
     ;jump from above last clause
     ;jump into above two clauses
-    [(substitutions current-segment rest-segments current-index-node rest-index-nodes last?)
+    [(substitutions current-segment rest-segments current ready-list last?)
       (let* ([type (private-type-of current-segment)]
           [variable-list 
               (filter 
                 (lambda (item) 
                   (not (equal? type item))) 
                 ;this will import parameters' variable
-                (filter variable? (reify substitutions current-index-node)))]
+                (filter variable? (reify substitutions current)))]
           [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
           ;default extension
           [extended-substitutions (dedupe (append substitutions new-substitutions))]
@@ -187,26 +185,26 @@
             (private-lambda-templates->new-substitution-list 
               extended-substitutions
               rest-segments
-              rest-index-nodes)])
+              ready-list)])
         ;well, null means failure
         (if (null? result)
-          ;attach current-segment to next index-node
+          ;attach current-segment to next item 
           (cond
-            ;mas, não há index-node disponível
-            [(null? rest-index-nodes) '()]
+            ;mas, não há item disponível
+            [(null? ready-list) '()]
             [(private-is-... current-segment)
               (private-lambda-templates->new-substitution-list 
                 extended-substitutions
                 current-segment 
                 rest-segments 
-                rest-index-nodes
+                ready-list
                 #t)]
             [(private-is-**1 current-segment)
               (private-lambda-templates->new-substitution-list 
                 extended-substitutions
                 current-segment 
                 rest-segments 
-                rest-index-nodes
+                ready-list
                 #t)]
             [else '()])
           result))]))
