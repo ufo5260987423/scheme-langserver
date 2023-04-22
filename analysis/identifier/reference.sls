@@ -12,6 +12,7 @@
     identifier-reference-type-expressions
     identifier-reference-type
     identifier-reference-parents
+    identifier-reference-parents-set!
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
     identifier-reference-initialization-index-node
@@ -48,7 +49,7 @@
     ;parent can be used for two cases: 
     ;(1) rename a identifier-reference in library importion/exportion
     ;(2) record-type inherent
-    (immutable parents)
+    (mutable parents)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
