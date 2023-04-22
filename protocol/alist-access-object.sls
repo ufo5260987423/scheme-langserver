@@ -25,6 +25,7 @@
     make-range
     range-start
     range-end
+    range->alist
 
     int+text->position
     text+position->int

@@ -45,7 +45,7 @@
                             index-node
                             library-identifier
                             (identifier-reference-type reference)
-                            (identifier-reference-parent reference)
+                            (identifier-reference-parents reference)
                             (identifier-reference-type-expressions reference)))
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
@@ -76,7 +76,7 @@
                             index-node
                             library-identifier
                             (identifier-reference-type reference)
-                            (identifier-reference-parent reference)
+                            (identifier-reference-parents reference)
                             (identifier-reference-type-expressions reference)))
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
@@ -107,7 +107,7 @@
                             index-node
                             library-identifier
                             (identifier-reference-type reference)
-                            (identifier-reference-parent reference)
+                            (identifier-reference-parents reference)
                             (identifier-reference-type-expressions reference)))
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 

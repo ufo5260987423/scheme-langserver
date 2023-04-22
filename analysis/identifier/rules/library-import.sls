@@ -136,7 +136,7 @@
                     initialization-index-node 
                     (identifier-reference-library-identifier reference)
                     'pointer
-                    reference
+                    `(,reference)
                     '())) 
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
@@ -176,7 +176,7 @@
                         initialization-index-node 
                         (identifier-reference-library-identifier reference)
                         'pointer
-                        reference
+                        `(,reference)
                         '())) 
                     current-references)])
 
@@ -237,7 +237,7 @@
                         initialization-index-node 
                         (identifier-reference-library-identifier reference)
                         'pointer
-                        reference
+                        `(,reference)
                         '())) 
                     current-references)])
 

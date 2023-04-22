@@ -138,7 +138,7 @@
     #f))
 
 (define (private-process document identifier-reference variable)
-  (if (null? (identifier-reference-parent identifier-reference))
+  (if (null? (identifier-reference-parents identifier-reference))
     (let* ([target-document (identifier-reference-document identifier-reference)]
         [target-index-node (identifier-reference-index-node identifier-reference)])
       (cond 
@@ -159,5 +159,5 @@
                 `(,variable : ,reified)
                 `(,variable = ,reified)))
             (reify (document-substitution-list target-document) target-index-node))]))
-    (private-process document (identifier-reference-parent identifier-reference) variable)))
+    (private-process document (identifier-reference-parents identifier-reference) variable)))
 )

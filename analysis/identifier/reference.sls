@@ -11,16 +11,16 @@
     identifier-reference-library-identifier
     identifier-reference-type-expressions
     identifier-reference-type
-    identifier-reference-parent
+    identifier-reference-parents
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
-
     identifier-reference-initialization-index-node
 
     transform
     
     sort-identifier-references
-    is-pure-identifier-reference-misture?)
+    is-pure-identifier-reference-misture?
+    is-ancestor-of?)
   (import 
     (chezscheme)
 
@@ -45,10 +45,20 @@
 
     (immutable library-identifier)
     (immutable type)
-    (immutable parent)
+    ;parent can be used for two cases: 
+    ;(1) rename a identifier-reference in library importion/exportion
+    ;(2) record-type inherent
+    (immutable parents)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)))
+
+(define (is-ancestor-of? identifier-reference0 identifier-reference1)
+  (if (equal? identifier-reference0 identifier-reference1)
+    #t
+    (if (find (lambda (parent) (is-ancestor-of? identifier-reference0 parent)) (identifier-reference-parents identifier-reference1))
+      #t
+      #f)))
 
 (define (transform document origin-index-node-list target-index-node-list mapper-vector target-index-node-blacklist)
   (if (null? origin-index-node-list)
@@ -133,14 +143,14 @@
       #t
       (let loop ([body 
             (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-              (map identifier-reference-parent (find-available-references-for document current-index-node)))])
+              (map identifier-reference-parents (find-available-references-for document current-index-node)))])
         (if (null? body)
           (raise "no such identifier for specific libraries")
           (if (private-check-library-identifier? body library-identifier-rest)
             #t
             (loop 
               (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-                (map identifier-reference-parent body)))))))))
+                (map identifier-reference-parents body)))))))))
 
 (define (private-check-library-identifier? candidates library-identifier-rest)
   (if (null? candidates)

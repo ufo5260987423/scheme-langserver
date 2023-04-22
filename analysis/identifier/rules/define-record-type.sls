@@ -24,14 +24,14 @@
       (match expression
         [('define-record-type name-list) 
           (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
-          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)))]
+          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())]
         [('define-record-type (? symbol? name) (dummy ...) ... ) 
           (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
-          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)))
+          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
           (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name) ]
         [('define-record-type ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
           (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
-          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)))
+          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
           (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name)]
         [else '()])
       (except c
@@ -46,6 +46,8 @@
         (match expression
           [('fields _ **1) (process-fields-list initialization-index-node document target-parent-index-node index-node name '())]
           [('parent (? symbol? parent-name)) 
+            ;can we find record-type by parent-name? 
+            ;TODO: fix
             (let loop ([references (find-available-references-for document index-node parent-name)])
               (if (not (null? references))
                 (let* ([current-reference (car references)]
@@ -250,7 +252,7 @@
           [else '()])
         (loop (cdr children))))))
 
-(define (process-name-list initialization-index-node document target-parent-index-node index-node)
+(define (process-name-list initialization-index-node document target-parent-index-node index-node predicator-parents)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression 
@@ -283,7 +285,7 @@
                 initialization-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
-                '()
+                predicator-parents
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
@@ -337,7 +339,7 @@
                 initialization-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
-                '()
+                predicator-parents
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
@@ -391,7 +393,7 @@
                 initialization-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
-                '()
+                predicator-parents
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
@@ -445,7 +447,7 @@
                 initialization-index-node
                 (get-nearest-ancestor-library-identifier index-node)
                 'predicator
-                '()
+                predicator-parents
                 '())])
         ; (index-node-references-export-to-other-node-set!
         ;   name-index-node
