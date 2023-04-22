@@ -88,21 +88,18 @@ rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums
 rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
 rnrs-records-syntactic rnrs-records-procedure 
 rnrs-records-inspection chezscheme-csv7 scheme-csv7))
+   ;numeric tower
    (fold-left 
       (lambda (parent identifier-reference)
-         (if (and parent identifier-reference)
-            (begin 
-               (identifier-reference-parents-set! identifier-reference (list parent))
-               identifier-reference)
-            #f))
+         (identifier-reference-parents-set! identifier-reference (list parent))
+         identifier-reference)
       (find (lambda (identifier-reference) (equal? 'fixnum? (identifier-reference-identifier identifier-reference))) chezscheme)
       (map 
          (lambda (procedure-name) 
             (find 
                (lambda (identifier-reference) 
                   (equal? procedure-name (identifier-reference-identifier identifier-reference))) chezscheme)) 
-         '(fixnum? bignum? integer? cflonum? flonum? rational? real? complex?))))
-
+         '(bignum? integer? cflonum? flonum? rational? real? complex?))))
 
 (define (construct-type-expression-with-meta meta-identifier)
    ;;chezscheme is the super set of rnrs

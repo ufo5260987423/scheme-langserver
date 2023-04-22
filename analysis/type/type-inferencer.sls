@@ -26,9 +26,9 @@
     (scheme-langserver analysis type util)
     (scheme-langserver analysis type walk-engine))
 
-; (define (pick-types-conflicts index-node document)
-;   (let ([types (filter private-check-identifier-reference (type-inference-for index-node document))]
-;       [parents ((walk:supper-type-list substitutions identifier-reference)])
+; (define (find-type-conflicts index-node document)
+;   (let ([types (filter is-pure-identifier-reference-misture? (type-inference-for index-node document))]
+;       )
 ;     (if (< (length types) 2)
 
 ;     )
@@ -73,20 +73,16 @@
   (dedupe (reify (document-substitution-list document) index-node)))
 
 (define (construct-substitution-list-for document)
-  (let ([base 
-        (append 
-          private-initial-type-constraints 
-          (apply 
-            append
-            (map 
-              (lambda (index-node) (private-construct-substitution-list document index-node '()))
-              (document-index-node-list document))))])
-    (document-substitution-list-set! 
-      document 
-      (fold-left 
-        private-add-implicit-convertions
-        base
-        (document-index-node-list document)))))
+  (document-substitution-list-set! 
+    document 
+    (fold-left 
+      private-add-implicit-convertions
+      (apply 
+        append
+        (map 
+          (lambda (index-node) (private-construct-substitution-list document index-node '()))
+          (document-index-node-list document)))
+      (document-index-node-list document))))
 
 ;gradule typing: unsafe convertion
 (define (private-add-implicit-convertions substitutions index-node)
@@ -100,26 +96,6 @@
           [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
           [return-variable-list (walk:index-node->single-variable-list substitutions index-node)])
         (lambda-templates->new-substitution-list base filtered-lambdas return-variable-list rest-index-nodes)))))
-
-;consistent with meta.sls rnrs-meta-rules.sls
-(define private-initial-type-constraints
-  (append 
-    (map 
-      (lambda (identifier) `(,(construct-type-expression-with-meta identifier) < something?))
-      '(annotation? assertion-violation? binary-port? boolean? bytevector? cflonum? char? compile-time-value? condition? continuation-condition?
-          cost-center? date? eq-hashtable? error? exact? fixnum? flonum? format-condition? fxvector? guadian? hash-table? hashtable? immutable-fxvector?
-          immutable-string? immutable-vector? input-port? integer? list? number? output-port? pair? port? procedure? real? something? string? symbol?
-          time? vector? void?))
-    ;numeric tower
-    (list
-      `(,(construct-type-expression-with-meta 'fixnum?) < ,(construct-type-expression-with-meta 'bignum?))
-      `(,(construct-type-expression-with-meta 'bignum?) < ,(construct-type-expression-with-meta 'integer?))
-      `(,(construct-type-expression-with-meta 'integer?) < ,(construct-type-expression-with-meta 'cflonum?))
-      `(,(construct-type-expression-with-meta 'cflonum?) < ,(construct-type-expression-with-meta 'flonum?))
-      `(,(construct-type-expression-with-meta 'flonum?) < ,(construct-type-expression-with-meta 'rational?))
-      `(,(construct-type-expression-with-meta 'rational?) < ,(construct-type-expression-with-meta 'real?))
-      `(,(construct-type-expression-with-meta 'real?) < ,(construct-type-expression-with-meta 'complex?))
-      `(,(construct-type-expression-with-meta 'complex?) < ,(construct-type-expression-with-meta 'number?)))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]
