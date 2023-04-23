@@ -1,7 +1,8 @@
 (library (scheme-langserver analysis type type-inferencer)
   (export 
     type-inference-for
-    construct-substitution-list-for)
+    construct-substitution-list-for
+    find-type-conflicts)
   (import 
     (chezscheme)
 
@@ -26,45 +27,17 @@
     (scheme-langserver analysis type util)
     (scheme-langserver analysis type walk-engine))
 
-; (define (find-type-conflicts index-node document)
-;   (let ([types (filter is-pure-identifier-reference-misture? (type-inference-for index-node document))])
-;     (if (< (length types) 2)
-
-;     )
-;   )
-; ))
-
-; (define (private-check-identifier-reference item)
-;   (cond
-;     [(list? item) (apply and (map private-filter item))]
-;     [(vector? item) (apply and (map private-filter (vector->list item)))]
-;     [else (identifier-reference? item)]))
-
-(define (private-type-equal? type0 type1)
-  (cond 
-    [(or (equal? type0 'something) (equal? type1 'something)) #t]
-    [(equal? type0 type1) #t]
-    [(and (identifier-reference? type0) (identifier-reference? type1)) 
-      (or (is-ancestor-of? type0 type1) (is-ancestor-of? type1 type0))]
-    [(and (list? type0) (list? type1))
-      (let loop ([body0 type0] [body1 type1])
-        (cond 
-          [(and (null? body0) (null? body1)) #t]
-          [(and (not (null? body0)) (not (null? body1)))
-            (let ([head0 (car body0)]
-                [head1 (car body1)])
-              (private-type-equal? type0 type1))]
-          [else #f]))]
-    [(and (vector? type0) (vector? type1))
-      (let loop ([body0 (vector->list type0)] [body1 (vector->list type1)])
-        (cond 
-          [(and (null? body0) (null? body1)) #t]
-          [(and (not (null? body0)) (not (null? body1)))
-            (let ([head0 (car body0)]
-                [head1 (car body1)])
-              (private-type-equal? type0 type1))]
-          [else #f]))]
-    [else #f]))
+(define (find-type-conflicts index-node document)
+  (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))])
+    (if (< (length types) 2)
+      '()
+      (fold-left 
+        (lambda (tmp-result pair)
+          (if (has-intersection? (car pair) (cadr pair))
+            tmp-result
+            `(,@tmp-result ,pair)))
+        '()
+        (cartesian-product types types)))))
 
 ;; We regard the indexes and references as a graph of existed variable and values. 
 ;; try to get result type by substitution

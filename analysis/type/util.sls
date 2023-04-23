@@ -2,8 +2,7 @@
   (export 
     lambda?
     lambda-templates->new-substitution-list
-    pure-identifier-reference?
-    pure-variable?)
+    has-intersection?)
   (import 
     (chezscheme)
     (ufo-match)
@@ -23,23 +22,41 @@
       [else #f])
     #f))
 
-(define (pure-variable? body)
-  (if (list? body)
-    (fold-left 
-      (lambda (flag item)
-        (and flag (pure-variable? item)))
-      #t
-      body)
-    (variable? body)))
+(define (has-intersection? type0 type1)
+  (if (private-type-equal? type0 type1)
+    #t
+    (let ([segments0 (private-segment type0)]
+        [segments1 (private-segment type1)])
+      (or 
+        (and (null? segments0) (null? segments1))
+        (not (null? (private-lambda-templates->new-substitution-list (map (lambda (segment) `(,segment = ,(make-variable))) segments1) segments0 segments1)))
+        (not (null? (private-lambda-templates->new-substitution-list (map (lambda (segment) `(,segment = ,(make-variable))) segments0) segments1 segments0)))))))
 
-(define (pure-identifier-reference? body)
-  (if (list? body)
-    (fold-left 
-      (lambda (flag item)
-        (and flag (pure-identifier-reference? item)))
-      #t
-      body)
-    (identifier-reference? body)))
+(define (private-type-equal? type0 type1)
+  (cond 
+    [(or (equal? type0 'something) (equal? type1 'something)) #t]
+    [(equal? type0 type1) #t]
+    [(and (identifier-reference? type0) (identifier-reference? type1)) 
+      (or (is-ancestor-of? type0 type1) (is-ancestor-of? type1 type0))]
+    [(and (list? type0) (list? type1))
+      (let loop ([body0 type0] [body1 type1])
+        (cond 
+          [(and (null? body0) (null? body1)) #t]
+          [(and (not (null? body0)) (not (null? body1)))
+            (let ([head0 (car body0)]
+                [head1 (car body1)])
+              (private-type-equal? type0 type1))]
+          [else #f]))]
+    [(and (vector? type0) (vector? type1))
+      (let loop ([body0 (vector->list type0)] [body1 (vector->list type1)])
+        (cond 
+          [(and (null? body0) (null? body1)) #t]
+          [(and (not (null? body0)) (not (null? body1)))
+            (let ([head0 (car body0)]
+                [head1 (car body1)])
+              (private-type-equal? type0 type1))]
+          [else #f]))]
+    [else #f]))
 
 (define (lambda-templates->new-substitution-list substitutions lambda-templates return-variable-list ready-list) 
   (if (null? ready-list)
