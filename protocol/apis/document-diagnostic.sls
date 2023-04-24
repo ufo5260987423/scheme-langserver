@@ -35,7 +35,11 @@
       [text (text-document-text text-document)])
     (try
       ;I'd only check leaf index-node
-      (refresh-workspace-for workspace file-node text 'previous+single)
+      (map 
+        (lambda (index-node)
+          
+        )
+        (find-leaves (document-index-node-list document)))
       (except e [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic

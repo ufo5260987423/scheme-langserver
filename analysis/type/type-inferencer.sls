@@ -27,17 +27,24 @@
     (scheme-langserver analysis type util)
     (scheme-langserver analysis type walk-engine))
 
-(define (find-type-conflicts index-node document)
-  (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))])
-    (if (< (length types) 2)
-      '()
-      (fold-left 
-        (lambda (tmp-result pair)
-          (if (has-intersection? (car pair) (cadr pair))
-            tmp-result
-            `(,@tmp-result ,pair)))
-        '()
-        (cartesian-product types types)))))
+(define find-type-conflicts 
+  (case-lambda 
+    [(index-node document) 
+      (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))])
+        (if (< (length types) 2)
+          '()
+          (fold-left 
+            (lambda (tmp-result pair)
+              (if (has-intersection? (car pair) (cadr pair))
+                tmp-result
+                `(,@tmp-result ,pair)))
+            '()
+            (cartesian-product types types))))]
+    [(document) 
+      (filter
+        (lambda (index-node) 
+          (not (is-first-child? index-node)))
+        (find-leaves (document-index-node-list document)))]))
 
 ;; We regard the indexes and references as a graph of existed variable and values. 
 ;; try to get result type by substitution

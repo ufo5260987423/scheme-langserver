@@ -21,6 +21,8 @@
     index-node-excluded-references
     index-node-excluded-references-set!
 
+    find-leaves 
+
     init-index-node
     is-first-child?
     is-leaf?
@@ -43,6 +45,17 @@
     (mutable references-export-to-other-node)
     (mutable references-import-in-this-node)
     (mutable excluded-references)))
+
+(define (find-leaves index-node-list)
+  (fold-left 
+    (lambda (result index-node)
+      (append 
+        result
+        (if (null? (index-node-children index-node))
+          (list index-node)
+          (find-leaves (index-node-children index-node)))))
+    '()
+    index-node-list))
 
 (define (init-index-node parent datum/annotation)
   (let* ([source (annotation-source datum/annotation)]
