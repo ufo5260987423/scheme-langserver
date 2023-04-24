@@ -53,5 +53,7 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
 (define (private-make-diagnostic range-start range-end severity message)
+  (pretty-print 'a)
+  (pretty-print message)
   (make-alist 'range (range->alist (make-range range-start range-end)) 'severity severity 'message message))
 )
