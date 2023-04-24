@@ -2,7 +2,8 @@
   (export 
     lambda?
     lambda-templates->new-substitution-list
-    has-intersection?)
+    has-intersection?
+    type->string)
   (import 
     (chezscheme)
     (ufo-match)
@@ -21,6 +22,13 @@
       [(head '<- tail) #t]
       [else #f])
     #f))
+
+(define (type->string type)
+  (cond
+    [(list? type) (apply string-append `( ,"(" ,@(map type->string type) ,")"))]
+    [(vector? type) (apply string-append `( ,"#(" ,@(map type->string (vector->list type)) ,")"))]
+    [(symbol? type) (symbol->string type)]
+    [(identifier-reference? type) (type->string (identifier-reference-identifier type))]))
 
 (define (has-intersection? type0 type1)
   (if (private-type-equal? type0 type1)
