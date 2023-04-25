@@ -51,7 +51,7 @@
     (lambda (result index-node)
       (append 
         result
-        (if (null? (index-node-children index-node))
+        (if (is-leaf? index-node)
           (list index-node)
           (find-leaves (index-node-children index-node)))))
     '()

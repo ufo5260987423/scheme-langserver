@@ -144,14 +144,14 @@
       #t
       (let loop ([body 
             (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-              (map identifier-reference-parents (find-available-references-for document current-index-node)))])
+              (apply append (map identifier-reference-parents (find-available-references-for document current-index-node))))])
         (if (null? body)
           (raise "no such identifier for specific libraries")
           (if (private-check-library-identifier? body library-identifier-rest)
             #t
             (loop 
               (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-                (map identifier-reference-parents body)))))))))
+                (apply append (map identifier-reference-parents body))))))))))
 
 (define (private-check-library-identifier? candidates library-identifier-rest)
   (if (null? candidates)

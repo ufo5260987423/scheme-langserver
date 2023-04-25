@@ -3,6 +3,8 @@
   (import 
     (chezscheme) 
 
+    (scheme-langserver util dedupe)
+
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type util)
@@ -154,10 +156,16 @@
         ;import
         [else 
           (map 
-            (lambda (reified)
-              (if (is-pure-identifier-reference-misture? reified)
-                `(,variable : ,reified)
-                `(,variable = ,reified)))
-            (reify (document-substitution-list target-document) target-index-node))]))
-    (private-process document (identifier-reference-parents identifier-reference) variable)))
+            (lambda (reified) `(,variable : ,reified))
+            (dedupe 
+              (filter 
+                is-pure-identifier-reference-misture? 
+                (reify 
+                  (document-substitution-list target-document) 
+                  target-index-node))))]))
+    (apply 
+      append 
+      (map 
+        (lambda (parent) (private-process document parent variable))
+        (identifier-reference-parents identifier-reference)))))
 )

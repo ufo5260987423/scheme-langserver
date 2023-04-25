@@ -34,7 +34,9 @@
             (refresh-workspace workspace)
             (walk-file (workspace-file-node workspace) path))
           maybe)]
-      [document (file-node-document file-node)])
+      [document (file-node-document file-node)]
+      [text (document-text document)])
+    (construct-substitution-list-for document)
     (try
       ;I'd only check leaf index-node
       (map 
@@ -42,18 +44,33 @@
           (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))]
               [s (index-node-start index-node)]
               [e (index-node-end index-node)])
+          (pretty-print 'b)
+          ; (pretty-print (annotation-stripped (index-node-datum/annotations (index-node-parent index-node))))
+          (pretty-print (length types))
+          (pretty-print (map type->string types))
             (private-make-diagnostic s e 3 
               (fold-left 
-                (lambda (remain current) (string-append remain "\n" current))
+                (lambda (remain current) 
+                  (if (equal? "" remain)
+                    current
+                    (string-append remain "\n" current)))
                 ""
-                (map type->string types)))))
+                (map type->string types))
+              text)))
         (find-leaves (document-index-node-list document)))
       (except e [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
-(define (private-make-diagnostic range-start range-end severity message)
+(define (private-make-diagnostic range-start range-end severity message text)
   (pretty-print 'a)
   (pretty-print message)
-  (make-alist 'range (range->alist (make-range range-start range-end)) 'severity severity 'message message))
+  (make-alist 
+    'range 
+    (range->alist 
+      (make-range 
+        (int+text->position range-start text)
+        (int+text->position range-end text))) 
+    'severity severity 
+    'message message))
 )

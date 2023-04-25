@@ -34,6 +34,8 @@
     (scheme-langserver util contain)
     (scheme-langserver util sub-list)
 
+    (scheme-langserver analysis type type-inferencer)
+
     (scheme-langserver analysis util)
     (scheme-langserver analysis tokenizer)
     
@@ -127,7 +129,11 @@
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         (document-reference-list-set! document '())
-        (private-init-references root-file-node root-library-node thread-pool document index-node-list))]
+        (private-init-references root-file-node root-library-node thread-pool document index-node-list)
+        ; (pretty-print 'test0)
+        ; (pretty-print target-path)
+        ; (construct-substitution-list-for document)
+        )]
     [(root-file-node root-library-node thread-pool document target-index-nodes)
       (map 
         (lambda (index-node)
