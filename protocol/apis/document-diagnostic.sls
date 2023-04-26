@@ -39,14 +39,14 @@
     (construct-substitution-list-for document)
     (try
       ;I'd only check leaf index-node
-      (map 
+      (vector-map 
         (lambda (index-node)
           (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))]
               [s (index-node-start index-node)]
               [e (index-node-end index-node)])
           (pretty-print 'b)
+          ; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
           ; (pretty-print (annotation-stripped (index-node-datum/annotations (index-node-parent index-node))))
-          (pretty-print (length types))
           (pretty-print (map type->string types))
             (private-make-diagnostic s e 3 
               (fold-left 
@@ -57,14 +57,14 @@
                 ""
                 (map type->string types))
               text)))
-        (find-leaves (document-index-node-list document)))
+        (list->vector (find-leaves (document-index-node-list document))))
       (except e [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
 (define (private-make-diagnostic range-start range-end severity message text)
-  (pretty-print 'a)
-  (pretty-print message)
+  ; (pretty-print 'a)
+  ; (pretty-print message)
   (make-alist 
     'range 
     (range->alist 

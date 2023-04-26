@@ -1,8 +1,6 @@
 (library (scheme-langserver analysis type walk-engine)
   (export 
     walk
-    walk:index-node->single-variable-list
-    walk:supper-type-list
     reify
     add-to-substitutions
     remove-from-substitutions
@@ -29,21 +27,16 @@
     ;suppose target is atom
     ;in substitutions we have following forms
     ; [((? variable? head) '= tail) tail] tail is supposed as list of variables or misture of variables and identifier-references
-    ; [((? index-node? head) ': (? variable? tail)) tail]
     ; [((? variable? head) ': (? identifier-reference? tail)) tail]
     ; this following two are for type rules
-    ; [((? identifier-reference? head) '< (? identifier-reference? tail)) tail]
-    ; [((? identifier-reference? head) '> (? identifier-reference? tail)) tail]
-    ; [((? identifier-reference? head) '< 'something?) tail]
-    [(substitutions target) (reify substitutions target '())]
-    [(substitutions target paths)
+    [(substitutions target-variable) (reify substitutions target-variable '())]
+    [(substitutions target-variable paths)
       ; (pretty-print 'test1)
-      ; (pretty-print (index-node? target))
       ; (pretty-print (variable? target))
       ; (pretty-print 'test2)
       ; (pretty-print paths)
-      (let* ([initial `(,target)]
-          [dryed (private-dry target)]
+      (let* ([initial `(,target-variable)]
+          [dryed (private-dry target-variable)]
           [ready-for-recursive-result
             (fold-left 
               (lambda (result current)
@@ -70,7 +63,7 @@
         ; (pretty-print (append paths dryed))
         (if (equal? ready-for-recursive-result initial)
           initial
-          (apply append (map (lambda (item) (reify substitutions item (append paths dryed))) ready-for-recursive-result))))]))
+          (dedupe (apply append (map (lambda (item) (reify substitutions item (append paths dryed))) ready-for-recursive-result)))))]))
 
 (define (private-substitute origin single-substitution)
   (cond 
@@ -78,7 +71,6 @@
     [(equal? origin (car single-substitution)) 
       (match single-substitution
         [((? variable? head) '= tail) tail]
-        [((? index-node? head) ': (? variable? tail)) tail]
         [((? variable? head) ': tail) tail]
         [else origin])]
     [(list? origin)
@@ -91,7 +83,6 @@
   (cond 
     [(list? target) (apply append (map private-dry target))]
     [(vector? target) (apply append (map private-dry (vector->list target)))]
-    [(index-node? target) `(,target)]
     [(identifier-reference? target) `(,target)]
     [(variable? target) `(,target)]
     [(equal? target 'something?) '(something?)]
@@ -102,15 +93,14 @@
     (lambda (pair)
       (list (car pair) symbol (cadr pair)))
     (cartesian-product 
-      (walk:index-node->single-variable-list substitutions left-index-node)
-      (walk:index-node->single-variable-list substitutions right-index-node))))
+      `(,(index-node-variable left-index-node))
+      `(,(index-node-variable right-index-node)))))
 
 (define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
   (let ([l (length parameter-index-nodes)]
         [variables-list
         (map 
-          (lambda (index-node)
-            (walk:index-node->single-variable-list substitutions index-node))
+          (lambda (index-node) `(,(index-node-variable index-node)))
           parameter-index-nodes)])
     (if (or (zero? l) (= 1 l))
       (map list variables-list)
@@ -126,32 +116,6 @@
     (lambda (item)
       (list (car item) '<- (cadr item)))
     (cartesian-product return-variables parameter-variable-products)))
-
-(define (walk:index-node->single-variable-list substitutions index-node)
-  (apply append (map 
-    (lambda (substitution)
-      (match substitution
-        [((? index-node? head) ': (? variable? tail)) 
-          (if (equal? index-node head)
-            `(,tail)
-            '())]
-        [else '()]))
-    substitutions)))
-
-(define (walk:supper-type-list substitutions identifier-reference)
-  (apply append (map 
-    (lambda (substitution)
-      (match substitution
-        [((? identifier-reference? head) '< (? identifier-reference? tail)) 
-          (if (equal? identifier-reference head)
-            (dedupe `(,@(walk:supper-type-list substitutions tail) ,tail))
-            '())]
-        [((? identifier-reference? head) '> (? identifier-reference? tail)) 
-          (if (equal? identifier-reference tail)
-            (dedupe `(,@(walk:supper-type-list substitutions head) ,head))
-            '())]
-        [else '()]))
-    substitutions)))
 
 (define (walk substitutions target)
   ; (dedupe `(,@(private-walk-left substitutions target) ,@(private-walk-right substitutions target)))

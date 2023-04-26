@@ -20,13 +20,12 @@
     [(document index-node substitutions) 
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
-          [variable (make-variable)]
-          [new-substitutions (add-to-substitutions substitutions `(,index-node : ,variable))])
+          [variable (index-node-variable index-node)])
         (fold-left 
           add-to-substitutions 
-          new-substitutions
+          substitutions
           (if (null? (index-node-children index-node))
-            (trivial-process document index-node variable expression new-substitutions #f #t)
+            (trivial-process document index-node variable expression substitutions #f #t)
             '())))]
     [(document index-node variable expression substitutions allow-unquote? unquoted?)
       (cond
@@ -152,7 +151,7 @@
             (identifier-reference-type-expressions identifier-reference))]
         ;local
         [(equal? document target-document)
-          (list `(,variable = ,target-index-node))]
+          (list `(,variable = ,(index-node-variable target-index-node)))]
         ;import
         [else 
           (map 
@@ -162,7 +161,7 @@
                 is-pure-identifier-reference-misture? 
                 (reify 
                   (document-substitution-list target-document) 
-                  target-index-node))))]))
+                  (index-node-variable target-index-node)))))]))
     (apply 
       append 
       (map 

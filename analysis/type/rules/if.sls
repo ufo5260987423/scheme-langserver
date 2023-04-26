@@ -9,7 +9,6 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type util)
-    (scheme-langserver analysis type variable)
     (scheme-langserver analysis type walk-engine)
 
     (scheme-langserver virtual-file-system index-node)

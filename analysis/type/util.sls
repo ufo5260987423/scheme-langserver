@@ -12,6 +12,8 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
 
+    (scheme-langserver virtual-file-system index-node)
+
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type walk-engine)
     (scheme-langserver analysis type variable))
@@ -218,7 +220,7 @@
                 (lambda (item) 
                   (not (equal? type item))) 
                 ;this will import parameters' variable
-                (filter variable? (reify substitutions current)))]
+                (filter variable? (reify substitutions (if (index-node? current) (index-node-variable current) current))))]
           [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
           ;default extension
           [extended-substitutions (dedupe (append substitutions new-substitutions))]

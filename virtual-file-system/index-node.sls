@@ -11,6 +11,7 @@
     index-node-start
     index-node-end
     index-node-datum/annotations
+    index-node-variable
 
     index-node-children
     index-node-children-set!
@@ -31,7 +32,8 @@
     clear-references-for)
   (import 
     (chezscheme)
-    (scheme-langserver util dedupe))
+    (scheme-langserver util dedupe)
+    (scheme-langserver analysis type variable))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node
@@ -40,11 +42,16 @@
     (immutable start)
     (immutable end)
     (immutable datum/annotations)
+    (immutable variable)
 
     (mutable children)
     (mutable references-export-to-other-node)
     (mutable references-import-in-this-node)
-    (mutable excluded-references)))
+    (mutable excluded-references))
+  (protocol
+    (lambda (new)
+      (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
+        (new parent start end datum/annotations (make-variable) children references-export-to-other-node references-import-in-this-node excluded-references)))))
 
 (define (find-leaves index-node-list)
   (fold-left 

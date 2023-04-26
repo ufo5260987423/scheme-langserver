@@ -8,7 +8,6 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type util)
-    (scheme-langserver analysis type variable)
     (scheme-langserver analysis type walk-engine)
 
     (scheme-langserver virtual-file-system index-node)
@@ -16,13 +15,12 @@
     (scheme-langserver virtual-file-system file-node))
 
 (define (application-process document index-node substitutions)
-  (let* ([variables (walk:index-node->single-variable-list substitutions index-node)]
+  (let* ([variable (index-node-variable index-node)]
       [children (index-node-children index-node)])
     (if (null? children)
       substitutions
       (let* ([head-index-node (car children)]
-          [rest-index-nodes (cdr children)]
-          [reified-head-result (reify substitutions head-index-node)]
+          [reified-head-result (reify substitutions (index-node-variable head-index-node))]
           [filtered-lambdas (filter lambda? reified-head-result)])
         (if (null? filtered-lambdas)
           substitutions
@@ -32,6 +30,6 @@
             (map 
               (lambda (pair) (list (car pair) '= (cadr pair)))
               (cartesian-product 
-                variables 
+                `(,variable)
                 (map car filtered-lambdas)))))))))
 )

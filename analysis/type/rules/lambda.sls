@@ -24,10 +24,10 @@
       (match expression
         [('lambda ((? symbol? identifiers) **1) _ **1 ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk:index-node->single-variable-list substitutions index-node)]
+          (let* ([variable (index-node-variable index-node)]
 
               [return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
+              [return-variable (index-node-variable return-index-node)]
 
               ;((? symbol? identifier) **1) index-nodes
               [parameter-index-nodes (index-node-children (cadr children))]
@@ -37,11 +37,11 @@
                 (lambda (pair)
                   (list (car pair) '= (cadr pair)))
                 (cartesian-product
-                  variables
-                  (construct-lambdas-with return-variables parameter-variable-products)))))]
+                  `(,variable)
+                  (construct-lambdas-with `(,return-variable) parameter-variable-products)))))]
         [('case-lambda clause **1) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk:index-node->single-variable-list substitutions index-node)]
+          (let* ([variable (index-node-variable index-node)]
               [clause-index-nodes (cdr children)])
             (append 
               substitutions
@@ -49,7 +49,7 @@
                 append 
                 (map 
                   (lambda (clause-index-node)
-                    (private-clause-process substitutions variables clause-index-node))
+                    (private-clause-process substitutions `(,variable) clause-index-node))
                   clause-index-nodes))))]
         [else substitutions])
       (except c
@@ -66,7 +66,7 @@
           (cartesian-product
             root-variables
             (construct-lambdas-with 
-              (walk:index-node->single-variable-list substitutions (car (reverse children))) 
+              `(,(index-node-variable (car (reverse children))))
               (construct-parameter-variable-products-with substitutions (index-node-children (car children))))))
           ]
       [else '()])))

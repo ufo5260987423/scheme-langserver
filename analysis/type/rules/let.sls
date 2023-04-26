@@ -24,7 +24,7 @@
         [('let (? symbol? loop-identifier) (((? symbol? identifier) value ) ... ) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
+              [return-variable (index-node-variable return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (caddr children))]
@@ -34,9 +34,9 @@
 
               ;(? symbol? loop-identifier)
               [loop-index-node (cadr children)]
-              [loop-variables (walk:index-node->single-variable-list substitutions loop-index-node)]
+              [loop-variable (index-node-variable loop-index-node)]
               ;((return-variable (parameter-variable ...)) **1)
-              [loop-procedure-details (construct-lambdas-with return-variables parameter-variable-products)])
+              [loop-procedure-details (construct-lambdas-with `(,return-variable) parameter-variable-products)])
             (append 
               substitutions 
               ;for let index-node
@@ -46,13 +46,12 @@
               (map 
                 (lambda (product)
                   `(,(car product) = ,(cadr product)))
-                (cartesian-product loop-variables loop-procedure-details))
+                (cartesian-product `(,loop-variable) loop-procedure-details))
               ;for key value index-nodes
               (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
         [('let (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -114,7 +113,6 @@
         [('let* (((? symbol? identifier) value) ... ) _ **1 ) 
           (guard-for document index-node 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -147,7 +145,6 @@
         [('letrec (((? symbol? identifier) value ) ... ) _ **1) 
           (guard-for document index-node 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -161,7 +158,6 @@
         [('letrec-syntax (((? symbol? identifier) value) ... ) _ **1) 
           (guard-for document index-node 'letrec-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
@@ -175,7 +171,6 @@
         [('letrec* (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
-              [return-variables (walk:index-node->single-variable-list substitutions return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])

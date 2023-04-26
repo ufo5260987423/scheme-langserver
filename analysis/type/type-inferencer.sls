@@ -49,7 +49,7 @@
 ;; We regard the indexes and references as a graph of existed variable and values. 
 ;; try to get result type by substitution
 (define (type-inference-for index-node document)
-  (dedupe (reify (document-substitution-list document) index-node)))
+  (dedupe (reify (document-substitution-list document) (index-node-variable index-node))))
 
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
@@ -71,10 +71,10 @@
       (let* ([base (fold-left private-add-implicit-convertions substitutions children)]
           [head-index-node (car children)]
           [rest-index-nodes (cdr children)]
-          [reified-head-result (reify base head-index-node)]
+          [reified-head-result (reify base (index-node-variable head-index-node))]
           [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
-          [return-variable-list (walk:index-node->single-variable-list substitutions index-node)])
-        (lambda-templates->new-substitution-list base filtered-lambdas return-variable-list rest-index-nodes)))))
+          [return-variable (index-node-variable index-node)])
+        (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes)))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]
@@ -88,9 +88,10 @@
     (fold-left
       (lambda (current-substitutions proc)
         ; (pretty-print proc)
-        (filter
-          (lambda (a) (not (null? a)))
-          (proc document index-node current-substitutions)))
+        (dedupe 
+          (filter
+            (lambda (a) (not (null? a)))
+            (proc document index-node current-substitutions))))
       children-substitution-list
       ;all these processor except trivial-process must add its result to current index-node
       ;such as for (app param ...), app's result type could be (return-type (param-type ...))
