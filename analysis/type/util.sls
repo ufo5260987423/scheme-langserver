@@ -88,12 +88,12 @@
   (if (null? ready-list)
     substitutions
     (fold-left
-      (lambda (substitutions-tmp rule-segments)
+      (lambda (substitutions-tmp lambda-template)
         (let ([tmp 
               (private-lambda-templates->new-substitution-list 
                 substitutions-tmp
                 ;lambda-template->parameter-templates
-                (caddr rule-segments)
+                (private-segment (caddr lambda-template))
                 ready-list)])
           (if (null? tmp)
             substitutions
@@ -101,11 +101,10 @@
               tmp 
               (map 
                 (lambda (return-variable)
-                  `(,return-variable = ,(car rule-segments)))
-                return-variable-list))
-            )))
+                  `(,return-variable = ,(car lambda-template)))
+                return-variable-list)))))
       substitutions
-      (map private-segment lambda-templates))))
+      lambda-templates)))
 
 ;return '() substitutions or extended-substitutions
 ;and '() represent an error
@@ -277,26 +276,26 @@
             (raise "wrong rule")
             (begin
               (if (or 
-                  (contain? (car (reverse result)) '...)
-                  (contain? (car (reverse result)) '**1))
+                  (equal? (car (reverse result)) '...)
+                  (equal? (car (reverse result)) '**1))
                 (raise "wrong rule")
                 (loop 
                   (cdr loop-body) 
                   (append 
                     (reverse (cdr (reverse result))) 
-                    `(,@(car (reverse result)) ...))))))]
+                    `(,(list (car (reverse result)) '...)))))))]
         [(equal? (car loop-body) '**1) 
           (if (null? result)
             (raise "wrong rule")
             (begin
               (if (or 
-                  (contain? (car (reverse result)) '...)
-                  (contain? (car (reverse result)) '**1))
+                  (equal? (car (reverse result)) '...)
+                  (equal? (car (reverse result)) '**1))
                 (raise "wrong rule")
                 (loop 
                   (cdr loop-body) 
                   (append 
                     (reverse (cdr (reverse result))) 
-                    `(,@(car (reverse result)) **1))))))]
+                    `(,(list (car (reverse result)) '**1)))))))]
         [else (loop (cdr loop-body) (append result `(,(car loop-body))))]))))
 )

@@ -33,16 +33,9 @@ Finally, it's roughly knows that types have its context. This makes differences 
 <!-- 3. Type expressions are scoped in [`document`](../../virtual-file-system/document.sls). This means once time $\Gamma$ machine can only digest one document and type is usually attached to [identifier-reference](../../analysis/identifier/reference.sls)'s `type-exressions`. It much benefits the code indexing. -->
 
 ### Attaching Type to Index
-Apparently, the hardest core of type inference is consuming codes matching predictors, and after a bunch of cracks and crashes, splitting out codes match other predictors. In scheme-langserver, an index is across all codes, scoped within [document](../../virtual-file-system/document.sls) and denoted with [index-node](../../virtual-file-system/index-node.sls), so an intuitive idea is attaching types to index-node. 
+In scheme-langserver, an index is across all codes, scoped within [document](../../virtual-file-system/document.sls) and denoted with [index-node](../../virtual-file-system/index-node.sls), so an intuitive idea is attaching types to index-node. Apparently, the hardest core of type inference is consuming codes matching predictors, and after a bunch of cracks and crashes, splitting out codes match other predictors. 
 
-In this section, we introduced:
-1. 
-3. the Hindley-Milner type system which told you something can respond LSP requests;
-4. using Gradual Typing solve the parameter type annotating problem.
-
-#### Lambda Calculus
-Lambda Calculus allowing most scheme/lisp code to be normalized as the same form and digested in same way. Unlike many articles, this document won't introduce $\alpha$-conversion, $\beta$-reduction and any other such things. Here are only 2 things to be mentioned in order to know that nearly all codes (except continuation process like `call/cc`) can be digested in same way:
-
+Previous paper work would hack this problem with lambda calculus' tongue, $\alpha$-conversion, $\beta$-reduction and any other such things. But this section just mentions 2 examples, to show that nearly all codes can be digested in same way:
 1. All variable assignments can be transformed to lambda calculus' application. Like `(let ((a 1)) (+ 1 a))`, can be simple transformed as `((lambda (a) (+ 1 a)) 1)`. And merely equal case in typescript is
 ```typescript 
 function (){
@@ -59,8 +52,7 @@ This means literal `1` can introduce `number?` type to variable `a` by assignmen
 
 2. All lambda calculus, its return type depend on their bottom. As above case `((lambda (a) (+ 1 a)) 1)`, the `(lambda (a) (+ 1 a))`'s return type is specified by the bottom `(+ 1 a)`. This bottom its return type is also specified by the r6rs-defined `+` function's bottom. Following this chain, as this document mentioned above, scheme-langserver has manually assigned 1108 forms with their should-be types, some more type assignment can be derived.
 
-#### For Generality
-In practice, not all scheme codes can be trivially transformed into lambda calculus even without `call/cc`, because r6rs standard just says what functions a scheme implementation should have, but doesn't says how to implement. This means a lot of annotation to do in order to tell our type system an expression's type is determined by several parts of code. Actually, scheme-langserver has implemented several rules in [this folder](../../analysis/type/rules/). They do such things:
+In additional, not all scheme codes can be trivially transformed into lambda calculus even without `call/cc`, because r6rs standard just says what functions a scheme implementation should have, but doesn't says how to implement. This means a lot of annotation to do in order to tell our type system an expression's type is determined by several parts of code. Actually, scheme-langserver has implemented several rules in [this folder](../../analysis/type/rules/). They do such things:
 1. Annotate literals with their types and construct a knowledge list like `(quasiquote (,index-node : ,type))`
    >Conveniently, for unification machine to be introduced in next section, the index-node would be firstly denoted with a variable and then have `(quasiquote (,variable : ,type))`.
 2. Annotate expressions with types of their bottoms.

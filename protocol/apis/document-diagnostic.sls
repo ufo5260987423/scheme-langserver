@@ -44,11 +44,10 @@
           (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))]
               [s (index-node-start index-node)]
               [e (index-node-end index-node)])
-          (pretty-print 'b)
+          ; (pretty-print 'diag)
           ; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
-          ; (pretty-print (annotation-stripped (index-node-datum/annotations (index-node-parent index-node))))
-          (pretty-print (map type->string types))
-            (private-make-diagnostic s e 3 
+          ; (pretty-print (map type->string types))
+          (private-make-diagnostic s e 3 
               (fold-left 
                 (lambda (remain current) 
                   (if (equal? "" remain)
@@ -63,8 +62,6 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
 (define (private-make-diagnostic range-start range-end severity message text)
-  ; (pretty-print 'a)
-  ; (pretty-print message)
   (make-alist 
     'range 
     (range->alist 

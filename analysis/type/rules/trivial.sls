@@ -143,7 +143,7 @@
     (let* ([target-document (identifier-reference-document identifier-reference)]
         [target-index-node (identifier-reference-index-node identifier-reference)])
       (cond 
-        ;it's in r6rs librar?
+        ;it's in r6rs library?
         [(null? target-index-node) 
           (map 
             (lambda (expression)

@@ -32,7 +32,7 @@
     [(substitutions target-variable) (reify substitutions target-variable '())]
     [(substitutions target-variable paths)
       ; (pretty-print 'test1)
-      ; (pretty-print (variable? target))
+      ; (pretty-print (indentifier-reference? target-variable))
       ; (pretty-print 'test2)
       ; (pretty-print paths)
       (let* ([initial `(,target-variable)]
@@ -70,6 +70,8 @@
     ;correspond to walk-left
     [(equal? origin (car single-substitution)) 
       (match single-substitution
+        ; [((? variable? head) '= (symbol? tail)) origin]
+        ; [((? variable? head) ': (symbol? tail)) origin]
         [((? variable? head) '= tail) tail]
         [((? variable? head) ': tail) tail]
         [else origin])]

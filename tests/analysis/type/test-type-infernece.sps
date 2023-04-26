@@ -73,6 +73,19 @@
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
 (test-end)
 
+(test-begin "type-inference-for debug: index-a")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 16 75)))]
+            [check-base (construct-type-expression-with-meta 'integer?)])
+        (construct-substitution-list-for target-document)
+        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+(test-end)
+
 ; (test-begin "find-type-conflicts")
 ;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
 ;             [root-file-node (workspace-file-node workspace)]

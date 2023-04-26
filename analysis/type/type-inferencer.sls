@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis type type-inferencer)
   (export 
     type-inference-for
+    pretty-print-substitution
     construct-substitution-list-for
     find-type-conflicts)
   (import 
@@ -45,6 +46,19 @@
         (lambda (index-node) 
           (not (is-first-child? index-node)))
         (find-leaves (document-index-node-list document)))]))
+
+(define (pretty-print-substitution document)
+  (pretty-print (map 
+    (lambda (substitution)
+      (let* ([l (car substitution)]
+          [r (car (reverse substitution))]
+          [m (cadr substitution)]
+          [r-o 
+            (if (identifier-reference? r)
+              (identifier-reference-identifier r)
+              r)])
+        `(,l ,m ,r-o)))
+    (document-substitution-list document))))
 
 ;; We regard the indexes and references as a graph of existed variable and values. 
 ;; try to get result type by substitution
