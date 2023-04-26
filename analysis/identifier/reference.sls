@@ -47,7 +47,7 @@
     (immutable library-identifier)
     (immutable type)
     ;parent can be used for two cases: 
-    ;(1) rename a identifier-reference in library importion/exportion
+    ;(1) rename/prefix a identifier-reference in library importion/exportion
     ;(2) record-type inherent
     (mutable parents)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
@@ -126,9 +126,10 @@
               identifier-reference)))))))
 
 (define (is-pure-identifier-reference-misture? expression)
-  (if (list? expression)
-    (not (contain? (map is-pure-identifier-reference-misture? expression) #f))
-    (or (equal? '**1 expression) (equal? '... expression) (identifier-reference? expression))))
+  (cond 
+    [(list? expression) (not (contain? (map is-pure-identifier-reference-misture? expression) #f))]
+    [(vector? expression) (not (contain? (map is-pure-identifier-reference-misture? (vector->list expression)) #f))]
+    [else (or (equal? '<- expression) (equal? 'something? expression) (equal? '**1 expression) (equal? '... expression) (identifier-reference? expression))]))
 
 (define (sort-identifier-references identifier-references)
   (sort 

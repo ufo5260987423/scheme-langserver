@@ -6,7 +6,7 @@
 
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver util cartesian-product))
 
-(test-begin "test cartesian-product")
+(test-begin "cartesian-product")
     (test-equal '((1 2)) (cartesian-product '(1) '(2)))
     (test-equal '((1 2) (1 3)) (cartesian-product '(1) '(2 3)))
     (test-equal '((1 2) (1 3) (4 2) (4 3)) (cartesian-product '(1 4) '(2 3)))

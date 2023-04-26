@@ -41,12 +41,9 @@
       ;I'd only check leaf index-node
       (vector-map 
         (lambda (index-node)
-          (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))]
-              [s (index-node-start index-node)]
-              [e (index-node-end index-node)])
-          ; (pretty-print 'diag)
-          ; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
-          ; (pretty-print (map type->string types))
+          (let ([s (index-node-start index-node)]
+              [e (index-node-end index-node)]
+              [types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))])
           (private-make-diagnostic s e 3 
               (fold-left 
                 (lambda (remain current) 
