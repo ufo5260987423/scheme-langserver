@@ -70,7 +70,7 @@ This is to say scheme-langserver has to introduce [variable](../../analysis/type
 Although lambda calculus indicates how information flows from literal and r6rs-base functions to user-selves defined code, it's like a crack and crash engine, in which fuel has been pumped, nothing know we how to ignite it. Luckily, we have Hindley-Milner (HM) type system, a classical type system for the lambda calculus. Among its more notable properties are its completeness and its ability to infer the most general types of a given program without programmer-supplied type annotations or other hints. HM has following detailed rules:
 
 1. Variable Access 
-$$ \frac{(x:\sigma) \in \Gamma}{\Gamma \vdash (x:\sigma)} $$ 
+$$\frac{(x:\sigma) \in \Gamma}{\Gamma \vdash (x:\sigma)}$$ 
 Intuitively, this whole rule means if a variable $x$ were given a type above this horizental line, a following-up process under it would be able to apply: spit out the type $\sigma$ of $x$. For detail, $\Gamma$ is a machine that can act all these deductions, $\in$ means extending the machine with assigning type $\sigma$ to variable $x$. $\vdash$ indicats the $\Gamma$ spliting something. 
 
 2. Application
