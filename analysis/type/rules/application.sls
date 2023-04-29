@@ -25,7 +25,8 @@
         (if (null? filtered-lambdas)
           substitutions
           ;application rule
-          (append 
+          (fold-left
+            add-to-substitutions
             substitutions
             (map 
               (lambda (pair) (list (car pair) '= (cadr pair)))

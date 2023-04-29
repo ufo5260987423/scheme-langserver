@@ -92,12 +92,12 @@
         (let ([tmp 
               (private-lambda-templates->new-substitution-list 
                 substitutions-tmp
-                ;lambda-template->parameter-templates
                 (private-segment (caddr lambda-template))
                 ready-list)])
           (if (null? tmp)
-            substitutions
-            (append
+            substitutions-tmp
+            (fold-left 
+              add-to-substitutions
               tmp 
               (map 
                 (lambda (return-variable)
@@ -222,7 +222,7 @@
                 (filter variable? (reify substitutions (if (index-node? current) (index-node-variable current) current))))]
           [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
           ;default extension
-          [extended-substitutions (dedupe (append substitutions new-substitutions))]
+          [extended-substitutions (fold-left add-to-substitutions substitutions new-substitutions)]
           [result
             (private-lambda-templates->new-substitution-list 
               extended-substitutions

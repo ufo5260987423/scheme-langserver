@@ -3,11 +3,12 @@
     walk
     reify
     add-to-substitutions
-    remove-from-substitutions
 
     construct-substitutions-between-index-nodes
     construct-parameter-variable-products-with
-    construct-lambdas-with)
+    construct-lambdas-with
+
+    substitution-compare)
   (import 
     (chezscheme)
 
@@ -15,6 +16,8 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
+    (scheme-langserver util natural-order-compare)
+    (scheme-langserver util binary-search)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis identifier reference)
@@ -22,73 +25,39 @@
 
     (ufo-match))
 
-(define reify
+(define reify 
   (case-lambda 
-    ;suppose target is atom
-    ;in substitutions we have following forms
-    ; [((? variable? head) '= tail) tail] tail is supposed as list of variables or misture of variables and identifier-references
-    ; [((? variable? head) ': (? identifier-reference? tail)) tail]
-    ; this following two are for type rules
-    [(substitutions target-variable) (reify substitutions target-variable '())]
-    [(substitutions target-variable paths)
-      ; (pretty-print 'test1)
-      ; (pretty-print (indentifier-reference? target-variable))
-      ; (pretty-print 'test2)
-      ; (pretty-print paths)
-      (let* ([initial `(,target-variable)]
-          [dryed (private-dry target-variable)]
-          [ready-for-recursive-result
-            (fold-left 
-              (lambda (result current)
-                (if (contain? paths current)
-                  result 
-                  (append 
-                    result
-                    (apply 
-                      append
-                      (map 
-                        (lambda (single-substitution) 
-                          (map 
-                            (lambda (single-target)
-                              ; (pretty-print 'test3)
-                              ; (pretty-print single-substitution)
-                              (private-substitute single-target single-substitution))
-                            result))
-                        (walk substitutions current))))))
-              initial
-              dryed)])
-        ; (pretty-print 'test4)
-        ; (pretty-print ready-for-recursive-result)
-        ; (pretty-print 'test5)
-        ; (pretty-print (append paths dryed))
-        (if (equal? ready-for-recursive-result initial)
-          initial
-          (dedupe (apply append (map (lambda (item) (reify substitutions item (append paths dryed))) ready-for-recursive-result)))))]))
+;suppose target is atom
+;in substitutions we have following forms
+; [((? variable? head) '= tail) tail] tail is supposed as list of variables or misture of variables and identifier-references
+; [((? variable? head) ': (? identifier-reference? tail)) tail]
+; this following two are for type rules
+    [(substitutions target-expression) (reify substitutions target-expression '())]
+    [(substitutions target-expression memory) 
+      (cond
+        [(variable? target-expression) 
+          ;only extend memory at here
+          (let* ([new-memory `(,@memory ,target-expression)]
+              [walk-results (private-filter-not-null (filter (lambda (item) (not (contain? new-memory item))) (map caddr (walk substitutions target-expression))))]
+              [reified-results (apply append (map (lambda (item) (reify substitutions item new-memory)) walk-results))])
+            `(,@reified-results ,target-expression))] 
+        [(or (list? target-expression) (vector? target-expression))
+          (let* ([is-list? (list? target-expression)]
+              [normalized (if is-list? target-expression (vector->list target-expression))]
+              [reified-list (map (lambda (item) (reify substitutions item memory)) normalized)]
+              [cartesian-product-list (apply cartesian-product (filter (lambda (item) (not (null? item))) reified-list))]
+              [depth (length normalized)]
+              [result (map (lambda (single-cartesian-product) (private-tree-flat single-cartesian-product depth)) cartesian-product-list)])
+            (if is-list? result (map list->vector result)))]
+        [else `(,target-expression)])]))
 
-(define (private-substitute origin single-substitution)
-  (cond 
-    ;correspond to walk-left
-    [(equal? origin (car single-substitution)) 
-      (match single-substitution
-        ; [((? variable? head) '= (symbol? tail)) origin]
-        ; [((? variable? head) ': (symbol? tail)) origin]
-        [((? variable? head) '= tail) tail]
-        [((? variable? head) ': tail) tail]
-        [else origin])]
-    [(list? origin)
-     (map (lambda (item) (private-substitute item single-substitution)) origin)]
-    [(vector? origin)
-     (vector-map (lambda (item) (private-substitute item single-substitution)) origin)]
-    [else origin]))
+(define (private-filter-not-null list-instance)
+  (filter (lambda (item) (not (null? item))) list-instance))
 
-(define (private-dry target)
-  (cond 
-    [(list? target) (apply append (map private-dry target))]
-    [(vector? target) (apply append (map private-dry (vector->list target)))]
-    [(identifier-reference? target) `(,target)]
-    [(variable? target) `(,target)]
-    [(equal? target 'something?) '(something?)]
-    [else `(,target)]))
+(define (private-tree-flat single-cartesian-product depth)
+  (if (< 1 depth)
+    `(,@(private-tree-flat (car single-cartesian-product) (- depth 1)) ,(cadr single-cartesian-product))
+    `(,single-cartesian-product)))
 
 (define (construct-substitutions-between-index-nodes substitutions left-index-node right-index-node symbol)
   (map 
@@ -129,24 +98,16 @@
 (define (private-walk-right substitutions right)
   (filter (lambda (substitution) (equal? (caddr substitution) right)) substitutions))
 
+(define (substitution-compare item0 item1)
+  (natural-order-compare 
+    (variable->uuid->string (car item0))
+    (variable->uuid->string (car item1))))
+
 (define add-to-substitutions 
   (case-lambda 
     [(target) (list target)]
     [(substitutions target)
-      (if (contain? substitutions target)
-        substitutions
-        (if (null? target)
+      (if (null? target)
           substitutions
-          `(,@substitutions ,target)))]))
-
-(define (remove-from-substitutions substitutions target)
-  (if (list? target)
-    (fold-left 
-      (lambda (substitutions-tmp item) 
-        (remove-from-substitutions substitutions-tmp item)) 
-      substitutions
-      target)
-    (filter
-      (lambda (substitution) (not (contain? (private-dry substitution) target)))
-      substitutions)))
+        (dedupe (merge substitution-compare substitutions (list target))))]))
 )

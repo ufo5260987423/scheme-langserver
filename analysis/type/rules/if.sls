@@ -33,15 +33,18 @@
           (let (
               [return-index-node0 (cadr (reverse children))]
               [return-index-node1 (car (reverse children))])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions 
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node0 '=)
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node1 '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node0 index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node1 index-node '=)))]
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node0 '=)
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node1 '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node0 index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node1 index-node '=))))]
         [('cond clause **1)
           (guard-for document index-node 'cond '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (append 
+          (fold-left
+            add-to-substitutions
             substitutions
             (apply 
               append 

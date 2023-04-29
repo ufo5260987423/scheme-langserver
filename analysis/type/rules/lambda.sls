@@ -32,7 +32,9 @@
               ;((? symbol? identifier) **1) index-nodes
               [parameter-index-nodes (index-node-children (cadr children))]
               [parameter-variable-products (construct-parameter-variable-products-with substitutions parameter-index-nodes)])
-            (append substitutions 
+            (fold-left
+              add-to-substitutions
+              substitutions 
               (map 
                 (lambda (pair)
                   (list (car pair) '= (cadr pair)))
@@ -43,7 +45,8 @@
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([variable (index-node-variable index-node)]
               [clause-index-nodes (cdr children)])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions
               (apply 
                 append 

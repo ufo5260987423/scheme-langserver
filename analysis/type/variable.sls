@@ -2,7 +2,8 @@
   (export 
     make-variable
     variable?
-    is-pure-variable?)
+    is-pure-variable?
+    variable->uuid->string)
   (import 
     (uuid)
     (chezscheme)
@@ -15,6 +16,9 @@
     (lambda (new)
       (lambda ()
         (new (random-uuid))))))
+
+(define (variable->uuid->string variable)
+  (uuid->string (variable-uuid variable)))
 
 (define (is-pure-variable? body)
   (cond
