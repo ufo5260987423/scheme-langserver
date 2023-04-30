@@ -2,7 +2,10 @@
     (export cartesian-product)
     (import (rnrs))
 
-(define (cartesian-product list1 list2 . rest)
+(define cartesian-product 
+    (case-lambda 
+        [(list1) list1]
+        [(list1 list2 . rest)
     (let ([current
                 (apply append
                     (map 
@@ -14,6 +17,5 @@
                     list1))])
         (if (null? rest)
             current
-            (apply cartesian-product `(,current ,@rest)))))
-
+            (apply cartesian-product `(,current ,@rest))))]))
 )

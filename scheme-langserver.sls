@@ -4,7 +4,6 @@
   (import 
     (chezscheme) 
     (ufo-thread-pool) 
-    (ufo-thread-pool util try) 
     (ufo-match) 
 
     (scheme-langserver analysis workspace)
@@ -22,7 +21,9 @@
     (scheme-langserver protocol apis definition)
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
+    (scheme-langserver protocol apis document-diagnostic)
 
+    (scheme-langserver util try) 
     (scheme-langserver util association)
     (scheme-langserver util path))
 
@@ -116,6 +117,13 @@
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/diagnostic" 
+          (try
+            (send-message server-instance (success-response id (diagnostic workspace params)))
+            (except c
+              [else 
+                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/formatting"
@@ -161,6 +169,7 @@
               'hoverProvider #t
               'definitionProvider #t
               'referencesProvider #t
+              'diagnosticProvider (make-alist 'interFileDependencies #t 'workspaceDiagnostics #f)
               ; 'workspaceSymbol #t
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t
@@ -219,6 +228,7 @@
               (make-transcoder (utf-8-codec))) 
             (equal? enable-multi-thread? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
+          ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '())])

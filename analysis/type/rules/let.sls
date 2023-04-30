@@ -23,10 +23,8 @@
       (match expression
         [('let (? symbol? loop-identifier) (((? symbol? identifier) value ) ... ) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
+              [return-variable (index-node-variable return-index-node)]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (caddr children))]
@@ -36,37 +34,38 @@
 
               ;(? symbol? loop-identifier)
               [loop-index-node (cadr children)]
-              [loop-variables (walk substitutions loop-index-node)]
+              [loop-variable (index-node-variable loop-index-node)]
               ;((return-variable (parameter-variable ...)) **1)
-              [loop-procedure-details (construct-lambdas-with return-variables parameter-variable-products)])
-            (append 
+              [loop-procedure-details (construct-lambdas-with `(,return-variable) parameter-variable-products)])
+            (fold-left
+              add-to-substitutions
               substitutions 
               ;for let index-node
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for loop procedure
-              (map 
-                (lambda (product)
-                  `(,(car product) = ,(cadr product)))
-                (cartesian-product loop-variables loop-procedure-details))
+                (map 
+                  (lambda (product)
+                    `(,(car product) = ,(cadr product)))
+                  (cartesian-product `(,loop-variable) loop-procedure-details))
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+                (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [('let (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions 
               ;for let index-node
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+                (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         ; [('fluid-let (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
         ;   (guard-for document index-node 'fluid-let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ;   (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
@@ -117,20 +116,19 @@
         ;         (loop (cdr rest)))))]
         [('let* (((? symbol? identifier) value) ... ) _ **1 ) 
           (guard-for document index-node 'let* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions 
               ;for let index-node
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+                (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         ; [('let*-values (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
         ;   (guard-for document index-node 'let*-values '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ;   (let loop ([include '()] 
@@ -152,52 +150,49 @@
         ;         (loop (append include reference-list) (cdr rest)))))]
         [('letrec (((? symbol? identifier) value ) ... ) _ **1) 
           (guard-for document index-node 'letrec '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions 
               ;for let index-node
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+              (append
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+                (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [('letrec-syntax (((? symbol? identifier) value) ... ) _ **1) 
           (guard-for document index-node 'letrec-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions 
               ;for let index-node
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+                (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [('letrec* (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'letrec* '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let* ([variables (walk substitutions index-node)]
-
-              [return-index-node (car (reverse children))]
-              [return-variables (walk substitutions return-index-node)]
+          (let* ([return-index-node (car (reverse children))]
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
-            (append 
+            (fold-left
+              add-to-substitutions
               substitutions 
               ;for let index-node
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+                (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [else substitutions])
       (except c
         [else substitutions]))))

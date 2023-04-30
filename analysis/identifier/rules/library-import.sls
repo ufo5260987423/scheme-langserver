@@ -19,7 +19,7 @@
     (match expression
       [('library _ **1 ) 
         (map 
-          (lambda (child-node) (match-import root-file-node root-library-node document child-node))
+          (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (index-node-children index-node))]
       [else '()])
     index-node))
@@ -29,18 +29,18 @@
     (lambda (item) (not (null? item)))
     list-instance))
 
-(define (match-import root-file-node root-library-node document index-node)
+(define (match-import initialization-index-node root-file-node root-library-node document index-node)
   (filter-empty-list 
     (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
       (match expression
         [('import dummy **1 ) 
           (map 
-            (lambda (child-node) (match-clause root-file-node root-library-node document child-node)) 
+            (lambda (child-node) (match-clause initialization-index-node root-file-node root-library-node document child-node)) 
             (cdr (index-node-children index-node)))]
         [else '()]))))
 
-(define (match-clause root-file-node root-library-node document index-node)
+(define (match-clause initialization-index-node root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
@@ -133,9 +133,10 @@
                     (string->symbol (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference))))
                     (identifier-reference-document reference)
                     (identifier-reference-index-node reference)
+                    initialization-index-node 
                     (identifier-reference-library-identifier reference)
                     'pointer
-                    reference
+                    `(,reference)
                     '())) 
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
@@ -172,9 +173,10 @@
                         current-internal-name
                         (identifier-reference-document reference)
                         (identifier-reference-index-node reference)
+                        initialization-index-node 
                         (identifier-reference-library-identifier reference)
                         'pointer
-                        reference
+                        `(,reference)
                         '())) 
                     current-references)])
 
@@ -232,9 +234,10 @@
                         current-internal-name
                         (identifier-reference-document reference)
                         (identifier-reference-index-node reference)
+                        initialization-index-node 
                         (identifier-reference-library-identifier reference)
                         'pointer
-                        reference
+                        `(,reference)
                         '())) 
                     current-references)])
 

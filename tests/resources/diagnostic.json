@@ -1,0 +1,8 @@
+{
+    "id": "14",
+    "method": "textDocument/diagnostic",
+    "params": {
+        "textDocument" : { "uri" : "file://~a/util/natural-order-compare.sls" }
+    },
+    "jsonrpc": "2.0"
+}

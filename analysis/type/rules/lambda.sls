@@ -5,9 +5,12 @@
     (ufo-match)
 
     (scheme-langserver util try)
+    (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type util)
+    (scheme-langserver analysis type variable)
+    (scheme-langserver analysis type walk-engine)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -15,61 +18,59 @@
 
 (define (lambda-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
+      [expression (annotation-stripped ann)]
+      [children (index-node-children index-node)])
     (try
       (match expression
-        [('lambda (identifiers **1) _ **1 ) 
+        [('lambda ((? symbol? identifiers) **1) _ **1 ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let* ([variable (index-node-variable index-node)]
 
-          (let loop ([loop-parameter-nodes (cadr (index-node-children index-node))]
-              [identifier-list identifiers]
-              [result '()])
-            (if (null? loop-parameter-nodes)
-              (let* ([identifier (car identifier-list)]
-                  [current-index-node (car loop-parameter-nodes)]
-                  [identifier-reference (index-node-references-export-to-other-node current-index-node)]
-                  [type-expression (collect-reference-should-have-type identifier index-node)])
-                (index-node-actural-have-type-set! current-index-node type-expression)
-                (identifier-reference-type-expressions-set! identifier-reference `(,type-expression))
-                (loop (cdr loop-parameter-nodes) (cdr identifier-list) (append result `(,type-expression)))))
-            (index-node-actural-have-type-set! 
-              index-node 
-              `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))) ,result)))]
-        [('lambda (? symbol? identifier) _ **1 ) 
-          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
-          (index-node-actural-have-type-set! 
-            index-node 
-            `(,(index-node-actural-have-type (car (reverse (index-node-children index-node)))) '((something? x) ...))) ]
-        [('case-lambda (dummy0 ...) dummy1 **1 ) 
+              [return-index-node (car (reverse children))]
+              [return-variable (index-node-variable return-index-node)]
+
+              ;((? symbol? identifier) **1) index-nodes
+              [parameter-index-nodes (index-node-children (cadr children))]
+              [parameter-variable-products (construct-parameter-variable-products-with substitutions parameter-index-nodes)])
+            (fold-left
+              add-to-substitutions
+              substitutions 
+              (map 
+                (lambda (pair)
+                  (list (car pair) '= (cadr pair)))
+                (cartesian-product
+                  `(,variable)
+                  (construct-lambdas-with `(,return-variable) parameter-variable-products)))))]
+        [('case-lambda clause **1) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let loop ([rest (cdr (index-node-children index-node))])
-            (if (not (null? rest))
-              (let* ([identifier-index-node-grand-parent (car rest)]
-                  [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
-                (match grand-parent-expression 
-                  [((param-identifiers **1) body **1)
-                    (let loop-parameter ([loop-parameter-nodes (index-node-children (car (index-node-children identifier-index-node-grand-parent)))]
-                        [identifier-list param-identifiers]
-                        [result '()])
-                      (if (null? loop-parameter-nodes)
-                        (let* ([tail-index-node (car (reverse (index-node-children identifier-index-node-grand-parent)))]
-                            [single-expression `(,(index-node-actural-have-type tail-index-node) ,result)])
-                          (index-node-actural-have-type-set! 
-                            index-node 
-                            (append 
-                              (index-node-actural-have-type index-node)
-                              `(,single-expression)))
-                          (loop (cdr rest)))
-                        (let* ([identifier (car identifier-list)]
-                            [current-index-node (car loop-parameter-nodes)]
-                            [identifier-reference (index-node-references-export-to-other-node current-index-node)]
-                            [type-expression (collect-reference-should-have-type identifier identifier-index-node-grand-parent)])
-                          (index-node-actural-have-type-set! current-index-node type-expression)
-                          (identifier-reference-type-expressions-set! identifier-reference `(,type-expression))
-                          (loop-parameter (cdr loop-parameter-nodes) (cdr identifier-list) (append result `(,type-expression))))))]
-                  [else '()]
-                ))))]
-        [else '()])
+          (let* ([variable (index-node-variable index-node)]
+              [clause-index-nodes (cdr children)])
+            (fold-left
+              add-to-substitutions
+              substitutions
+              (apply 
+                append 
+                (map 
+                  (lambda (clause-index-node)
+                    (private-clause-process substitutions `(,variable) clause-index-node))
+                  clause-index-nodes))))]
+        [else substitutions])
       (except c
-        [else '()]))))
+        [else substitutions]))))
+
+(define (private-clause-process substitutions root-variables clause-index-node)
+  (let ([children (index-node-children clause-index-node)]
+      [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
+    (match expression
+      [(((? symbol? parameter) **1) _ **1) 
+        (map 
+          (lambda (pair)
+            (list (car pair) '= (cadr pair)))
+          (cartesian-product
+            root-variables
+            (construct-lambdas-with 
+              `(,(index-node-variable (car (reverse children))))
+              (construct-parameter-variable-products-with substitutions (index-node-children (car children))))))
+          ]
+      [else '()])))
 )

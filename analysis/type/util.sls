@@ -1,9 +1,13 @@
 (library (scheme-langserver analysis type util)
   (export 
     lambda?
-    add-applyable-lambda-types-to-substitutions)
+    lambda-templates->new-substitution-list
+    has-intersection?
+    type->string)
   (import 
     (chezscheme)
+    (ufo-match)
+
     (scheme-langserver util sub-list)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
@@ -11,256 +15,287 @@
     (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type walk-engine))
+    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type variable))
 
 (define (lambda? body)
   (if (list? body)
-    (= 2 (length body))
+    (match body
+      [(head '<- tail) #t]
+      [else #f])
     #f))
 
-(define add-applyable-lambda-types-to-substitutions
-  (case-lambda
-    [(substitutions application-index-node) 
-      (let* ([children (index-node-children application-index-node)]
-        [head-index-node (car children)]
-        [rest-children (cdr children)]
-        [head-variable-list (walk:index-node->single-variable-list head-index-node)])
-        (fold-left
-          (lambda (substitutions-tmp head-variable)
-            (add-applyable-lambda-types-to-substitutions 
-              substitutions-tmp
-              head-variable
-              rest-children))
-          substitutions
-          head-variable-list))]
-    [(substitutions head-variable rest-index-node-list) 
-      (if (null? rest-index-node-list)
-        substitutions
-        (fold-left
-          (lambda (substitutions-tmp rule-segments)
-            (private-add-applyable-lambda-types-to-substitutions 
-              substitutions-tmp
-              rule-segments
-              rest-index-node-list))
-          substitutions
-          (map 
-            (lambda (lambda-types) (private-segment (cadr lambda-types))) 
-            (filter lambda? (walk substitutions head-variable)))))]))
+(define (type->string type)
+  (cond
+    [(list? type) 
+      (string-append 
+        "(" 
+        (fold-left 
+          (lambda (remain current) 
+            (if (equal? "" remain) current (string-append remain " " current))) 
+            "" 
+          (map type->string type))
+        ")")]
+    [(vector? type) 
+      (string-append 
+        "#(" 
+        (fold-left 
+          (lambda (remain current) 
+            (if (equal? "" remain) current (string-append remain " " current))) 
+            "" 
+          (map type->string (vector->list type)))
+        ")")]
+    [(symbol? type) (symbol->string type)]
+    [(identifier-reference? type) (type->string (identifier-reference-identifier type))]))
 
-(define private-add-applyable-lambda-types-to-substitutions
+(define (has-intersection? type0 type1)
+  (if (private-type-equal? type0 type1)
+    #t
+    (let ([segments0 (private-segment type0)]
+        [segments1 (private-segment type1)])
+      (or 
+        (and (null? segments0) (null? segments1))
+        (not (null? (private-lambda-templates->new-substitution-list (map (lambda (segment) `(,segment = ,(make-variable))) segments1) segments0 segments1)))
+        (not (null? (private-lambda-templates->new-substitution-list (map (lambda (segment) `(,segment = ,(make-variable))) segments0) segments1 segments0)))))))
+
+(define (private-type-equal? type0 type1)
+  (cond 
+    [(or (equal? type0 'something) (equal? type1 'something)) #t]
+    [(equal? type0 type1) #t]
+    [(and (identifier-reference? type0) (identifier-reference? type1)) 
+      (or (is-ancestor-of? type0 type1) (is-ancestor-of? type1 type0))]
+    [(and (list? type0) (list? type1))
+      (let loop ([body0 type0] [body1 type1])
+        (cond 
+          [(and (null? body0) (null? body1)) #t]
+          [(and (not (null? body0)) (not (null? body1)))
+            (let ([head0 (car body0)]
+                [head1 (car body1)])
+              (private-type-equal? type0 type1))]
+          [else #f]))]
+    [(and (vector? type0) (vector? type1))
+      (let loop ([body0 (vector->list type0)] [body1 (vector->list type1)])
+        (cond 
+          [(and (null? body0) (null? body1)) #t]
+          [(and (not (null? body0)) (not (null? body1)))
+            (let ([head0 (car body0)]
+                [head1 (car body1)])
+              (private-type-equal? type0 type1))]
+          [else #f]))]
+    [else #f]))
+
+(define (lambda-templates->new-substitution-list substitutions lambda-templates return-variable-list ready-list) 
+  (if (null? ready-list)
+    substitutions
+    (fold-left
+      (lambda (substitutions-tmp lambda-template)
+        (let ([tmp 
+              (private-lambda-templates->new-substitution-list 
+                substitutions-tmp
+                (private-segment (caddr lambda-template))
+                ready-list)])
+          (if (null? tmp)
+            substitutions-tmp
+            (fold-left 
+              add-to-substitutions
+              tmp 
+              (map 
+                (lambda (return-variable)
+                  `(,return-variable = ,(car lambda-template)))
+                return-variable-list)))))
+      substitutions
+      lambda-templates)))
+
+;return '() substitutions or extended-substitutions
+;and '() represent an error
+(define private-lambda-templates->new-substitution-list
   (case-lambda 
-    ;only for initialization
-    ;porque se-calher normalmente há um current-segment por initialized procedure
-    [(substitutions rest-segments rest-index-nodes)
-      (cond
-        [(and (null? rest-segments) (null? rest-index-nodes)) substitutions]
-        [(null? rest-segments) '()]
-        [(null? rest-index-nodes) '()]
-        [else 
-          (private-add-applyable-lambda-types-to-substitutions 
-            substitutions 
-            (car rest-segments) 
-            (cdr rest-segments) 
-            rest-index-nodes
-            #f)])]
-    ;process null value 
-    ;jump from other two clause
-    ;directly reach termination at 1 2 3 4 7 9 11
-    [(substitutions current-segment rest-segments rest-index-nodes last?)
-      (cond
-        ;1
-        [(and (null? rest-segments) (null? rest-index-nodes) (private-is-... current-segment)) substitutions]
-        ;2
-        ;**1 has been consumed
-        [(and (null? rest-segments) (null? rest-index-nodes) (private-is-**1 current-segment) last?) substitutions]
-        ;3
-        ;**1 haven't been consumed
-        [(and (null? rest-segments) (null? rest-index-nodes) (private-is-**1 current-segment) (not last?)) '()]
-        ;4
-        [(and (null? rest-segments) (null? rest-index-nodes)) substitutions]
+    ;process null values
+    ;if current-segment in other clause is available, they won't jump in this clause
+    [(substitutions rest-segments ready-list)
+      (cond 
+        [(and (null? rest-segments) (null? ready-list)) substitutions]
 
-        ;5
-        ;rest-index-node haven't been ran out
-        [(and (null? rest-segments) (private-is-... current-segment)) 
-          (private-add-applyable-lambda-types-to-substitutions 
-            substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes)
-            last?)]
-        ;6
-        ;rest-index-node haven't been ran out
-        [(and (null? rest-segments) (private-is-**1 current-segment)) 
-          (private-add-applyable-lambda-types-to-substitutions 
-            substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes)
-            last?)]
-        ;7
-        ;rest-index-node haven't been ran out
+        ;rest-segments is null and ready-list is not null
         [(null? rest-segments) '()]
 
-        ;8
-        [(and (null? rest-index-nodes) (private-is-... current-segment)) 
-          (private-add-applyable-lambda-types-to-substitutions 
-            substitutions 
-            (car rest-segments) 
-            (cdr rest-segments) 
-            rest-index-nodes
-            #f)]
-        ;9
-        [(and (null? rest-index-nodes) (private-is-**1 current-segment) (not last?)) '()]
-        ;10
-        [(and (null? rest-index-nodes) (private-is-**1 current-segment) last?) 
-          (private-add-applyable-lambda-types-to-substitutions 
-            substitutions 
-            (car rest-segments) 
-            (cdr rest-segments) 
-            rest-index-nodes
-            #f)]
-        ;11
-        [(and (null? rest-index-nodes)) '()]
-
-        ;12
-        [(and (private-is-**1 current-segment) (not last?)) 
-          (private-add-applyable-lambda-types-to-substitutions 
-            substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes)
-            #f)]
-        ;13
-        [(and (private-is-**1 current-segment) last?) 
-          (let ([tmp-result 
-                ;be greedy
-                (private-add-applyable-lambda-types-to-substitutions 
-                  substitutions 
-                  current-segment 
-                  rest-segments 
-                  (car rest-index-nodes) 
-                  (cdr rest-index-nodes)
-                  #t)])
-            (if (null? tmp-result)
-              (private-add-applyable-lambda-types-to-substitutions 
-                substitutions 
-                (car rest-segments) 
-                (cdr rest-segments)
-                (car rest-index-nodes) 
-                (cdr rest-index-nodes)
-                #f)
-              tmp-result))]
-        ;14
-        [(and (private-is-... current-segment)) 
-          (let ([tmp-result 
-                ;be greedy
-                (private-add-applyable-lambda-types-to-substitutions 
-                  substitutions 
-                  current-segment 
-                  rest-segments 
-                  (car rest-index-nodes) 
-                  (cdr rest-index-nodes)
-                  #t)])
-            (if (null? tmp-result)
-              (private-add-applyable-lambda-types-to-substitutions 
-                substitutions 
-                (car rest-segments) 
-                (cdr rest-segments)
-                (car rest-index-nodes) 
-                (cdr rest-index-nodes)
-                #f)
-              tmp-result))]
-        ;15
+        ;rest-segments is not null and ready-list is null
+        ;and both of them are not null
         [else 
-          (private-add-applyable-lambda-types-to-substitutions 
+          (private-lambda-templates->new-substitution-list 
             substitutions 
-            current-segment 
-            rest-segments 
-            (car rest-index-nodes) 
-            (cdr rest-index-nodes) 
+            (car rest-segments) 
+            (cdr rest-segments) 
+            ready-list
             #f)])]
-    ;add to substitutions
-    [(substitutions current-segment rest-segments current-index-node rest-index-nodes last?)
-      (let* ([type (private-type-of current-segment)]
-          [variable-list (walk:index-node->single-variable-list substitutions current-index-node)]
-          [new-substitutions (map (lambda (single-variable) `(,current-index-node : ,single-variable)) variable-list)]
-          [extended-substitutions `(,@substitutions ,@new-substitutions)])
-        (cond
-          ;jump in from: 5 14
-          ;may jump in from: 13 14
-          [(private-is-... current-segment)
-            (private-add-applyable-lambda-types-to-substitutions 
-              extended-substitutions
-              current-segment 
-              rest-segments 
-              (cdr rest-index-nodes)
-              #t)]
-          ;jump in from: 6 12 13
-          ;may jump in from: 13 14
-          [(private-is-**1 current-segment)
-            (let ([tmp-result0 
-                  (private-add-applyable-lambda-types-to-substitutions 
-                    extended-substitutions
-                    current-segment 
-                    rest-segments 
-                    (cdr rest-index-nodes)
-                    #t)])
-              (if (and last? (null? tmp-result0))
-                (private-add-applyable-lambda-types-to-substitutions 
+    ;jump from above clause
+    ;suppose current-segment is not null
+    ;suppose ready-list is not null
+    ;rest-segments may be null
+    ;this clause won't extend substitutions
+    ;this clause won't check whether rest-segments is null
+    [(substitutions current-segment rest-segments ready-list last?)
+      (cond
+        [(and (private-is-... current-segment) (null? ready-list))
+          ;skip current-segment is available
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            rest-segments
+            ready-list)]
+        [(private-is-... current-segment)
+          (let ([tmp
+                (private-lambda-templates->new-substitution-list 
                   substitutions
-                  (car rest-segments)
-                  (cdr rest-segments)
-                  (cdr rest-index-nodes)
-                  #f)
-                '()))]
-          ;jump in from: 15
-          ;may jump in from: 13 14
-          [else 
-            (private-add-applyable-lambda-types-to-substitutions 
-              extended-substitutions 
-              current-segment 
-              rest-segments 
-              rest-index-nodes
-              #f)]))]))
+                  current-segment
+                  rest-segments
+                  (car ready-list)
+                  (cdr ready-list)
+                  last?)])
+            (if (null? tmp)
+              ;skip current-segment is available
+              (private-lambda-templates->new-substitution-list 
+                substitutions
+                rest-segments
+                ready-list)
+              tmp))]
 
-(define (private-is-... segment) (equal? '... (car (reverse segment))))
+        [(and (private-is-**1 current-segment) (null? ready-list) last?)
+          ;skip current-segment is available
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            rest-segments
+            ready-list)]
+        [(and (private-is-**1 current-segment) (null? ready-list) (not last?)) '()]
+        [(and (private-is-**1 current-segment) last?) 
+          (let ([tmp
+                (private-lambda-templates->new-substitution-list 
+                  substitutions
+                  current-segment
+                  rest-segments
+                  (car ready-list)
+                  (cdr ready-list)
+                  last?)])
+            (if (null? tmp)
+              ;skip current-segment is available
+              (private-lambda-templates->new-substitution-list 
+                substitutions
+                rest-segments
+                ready-list)
+              tmp))]
+        [(and (private-is-**1 current-segment) (not last?)) 
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            current-segment
+            rest-segments
+            (car ready-list)
+            (cdr ready-list)
+            last?)]
 
-(define (private-is-**1 segment) (equal? '**1 (car (reverse segment))))
+        [last? 
+          (private-lambda-templates->new-substitution-list 
+            substitutions
+            rest-segments
+            ready-list)]
+        [(null? ready-list) '()]
+        [else 
+          (private-lambda-templates->new-substitution-list 
+            substitutions 
+            current-segment 
+            rest-segments 
+            (car ready-list) 
+            (cdr ready-list) 
+            last?)])]
+    ;do actural substitution extending
+    ;current-segment is not null
+    ;current is not null
+    ;rest-segments may be null
+    ;ready-list may be null
+    ;jump from above last clause
+    ;jump into above two clauses
+    [(substitutions current-segment rest-segments current ready-list last?)
+      (let* ([type (private-type-of current-segment)]
+          [variable-list 
+              (filter 
+                (lambda (item) 
+                  (not (equal? type item))) 
+                ;this will import parameters' variable
+                (filter variable? (reify substitutions (if (index-node? current) (index-node-variable current) current))))]
+          [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
+          ;default extension
+          [extended-substitutions (fold-left add-to-substitutions substitutions new-substitutions)]
+          [result
+            (private-lambda-templates->new-substitution-list 
+              extended-substitutions
+              rest-segments
+              ready-list)])
+        ;well, null means failure
+        (if (null? result)
+          ;attach current-segment to next item 
+          (cond
+            ;mas, não há item disponível
+            [(null? ready-list) '()]
+            [(private-is-... current-segment)
+              (private-lambda-templates->new-substitution-list 
+                extended-substitutions
+                current-segment 
+                rest-segments 
+                ready-list
+                #t)]
+            [(private-is-**1 current-segment)
+              (private-lambda-templates->new-substitution-list 
+                extended-substitutions
+                current-segment 
+                rest-segments 
+                ready-list
+                #t)]
+            [else '()])
+          result))]))
 
-(define (private-type-of segment) (car segment))
+(define (private-is-... segment) 
+  (if (list? segment)
+    (equal? '... (car (reverse segment))))
+    #f)
+
+(define (private-is-**1 segment) 
+  (if (list? segment)
+    (equal? '**1 (car (reverse segment))))
+    #f)
+
+(define (private-type-of segment) 
+  (if (list? segment)
+    (car segment)
+    segment))
 
 (define (private-segment rule-list)
   (let loop ([loop-body rule-list] [result '()])
     (if (null? loop-body)
+      result
       (cond
         [(equal? (car loop-body) '...) 
           (if (null? result)
             (raise "wrong rule")
             (begin
               (if (or 
-                  (contain? (car (reverse result)) '...)
-                  (contain? (car (reverse result)) '**1))
+                  (equal? (car (reverse result)) '...)
+                  (equal? (car (reverse result)) '**1))
                 (raise "wrong rule")
                 (loop 
                   (cdr loop-body) 
                   (append 
                     (reverse (cdr (reverse result))) 
-                    `(,@(car (reverse result)) ...))))))]
+                    `(,(list (car (reverse result)) '...)))))))]
         [(equal? (car loop-body) '**1) 
           (if (null? result)
             (raise "wrong rule")
             (begin
               (if (or 
-                  (contain? (car (reverse result)) '...)
-                  (contain? (car (reverse result)) '**1))
+                  (equal? (car (reverse result)) '...)
+                  (equal? (car (reverse result)) '**1))
                 (raise "wrong rule")
                 (loop 
                   (cdr loop-body) 
                   (append 
                     (reverse (cdr (reverse result))) 
-                    `(,@(car (reverse result)) **1))))))]
+                    `(,(list (car (reverse result)) '**1)))))))]
         [else (loop (cdr loop-body) (append result `(,(car loop-body))))]))))
 )

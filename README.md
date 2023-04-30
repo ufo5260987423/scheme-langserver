@@ -1,3 +1,4 @@
+![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
 
 Implementing support like autocomplete, goto definition, or documentation on hover is a significant effort for programming. However, comparing to other language like java, python, javascript and c, language server protocol implementation for lisp language are just made in a vacuum. [Geiser](https://gitlab.com/emacs-geiser), [racket langserver](https://github.com/jeapostrophe/racket-langserver) and [swish-lint](https://github.com/becls/swish-lint) etc., their works are all based on `repl`(Read-Eval-Print Loop) or keyword tokenizer instead of programming. For example, if a programmer was coding on an unaccomplished project, in which the codes are not fully runnable, [Geiser](https://gitlab.com/emacs-geiser) or any others would only complete top-level binding identifiers listed by `environment-symbols` procedure (for [Chez](https://cisco.github.io/ChezScheme/)). Which means for local bindings and unaccomplished codes, though making effort for programming is supposed of the importance mostly, [Geiser](https://gitlab.com/emacs-geiser) and its counterparts help nothing. Familiar cases occur with goto definition and many other functionalities.
@@ -15,9 +16,11 @@ Your donation will make this world better. Also, you can issue your advice and I
 This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
 
 ## Recent Status
-I'm now working on type-inference branch. And it will be an ill Hindley-Milner Type System. Variable access/declaration rule has passed (you can verify it with `test/analysis/type/rules/test-let.sps`). Detailed documentation will be complete next month. 
+I'm now would have a one-month break, so tired and poor. In the future I have a plan of user-friendly diagnostic information and type inference rules for higher-order procedures like `car`. And I'm still calling for donation.
 
 ## Log
+1.0.11: Gradual Typing system, all basic rules have been passed (you can verify it with `test/analysis/type/*.sps` and `test/analysis/type/rules/*.sps`). Detailed documentation has been published. 
+
 1.0.10: Fix bugs in 1.0.9.
 
 1.0.9: Abandoned: add parallel and synchronize mechanism, which can harshly speed up indexing.
@@ -199,3 +202,5 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ## Detailed Document
 1. [Catching identifier bindings](./doc/analysis/identifier.md)
 2. [Synchronizing](./doc/util/synchronize.md)
+3. [Type inference](./doc/analysis/type-inference.md), [类型推断](./doc/analysis/type-inference.cn.md)
+4. [API Analysis](./doc/protocol/analysis.md)

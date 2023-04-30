@@ -26,7 +26,7 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "test construct-substitution-list-for")
+(test-begin "construct-substitution-list-for")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -36,7 +36,7 @@
         (test-equal #f (null? (document-substitution-list target-document))))
 (test-end)
 
-(test-begin "test type-inference-for fixnum literal")
+(test-begin "type-inference-for fixnum literal")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -48,7 +48,7 @@
         (test-equal #t (contain? (type-inference-for target-index-node target-document) (construct-type-expression-with-meta 'fixnum?))))
 (test-end)
 
-(test-begin "test walk for symbol")
+(test-begin "walk for symbol")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -57,10 +57,10 @@
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))])
         (construct-substitution-list-for target-document)
-        (test-equal (car (car (walk (document-substitution-list target-document) target-index-node))) target-index-node))
+        (test-equal (car (car (walk (document-substitution-list target-document) (index-node-variable target-index-node)))) (index-node-variable target-index-node)))
 (test-end)
 
-(test-begin "test type-inference-for symbol")
+(test-begin "type-inference-for symbol")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -68,9 +68,44 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
-            [check-base (construct-type-expression-with-meta '(boolean? (real? real? **1)))])
+            [check-base (construct-type-expression-with-meta '(boolean? <- (real? real? **1)))])
         (construct-substitution-list-for target-document)
         (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
 (test-end)
+
+(test-begin "type-inference-for debug: index-a")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 16 75)))]
+            [check-base (construct-type-expression-with-meta 'integer?)])
+        (construct-substitution-list-for target-document)
+        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+(test-end)
+
+(test-begin "sorted substitution")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-document (file-node-document target-file-node)])
+        (construct-substitution-list-for target-document)
+        (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
+(test-end)
+
+; (test-begin "find-type-conflicts")
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+;             [target-document (file-node-document target-file-node)]
+;             [target-text (document-text target-document)]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))])
+;         (construct-substitution-list-for target-document)
+;         (test-equal '() (find-type-conflicts target-index-node target-document)))
+; (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

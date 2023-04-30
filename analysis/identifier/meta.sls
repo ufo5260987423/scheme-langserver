@@ -53,7 +53,7 @@
    (sort-identifier-references 
       (map 
          (lambda (identifier-pair) 
-            (make-identifier-reference (car identifier-pair) '() '() library-instance (cadr identifier-pair) '() '()))
+            (make-identifier-reference (car identifier-pair) '() '() '() library-instance (cadr identifier-pair) '() '()))
          list-instance)))
 
 (define (init-type-expressions)
@@ -65,7 +65,11 @@
                   identifier-reference
                   (private-construct-type-expression-with-meta 
                      (map 
-                        cdr
+                        (lambda (item)
+                           (let ([tmp (cdr item)])
+                              (if (null? tmp)
+                                 tmp
+                                 `(,(car tmp) <- ,(cadr tmp)))))
                         (binary-search
                            (list->vector rnrs-chez-rules)
                            (lambda (target0 target1)
@@ -83,18 +87,33 @@ rnrs-programs rnrs-mutable-pairs rnrs-mutable-strings
 rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums 
 rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
 rnrs-records-syntactic rnrs-records-procedure 
-rnrs-records-inspection chezscheme-csv7 scheme-csv7)))
-
+rnrs-records-inspection chezscheme-csv7 scheme-csv7))
+   ;numeric tower
+   (fold-left 
+      (lambda (parent identifier-reference)
+         (identifier-reference-parents-set! identifier-reference (list parent))
+         identifier-reference)
+      (find (lambda (identifier-reference) (equal? 'fixnum? (identifier-reference-identifier identifier-reference))) chezscheme)
+      (map 
+         (lambda (procedure-name) 
+            (find 
+               (lambda (identifier-reference) 
+                  (equal? procedure-name (identifier-reference-identifier identifier-reference))) chezscheme)) 
+         '(bignum? integer? cflonum? flonum? rational? real? complex?))))
 
 (define (construct-type-expression-with-meta meta-identifier)
    ;;chezscheme is the super set of rnrs
    (private-construct-type-expression-with-meta meta-identifier chezscheme))
 
 (define (private-construct-type-expression-with-meta meta-identifier list-instance)
-  (if (list? meta-identifier)
-    (map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)
-    (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
-      (if target-identifier target-identifier meta-identifier))))
+  (cond 
+      [(list? meta-identifier) (map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)]
+      [(vector? meta-identifier) (vector-map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)]
+      [(equal? meta-identifier '...) '...]
+      [(equal? meta-identifier '**1) '**1]
+      [else 
+         (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
+            (if target-identifier target-identifier meta-identifier))]))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)

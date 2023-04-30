@@ -4,7 +4,9 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) 
+(import 
+    (rnrs (6)) 
+    (srfi :64 testing) 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules lambda)
@@ -16,7 +18,6 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system document))
-
 
 (test-begin "case-lambda-process")
     (let* ( [workspace (init-workspace "./util")]

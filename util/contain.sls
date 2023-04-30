@@ -6,5 +6,11 @@
     (case-lambda
         [(list-instance item) (contain? list-instance item equal?)]
         [(list-instance item equal-predicator) 
-            (if (find (lambda(i) (equal-predicator i item)) list-instance) #t #f)]))
+            (let loop ([body list-instance])
+                (if (null? body)
+                    #f
+                    (if (equal? item (car body))
+                        #t
+                        (loop (cdr body)))))
+            ]))
 )

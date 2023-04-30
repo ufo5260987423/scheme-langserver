@@ -3,7 +3,7 @@
     "method": "textDocument/didClose",
     "params": {
         "textDocument" : {
-            "uri" : "file://~a/util/io.sls"
+            "uri" : "file://~a/util/natural-order-compare.sls"
         }
     },
     "jsonrpc": "2.0"

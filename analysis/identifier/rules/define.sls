@@ -26,6 +26,7 @@
                 identifier 
                 document 
                 (car key-index-nodes) 
+                index-node
                 library-identifiers
                 'procedure
                 '()
@@ -51,6 +52,7 @@
                       dummy-expression
                       document
                       dummy-index-node
+                      index-node
                       '()
                       'parameter
                       '()
@@ -81,6 +83,7 @@
                 (car* identifier)
                 document 
                 (cadr (index-node-children index-node))
+                index-node
                 library-identifiers
                 'syntax-variable
                 '()
@@ -103,6 +106,7 @@
                 identifier 
                 document 
                 (car key-index-nodes) 
+                index-node
                 library-identifiers
                 'syntax
                 '()
@@ -127,6 +131,7 @@
                       dummy-expression
                       document
                       dummy-index-node
+                      index-node
                       '()
                       'syntax-parameter
                       '()
@@ -157,6 +162,7 @@
                 (car* identifier)
                 document 
                 (cadr (index-node-children index-node))
+                index-node
                 library-identifiers
                 'syntax-variable
                 '()
