@@ -8,6 +8,8 @@
     construct-parameter-variable-products-with
     construct-lambdas-with
 
+    debug:substitution-sorted? 
+
     substitution-compare)
   (import 
     (chezscheme)
@@ -93,7 +95,35 @@
   (private-walk-left substitutions target))
 
 (define (private-walk-left substitutions left)
-  (filter (lambda (substitution) (equal? (car substitution) left)) substitutions))
+  ; (let ([a
+  ;       (binary-search 
+  ;         (list->vector substitutions) 
+  ;         substitution-compare 
+  ;         `(,left '? '?))]
+  ;     [b (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)])
+  ;   ; (if (not (equal? a b))
+  ;   ;   (begin
+  ;   ;     (pretty-print a)
+  ;   ;     (pretty-print b)
+  ;   ;   )
+  ;   ; )
+  ; )
+  (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)
+  )
+
+(define (debug:substitution-sorted? substitutions)
+  (let loop ([l substitutions]
+      [s (sort substitution-compare substitutions)])
+    (cond 
+      [(and (null? l) (null? s)) #t]
+      [(or (null? l) (null? s)) #f]
+      [(equal? (car (car l)) (car (car s))) (loop (cdr l) (cdr s))]
+      [else 
+        (pretty-print 'debug:sorted-origin)
+        (pretty-print (car l))
+        (pretty-print 'debug:sorted-sorted)
+        (pretty-print (car s))
+        #f])))
 
 (define (private-walk-right substitutions right)
   (filter (lambda (substitution) (equal? (caddr substitution) right)) substitutions))
@@ -108,6 +138,6 @@
     [(target) (list target)]
     [(substitutions target)
       (if (null? target)
-          substitutions
+        substitutions
         (dedupe (merge substitution-compare substitutions (list target))))]))
 )

@@ -23,7 +23,6 @@
     (scheme-langserver analysis type rules trivial)
     (scheme-langserver analysis type rules define)
     (scheme-langserver analysis type rules application)
-    ; (scheme-langserver analysis type rules define)
 
     (scheme-langserver analysis type util)
     (scheme-langserver analysis type walk-engine))
@@ -91,17 +90,23 @@
         (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes)))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
+  ; (pretty-print (document-uri document))
   (let* ([children (index-node-children index-node)]
       [children-substitution-list
-        (apply 
-          append 
-          (map 
-            (lambda (child) 
-              (private-construct-substitution-list document child base-substitution-list))
-            children))])
+        (fold-left
+          add-to-substitutions
+          '()
+          (apply 
+            append 
+            (map 
+              (lambda (child) 
+                (private-construct-substitution-list document child base-substitution-list))
+              children)))])
     (fold-left
       (lambda (current-substitutions proc)
-        ; (pretty-print proc)
+        ; (pretty-print 'proc)
+        ; (if (not (debug:substitution-sorted? current-substitutions))
+        ;   (pretty-print proc))
         (dedupe 
           (filter
             (lambda (a) (not (null? a)))

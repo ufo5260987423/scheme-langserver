@@ -24,10 +24,12 @@
         [('if _  clause0) 
           (guard-for document index-node 'if '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([return-index-node (car (reverse children))])
-            (append 
+            (fold-left 
+              add-to-substitutions
               substitutions 
-              (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)))]
+              (append 
+                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=))))]
         [('if _  clause0 clause1) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let (
@@ -63,7 +65,7 @@
       [last-child (car (reverse children))])
     (match expression
       [(predicator tail **1) 
-        (list 
+        (append
           (construct-substitutions-between-index-nodes substitutions root-index-node last-child '=)
           (construct-substitutions-between-index-nodes substitutions last-child root-index-node '=)) ]
       [else '()])))
