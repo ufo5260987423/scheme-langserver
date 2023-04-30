@@ -95,20 +95,11 @@
   (private-walk-left substitutions target))
 
 (define (private-walk-left substitutions left)
-  ; (let ([a
-  ;       (binary-search 
-  ;         (list->vector substitutions) 
-  ;         substitution-compare 
-  ;         `(,left '? '?))]
-  ;     [b (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)])
-  ;   ; (if (not (equal? a b))
-  ;   ;   (begin
-  ;   ;     (pretty-print a)
-  ;   ;     (pretty-print b)
-  ;   ;   )
-  ;   ; )
-  ; )
-  (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)
+  (binary-search 
+    (list->vector substitutions) 
+    substitution-compare 
+    `(,left '? '?))
+  ; (filter (lambda (substitution) (equal? (car substitution) left)) substitutions)
   )
 
 (define (debug:substitution-sorted? substitutions)

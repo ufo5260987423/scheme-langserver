@@ -44,12 +44,13 @@
         [(number? expression) (list `(,variable : ,(construct-type-expression-with-meta 'number?)))]
 
         [(and (symbol? expression) unquoted?)
-          (apply 
-            append 
-            (map 
-              (lambda (identifier-reference) 
-                (private-process document identifier-reference variable))
-              (find-available-references-for document index-node expression)))]
+          (sort substitution-compare
+            (apply 
+              append 
+              (map 
+                (lambda (identifier-reference) 
+                  (private-process document identifier-reference variable))
+                (find-available-references-for document index-node expression))))]
         [(symbol? expression) (list `(,variable : ,(construct-type-expression-with-meta 'symbol?)))]
 
         ;here, must be a list or vector
@@ -107,7 +108,7 @@
                   (if is-list? expression (vector->list expression)))]
               [variable-list (if is-list? (car final-result) (list->vector (car final-result)))]
               [extend-substitution-list (cadr final-result)])
-            `(,@extend-substitution-list (,variable = ,variable-list)))]
+            (sort substitution-compare `(,@extend-substitution-list (,variable = ,variable-list))))]
         [else '()])]))
 
 (define (private-unquote-slicing? expression)
@@ -139,32 +140,33 @@
     #f))
 
 (define (private-process document identifier-reference variable)
-  (if (null? (identifier-reference-parents identifier-reference))
-    (let* ([target-document (identifier-reference-document identifier-reference)]
-        [target-index-node (identifier-reference-index-node identifier-reference)])
-      (cond 
-        ;it's in r6rs library?
-        [(null? target-index-node) 
-          (map 
-            (lambda (expression)
-              `(,variable : ,expression))
-            (identifier-reference-type-expressions identifier-reference))]
-        ;local
-        [(equal? document target-document)
-          (list `(,variable = ,(index-node-variable target-index-node)))]
-        ;import
-        [else 
-          (map 
-            (lambda (reified) `(,variable : ,reified))
-            (dedupe 
-              (filter 
-                is-pure-identifier-reference-misture? 
-                (reify 
-                  (document-substitution-list target-document) 
-                  (index-node-variable target-index-node)))))]))
-    (apply 
-      append 
-      (map 
-        (lambda (parent) (private-process document parent variable))
-        (identifier-reference-parents identifier-reference)))))
+  (sort substitution-compare
+    (if (null? (identifier-reference-parents identifier-reference))
+      (let* ([target-document (identifier-reference-document identifier-reference)]
+          [target-index-node (identifier-reference-index-node identifier-reference)])
+        (cond 
+          ;it's in r6rs library?
+          [(null? target-index-node) 
+            (map 
+              (lambda (expression)
+                `(,variable : ,expression))
+              (identifier-reference-type-expressions identifier-reference))]
+          ;local
+          [(equal? document target-document)
+            (list `(,variable = ,(index-node-variable target-index-node)))]
+          ;import
+          [else 
+            (map 
+              (lambda (reified) `(,variable : ,reified))
+              (dedupe 
+                (filter 
+                  is-pure-identifier-reference-misture? 
+                  (reify 
+                    (document-substitution-list target-document) 
+                    (index-node-variable target-index-node)))))]))
+      (apply 
+        append 
+        (map 
+          (lambda (parent) (private-process document parent variable))
+          (identifier-reference-parents identifier-reference))))))
 )
