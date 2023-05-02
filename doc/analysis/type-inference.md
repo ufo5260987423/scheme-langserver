@@ -25,6 +25,7 @@ Let's consider the type of literals and here 4 trivial cases:
 2. A compound case is like list literal `'(1 2 3)` and vector literal `#(1 2 3)`, in which scheme-langserver will match them with `'(number? number? number?)` and `'#(number? number? number?)`. Directly, another much more complicated example `'(1 a "e")` will be assigned with `'(number? symbol? string?)`.
 3. An implicit case is given by [r6rs](http://www.r6rs.org/), in which I recognize 1108 forms of function and manually assign them type expression. Recalling the above `+` function case, `(number? <- (number? ...))`, `<-` indicate it's a function or in lisp's tongue, lambda calculus. It receives 0 parameters or something with `number?` type, and returns a `number?`-typed value, using some shortcut markers include `**1` as `+` in regular expression, that previous pattern occurs more than once time, and `...` as `*` for zero or more times.
 4. A general case is `something?` for universal type. For example, all predictors' parameter has type of `something?`.
+5. `void?` for `(void)`.
 
 Further, it's roughly knows that types have its context. This makes differences because in different library may have same-named predicator. So scheme-langserver involves [identifier-references](../analysis/identifier.md) in order to take place of such predictors in above cases. A function `construct-type-expression-with-meta` can be used for this process. And `something?` is an inner predictor won't take part in the transformation.
 

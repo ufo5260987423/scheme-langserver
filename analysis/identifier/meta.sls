@@ -111,6 +111,8 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
       [(vector? meta-identifier) (vector-map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)]
       [(equal? meta-identifier '...) '...]
       [(equal? meta-identifier '**1) '**1]
+      [(equal? meta-identifier 'something?) 'something?]
+      [(equal? meta-identifier 'void?) 'void?]
       [else 
          (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
             (if target-identifier target-identifier meta-identifier))]))

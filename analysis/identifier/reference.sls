@@ -129,7 +129,14 @@
   (cond 
     [(list? expression) (not (contain? (map is-pure-identifier-reference-misture? expression) #f))]
     [(vector? expression) (not (contain? (map is-pure-identifier-reference-misture? (vector->list expression)) #f))]
-    [else (or (equal? '<- expression) (equal? 'something? expression) (equal? '**1 expression) (equal? '... expression) (identifier-reference? expression))]))
+    [else 
+      (or 
+        (equal? '<- expression) 
+        (equal? 'something? expression) 
+        (equal? 'void? expression) 
+        (equal? '**1 expression) 
+        (equal? '... expression) 
+        (identifier-reference? expression))]))
 
 (define (sort-identifier-references identifier-references)
   (sort 
