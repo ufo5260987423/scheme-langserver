@@ -92,13 +92,13 @@
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/documentHighlight" 
-          (try
-            (send-message server-instance (success-response id (find-highlight workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ; ["textDocument/documentHighlight" 
+        ;   (try
+        ;     (send-message server-instance (success-response id (find-highlight workspace params)))
+        ;     (except c
+        ;       [else 
+        ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+        ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
         ["textDocument/definition" 
@@ -108,8 +108,6 @@
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
-          ; ["textDocument/documentHighlight"
-          ;  (text-document/document-highlight id params)]
         ["textDocument/documentSymbol" 
           (try
             (send-message server-instance (success-response id (document-symbol workspace params)))
@@ -120,6 +118,15 @@
         ["textDocument/diagnostic" 
           (try
             (send-message server-instance (success-response id (diagnostic workspace params)))
+            (except c
+              [else 
+                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (send-message server-instance (fail-response id unknown-error-code method))]))]
+
+        ["$/cancelRequest" 
+          (try
+            ;here, 'method is determined by protocol/api/cancellation.sls
+            (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
@@ -169,7 +176,7 @@
               'hoverProvider #t
               'definitionProvider #t
               'referencesProvider #t
-              'diagnosticProvider (make-alist 'interFileDependencies #t 'workspaceDiagnostics #f)
+              ; 'diagnosticProvider (make-alist 'interFileDependencies #t 'workspaceDiagnostics #f)
               ; 'workspaceSymbol #t
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t
@@ -179,7 +186,7 @@
               ; 'implementationProvider #t
               ; 'renameProvider renameProvider
               ; 'codeActionProvider #t
-              'documentHighlightProvider #t
+              ; 'documentHighlightProvider #t
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
               ; 'documentFormattingProvider #t

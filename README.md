@@ -120,10 +120,25 @@ This project is still in early development, so you may run into rough edges with
 
 ### Features
  >NOTE 
- I made some configuration with `.config/lvim/config.lua` like following
+ I made some configuration with `.config/lvim/config.lua` like [this page](https://github.com/neovim/nvim-lspconfig/blob/master/README.md#keybindings-and-completion):
  ```lua
- vim.keymap.set('n', 'gr', builtin.lsp_references, {})
- vim.keymap.set('n', 'gd', builtin.lsp_definitions, {})
+ require 'lspconfig'.scheme_langserver.setup {
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+  callback = function(ev)
+    -- Enable completion triggered by <c-x><c-o>
+    vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
+
+    -- Buffer local mappings.
+    -- See `:help vim.lsp.*` for documentation on any of the below functions
+    local opts = { buffer = ev.buf }
+    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+  end,
+})
+}
  ```
 
 1. Top-level and local identifiers binding completion.

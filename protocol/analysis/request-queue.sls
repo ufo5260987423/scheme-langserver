@@ -7,7 +7,8 @@
     (chezscheme)
     (slib queue)
 
-    (scheme-langserver protocol analysis rules document-sync))
+    (scheme-langserver protocol analysis rules document-sync)
+    (scheme-langserver protocol analysis rules cancellation))
 
 (define-record-type request-queue 
   	(fields 
@@ -42,7 +43,9 @@
             (map 
               (lambda (func) 
                 (func request pure-queue))
-              (list process-document-sync)))])
+              (list 
+                process-cancellation
+                process-document-sync)))])
         (if (null? result)
           request
           (loop (car result)))))))

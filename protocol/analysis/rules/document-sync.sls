@@ -8,6 +8,7 @@
     (scheme-langserver util path)
 
     (scheme-langserver protocol request)
+    (scheme-langserver protocol analysis util)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver util association))
@@ -15,21 +16,23 @@
 (define (process-document-sync head-request queue)
   (let* ([head-method (request-method head-request)]
       [head-param (request-params head-request)])
-    (if (and (not (queue-empty? queue)) (equal? head-method "textDocument/didChange"))
-      (let* ([next-request (queue-front queue)]
-          [next-method (request-method next-request)])
-        (if (equal? next-method "textDocument/didChange")
-          (let* ([head-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref head-param 'textDocument))]
-              [head-path (uri->path (versioned-text-document-identifier-uri head-versioned-text-document-identifier))]
-              [next-param (request-params next-request)]
-              [next-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref next-param 'textDocument))]
-              [next-path (uri->path (versioned-text-document-identifier-uri next-versioned-text-document-identifier))])
-            (if (equal? next-path head-path)
-              (begin
-                (dequeue! queue)
-                (private-process:changes->change head-request next-request))
-              head-request))
-          head-request))
+    (if (equal? head-method "textDocument/didChange")
+      (let* ([head-versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref head-param 'textDocument))]
+          [head-path (uri->path (versioned-text-document-identifier-uri head-versioned-text-document-identifier))]
+          [predicator 
+            (lambda (request)
+              (let* ([method (request-method request)]
+                  [param (request-params request)]
+                  [versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref param 'textDocument))]
+                  [path (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier))])
+                (and (equal? method "textDocument/didChange") (equal? head-path path))))]
+          [result (scan-queue&pick-out queue predicator)])
+        (if (null? result)
+          head-request
+          (fold-left
+            private-process:changes->change
+            head-request
+            result)))
       head-request)))
 
 (define (private-process:changes->change head-request next-request)
