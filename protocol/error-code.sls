@@ -8,7 +8,9 @@
     server-error-start
     server-error-end
     server-not-initialized
-    unknown-error-code)
+    unknown-error-code
+
+    request-cancelled)
   (import (rnrs))
 
 (define invalid-request -32600)

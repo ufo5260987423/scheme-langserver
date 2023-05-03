@@ -52,10 +52,10 @@ compile-chez-program run.ss
 #### TODO: for Windows
 The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
 
-### Installation for [LunarVim](https://www.lunarvim.org/)
+### Installation for [LunarVim(1.3)](https://www.lunarvim.org/)
 I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
 
-But now, above configuration haven't been tested. So, manual installation is still needed: for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), after manually building from above step [Building](#building), an executable file `run` would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+But now, above configuration haven't been tested. So, manual installation is still needed: for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), after manually building from above step [Building](#building), an executable file `run` would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'
 local bin_name = '{path-to-run}'
@@ -82,7 +82,7 @@ require 'lspconfig'.scheme_langserver.setup {}
 ```
 
 >NOTE
-For [LunarVim](https://www.lunarvim.org/), default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/ftdetec/` is to add `sls.lua` file as following:
+For [LunarVim](https://www.lunarvim.org/), default scheme file extension doesn't include ".SLS". A patch to `.local/share/lunarvim/lvim/lua/ftdetec/` is to add `sls.lua` file as following:
 ```lua
 vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
 ```
@@ -120,10 +120,25 @@ This project is still in early development, so you may run into rough edges with
 
 ### Features
  >NOTE 
- I made some configuration with `.config/lvim/config.lua` like following
+ I made some configuration with `.config/lvim/config.lua` like [this page](https://github.com/neovim/nvim-lspconfig/blob/master/README.md#keybindings-and-completion):
  ```lua
- vim.keymap.set('n', 'gr', builtin.lsp_references, {})
- vim.keymap.set('n', 'gd', builtin.lsp_definitions, {})
+ require 'lspconfig'.scheme_langserver.setup {
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+  callback = function(ev)
+    -- Enable completion triggered by <c-x><c-o>
+    vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
+
+    -- Buffer local mappings.
+    -- See `:help vim.lsp.*` for documentation on any of the below functions
+    local opts = { buffer = ev.buf }
+    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+  end,
+})
+}
  ```
 
 1. Top-level and local identifiers binding completion.
@@ -141,17 +156,17 @@ This project is still in early development, so you may run into rough edges with
 9. Cross-platform parallel indexing.
 10. Self-made source code annotator to be compatible with .sps files.
 11. Peephole optimization for API requests.
+12. Type inference.
 
 ### TODOs
 
-12. Virtual identifier catching machine for .sps, .ss, .scm files.
-13. Renaming. 
-14. Fully compatible with [r6rs standard](http://www.r6rs.org/).
-15. Macro expanding.
-16. Code eval.
-17. Code diagnostic.
-18. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
-19. Type inference.
+13. Virtual identifier catching machine for .sps, .ss, .scm files.
+14. Renaming. 
+15. Fully compatible with [r6rs standard](http://www.r6rs.org/).
+16. Macro expanding.
+17. Code eval.
+18. Code diagnostic.
+19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
 
 ## TODO:Contributing 
 

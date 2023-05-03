@@ -26,6 +26,7 @@ function(a: number){return 1+a}
 2. 还有一些复合（compound）的情况，如列表`'(1 2 3)`和向量`#(1 2 3)`。这也也没什么稀奇的，用一点递归的手段就能够把它们标注为`'(number? number? number?)`和`'#(number? number? number?)`。这样，一些更复杂的例子`'(1 a "e")`就会有类型标注如`'(number? symbol? string?)`。
 3. 对于[r6rs](http://www.r6rs.org/)，我们手动标注了1108个函数和宏。这样scheme-langserver就能处理一些上文那样复杂的案例。当然，在标注过程中，我们对scheme-langserver的类型表达式进行了一些拓展，如：`<-`表示表达式里面有一个函数；`**1`类似正则表达式中的`+`，代表前面的类型或类型表达式出现了一次以上；`...`则类似`*`，表示可以出现0次到无穷次。 
 4. 我们虚构了一个判断器`something?`，它对任意待判断的数据都返回“真”。
+4. `void?`，用于处理`(void)`。
 
 此外，上文讨论的这些判断器当然是r6rs中的标准判断器，然而我们不能保证在任意代码中它们不会撞上“真假美猴王”。因此，scheme-langserver使用[identifier-references](../analysis/identifier.md)来表示上面这些判断器，带上它们的上下文信息；并使用函数`construct-type-expression-with-meta`构建他们。
 

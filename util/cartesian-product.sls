@@ -4,6 +4,7 @@
 
 (define cartesian-product 
     (case-lambda 
+        [() '()]
         [(list1) list1]
         [(list1 list2 . rest)
     (let ([current

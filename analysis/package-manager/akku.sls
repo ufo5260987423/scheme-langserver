@@ -3,27 +3,18 @@
   (import 
     (rnrs)
     (scheme-langserver virtual-file-system file-node)
-    (only (srfi :13 strings) string-contains string-index-right string-take string-drop))
+    (only (srfi :13 strings) string-contains string-index-right string-index string-take string-drop))
 
 (define (akku-acceptable-file? path)
-  (and 
-    (not 
-      (or
-        (string-contains path "/.akku/src/")
-        (string-contains path "/.akku/notices/")
-        (string-contains path "/.akku/bin/")
-        (if (string-contains path "/.akku")
-          (let loop ([current-path path])
-            (let* ([char (string-ref "/" 0)]
-                [index (string-index-right current-path char)]
-                [tail (string-drop current-path index)]
-                [rest (string-take current-path index)]
-                [maybe-project-name (string-drop rest (string-index-right rest char))])
-              (if (string-contains tail ".akku")
-                (or 
-                  (string-contains path (string-append "/.akku/" maybe-project-name "/"))
-                  (string-contains path (string-append "/.akku/" maybe-project-name ".")))
-                #f))) 
-          #f)))
+  (if (string-contains path "/.akku/")
+    (if (string-contains path "/.akku/lib/")
+      (let loop ([current-start 0] [previous ""])
+        (let* ([next-/-index (string-index path (string-ref "/" 0) (+ 1 current-start))]
+            [maybe-project-name (substring path current-start next-/-index)]
+            [tail (string-drop path next-/-index)])
+          (if (string-contains tail "/.akku/")
+            (loop next-/-index maybe-project-name)
+            (not (string-contains path (string-append previous "/.akku/lib" previous))))))
+      #f)
     (folder-or-scheme-file? path)))
 )
