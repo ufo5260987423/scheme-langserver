@@ -45,7 +45,7 @@
       [expression (annotation-stripped ann)]
       [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
-      [('only (library-identifier **1) identifier **1) 
+      [('only (library-identifier **1) (? symbol? identifier) **1) 
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
             [imported-references 

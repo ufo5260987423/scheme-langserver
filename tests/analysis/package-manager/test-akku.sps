@@ -12,9 +12,13 @@
     (test-equal #f (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib/scheme-langserver/"))
     (test-equal #f (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib/scheme-langserver.chezscheme.sls"))
     (test-equal #f (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib/scheme-langserver.sls"))
+    (test-equal #t (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib/ufo-match.chezscheme.sls"))
     (test-equal #f (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/"))
     (test-equal #t (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/scheme-langserver.sls"))
     (test-equal #t (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/util/path.sls"))
+    (test-equal #t (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib/srfi/:13/strings.chezscheme.sls"))
+    (test-equal #t (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib/"))
+    (test-equal #t (akku-acceptable-file? "/home/ufo/Documents/workspace/scheme-langserver/.akku/lib"))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

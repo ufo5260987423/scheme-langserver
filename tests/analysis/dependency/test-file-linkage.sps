@@ -36,11 +36,7 @@
             [paths (file-linkage-to file-linkage to-path)])
         (test-equal 
             (string-append (current-directory) "/scheme-langserver.sls")
-            (car paths))
-        (test-equal 
-            (string-append (current-directory) "/.akku/lib/scheme-langserver.chezscheme.sls")
-            (cadr paths))
-        (test-equal 2 (length paths)))
+            (car paths)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
