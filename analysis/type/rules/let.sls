@@ -30,7 +30,7 @@
               [key-value-index-nodes (index-node-children (caddr children))]
               ;identifier index-nodes
               [key-index-nodes (map car (map index-node-children key-value-index-nodes))]
-              [parameter-variable-products (construct-parameter-variable-products-with substitutions key-index-nodes)]
+              [parameter-variable-products (construct-parameter-variable-products-with key-index-nodes)]
 
               ;(? symbol? loop-identifier)
               [loop-index-node (cadr children)]

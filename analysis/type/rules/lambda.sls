@@ -31,7 +31,7 @@
 
               ;((? symbol? identifier) **1) index-nodes
               [parameter-index-nodes (index-node-children (cadr children))]
-              [parameter-variable-products (construct-parameter-variable-products-with substitutions parameter-index-nodes)])
+              [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)])
             (fold-left
               add-to-substitutions
               substitutions 
@@ -70,7 +70,7 @@
             root-variables
             (construct-lambdas-with 
               `(,(index-node-variable (car (reverse children))))
-              (construct-parameter-variable-products-with substitutions (index-node-children (car children))))))
+              (construct-parameter-variable-products-with (index-node-children (car children))))))
           ]
       [else '()])))
 )

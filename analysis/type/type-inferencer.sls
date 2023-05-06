@@ -78,6 +78,7 @@
 
 ;gradule typing: unsafe convertion
 (define (private-add-implicit-convertions substitutions index-node)
+; (pretty-print 'implicit0)
   (let ([children (index-node-children index-node)])
     (if (null? children)
       substitutions
@@ -87,6 +88,8 @@
           [reified-head-result (reify base (index-node-variable head-index-node))]
           [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
           [return-variable (index-node-variable index-node)])
+; (pretty-print 'implicit1)
+; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
         (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes)))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)

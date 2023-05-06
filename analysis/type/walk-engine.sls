@@ -70,7 +70,7 @@
       `(,(index-node-variable left-index-node))
       `(,(index-node-variable right-index-node)))))
 
-(define (construct-parameter-variable-products-with substitutions parameter-index-nodes)
+(define (construct-parameter-variable-products-with parameter-index-nodes)
   (let ([l (length parameter-index-nodes)]
         [variables-list
         (map 

@@ -30,7 +30,7 @@
               [return-variable (index-node-variable tail-index-node)]
 
               [parameter-index-nodes (cdr (cadr (index-node-children index-node)))]
-              [parameter-variable-products (construct-parameter-variable-products-with substitutions parameter-index-nodes)]
+              [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)]
               [lambda-details (construct-lambdas-with (list return-variable) parameter-variable-products)])
             (fold-left
               add-to-substitutions

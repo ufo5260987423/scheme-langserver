@@ -100,7 +100,7 @@
 ;     (let* ([workspace (init-workspace (current-directory))]
 ;             [root-file-node (workspace-file-node workspace)]
 ;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/scheme/write.chezscheme.sls"))]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/industria/crypto/math.sls"))]
 ;             [target-document (file-node-document target-file-node)])
 ;         (construct-substitution-list-for target-document)
 ;         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
