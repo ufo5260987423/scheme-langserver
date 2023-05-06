@@ -37,6 +37,7 @@
     [(substitutions target-expression) (reify substitutions target-expression '())]
     [(substitutions target-expression memory) 
       (cond
+        [(null? target-expression) '(())]
         [(variable? target-expression) 
           ;only extend memory at here
           (let* ([new-memory `(,@memory ,target-expression)]

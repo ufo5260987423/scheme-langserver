@@ -90,7 +90,6 @@
         (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes)))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
-  ; (pretty-print (document-uri document))
   (let* ([children (index-node-children index-node)]
       [children-substitution-list
         (fold-left

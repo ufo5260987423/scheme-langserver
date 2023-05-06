@@ -96,6 +96,16 @@
         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
 (test-end)
 
+; (test-begin "debug:tmp")
+;     (let* ([workspace (init-workspace (current-directory))]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/scheme/write.chezscheme.sls"))]
+;             [target-document (file-node-document target-file-node)])
+;         (construct-substitution-list-for target-document)
+;         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
+; (test-end)
+
 ; (test-begin "find-type-conflicts")
 ;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
 ;             [root-file-node (workspace-file-node workspace)]
