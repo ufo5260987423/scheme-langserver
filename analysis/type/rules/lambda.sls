@@ -35,12 +35,7 @@
             (fold-left
               add-to-substitutions
               substitutions 
-              (map 
-                (lambda (pair)
-                  (list (car pair) '= (cadr pair)))
-                (cartesian-product
-                  `(,variable)
-                  (construct-lambdas-with `(,return-variable) parameter-variable-products)))))]
+              (cartesian-product `(,variable) '(=) (construct-lambdas-with `(,return-variable) parameter-variable-products))))]
         [('case-lambda clause **1) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([variable (index-node-variable index-node)]
@@ -63,14 +58,11 @@
       [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
     (match expression
       [(((? symbol? parameter) **1) _ **1) 
-        (map 
-          (lambda (pair)
-            (list (car pair) '= (cadr pair)))
-          (cartesian-product
-            root-variables
-            (construct-lambdas-with 
-              `(,(index-node-variable (car (reverse children))))
-              (construct-parameter-variable-products-with (index-node-children (car children))))))
-          ]
+        (cartesian-product
+          root-variables
+          '(=)
+          (construct-lambdas-with 
+            `(,(index-node-variable (car (reverse children))))
+            (construct-parameter-variable-products-with (index-node-children (car children)))))]
       [else '()])))
 )

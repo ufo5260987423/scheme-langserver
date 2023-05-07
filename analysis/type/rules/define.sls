@@ -38,7 +38,7 @@
               (map 
                 (lambda (product)
                   `(,(car product) = ,(cadr product)))
-                (cartesian-product `(,identifier-variable) lambda-details))))]
+                (cartesian-product `(,identifier-variable) '(=) lambda-details))))]
         [('define (? symbol? identifiers) tail) 
           (guard-for document index-node 'define '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([identifier-index-node (cadr (index-node-children index-node))]

@@ -48,48 +48,21 @@
           (let* ([is-list? (list? target-expression)]
               [normalized (if is-list? target-expression (vector->list target-expression))]
               [reified-list (map (lambda (item) (reify substitutions item memory)) normalized)]
-              [cartesian-product-list (apply cartesian-product (filter (lambda (item) (not (null? item))) reified-list))]
-              [depth (length normalized)]
-              [result (map (lambda (single-cartesian-product) (private-tree-flat single-cartesian-product depth)) cartesian-product-list)])
-            (if is-list? result (map list->vector result)))]
+              [cartesian-product-list (apply cartesian-product reified-list)])
+            (if is-list? cartesian-product-list (map list->vector cartesian-product-list)))]
         [else `(,target-expression)])]))
 
 (define (private-filter-not-null list-instance)
   (filter (lambda (item) (not (null? item))) list-instance))
 
-(define (private-tree-flat single-cartesian-product depth)
-  (if (< 1 depth)
-    `(,@(private-tree-flat (car single-cartesian-product) (- depth 1)) ,(cadr single-cartesian-product))
-    `(,single-cartesian-product)))
-
 (define (construct-substitutions-between-index-nodes substitutions left-index-node right-index-node symbol)
-  (map 
-    (lambda (pair)
-      (list (car pair) symbol (cadr pair)))
-    (cartesian-product 
-      `(,(index-node-variable left-index-node))
-      `(,(index-node-variable right-index-node)))))
+  (cartesian-product `(,(index-node-variable left-index-node)) `(,symbol) `(,(index-node-variable right-index-node))))
 
 (define (construct-parameter-variable-products-with parameter-index-nodes)
-  (let ([l (length parameter-index-nodes)]
-        [variables-list
-        (map 
-          (lambda (index-node) `(,(index-node-variable index-node)))
-          parameter-index-nodes)])
-    (if (or (zero? l) (= 1 l))
-      (map list variables-list)
-      (letrec ([flat-tree
-            (lambda (tree) 
-              (if (pair? tree)
-                (append (flat-tree (car tree)) (flat-tree (cadr tree)))
-                (list tree)))])
-        (map flat-tree (apply cartesian-product variables-list))))))
+  (apply cartesian-product (map list (map index-node-variable parameter-index-nodes))))
 
 (define (construct-lambdas-with return-variables parameter-variable-products)
-  (map 
-    (lambda (item)
-      (list (car item) '<- (cadr item)))
-    (cartesian-product return-variables parameter-variable-products)))
+  (cartesian-product return-variables '(<-) parameter-variable-products))
 
 (define (walk substitutions target)
   ; (dedupe `(,@(private-walk-left substitutions target) ,@(private-walk-right substitutions target)))

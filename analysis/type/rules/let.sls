@@ -45,10 +45,7 @@
                 (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
                 (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
               ;for loop procedure
-                (map 
-                  (lambda (product)
-                    `(,(car product) = ,(cadr product)))
-                  (cartesian-product `(,loop-variable) loop-procedure-details))
+                (cartesian-product `(,loop-variable) '(=) loop-procedure-details)
               ;for key value index-nodes
                 (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [('let (((? symbol? identifier) value) ...) _ **1) 

@@ -28,9 +28,5 @@
           (fold-left
             add-to-substitutions
             substitutions
-            (map 
-              (lambda (pair) (list (car pair) '= (cadr pair)))
-              (cartesian-product 
-                `(,variable)
-                (map car filtered-lambdas)))))))))
+            (cartesian-product `(,variable) '(=) (map car filtered-lambdas))))))))
 )
