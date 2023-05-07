@@ -3,6 +3,7 @@
     (import (rnrs))
 
 (define cartesian-product 
+;todo: well,should be a pure cartesian-product, but now ...
     (case-lambda 
         [() '()]
         [(list1) list1]
