@@ -102,7 +102,9 @@
 ;             [root-library-node (workspace-library-node workspace)]
 ;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/industria/crypto/math.sls"))]
 ;             [target-document (file-node-document target-file-node)])
+;         (pretty-print 'aa0)
 ;         (construct-substitution-list-for target-document)
+;         (pretty-print 'aa1)
 ;         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
 ; (test-end)
 

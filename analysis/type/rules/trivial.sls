@@ -4,6 +4,7 @@
     (chezscheme) 
 
     (scheme-langserver util dedupe)
+    (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
@@ -143,27 +144,31 @@
   (sort substitution-compare
     (if (null? (identifier-reference-parents identifier-reference))
       (let* ([target-document (identifier-reference-document identifier-reference)]
-          [target-index-node (identifier-reference-index-node identifier-reference)])
+          [target-index-node (identifier-reference-index-node identifier-reference)]
+          [type-expressions (identifier-reference-type-expressions identifier-reference)])
         (cond 
           ;it's in r6rs library?
           [(null? target-index-node) 
-            (map 
-              (lambda (expression)
-                `(,variable : ,expression))
-              (identifier-reference-type-expressions identifier-reference))]
+            (cartesian-product `(,variable) '(:) type-expressions)]
           ;local
+          ;You can't cache and speed up this clause by distinguishing variable in/not in 
+          ;identifier-reference-initialization-index-node scope, because reify depdends on 
+          ;implicit conversion and there may be several nested variable initializations for
+          ;which we can't cleanly decide when to do the imlicit conversion.
           [(equal? document target-document)
             (list `(,variable = ,(index-node-variable target-index-node)))]
           ;import
           [else 
-            (map 
-              (lambda (reified) `(,variable : ,reified))
-              (dedupe 
-                (filter 
-                  is-pure-identifier-reference-misture? 
-                  (reify 
-                    (document-substitution-list target-document) 
-                    (index-node-variable target-index-node)))))]))
+            (if (null? type-expressions)
+              (identifier-reference-type-expressions-set! 
+                identifier-reference 
+                (dedupe 
+                  (filter 
+                    is-pure-identifier-reference-misture? 
+                    (reify 
+                      (document-substitution-list target-document) 
+                      (index-node-variable target-index-node))))))
+            (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
       (apply 
         append 
         (map 
