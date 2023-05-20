@@ -21,7 +21,7 @@
       (match expression
         [('let (? symbol? loop-identifier) (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let ([loop-reference-list (private-process index-node (cadr (index-node-children index-node)) index-node '() document 'let-lopp)]);here, SCIP says the 'let-loop is a 'procedure, but aparrently, a macro expander is needed here.
+          (let ([loop-reference-list (private-process index-node (cadr (index-node-children index-node)) index-node '() document 'let-loop)]);here, SCIP says the 'let-loop is a 'procedure, but aparrently, a macro expander is needed here.
             (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
               (if (not (null? rest))
                 (let* ([identifier-parent-index-node (car rest)]

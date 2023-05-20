@@ -214,12 +214,23 @@
     ;jump into above two clauses
     [(substitutions current-segment rest-segments current ready-list last?)
       (let* ([type (private-type-of current-segment)]
+          ;avoid unsuitable implicit-conversion
+          ;only identifier-calling in initializations would cause implicit conversion
+          [variable (if (index-node? current) (index-node-variable current) current)]
+          [variable-list-pre
+            (if (index-node? current)
+              (if (find 
+                  (lambda (initialization) 
+                    (is-ancestor? initialization current)) 
+                  (map identifier-reference-initialization-index-node (variable-identifier-references variable)))
+                (reify substitutions variable)
+                '())
+              (reify substitutions variable))]
           [variable-list 
-              (filter 
-                (lambda (item) 
-                  (not (equal? type item))) 
-                ;this will import parameters' variable
-                (filter variable? (reify substitutions (if (index-node? current) (index-node-variable current) current))))]
+            (filter 
+              (lambda (item) (not (equal? type item))) 
+              ;this will import parameters' variable
+              (filter variable? variable-list-pre))]
           [new-substitutions (map (lambda (single-variable) `(,single-variable = ,type)) variable-list)]
           ;default extension
           [extended-substitutions (fold-left add-to-substitutions substitutions new-substitutions)]

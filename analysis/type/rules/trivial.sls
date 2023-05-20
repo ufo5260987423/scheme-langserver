@@ -50,7 +50,7 @@
               append 
               (map 
                 (lambda (identifier-reference) 
-                  (private-process document identifier-reference variable))
+                  (private-process document identifier-reference index-node variable))
                 (find-available-references-for document index-node expression))))]
         [(symbol? expression) (list `(,variable : ,(construct-type-expression-with-meta 'symbol?)))]
 
@@ -140,7 +140,10 @@
       #f)
     #f))
 
-(define (private-process document identifier-reference variable)
+(define (private-process document identifier-reference index-node variable)
+  (variable-identifier-references-set!
+    variable
+    `(,@(variable-identifier-references variable) ,identifier-reference))
   (sort substitution-compare
     (if (null? (identifier-reference-parents identifier-reference))
       (let* ([target-document (identifier-reference-document identifier-reference)]
@@ -172,6 +175,6 @@
       (apply 
         append 
         (map 
-          (lambda (parent) (private-process document parent variable))
+          (lambda (parent) (private-process document parent index-node variable))
           (identifier-reference-parents identifier-reference))))))
 )
