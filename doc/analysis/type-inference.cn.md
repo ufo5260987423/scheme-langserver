@@ -1,5 +1,5 @@
 ## 工程直觉：Scheme-langserver如何实现类型推断
-包括Java和Typescript等编程语言都有一个类型系统, 能帮程序员尽可能避免代码执行中的错误。这些系统上基于遵循[Hindley-Milner Type System](https://github.com/webyrd/hindley-milner-type-inferencer)或者[System F](https://en.wikipedia.org/wiki/System_F)的一些基本理论构建。然而，艰涩的理论不能保证它们的全知全能。
+包括Java和Typescript等编程语言都有一个类型系统, 能帮程序员尽可能避免代码执行中的错误。这些系统上基于遵循[Hindley-Milner Type System](https://github.com/webyrd/hindley-milner-type-inferencer)或者[System F](https://en.wikipedia.org/wiki/System_F)的一些基本理论构建。然而，艰涩的理论不能保证这些类型系统的全知全能。
 
 对scheme语言这样一种“非类型语言(untyped language)”，很多类型系统需要的信息并不能够轻易的从代码中找到：
 ```scheme
