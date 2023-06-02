@@ -16,7 +16,7 @@ Your donation will make this world better. Also, you can issue your advice and I
 This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
 
 ## Recent Status
-I'm now would have a one-month break, so tired and poor. In the future I have a plan of user-friendly diagnostic information and type inference rules for higher-order procedures like `car`. And I'm still calling for donation.
+Hi, I'm back! And I just bought a second-hand thinkpad x230t. It would be my fully windows platform for migration and compatibility. Well, after 10 years, I'm now going to be back windows programming.
 
 ## Log
 1.0.11: Gradual Typing system, all basic rules have been passed (you can verify it with `test/analysis/type/*.sps` and `test/analysis/type/rules/*.sps`). Detailed documentation has been published. 
