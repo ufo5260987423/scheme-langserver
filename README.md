@@ -16,7 +16,7 @@ Your donation will make this world better. Also, you can issue your advice and I
 This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
 
 ## Recent Status
-I'm now would have a one-month break, so tired and poor. In the future I have a plan of user-friendly diagnostic information and type inference rules for higher-order procedures like `car`. And I'm still calling for donation.
+I'm working for user-friendly diagnostic issues by making type inference rules for higher-order procedures like `car`. Otherwise, I have a plan to do some profiling to accelerate index speed.
 
 ## Log
 1.0.11: Gradual Typing system, all basic rules have been passed (you can verify it with `test/analysis/type/*.sps` and `test/analysis/type/rules/*.sps`). Detailed documentation has been published. 
@@ -51,6 +51,8 @@ compile-chez-program run.ss
 ```
 #### TODO: for Windows
 The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
+
+Further building is going to be done after Chez scheme 10 released. Because, there're many issues about building scheme-langsever on Windows: first, for Chez scheme, its library loading mechanism is *nix-liked, which means for [srfi](https://srfi.schemers.org/), whose library path is like `srfi/:1/lists.sls`, can't be handled on Windows7; Second, many instruments are based on *nix, like [Akku](https://akkuscm.org/), it depends on [Guile](https://www.gnu.org/software/guile/), which only has linux-based releases. Third, Chez now doesn't have portable bytecode (pb) mode, which is mainly useful for bootstrapping a build on any platform.
 
 ### Installation for [LunarVim(1.3)](https://www.lunarvim.org/)
 I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
