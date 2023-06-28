@@ -18,6 +18,7 @@ This implementation is mainly appliable for .sls and .sld files, because .ss and
 ## Recent Status
 I'm working for user-friendly diagnostic issues by making type inference rules for higher-order procedures like `car`. Otherwise, I have a plan to do some profiling to accelerate index speed.
 
+>NOTE: This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 ## Log
 1.0.11: Gradual Typing system, all basic rules have been passed (you can verify it with `test/analysis/type/*.sps` and `test/analysis/type/rules/*.sps`). Detailed documentation has been published. 
 
@@ -139,10 +140,6 @@ https://github.com/ufo5260987423/scheme-langserver
 ```
 
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
-
-## Status 
-
-This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 
 ### Features
 1. Top-level and local identifiers binding completion.
