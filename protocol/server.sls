@@ -13,6 +13,7 @@
     server-thread-pool
     server-input-port
     server-output-port
+    server-ss/scm-import-rnrs?
     ;close
     server-condition
     server-request-queue)
@@ -28,12 +29,13 @@
         ;;for output-port
         (immutable mutex)
         (immutable request-queue)
+        (immutable ss/scm-import-rnrs?)
         (mutable workspace)
         (mutable shutdown?)
         (mutable condition))
   (protocol
     (lambda (new)
-      (lambda (input-port output-port log-port thread-pool request-queue workspace)
+      (lambda (input-port output-port log-port thread-pool request-queue workspace ss/scm-import-rnrs?)
         (new 
           input-port 
           output-port 
@@ -41,6 +43,7 @@
           thread-pool
           (if (null? thread-pool) '() (make-mutex))
           request-queue
+          ss/scm-import-rnrs?
           workspace
           #f
           (make-condition))))))

@@ -199,10 +199,10 @@
               )]
               )
     (if (null? (server-mutex server-instance))
-      (server-workspace-set! server-instance (init-workspace root-path))
+      (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
-          (server-workspace-set! server-instance (init-workspace root-path #t))
+          (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
           (fail-response id server-error-start "server has been initialized"))))
     (success-response id (make-alist 'capabilities server-capabilities))))
 
@@ -213,6 +213,7 @@
             (standard-input-port) 
             (standard-output-port) 
             '() 
+            #f
             #f)]
         [(log-path) 
           (init-server 
@@ -223,8 +224,11 @@
               (file-options replace) 
               'block 
               (make-transcoder (utf-8-codec))) 
+            #f
             #f)]
         [(log-path enable-multi-thread?) 
+          (init-server log-path enable-multi-thread? #f)]
+        [(log-path enable-multi-thread? ss/scm-import-rnrs?) 
           (init-server 
             (standard-input-port) 
             (standard-output-port) 
@@ -233,12 +237,13 @@
               (file-options replace) 
               'block 
               (make-transcoder (utf-8-codec))) 
-            (equal? enable-multi-thread? "enable"))]
-        [(input-port output-port log-port enable-multi-thread?) 
+            (equal? enable-multi-thread? "enable")
+            (equal? ss/scm-import-rnrs? "enable"))]
+        [(input-port output-port log-port enable-multi-thread? ss/scm-import-rnrs?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '())])
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() ss/scm-import-rnrs?)])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 

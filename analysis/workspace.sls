@@ -34,6 +34,7 @@
     (scheme-langserver util contain)
     (scheme-langserver util sub-list)
 
+    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type type-inferencer)
 
     (scheme-langserver analysis util)
@@ -66,7 +67,9 @@
     (mutable file-linkage)
     (immutable facet)
     ;only for identifer catching and type inference
-    (immutable thread-pool)))
+    (immutable thread-pool)
+
+    (immutable ss/scm-import-rnrs?)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -83,9 +86,10 @@
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku #f)]
-    [(path threaded?) (init-workspace path 'akku threaded?)]
-    [(path identifier threaded?) 
+    [(path) (init-workspace path 'akku #f #f)]
+    [(path threaded?) (init-workspace path 'akku threaded? #f)]
+    [(path threaded? ss/scm-import-rnrs?) (init-workspace path 'akku threaded? ss/scm-import-rnrs?)]
+    [(path identifier threaded? ss/scm-import-rnrs?) 
       (cond 
         [(equal? 'akku identifier) 
           (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
@@ -95,9 +99,9 @@
               [batches (shrink-paths file-linkage paths)]
               [thread-pool (if threaded? (init-thread-pool 2 #t) '())])
         ; (pretty-print 'aaa)
-            (init-references root-file-node root-library-node thread-pool batches)
+            (init-references root-file-node root-library-node thread-pool batches ss/scm-import-rnrs?)
         ; (pretty-print 'eee)
-            (make-workspace root-file-node root-library-node file-linkage identifier thread-pool))])]))
+            (make-workspace root-file-node root-library-node file-linkage identifier thread-pool ss/scm-import-rnrs?))])]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -111,34 +115,38 @@
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
         (workspace-thread-pool workspace-instance)
-        target-paths)]
-    [(root-file-node root-library-node thread-pool target-paths)
+        target-paths
+        #f)]
+    [(root-file-node root-library-node thread-pool target-paths ss/scm-import-rnrs?)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
             ((if (null? thread-pool) map threaded-map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node thread-pool path))
+                (private-init-references root-file-node root-library-node thread-pool path ss/scm-import-rnrs?))
               batch)
             (loop (cdr paths)))))]))
 
 (define private-init-references 
   (case-lambda 
-    [(root-file-node root-library-node thread-pool target-path)
+    [(root-file-node root-library-node thread-pool target-path ss/scm-import-rnrs?)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         (document-reference-list-set! document '())
-        (private-init-references root-file-node root-library-node thread-pool document index-node-list)
+        (private-init-references root-file-node root-library-node thread-pool document index-node-list ss/scm-import-rnrs?)
         ; (pretty-print 'test0)
         ; (pretty-print target-path)
         ; (construct-substitution-list-for document)
         )]
-    [(root-file-node root-library-node thread-pool document target-index-nodes)
+    [(root-file-node root-library-node thread-pool document target-index-nodes ss/scm-import-rnrs?)
       (map 
         (lambda (index-node)
           (clear-references-for index-node)
           ; (pretty-print 'bbb)
+          (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
+            (document-reference-list-set! document (find-meta '(rnrs))))
+
           (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)
           (walk-and-process thread-pool root-file-node document index-node)
@@ -202,21 +210,22 @@
           [tail-path (list-after path target-path)]
           [previous-path-batchs (shrink-paths linkage previous-path)]
           [tail-path-batchs (shrink-paths linkage tail-path)]
-          [thread-pool (workspace-thread-pool workspace-instance)])
+          [thread-pool (workspace-thread-pool workspace-instance)]
+          [ss/scm-import-rnrs? (workspace-ss/scm-import-rnrs? workspace-instance)])
         (cond 
           [(equal? path-mode 'previous+single+tail) 
             (init-references workspace-instance previous-path-batchs)
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes)
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?)
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'single) 
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes)]
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?)]
           [(equal? path-mode 'previous+single) 
             (init-references workspace-instance previous-path-batchs)
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes)]
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?)]
           [(equal? path-mode 'previous) 
             (init-references workspace-instance previous-path-batchs)]
           [(equal? path-mode 'single+tail) 
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes) 
+            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?) 
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'tail) 
             (init-references workspace-instance tail-path-batchs)]
