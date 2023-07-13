@@ -239,6 +239,8 @@
               (make-transcoder (utf-8-codec))) 
             (equal? enable-multi-thread? "enable")
             (equal? ss/scm-import-rnrs? "enable"))]
+        [(input-port output-port log-port enable-multi-thread?) 
+          (init-server input-port output-port log-port enable-multi-thread? #f)]
         [(input-port output-port log-port enable-multi-thread? ss/scm-import-rnrs?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
