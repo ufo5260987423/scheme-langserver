@@ -24,6 +24,12 @@
         (test-equal '(rnrs) (car (library-import-process root-index-node))))
 (test-end)
 
+(test-begin "library-import-process for ss")
+    (let* ([root-file-node (init-virtual-file-system "./run.ss" '() akku-acceptable-file?)]
+            [root-index-nodes (document-index-node-list (file-node-document root-file-node))])
+        (test-equal '(chezscheme scheme-langserver) (car (map library-import-process root-index-nodes))))
+(test-end)
+
 (test-begin "test-is-library-identifiers?")
     (let* ( [workspace (init-workspace (string-append (current-directory) "/util"))]
             [root-file-node (workspace-file-node workspace)]

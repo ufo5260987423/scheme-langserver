@@ -21,7 +21,7 @@
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (index-node-children index-node))]
-      [else '()])
+      [else (match-import index-node root-file-node root-library-node document index-node)])
     index-node))
 
 (define (filter-empty-list list-instance)
