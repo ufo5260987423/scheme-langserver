@@ -7,11 +7,14 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system library-node)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
-    (scheme-langserver analysis tokenizer))
+    (scheme-langserver analysis tokenizer)
+
+    (scheme-langserver analysis identifier rules library-import))
 
 (test-begin "init-virtual-file-system")
     (test-equal "scheme-langserver.sls" 
@@ -52,6 +55,20 @@
             "(library (scheme-langserver util natural-order-compare1)\n    (export natural-order-compare)\n    (import (rnrs) )\n\n(define natural-order-compare \n    (case-lambda \n        [(string-a string-b) (natural-order-compare string-a string-b 0 0)] \n        [(string-a string-b index-a index-b) \n            (let ([length-a (string-length string-a)] \n                    [length-b (string-length string-b)]) \n                (if (or (>= index-a length-a) \n                        (>= index-b length-b)) \n                    (< length-a length-b) \n                    (let ([char-a (string-ref string-a index-a)] \n                            [char-b (string-ref string-b index-b)]) \n                        (if (char=? char-a char-b) \n                            (natural-order-compare string-a string-b (+ 1 index-a) (+ 1 index-b)) \n                            (char<? char-a char-b)))))])) \n)"
             'single)
         (test-equal #f (null? (walk-library '(scheme-langserver util natural-order-compare1) root-library-node))))
+(test-end)
+
+(test-begin "library-import-process")
+    (let* ( [workspace (init-workspace (current-directory))]  
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/run.ss"))]
+            [document (file-node-document target-file-node)])
+            ; (display (length (document-reference-list document)))
+            ; (display "\n")
+            (map (lambda (node) (import-process root-file-node root-library-node document node)) (document-index-node-list document))
+            ; (display (length (document-reference-list document)))
+            ; (display "\n")
+            (test-equal #f (null? (document-reference-list document))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
