@@ -18,10 +18,14 @@
       [expression (annotation-stripped ann)])
     (match expression
       [('library _ **1 ) 
+      ; this should not use 'guard', because it follows the library mechanism
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (index-node-children index-node))]
-      [else (match-import index-node root-file-node root-library-node document index-node)])
+      [else 
+      ; this makes sense 
+        (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        (match-import index-node root-file-node root-library-node document index-node)])
     index-node))
 
 (define (filter-empty-list list-instance)

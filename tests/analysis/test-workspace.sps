@@ -58,7 +58,7 @@
 (test-end)
 
 (test-begin "library-import-process")
-    (let* ( [workspace (init-workspace (current-directory))]  
+    (let* ( [workspace (init-workspace (current-directory) #f #t)]  
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/run.ss"))]
