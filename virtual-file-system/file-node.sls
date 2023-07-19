@@ -43,7 +43,6 @@
 (define (folder-or-scheme-file? path)
   (if (file-directory? path) 
     #t
-    (find (lambda (t) t)
-      (map (lambda (suffix) (string-suffix? suffix path)) 
-      '( ".sps" ".sls" ".scm" ".ss")))))
+    (find (lambda (suffix) (string-suffix? suffix path))
+      '( ".sps" ".sls" ".scm" ".ss"))))
 )

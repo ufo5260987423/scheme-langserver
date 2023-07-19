@@ -145,7 +145,7 @@
           (clear-references-for index-node)
           ; (pretty-print 'bbb)
           (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
-            (document-reference-list-set! document (find-meta '(rnrs))))
+            (document-reference-list-set! document (sort-identifier-references (find-meta '(rnrs)))))
 
           (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)

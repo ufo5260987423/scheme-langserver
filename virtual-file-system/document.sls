@@ -29,7 +29,9 @@
         (new uri text index-node-list reference-list '())))))
 
 (define (is-ss/scm? document)
-  (map 
-    (lambda (suffix) (string-suffix? suffix (document-uri document))) 
+  (fold-left 
+    (lambda (prev suffix)
+      (or prev (string-suffix? suffix (document-uri document))))
+    #f
     '(".scm" ".ss")))
 )

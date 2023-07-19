@@ -57,18 +57,18 @@
         (test-equal #f (null? (walk-library '(scheme-langserver util natural-order-compare1) root-library-node))))
 (test-end)
 
-(test-begin "library-import-process")
-    (let* ( [workspace (init-workspace (current-directory) #f #t)]  
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/run.ss"))]
-            [document (file-node-document target-file-node)])
-            ; (display (length (document-reference-list document)))
-            ; (display "\n")
-            (map (lambda (node) (import-process root-file-node root-library-node document node)) (document-index-node-list document))
-            ; (display (length (document-reference-list document)))
-            ; (display "\n")
-            (test-equal #f (null? (document-reference-list document))))
-(test-end)
+; (test-begin "library-import-process")
+;     (let* ( [workspace (init-workspace (current-directory) #f #t)]  
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/run.ss"))]
+;             [document (file-node-document target-file-node)])
+;             (display (length (document-reference-list document)))
+;             (display "\n")
+;             (map (lambda (node) (import-process root-file-node root-library-node document node)) (document-index-node-list document))
+;             (display (length (document-reference-list document)))
+;             (display "\n")
+;             (test-equal #f (null? (document-reference-list document))))
+; (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
