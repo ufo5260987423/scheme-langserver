@@ -4,6 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
+    (scheme-langserver util try)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
@@ -34,9 +35,12 @@
       [expression (annotation-stripped ann)])
     (match expression
       [('export dummy **1 ) 
-        (map 
-          (lambda (child-node) (match-clause initialization-index-node root-file-node document library-identifiers child-node)) 
-          (cdr (index-node-children index-node)))]
+        (try
+          (guard-for document index-node 'export '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (map 
+            (lambda (child-node) (match-clause initialization-index-node root-file-node document library-identifiers child-node)) 
+            (cdr (index-node-children index-node)))
+          (except c [else '()]))]
       [else '()])))
 
 (define (match-clause initialization-index-node root-file-node document library-identifiers index-node)

@@ -3,7 +3,7 @@
     "method": "textDocument/references",
     "params": {
         "position" : {
-            "line": 15,
+            "line": 17,
             "character": 30
         },
         "textDocument" : {

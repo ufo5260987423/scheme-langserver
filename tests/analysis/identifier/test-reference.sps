@@ -43,8 +43,17 @@
             [document (file-node-document target-file-node)])
         (refresh-workspace-for workspace-instance target-file-node (document-text document) 'previous+single)
         (let ([index-node (car (document-index-node-list document))])
-            (test-equal #f (null? (filter (lambda (reference) (equal? 'string-prefix? (identifier-reference-identifier reference))) 
-                (find-available-references-for document index-node))))))
+            (pretty-print 
+                (filter 
+                        (lambda (reference) 
+                            (equal? 'string-prefix? (identifier-reference-identifier reference))) 
+                        (find-available-references-for document index-node)) )
+            (test-equal #f 
+                (null? 
+                    (filter 
+                        (lambda (reference) 
+                            (equal? 'string-prefix? (identifier-reference-identifier reference))) 
+                        (find-available-references-for document index-node))))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

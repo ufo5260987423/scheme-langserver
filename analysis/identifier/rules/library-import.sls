@@ -4,6 +4,8 @@
     (chezscheme) 
     (ufo-match)
 
+    (scheme-langserver util try)
+
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
 
@@ -24,8 +26,10 @@
           (index-node-children index-node))]
       [else 
       ; this makes sense 
-        (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-        (match-import index-node root-file-node root-library-node document index-node)])
+        (try
+          (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (match-import index-node root-file-node root-library-node document index-node)
+          (except c [else '()]))])
     index-node))
 
 (define (filter-empty-list list-instance)

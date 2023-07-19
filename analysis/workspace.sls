@@ -171,13 +171,13 @@
         (vector-map (lambda (item) -1) (make-vector (string-length (document-text (file-node-document target-file-node)))))
         path-mode)]
     [(workspace-instance target-file-node text shrinked-mapper-vector path-mode)
-  (let* ([old-library-identifier-list (get-library-identifier-list target-file-node)]
+  (let* ([old-library-identifiers-list (get-library-identifiers-list target-file-node)]
       [root-file-node (workspace-file-node workspace-instance)]
       [root-library-node (workspace-library-node workspace-instance)]
       [old-library-node-list 
         (filter (lambda (item) (not (null? item)))
-          (map (lambda (old-library-identifier) (walk-library old-library-identifier root-library-node))
-            old-library-identifier-list))]
+          (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
+            old-library-identifiers-list))]
       [target-document (file-node-document target-file-node)]
       [target-path (uri->path (document-uri target-document))]
       [old-index-nodes (document-index-node-list target-document)]
@@ -198,14 +198,14 @@
           (delete-library-node-from-tree old-library-node)))
       old-library-node-list)
 ;; END
-    (let ([new-library-identifier-list (get-library-identifier-list target-file-node)])
+    (let ([new-library-identifiers-list (get-library-identifiers-list target-file-node)])
       (map 
-        (lambda (library-identifier)
-          (if (walk-library library-identifier root-library-node)
-            (generate-library-node library-identifier root-library-node target-file-node)))
-        new-library-identifier-list)
+        (lambda (library-identifiers)
+          (if (walk-library library-identifiers root-library-node)
+            (generate-library-node library-identifiers root-library-node target-file-node)))
+        new-library-identifiers-list)
       (let* ([linkage (workspace-file-linkage workspace-instance)]
-          [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifier-list)]
+          [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifiers-list)]
           [previous-path (list-ahead-of path target-path)]
           [tail-path (list-after path target-path)]
           [previous-path-batchs (shrink-paths linkage previous-path)]
@@ -294,8 +294,8 @@
           (lambda (child-node) (init-library-node child-node root-library-node))
           (file-node-children file-node))
         (map 
-          (lambda (library-identifier) (generate-library-node library-identifier root-library-node file-node))
-          (get-library-identifier-list file-node)))
+          (lambda (library-identifiers) (generate-library-node library-identifiers root-library-node file-node))
+          (get-library-identifiers-list file-node)))
       root-library-node]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
