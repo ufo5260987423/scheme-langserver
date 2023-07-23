@@ -188,28 +188,34 @@
       (find-available-references-for document current-index-node identifier '())]
     [(document current-index-node identifier exclude)
       (let* ([current-exclude (append exclude (index-node-excluded-references current-index-node))]
-          [tmp-result0
-            (binary-search
-              (list->vector (index-node-references-import-in-this-node current-index-node))
-              (lambda (reference0 reference1)
-                (natural-order-compare 
-                  (symbol->string (identifier-reference-identifier reference0))
-                  (symbol->string (identifier-reference-identifier reference1))))
-              (make-identifier-reference identifier '() '() '() '() '() '() '()))]
-          [tmp-result 
-            (filter
-              (lambda (reference)
-                (not 
-                  (find 
-                    (lambda (ex-reference)
-                      (equal? ex-reference reference))
-                    current-exclude)))
-              tmp-result0)])
+          [tmp-result
+            (private-binary-search 
+              (index-node-references-import-in-this-node current-index-node) 
+              identifier 
+              current-exclude)])
         (if (null? tmp-result)
-          (if (not (null? (index-node-parent current-index-node)))
-            (find-available-references-for document (index-node-parent current-index-node) identifier current-exclude)
-            '())
+          (if (null? (index-node-parent current-index-node))
+            (private-binary-search (document-reference-list document) identifier current-exclude)
+            (find-available-references-for document (index-node-parent current-index-node) identifier current-exclude))
           tmp-result))]))
+
+(define (private-binary-search reference-list identifier exclude)
+  (let ([prev
+        (binary-search
+          (list->vector reference-list)
+          (lambda (reference0 reference1)
+            (natural-order-compare 
+              (symbol->string (identifier-reference-identifier reference0))
+              (symbol->string (identifier-reference-identifier reference1))))
+          (make-identifier-reference identifier '() '() '() '() '() '() '()))])
+    (filter
+      (lambda (reference)
+        (not 
+          (find 
+            (lambda (ex-reference)
+              (equal? ex-reference reference))
+            exclude)))
+        prev)))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]
