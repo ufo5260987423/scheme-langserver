@@ -133,10 +133,15 @@
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
-        (document-reference-list-set! document '())
-        (private-init-references root-file-node root-library-node thread-pool document index-node-list ss/scm-import-rnrs?)
         ; (pretty-print 'test0)
         ; (pretty-print target-path)
+        (document-reference-list-set! 
+          document 
+          (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
+            (sort-identifier-references (find-meta '(chezscheme)))
+            '()))
+        (private-init-references root-file-node root-library-node thread-pool document index-node-list ss/scm-import-rnrs?)
+        ; (pretty-print 'test1)
         ; (construct-substitution-list-for document)
         )]
     [(root-file-node root-library-node thread-pool document target-index-nodes ss/scm-import-rnrs?)
@@ -144,17 +149,15 @@
         (lambda (index-node)
           (clear-references-for index-node)
           ; (pretty-print 'bbb)
-          (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
-            (document-reference-list-set! document (sort-identifier-references (find-meta '(rnrs)))))
-
           (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)
           (walk-and-process thread-pool root-file-node document index-node)
           (export-process root-file-node document index-node)
           ; (pretty-print 'ddd)
-          (document-reference-list-set! 
-            document 
-            (append (document-reference-list document) (index-node-references-export-to-other-node index-node))))
+          ; (document-reference-list-set! 
+          ;   document 
+          ;   (append (document-reference-list document) (index-node-references-export-to-other-node index-node)))
+            )
         target-index-nodes)
         ;;todo
         ; (type-inference-for document)

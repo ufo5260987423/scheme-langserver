@@ -179,10 +179,10 @@
             (not (find 
                   (lambda (er) (equal? er reference))
                   (index-node-excluded-references current-index-node))))
-          (if (null? (index-node-parent current-index-node))
-            (append (document-reference-list document) (index-node-references-import-in-this-node current-index-node))
-            (append 
-              (index-node-references-import-in-this-node current-index-node) 
+          (append 
+            (index-node-references-import-in-this-node current-index-node) 
+            (if (null? (index-node-parent current-index-node))
+              (document-reference-list document) 
               (find-available-references-for document (index-node-parent current-index-node)))))]
     [(document current-index-node identifier) 
       (find-available-references-for document current-index-node identifier '())]

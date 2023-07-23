@@ -77,7 +77,7 @@
                   (append 
                     (index-node-references-import-in-this-node current-index-node)
                     current-references)))
-              
+
               (if (null? grand-parent-index-node)
                 (document-reference-list-set! 
                   document
