@@ -125,7 +125,7 @@
 
         ["$/cancelRequest" 
           (try
-            ;here, 'method is determined by protocol/api/cancellation.sls
+            ;here, 'method is determined by protocol/analysis/rules/cancellation.sls
             (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))
             (except c
               [else 
