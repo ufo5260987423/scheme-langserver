@@ -20,6 +20,8 @@ I'm working for user-friendly diagnostic issues by making type inference rules f
 
 >NOTE: This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 ## Log
+1.0.12: Add ss/scm-import-rnrs option, so that all files with ss/scm extension defaultly import chezscheme library (instead of rnrs because chez-scheme's rnrs seems don't have import procedure. That really puzzles me.)
+
 1.0.11: Gradual Typing system, all basic rules have been passed (you can verify it with `test/analysis/type/*.sps` and `test/analysis/type/rules/*.sps`). Detailed documentation has been published. 
 
 1.0.10: Fix bugs in 1.0.9.
@@ -117,7 +119,7 @@ lvim.builtin.cmp.sources = {
 ### Enable Multi-thread Response and Indexing
 Current scheme-langserver haven't been fully tested in multi-thread scenario, and corresponding functionalities is default disabled. Please make sure you'd truly want to enable multi-thread features and the following changes were what you wanted.
 
-Taking [LunarVim](https://www.lunarvim.org/) as an example, steping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+Taking [LunarVim](https://www.lunarvim.org/) as an example, stepping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'
 local bin_name = '{path-to-run}'
@@ -139,6 +141,32 @@ https://github.com/ufo5260987423/scheme-langserver
 }
 ```
 
+### Enable ss/scm-import-rnrs
+For extensions SS, and SCM, most programmers suppose their codes are writing for a running environment and don't provide any library information. However, some issues request for adding basic default context, so advanced language features could be used.
+
+Taking [LunarVim](https://www.lunarvim.org/) as an example, stepping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
+```lua
+local util = require 'lspconfig.util'
+local bin_name = '{path-to-run}'
+local cmd = { bin_name ,'{path-to-log}','disable','enable'}
+
+return {
+  default_config = {
+    cmd = cmd,
+    filetypes = { 'scheme' },
+    root_dir = util.find_git_ancestor,
+    single_file_support = true,
+  },
+  docs = {
+    description = [[
+https://github.com/ufo5260987423/scheme-langserver
+`scheme-langserver`, a language server protocol implementation for scheme
+]]   ,
+  },
+}
+```
+Above 'disable' is for multi-thread mechanism. Users can change it as needed.
+
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
 ### Features
@@ -158,10 +186,9 @@ https://github.com/ufo5260987423/scheme-langserver
 10. Self-made source code annotator to be compatible with .sps files.
 11. Peephole optimization for API requests.
 12. Type inference.
+13. Virtual identifier catching machine for .sps, .ss, .scm files.
 
 ### TODOs
-
-13. Virtual identifier catching machine for .sps, .ss, .scm files.
 14. Renaming. 
 15. Fully compatible with [r6rs standard](http://www.r6rs.org/).
 16. Macro expanding.
