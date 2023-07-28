@@ -20,6 +20,8 @@ I'm working for user-friendly diagnostic issues by making type inference rules f
 
 >NOTE: This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
 ## Log
+1.0.13: Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism making operation more smooth.
+
 1.0.12: Add ss/scm-import-rnrs option, so that all files with ss/scm extension defaultly import chezscheme library (instead of rnrs because chez-scheme's rnrs seems don't have import procedure. That really puzzles me.)
 
 1.0.11: Gradual Typing system, all basic rules have been passed (you can verify it with `test/analysis/type/*.sps` and `test/analysis/type/rules/*.sps`). Detailed documentation has been published. 
