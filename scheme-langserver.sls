@@ -41,7 +41,6 @@
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
-        ["exit" '()] 
         ["textDocument/didOpen" 
           (try
             (did-open workspace params)
