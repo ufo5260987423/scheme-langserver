@@ -167,9 +167,8 @@
   (let* ([root-file-node (workspace-file-node workspace-instance)]
       [target-document (file-node-document target-file-node)]
       [linkage (workspace-file-linkage workspace-instance)]
-      [tail-path (get-reference-path-from linkage (file-node-path target-file-node))])
+      [tail-path (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))])
     (document-text-set! target-document text)
-    (document-refreshable?-set! target-document #t)
     (map (lambda (document) (document-refreshable?-set! document #t))
       (map (lambda (path) (file-node-document (walk-file root-file-node path))) tail-path))))
 
