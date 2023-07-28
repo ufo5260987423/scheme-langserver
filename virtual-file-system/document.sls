@@ -11,6 +11,8 @@
     document-reference-list-set!
     document-substitution-list
     document-substitution-list-set!
+    document-refreshable?
+    document-refreshable?-set!
 
     is-ss/scm?)
   (import (rnrs)
@@ -22,11 +24,12 @@
     (mutable text)
     (mutable index-node-list)
     (mutable reference-list)
-    (mutable substitution-list))
+    (mutable substitution-list)
+    (mutable refreshable?))
   (protocol
     (lambda (new)
       (lambda (uri text index-node-list reference-list)
-        (new uri text index-node-list reference-list '())))))
+        (new uri text index-node-list reference-list '() #t)))))
 
 (define (is-ss/scm? document)
   (fold-left 

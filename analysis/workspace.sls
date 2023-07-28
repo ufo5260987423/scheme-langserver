@@ -22,7 +22,6 @@
   (import 
     (ufo-match)
     (ufo-threaded-function)
-    (ufo-thread-pool) 
 
     (chezscheme) 
     (only (srfi :13 strings) string-suffix?)
@@ -67,8 +66,7 @@
     (mutable file-linkage)
     (immutable facet)
     ;only for identifer catching and type inference
-    (immutable thread-pool)
-
+    (immutable threaded?)
     (immutable ss/scm-import-rnrs?)))
 
 (define (refresh-workspace workspace-instance)
@@ -96,12 +94,11 @@
               [root-library-node (init-library-node root-file-node)]
               [file-linkage (init-file-linkage root-library-node)]
               [paths (get-init-reference-path file-linkage)]
-              [batches (shrink-paths file-linkage paths)]
-              [thread-pool (if threaded? (init-thread-pool 2 #t) '())])
+              [batches (shrink-paths file-linkage paths)])
         ; (pretty-print 'aaa)
-            (init-references root-file-node root-library-node thread-pool batches ss/scm-import-rnrs?)
+            (init-references root-file-node root-library-node threaded? batches ss/scm-import-rnrs?)
         ; (pretty-print 'eee)
-            (make-workspace root-file-node root-library-node file-linkage identifier thread-pool ss/scm-import-rnrs?))])]))
+            (make-workspace root-file-node root-library-node file-linkage identifier threaded? ss/scm-import-rnrs?))])]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -114,22 +111,22 @@
       (init-references 
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
-        (workspace-thread-pool workspace-instance)
+        (workspace-threaded? workspace-instance)
         target-paths
         #f)]
-    [(root-file-node root-library-node thread-pool target-paths ss/scm-import-rnrs?)
+    [(root-file-node root-library-node threaded? target-paths ss/scm-import-rnrs?)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
-            ((if (null? thread-pool) map threaded-map)
+            ((if threaded? threaded-map map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node thread-pool path ss/scm-import-rnrs?))
+                (private-init-references root-file-node root-library-node path ss/scm-import-rnrs?))
               batch)
             (loop (cdr paths)))))]))
 
 (define private-init-references 
   (case-lambda 
-    [(root-file-node root-library-node thread-pool target-path ss/scm-import-rnrs?)
+    [(root-file-node root-library-node target-path ss/scm-import-rnrs?)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
@@ -140,18 +137,18 @@
           (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
             (sort-identifier-references (find-meta '(chezscheme)))
             '()))
-        (private-init-references root-file-node root-library-node thread-pool document index-node-list ss/scm-import-rnrs?)
+        (private-init-references root-file-node root-library-node document index-node-list ss/scm-import-rnrs?)
         ; (pretty-print 'test1)
         ; (construct-substitution-list-for document)
         )]
-    [(root-file-node root-library-node thread-pool document target-index-nodes ss/scm-import-rnrs?)
+    [(root-file-node root-library-node document target-index-nodes ss/scm-import-rnrs?)
       (map 
         (lambda (index-node)
           (clear-references-for index-node)
           ; (pretty-print 'bbb)
           (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)
-          (walk-and-process thread-pool root-file-node document index-node)
+          (walk-and-process root-file-node document index-node)
           (export-process root-file-node document index-node)
           ; (pretty-print 'ddd)
           ; (document-reference-list-set! 
@@ -162,6 +159,16 @@
         ;;todo
         ; (type-inference-for document)
         ]))
+
+(define (update-file-node-with-tail workspace-instance target-file-node text)
+  (let* ([root-file-node (workspace-file-node workspace-instance)]
+      [target-document (file-node-document target-file-node)]
+      [linkage (workspace-file-linkage workspace-instance)]
+      [tail-path (get-reference-path-from linkage (file-node-path target-file-node))])
+    (document-text-set! target-document text)
+    (document-refreshable?-set! target-document #t)
+    (map (lambda (document) (document-refreshable?-set! document #t))
+      (map (lambda (path) (file-node-document (walk-file root-file-node path))) tail-path))))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 (define refresh-workspace-for 
@@ -213,29 +220,28 @@
           [tail-path (list-after path target-path)]
           [previous-path-batchs (shrink-paths linkage previous-path)]
           [tail-path-batchs (shrink-paths linkage tail-path)]
-          [thread-pool (workspace-thread-pool workspace-instance)]
           [ss/scm-import-rnrs? (workspace-ss/scm-import-rnrs? workspace-instance)])
         (cond 
           [(equal? path-mode 'previous+single+tail) 
             (init-references workspace-instance previous-path-batchs)
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?)
+            (private-init-references root-file-node root-library-node target-document new-index-nodes ss/scm-import-rnrs?)
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'single) 
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?)]
+            (private-init-references root-file-node root-library-node target-document new-index-nodes ss/scm-import-rnrs?)]
           [(equal? path-mode 'previous+single) 
             (init-references workspace-instance previous-path-batchs)
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?)]
+            (private-init-references root-file-node root-library-node target-document new-index-nodes ss/scm-import-rnrs?)]
           [(equal? path-mode 'previous) 
             (init-references workspace-instance previous-path-batchs)]
           [(equal? path-mode 'single+tail) 
-            (private-init-references root-file-node root-library-node thread-pool target-document new-index-nodes ss/scm-import-rnrs?) 
+            (private-init-references root-file-node root-library-node target-document new-index-nodes ss/scm-import-rnrs?) 
             (init-references workspace-instance tail-path-batchs)]
           [(equal? path-mode 'tail) 
             (init-references workspace-instance tail-path-batchs)]
           [else (raise 'illegle-path-mode)]))))]))
 
 ;; rules must be run as ordered
-(define (walk-and-process thread-pool root-file-node document index-node)
+(define (walk-and-process root-file-node document index-node)
   (find 
     (lambda (func)
       (not (null? (func root-file-node document index-node))))
@@ -251,7 +257,7 @@
 
   (map 
     (lambda (child-index-node) 
-      (walk-and-process thread-pool root-file-node document child-index-node)) 
+      (walk-and-process root-file-node document child-index-node)) 
     (index-node-children index-node)))
 
 (define (init-virtual-file-system path parent my-filter)
