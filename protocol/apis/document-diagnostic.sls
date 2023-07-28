@@ -27,15 +27,10 @@
 (define (diagnostic workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [path (uri->path (text-document-uri text-document))]
-      [maybe (walk-file (workspace-file-node workspace) path)]
-      [file-node 
-        (if (null? maybe)
-          (begin 
-            (refresh-workspace workspace)
-            (walk-file (workspace-file-node workspace) path))
-          maybe)]
+      [file-node (walk-file (workspace-file-node workspace) path)]
       [document (file-node-document file-node)]
       [text (document-text document)])
+    (refresh-workspace-for workspace file-node)
     (construct-substitution-list-for document)
     (try
       ;I'd only check leaf index-node

@@ -26,26 +26,20 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization
 (define (did-open workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      [path (uri->path (text-document-uri text-document))]
-      [maybe (walk-file (workspace-file-node workspace) path)]
-      [file-node 
-        (if (null? maybe)
-          (begin 
-            (refresh-workspace workspace)
-            (walk-file (workspace-file-node workspace) path))
-          maybe)]
-      [text (text-document-text text-document)])
-    (try
-      (refresh-workspace-for workspace file-node text 'previous+single)
-      (except e [else '()]))))
+      [path (uri->path (text-document-uri text-document))])
+    (if (null? (walk-file (workspace-file-node workspace) path))
+      ;TODO:well, can be optimized
+      (refresh-workspace workspace))))
 
 (define (did-close workspace params)
-  (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
-      [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
-      [text (document-text (file-node-document file-node))])
-    (try
-      (refresh-workspace-for workspace file-node text 'single+tail)
-      (except e [else '()]))))
+  '()
+  ; (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
+  ;     [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
+  ;     [text (document-text (file-node-document file-node))])
+  ;   (try
+  ;     (refresh-workspace-for workspace file-node text 'single+tail)
+  ;     (except e [else '()])))
+      )
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
@@ -58,10 +52,9 @@
               ; [align-list (list (private-generate-vector (string-length document-text)))]
               )
             (if (null? content-changes)
-              (try
-                ; (refresh-workspace-for workspace file-node text (private-shrink-list->vector align-list) 'single+tail)
-                (refresh-workspace-for workspace file-node text 'single+tail)
-                (except e [else '()]))
+              ; (refresh-workspace-for workspace file-node text (private-shrink-list->vector align-list) 'single+tail)
+              ; (refresh-workspace-for workspace file-node text 'single+tail)
+              (update-file-node-with-tail workspace file-node text)
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
                   [temp-text (text-edit-text target)]

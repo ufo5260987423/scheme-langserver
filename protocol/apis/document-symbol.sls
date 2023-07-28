@@ -26,6 +26,7 @@
       [path (uri->path (text-document-uri text-document))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)])
+    (refresh-workspace-for workspace file-node)
     (let* ([index-node-list (document-index-node-list document)]
         [identifiers
           (filter 

@@ -35,7 +35,6 @@
             [root-file-node (workspace-file-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/path.sls"))]
             [document (file-node-document target-file-node)])
-        (refresh-workspace-for workspace target-file-node (document-text document) 'previous+single)
         (let* ([root-index-node (car (document-index-node-list document))]
 
                 [position (make-position 10 26)]

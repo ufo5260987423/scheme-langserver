@@ -26,13 +26,17 @@
       [character (position-character position)]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
+      [text (document-text document)]
+      [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
-      [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
+      [target-index-node (pick-index-node-from index-node-list (text+position->int text position))]
       [prefix 
         (if target-index-node 
           (if (null? (index-node-children target-index-node)) 
             (annotation-stripped (index-node-datum/annotations target-index-node)) 
             '()))])
+            (pretty-print 'prefix)
+            (pretty-print prefix)
     (list->vector 
       (map identifier-reference->location->alist 
         (filter 
