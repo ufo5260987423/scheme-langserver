@@ -36,19 +36,12 @@
     (if 
       (and 
         (server-shutdown? server-instance)
-        (not (equal? "initialize" method))
-        (not (equal? "exit" method)))
+        (not (equal? "initialize" method)))
       (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
         ["exit" '()] 
-        ["shutdown" 
-          (if (null? (server-thread-pool server-instance))
-            (server-shutdown?-set! server-instance #t)
-            (with-mutex (server-mutex server-instance)
-              (server-shutdown?-set! server-instance #t)
-              (condition-broadcast (server-condition server-instance))))]
         ["textDocument/didOpen" 
           (try
             (did-open workspace params)
@@ -254,16 +247,13 @@
                       (process-request server-instance (request-queue-pop request-queue))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
-                (if (null? request-message)
-                  (if (not (null? request-queue))
-                    (with-mutex (server-mutex server-instance)
-                      (if (not (server-shutdown? server-instance))
-                        (condition-wait (server-condition server-instance) (server-mutex server-instance)))))
-                  (begin
-                    (if (null? request-queue)
-                      (process-request server-instance request-message)
-                      (request-queue-push request-queue request-message))
-                    (loop (read-message server-instance)))))
+                (if (not (null? request-message))
+                  (if (not (or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))))
+                    (begin
+                      (if (null? thread-pool)
+                        (process-request server-instance request-message)
+                        (request-queue-push request-queue request-message))
+                      (loop (read-message server-instance))))))
               (except c 
                 [else 
                   (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
