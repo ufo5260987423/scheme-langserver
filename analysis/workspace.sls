@@ -165,56 +165,65 @@
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]
-      [target-document (file-node-document target-file-node)]
       [linkage (workspace-file-linkage workspace-instance)]
-      [tail-path (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))])
-    (document-text-set! target-document text)
+      [target-document (file-node-document target-file-node)]
+      [root-library-node (workspace-library-node workspace-instance)]
+
+      [old-library-identifiers-list (get-library-identifiers-list target-file-node)]
+      [old-library-node-list 
+        (filter (lambda (item) (not (null? item)))
+          (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
+            old-library-identifiers-list))]
+      [new-index-nodes 
+        (map 
+          (lambda (item) (init-index-node '() item)) 
+          (source-file->annotations text (uri->path (document-uri target-document))))])
+;;For old dependency
     (map (lambda (document) (document-refreshable?-set! document #t))
-      (map (lambda (path) (file-node-document (walk-file root-file-node path))) tail-path))))
+      (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
+
+    (document-text-set! target-document text)
+    (document-index-node-list-set! target-document new-index-nodes)
+
+    (let ([new-library-identifiers-list (get-library-identifiers-list target-file-node)])
+      (if (not (equal? new-library-identifiers-list old-library-identifiers-list))
+        (begin 
+;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
+          (map 
+            (lambda (old-library-node)
+              (library-node-file-nodes-set! 
+                old-library-node 
+                (filter 
+                  (lambda (file-node)
+                    (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
+                  (library-node-file-nodes old-library-node)))
+              (if (and (null? (library-node-file-nodes old-library-node)) 
+                  (null? (library-node-children old-library-node)))
+                (delete-library-node-from-tree old-library-node)))
+            old-library-node-list)
+;; END
+          (map 
+            (lambda (library-identifiers)
+              (if (walk-library library-identifiers root-library-node)
+                (generate-library-node library-identifiers root-library-node target-file-node)))
+            new-library-identifiers-list)
+          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-library-node))
+;;For new dependency
+          (map (lambda (document) (document-refreshable?-set! document #t))
+            (map (lambda (path) (file-node-document (walk-file root-file-node path))) 
+              (dedupe (get-reference-path-to (workspace-file-linkage workspace-instance) (file-node-path target-file-node))))))))))
 
 ;; target-file-node<-[linkage]-other-file-nodes
 (define (refresh-workspace-for workspace-instance target-file-node)
   (if (document-refreshable? (file-node-document target-file-node))
-    (let* ([old-library-identifiers-list (get-library-identifiers-list target-file-node)]
+    (let* ([linkage (workspace-file-linkage workspace-instance)]
         [root-file-node (workspace-file-node workspace-instance)]
         [root-library-node (workspace-library-node workspace-instance)]
-        [old-library-node-list 
-          (filter (lambda (item) (not (null? item)))
-            (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
-              old-library-identifiers-list))]
-        [target-document (file-node-document target-file-node)]
-        [target-path (uri->path (document-uri target-document))]
-        ; [old-index-nodes (document-index-node-list target-document)]
-        [new-index-nodes 
-          (map 
-            (lambda (item) (init-index-node '() item)) 
-            (source-file->annotations (document-text target-document) target-path))])
-      (document-index-node-list-set! target-document new-index-nodes)
-;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
-      (map 
-        (lambda (old-library-node)
-          (library-node-file-nodes-set! 
-            old-library-node 
-            (filter 
-              (lambda (file-node)
-                (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
-              (library-node-file-nodes old-library-node)))
-          (if (and (null? (library-node-file-nodes old-library-node)) 
-              (null? (library-node-children old-library-node)))
-            (delete-library-node-from-tree old-library-node)))
-        old-library-node-list)
-;; END
-      (let ([new-library-identifiers-list (get-library-identifiers-list target-file-node)])
-        (map 
-          (lambda (library-identifiers)
-            (if (walk-library library-identifiers root-library-node)
-              (generate-library-node library-identifiers root-library-node target-file-node)))
-          new-library-identifiers-list)
-        (let* ([linkage (workspace-file-linkage workspace-instance)]
-            [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node new-index-nodes new-library-identifiers-list)]
-            [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path)]
-            [refreshable-batches (shrink-paths linkage refreshable-path)])
-          (init-references workspace-instance refreshable-batches))))))
+        [library-identifiers-list (get-library-identifiers-list target-file-node)]
+        [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
+        [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path)]
+        [refreshable-batches (shrink-paths linkage refreshable-path)])
+      (init-references workspace-instance refreshable-batches))))
 
 ;; rules must be run as ordered
 (define (walk-and-process root-file-node document index-node)
