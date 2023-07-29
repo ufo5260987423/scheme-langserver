@@ -32,14 +32,7 @@
       (refresh-workspace workspace))))
 
 (define (did-close workspace params)
-  '()
-  ; (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
-  ;     [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
-  ;     [text (document-text (file-node-document file-node))])
-  ;   (try
-  ;     (refresh-workspace-for workspace file-node text 'single+tail)
-  ;     (except e [else '()])))
-      )
+  '())
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
@@ -48,12 +41,8 @@
       [document-text (document-text (file-node-document file-node))]
       [body (lambda() 
           (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
-              [text document-text]
-              ; [align-list (list (private-generate-vector (string-length document-text)))]
-              )
+              [text document-text])
             (if (null? content-changes)
-              ; (refresh-workspace-for workspace file-node text (private-shrink-list->vector align-list) 'single+tail)
-              ; (refresh-workspace-for workspace file-node text 'single+tail)
               (update-file-node-with-tail workspace file-node text)
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
@@ -74,51 +63,8 @@
 ;;  receive them.
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
-                  (string-replace text temp-text start end)
-                  ; (private-align 
-                  ;   start 
-                  ;   end 
-                  ;   (+ start (string-length temp-text)) 
-                  ;   (append 
-                  ;     align-list 
-                  ;     (list (private-generate-vector (+ start (string-length temp-text) (- (string-length text) end))))))
-                  )))))])
+                  (string-replace text temp-text start end))))))])
     (try
       (body)
       (except e [else '()]))))
-
-(define (private-shrink-list->vector origin-align-list)
-  (if (null? origin-align-list)
-    '#()
-    (let ([tail-result (private-shrink-list->vector (cdr origin-align-list))]
-        [head (car origin-align-list)])
-      (if (null? (vector->list tail-result))
-        head
-        (vector-map
-          (lambda (item) 
-            (if (= -1 item)
-              -1
-              (vector-ref tail-result item)))
-          head)))))
-
-(define (private-align start origin-end target-end origin-align-list)
-  (let ([origin-align-vector (cadr (reverse origin-align-list))])
-    (let loop ([i start])
-      (cond
-        [(< i origin-end) 
-          (vector-set! origin-align-vector i -1)
-          (loop (+ 1 i))]
-        [(< i (vector-length origin-align-vector))
-          (vector-set! origin-align-vector i (+ target-end (- i origin-end)))
-          (loop (+ 1 i))]
-        [else origin-align-list]))))
-
-(define (private-generate-vector length)
-  (let ([result (make-vector length)])
-    (let loop ([i 0])
-      (if (< i length)
-        (begin
-          (vector-set! result i i)
-          (loop (+ i 1)))
-        result))))
 )
