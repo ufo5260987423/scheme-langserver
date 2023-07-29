@@ -47,6 +47,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/didClose" 
           (try
@@ -54,6 +55,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/didChange" 
           (try
@@ -61,6 +63,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
 
         ["textDocument/hover" 
@@ -69,6 +72,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/completion" 
           (try
@@ -76,6 +80,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/references" 
           (try
@@ -83,6 +88,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ; ["textDocument/documentHighlight" 
         ;   (try
@@ -90,6 +96,7 @@
         ;     (except c
         ;       [else 
         ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                ; (do-log-timestamp server-instance)
         ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
@@ -99,6 +106,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                ; (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/documentSymbol" 
           (try
@@ -106,6 +114,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/diagnostic" 
           (try
@@ -113,6 +122,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
 
         ["$/cancelRequest" 
@@ -122,6 +132,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
@@ -256,5 +267,6 @@
               (except c 
                 [else 
                   (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)])))]))
+                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
+                  (do-log-timestamp server-instance)])))]))
 )
