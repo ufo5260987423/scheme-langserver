@@ -19,7 +19,7 @@ This implementation is mainly appliable for .sls and .sld files, because .ss and
 I'm working for user-friendly diagnostic issues by making type inference rules for higher-order procedures like `car`. Otherwise, I have a plan to do some profiling to accelerate index speed.
 
 >NOTE: This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
-## Release Log
+### Release 
 1.0.13: Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism making operation more smooth.
 
 More details refer to [this file](./doc/release-log.md).
