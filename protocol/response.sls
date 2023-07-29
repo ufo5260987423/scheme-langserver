@@ -36,6 +36,7 @@
 
 (define (send-message server-instance response-alist)
     (do-log "send-message" server-instance)
+    (do-log-timestamp  server-instance)
     (let* (
             [body-json (generate-json response-alist)]
             [body (string->utf8 body-json)]

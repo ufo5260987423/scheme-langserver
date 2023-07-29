@@ -2,6 +2,7 @@
   (export 
 
     do-log
+    do-log-timestamp
 
     make-server
     server?
@@ -20,19 +21,19 @@
   (import (chezscheme))
 
 (define-record-type server
-    (fields 
-        (immutable input-port)
-        (immutable output-port)
-        (immutable log-port)
-        ; only have 1 thread, in order to asynchronize request processing
-        (immutable thread-pool)
-        ;;for output-port
-        (immutable mutex)
-        (immutable request-queue)
-        (immutable ss/scm-import-rnrs?)
-        (mutable workspace)
-        (mutable shutdown?)
-        (mutable condition))
+  (fields 
+    (immutable input-port)
+    (immutable output-port)
+    (immutable log-port)
+    ; only have 1 thread, in order to asynchronize request processing
+    (immutable thread-pool)
+    ;;for output-port
+    (immutable mutex)
+    (immutable request-queue)
+    (immutable ss/scm-import-rnrs?)
+    (mutable workspace)
+    (mutable shutdown?)
+    (mutable condition))
   (protocol
     (lambda (new)
       (lambda (input-port output-port log-port thread-pool request-queue workspace ss/scm-import-rnrs?)
@@ -49,9 +50,26 @@
           (make-condition))))))
 
 (define (do-log message server-instance)
+  (if (not (null? (server-log-port server-instance)))
+    (begin 
+      (put-string (server-log-port server-instance) message)
+      (put-string (server-log-port server-instance) "\n")
+      (flush-output-port (server-log-port server-instance)))))
+
+(define (do-log-timestamp server-instance)
+  (let* ([date (current-date)]
+      [current-date-string 
+        (fold-left 
+          (lambda (h t) (string-append h " " t )) 
+          (number->string (date-year date))
+          (map 
+            number->string 
+            (map 
+              (lambda (f) (f date))
+              (list date-month date-day date-hour date-minute date-second date-nanosecond))))])
     (if (not (null? (server-log-port server-instance)))
-        (begin 
-            (put-string (server-log-port server-instance) message)
-            (put-string (server-log-port server-instance) "\n")
-            (flush-output-port (server-log-port server-instance)))))
+      (begin 
+        (put-string (server-log-port server-instance) current-date-string)
+        (put-string (server-log-port server-instance) "\n")
+        (flush-output-port (server-log-port server-instance))))))
 )

@@ -35,8 +35,6 @@
           (if (null? (index-node-children target-index-node)) 
             (annotation-stripped (index-node-datum/annotations target-index-node)) 
             '()))])
-            (pretty-print 'prefix)
-            (pretty-print prefix)
     (list->vector 
       (map identifier-reference->location->alist 
         (filter 
