@@ -4,6 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
+    ; (scheme-langserver util try)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)

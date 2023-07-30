@@ -33,7 +33,7 @@
         [expression (annotation-stripped ann)])
       (match expression
         [('library _ **1 ) (map match-import (index-node-children index-node))]
-        [else '()]))))
+        [else (list (match-import index-node))]))))
 
 (define (match-import index-node)
   (filter 

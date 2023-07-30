@@ -1,24 +1,25 @@
 (library (scheme-langserver analysis util)
   (export 
-    get-library-identifier-list 
+    get-library-identifiers-list 
     get-nearest-ancestor-library-identifier)
   (import 
     (chezscheme) 
     
     (ufo-match)
 
+    (scheme-langserver util dedupe)
+
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system library-node))
 
-(define (get-library-identifier-list file-node)
+(define (get-library-identifiers-list file-node)
     (let ([document (file-node-document file-node)])
         (if (null? document)
             '()
             (let ([index-node-list (document-index-node-list document)])
-                (filter 
-                    (lambda (list-instance) (not (null? list-instance)))
+                (dedupe
                     (map 
                         (lambda (index-node)
                             (match (annotation-stripped (index-node-datum/annotations index-node))

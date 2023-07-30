@@ -19,7 +19,6 @@
             [root-file-node (workspace-file-node workspace-instance)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/io.sls"))]
             [document (file-node-document target-file-node)])
-        (refresh-workspace-for workspace-instance target-file-node (document-text document) 'previous+single)
         (let ([index-node (car (document-index-node-list document))])
             (test-equal #f (null? (find-available-references-for document index-node)))))
 (test-end)
@@ -29,7 +28,6 @@
             [root-file-node (workspace-file-node workspace-instance)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/workspace.sls"))]
             [document (file-node-document target-file-node)])
-        (refresh-workspace-for workspace-instance target-file-node (document-text document) 'previous+single)
         (let ([index-node (car (document-index-node-list document))])
             ; (pretty-print (map identifier-reference-identifier (index-node-references-import-in-this-node index-node)))
             (test-equal #f (null? (filter (lambda (reference) (equal? 'get-init-reference-path (identifier-reference-identifier reference))) 
@@ -41,10 +39,13 @@
             [root-file-node (workspace-file-node workspace-instance)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/path.sls"))]
             [document (file-node-document target-file-node)])
-        (refresh-workspace-for workspace-instance target-file-node (document-text document) 'previous+single)
         (let ([index-node (car (document-index-node-list document))])
-            (test-equal #f (null? (filter (lambda (reference) (equal? 'string-prefix? (identifier-reference-identifier reference))) 
-                (find-available-references-for document index-node))))))
+            (test-equal #f 
+                (null? 
+                    (filter 
+                        (lambda (reference) 
+                            (equal? 'string-prefix? (identifier-reference-identifier reference))) 
+                        (find-available-references-for document index-node))))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

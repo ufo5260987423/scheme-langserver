@@ -26,9 +26,10 @@
       [position (alist->position (assq-ref params 'position))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
-      [index-node-list (document-index-node-list document)]
       [text (document-text document)]
       [bias (text+position->int text position)]
+      [fuzzy (refresh-workspace-for workspace file-node)]
+      [index-node-list (document-index-node-list document)]
       [target-index-node (pick-index-node-from index-node-list bias)]
       [prefix 
         (if target-index-node 

@@ -30,6 +30,7 @@
       [character (position-character position)]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)])
+    (refresh-workspace-for workspace file-node)
     (let* ([index-node-list (document-index-node-list document)]
         [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
         [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) )]

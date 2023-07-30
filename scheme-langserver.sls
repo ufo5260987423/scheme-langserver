@@ -36,25 +36,18 @@
     (if 
       (and 
         (server-shutdown? server-instance)
-        (not (equal? "initialize" method))
-        (not (equal? "exit" method)))
+        (not (equal? "initialize" method)))
       (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
-        ["exit" '()] 
-        ["shutdown" 
-          (if (null? (server-thread-pool server-instance))
-            (server-shutdown?-set! server-instance #t)
-            (with-mutex (server-mutex server-instance)
-              (server-shutdown?-set! server-instance #t)
-              (condition-broadcast (server-condition server-instance))))]
         ["textDocument/didOpen" 
           (try
             (did-open workspace params)
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/didClose" 
           (try
@@ -62,6 +55,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/didChange" 
           (try
@@ -69,6 +63,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
 
         ["textDocument/hover" 
@@ -77,6 +72,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/completion" 
           (try
@@ -84,6 +80,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/references" 
           (try
@@ -91,6 +88,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ; ["textDocument/documentHighlight" 
         ;   (try
@@ -98,6 +96,7 @@
         ;     (except c
         ;       [else 
         ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                ; (do-log-timestamp server-instance)
         ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
@@ -107,6 +106,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                ; (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/documentSymbol" 
           (try
@@ -114,6 +114,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/diagnostic" 
           (try
@@ -121,15 +122,16 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
 
         ["$/cancelRequest" 
           (try
-            ;here, 'method is determined by protocol/api/cancellation.sls
-            (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))
+            (fail-response id request-cancelled (assoc-ref params 'method))
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
@@ -199,10 +201,10 @@
               )]
               )
     (if (null? (server-mutex server-instance))
-      (server-workspace-set! server-instance (init-workspace root-path))
+      (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
-          (server-workspace-set! server-instance (init-workspace root-path #t))
+          (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
           (fail-response id server-error-start "server has been initialized"))))
     (success-response id (make-alist 'capabilities server-capabilities))))
 
@@ -213,6 +215,7 @@
             (standard-input-port) 
             (standard-output-port) 
             '() 
+            #f
             #f)]
         [(log-path) 
           (init-server 
@@ -223,8 +226,11 @@
               (file-options replace) 
               'block 
               (make-transcoder (utf-8-codec))) 
+            #f
             #f)]
         [(log-path enable-multi-thread?) 
+          (init-server log-path enable-multi-thread? #f)]
+        [(log-path enable-multi-thread? ss/scm-import-rnrs?) 
           (init-server 
             (standard-input-port) 
             (standard-output-port) 
@@ -233,12 +239,15 @@
               (file-options replace) 
               'block 
               (make-transcoder (utf-8-codec))) 
-            (equal? enable-multi-thread? "enable"))]
+            (equal? enable-multi-thread? "enable")
+            (equal? ss/scm-import-rnrs? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
+          (init-server input-port output-port log-port enable-multi-thread? #f)]
+        [(input-port output-port log-port enable-multi-thread? ss/scm-import-rnrs?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '())])
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() ss/scm-import-rnrs?)])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 
@@ -247,18 +256,16 @@
                       (process-request server-instance (request-queue-pop request-queue))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
-                (if (null? request-message)
-                  (if (not (null? request-queue))
-                    (with-mutex (server-mutex server-instance)
-                      (if (not (server-shutdown? server-instance))
-                        (condition-wait (server-condition server-instance) (server-mutex server-instance)))))
-                  (begin
-                    (if (null? request-queue)
-                      (process-request server-instance request-message)
-                      (request-queue-push request-queue request-message))
-                    (loop (read-message server-instance)))))
+                (if (not (null? request-message))
+                  (if (not (or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))))
+                    (begin
+                      (if (null? thread-pool)
+                        (process-request server-instance request-message)
+                        (request-queue-push request-queue request-message))
+                      (loop (read-message server-instance))))))
               (except c 
                 [else 
                   (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)])))]))
+                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
+                  (do-log-timestamp server-instance)])))]))
 )

@@ -12,22 +12,35 @@
 (test-begin "log-debug")
 (let loop ([lines (read-lines "~/ready-for-analyse.log")]
         [result '()]
+        [batch '()]
         [read? #f])
     (if (not (null? lines))
         (let ([current-line (car lines)])
             (cond 
-                [read? (loop 
-                    (cdr lines) 
-                    (append result `(,(string-append 
+                [(and read? (not (equal? current-line "send-message")))
+                    (loop (cdr lines) result (append batch `(,current-line)) #t)]
+                [(and read? (equal? current-line "send-message"))
+                    (let ([s
+                            (fold-left 
+                                (lambda (h t)
+                                    (string-append h "\n" t ))
+                                (car batch)
+                                (cdr batch))])
+                    (loop 
+                        (cdr lines) 
+                        `(,@result ,(string-append 
         "Content-Length: "
-        (number->string (bytevector-length (string->utf8 current-line)))
-        "\r\n\r\n" current-line)))
-                    #f)]
-                [(equal? current-line "read-message") (loop (cdr lines) result #t)]
-                [else (loop (cdr lines) result  #f)]))
+        (number->string (bytevector-length (string->utf8 s)))
+        "\r\n\r\n" s))
+                        '() 
+                        #f))]
+                [(and (not read?) (equal? current-line "read-message")) (loop (cddr lines) result '() #t)]
+                [else (loop (cdr lines) result '() #f)]))
         (let* ([input-port (open-bytevector-input-port (string->utf8 (apply string-append result)))]
                 [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
                 [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
+                ; special for ss/scm enabled
+                ; [server-instance (init-server input-port output-port log-port #f #t)]
                 [server-instance (init-server input-port output-port log-port #f)])
             (test-equal #f (server-shutdown? server-instance)))
         ))

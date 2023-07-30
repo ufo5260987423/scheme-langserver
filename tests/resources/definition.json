@@ -3,11 +3,11 @@
     "method": "textDocument/definition",
     "params": {
         "position" : {
-            "line": 70,
-            "character": 19 
+            "line": 9,
+            "character": 33 
         },
         "textDocument" : {
-            "uri" : "file://~a/analysis/workspace.sls"
+            "uri" : "file://~a/util/binary-search.sls"
         }
     },
     "jsonrpc": "2.0"
