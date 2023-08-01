@@ -127,7 +127,7 @@
 
         ["$/cancelRequest" 
           (try
-            (fail-response id request-cancelled (assoc-ref params 'method))
+            (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
