@@ -22,6 +22,7 @@
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
     (scheme-langserver protocol apis document-diagnostic)
+    (scheme-langserver protocol apis progress)
 
     (scheme-langserver util try) 
     (scheme-langserver util association)
@@ -33,6 +34,19 @@
         [id (request-id request)]
         [params (request-params request)]
         [workspace (server-workspace server-instance)])
+    (do-log method server-instance)
+    (if (and 
+          (server-work-done-progress? server-instance)
+          (not (server-shutdown? server-instance))
+          (not (equal? method "window/workDoneProgress/create:begin"))
+          (not (equal? method "window/workDoneProgress/create:end")))
+      (process-request 
+        server-instance 
+        (make-request 
+          (string-append "window/workDoneProgress/create:" id) 
+          "window/workDoneProgress/create:begin" 
+          (string-append "Start" method))))
+    (do-log "start" server-instance)
     (if 
       (and 
         (server-shutdown? server-instance)
@@ -41,6 +55,24 @@
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
+
+        ["window/workDoneProgress/create:begin" 
+          (if (server-work-done-progress? server-instance)
+            (try
+              (send-message server-instance (make-notification "window/workDoneProgress/create" (request->progress "begin" request)))
+              (except c
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (do-log-timestamp server-instance)])))]
+        ["window/workDoneProgress/create:end" 
+          (if (server-work-done-progress? server-instance)
+            (try
+              (send-message server-instance (make-notification "window/workDoneProgress/create" (request->progress "end" request)))
+              (except c
+                [else 
+                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                  (do-log-timestamp server-instance)])))]
+
         ["textDocument/didOpen" 
           (try
             (did-open workspace params)
@@ -142,7 +174,19 @@
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
+        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))
+
+    (if (and 
+          (server-work-done-progress? server-instance)
+          (not (server-shutdown? server-instance))
+          (not (equal? method "window/workDoneProgress/create:begin"))
+          (not (equal? method "window/workDoneProgress/create:end")))
+      (process-request 
+        server-instance 
+        (make-request 
+          (string-append "window/workDoneProgress/create:" id) 
+          "window/workDoneProgress/create:end" 
+          (string-append "Finish " method))))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";
@@ -159,8 +203,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
+    (do-log "???0" server-instance)
   (let* ([root-path (uri->path (assq-ref params 'rootUri))]
         [client-capabilities (assq-ref params 'capabilities)]
+        [window (assq-ref client-capabilities 'window)]
+        [workDoneProgress? (if window (assq-ref window 'workDoneProgress) #f)]
         [textDocument (assq-ref params 'textDocument)]
         ; [renameProvider 
         ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
@@ -198,15 +245,29 @@
               ; 'foldingRangeProvider #t
               ; 'colorProvider #t
               ; 'workspace workspace-configuration
-              )]
-              )
+              )])
+
+    (if workDoneProgress?
+      (send-message server-instance 
+        (make-notification "window/workDoneProgress/create" 
+          (make-alist 
+            'token (string-append "window/workDoneProgress/create:" id)
+            'value (make-alist 'kind "begin" 'title "Start initialize")))))
+
+    (do-log "???1" server-instance)
+
     (if (null? (server-mutex server-instance))
-      (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
+      (begin 
+        (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
+        (server-work-done-progress?-set! server-instance workDoneProgress?)
+        (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
-          (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
-          (fail-response id server-error-start "server has been initialized"))))
-    (success-response id (make-alist 'capabilities server-capabilities))))
+          (begin 
+            (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
+            (server-work-done-progress?-set! server-instance workDoneProgress?)
+            (success-response id (make-alist 'capabilities server-capabilities)))
+          (fail-response id server-error-start "server has been initialized"))))))
 
 (define init-server
     (case-lambda
