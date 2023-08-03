@@ -7,6 +7,8 @@
     response-content
     response-error
 
+    make-notification
+
     send-message
 
     success-response
@@ -28,6 +30,10 @@
 
 (define (success-response id result-alist)
   (make-alist 'jsonrpc "2.0" 'id id 'result result-alist))
+
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#notificationMessage
+(define (make-notification method params)
+  (make-alist 'method method 'params params))
 
 (define fail-response 
     (case-lambda 

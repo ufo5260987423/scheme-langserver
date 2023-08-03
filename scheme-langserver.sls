@@ -41,6 +41,7 @@
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
+
         ["textDocument/didOpen" 
           (try
             (did-open workspace params)
@@ -106,7 +107,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                ; (do-log-timestamp server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/documentSymbol" 
           (try
@@ -127,7 +128,7 @@
 
         ["$/cancelRequest" 
           (try
-            (fail-response id request-cancelled (assoc-ref params 'method))
+            (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
@@ -161,6 +162,8 @@
 (define (initialize server-instance id params)
   (let* ([root-path (uri->path (assq-ref params 'rootUri))]
         [client-capabilities (assq-ref params 'capabilities)]
+        [window (assq-ref client-capabilities 'window)]
+        [workDoneProgress? (if window (assq-ref window 'workDoneProgress) #f)]
         [textDocument (assq-ref params 'textDocument)]
         ; [renameProvider 
         ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
@@ -198,15 +201,20 @@
               ; 'foldingRangeProvider #t
               ; 'colorProvider #t
               ; 'workspace workspace-configuration
-              )]
-              )
+              )])
+
     (if (null? (server-mutex server-instance))
-      (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
+      (begin 
+        (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
+        (server-work-done-progress?-set! server-instance workDoneProgress?)
+        (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
-          (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
-          (fail-response id server-error-start "server has been initialized"))))
-    (success-response id (make-alist 'capabilities server-capabilities))))
+          (begin 
+            (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
+            (server-work-done-progress?-set! server-instance workDoneProgress?)
+            (success-response id (make-alist 'capabilities server-capabilities)))
+          (fail-response id server-error-start "server has been initialized"))))))
 
 (define init-server
     (case-lambda

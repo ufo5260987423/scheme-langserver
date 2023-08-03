@@ -22,7 +22,7 @@
 		"        \"processId\": 1,\n"
 		"        \"rootPath\": \"" (current-directory) "\",\n"
 		"        \"rootUri\": \"file://" (current-directory) "\",\n"
-		"        \"capabilities\": {}\n"
+		"        \"capabilities\": {\"window\":{\"workDoneProgress\":true}}\n"
 		"    },\n" 
 		"    \"jsonrpc\": \"2.0\"\n" 
 		"}")]

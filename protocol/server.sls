@@ -17,7 +17,10 @@
     server-ss/scm-import-rnrs?
     ;close
     server-condition
-    server-request-queue)
+    server-request-queue
+
+    server-work-done-progress?
+    server-work-done-progress?-set!)
   (import (chezscheme))
 
 (define-record-type server
@@ -33,7 +36,8 @@
     (immutable ss/scm-import-rnrs?)
     (mutable workspace)
     (mutable shutdown?)
-    (mutable condition))
+    (mutable condition)
+    (mutable work-done-progress?))
   (protocol
     (lambda (new)
       (lambda (input-port output-port log-port thread-pool request-queue workspace ss/scm-import-rnrs?)
@@ -47,7 +51,8 @@
           ss/scm-import-rnrs?
           workspace
           #f
-          (make-condition))))))
+          (make-condition)
+          #f)))))
 
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))
