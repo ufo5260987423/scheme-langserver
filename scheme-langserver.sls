@@ -107,7 +107,7 @@
             (except c
               [else 
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                ; (do-log-timestamp server-instance)
+                (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
         ["textDocument/documentSymbol" 
           (try
