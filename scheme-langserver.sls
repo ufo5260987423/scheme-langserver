@@ -22,7 +22,6 @@
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
     (scheme-langserver protocol apis document-diagnostic)
-    (scheme-langserver protocol apis progress)
 
     (scheme-langserver util try) 
     (scheme-langserver util association)
@@ -34,19 +33,6 @@
         [id (request-id request)]
         [params (request-params request)]
         [workspace (server-workspace server-instance)])
-    (do-log method server-instance)
-    (if (and 
-          (server-work-done-progress? server-instance)
-          (not (server-shutdown? server-instance))
-          (not (equal? method "window/workDoneProgress/create:begin"))
-          (not (equal? method "window/workDoneProgress/create:end")))
-      (process-request 
-        server-instance 
-        (make-request 
-          (string-append "window/workDoneProgress/create:" id) 
-          "window/workDoneProgress/create:begin" 
-          (string-append "Start" method))))
-    (do-log "start" server-instance)
     (if 
       (and 
         (server-shutdown? server-instance)
@@ -55,23 +41,6 @@
       (match method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
-
-        ["window/workDoneProgress/create:begin" 
-          (if (server-work-done-progress? server-instance)
-            (try
-              (send-message server-instance (make-notification "window/workDoneProgress/create" (request->progress "begin" request)))
-              (except c
-                [else 
-                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                  (do-log-timestamp server-instance)])))]
-        ["window/workDoneProgress/create:end" 
-          (if (server-work-done-progress? server-instance)
-            (try
-              (send-message server-instance (make-notification "window/workDoneProgress/create" (request->progress "end" request)))
-              (except c
-                [else 
-                  (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                  (do-log-timestamp server-instance)])))]
 
         ["textDocument/didOpen" 
           (try
@@ -174,19 +143,7 @@
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))
-
-    (if (and 
-          (server-work-done-progress? server-instance)
-          (not (server-shutdown? server-instance))
-          (not (equal? method "window/workDoneProgress/create:begin"))
-          (not (equal? method "window/workDoneProgress/create:end")))
-      (process-request 
-        server-instance 
-        (make-request 
-          (string-append "window/workDoneProgress/create:" id) 
-          "window/workDoneProgress/create:end" 
-          (string-append "Finish " method))))))
+        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";
@@ -203,7 +160,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
-    (do-log "???0" server-instance)
   (let* ([root-path (uri->path (assq-ref params 'rootUri))]
         [client-capabilities (assq-ref params 'capabilities)]
         [window (assq-ref client-capabilities 'window)]
@@ -246,15 +202,6 @@
               ; 'colorProvider #t
               ; 'workspace workspace-configuration
               )])
-
-    (if workDoneProgress?
-      (send-message server-instance 
-        (make-notification "window/workDoneProgress/create" 
-          (make-alist 
-            'token (string-append "window/workDoneProgress/create:" id)
-            'value (make-alist 'kind "begin" 'title "Start initialize")))))
-
-    (do-log "???1" server-instance)
 
     (if (null? (server-mutex server-instance))
       (begin 
