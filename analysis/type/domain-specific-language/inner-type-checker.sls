@@ -9,10 +9,7 @@
     inner:list?
     inner:vector?
     inner:pair?
-    inner:executable?
-
-    keywords
-    keyword?)
+    inner:executable?)
   (import 
     (rnrs)
     (ufo-match)
@@ -22,10 +19,6 @@
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
-;the same to keyword.sls
-(define keywords '(keyword:apply))
-(define (keyword? item) (contain? keywords item))
-
 (define (inner:trivial? expression)
   (cond
     [(private-inner:trivial-item? expression) #t]
@@ -34,12 +27,7 @@
           (contain? (cdr expression) '<-)
           (contain? (cdr expression) 'list?)
           (contain? (cdr expression) 'vector?)
-          (contain? (cdr expression) 'pair?)
-          (fold-left
-            (lambda (left right)
-              (and left (contain? (cdr expression) right)))
-            #t
-            keywords))
+          (contain? (cdr expression) 'pair?))
         #f
         (fold-left
           (lambda (left right)
@@ -67,22 +55,27 @@
 
 (define (inner:executable? body)
   (match body
-    [((? keyword? head) (? inner:trivial? tail) ...) #t]
+    [((? inner:lambda? head) (? inner:trivial? tail) ...) #t]
+    [((? variable? head) (? inner:trivial? tail) ...) #t]
+    [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
     [else #f]))
 
 (define (inner:lambda? body)
   (match body
-    [((? inner:trivial? head) '<- (? inner:trivial? tail)) #t]
+    [((? inner:trivial? head) '<- (? inner:list? tail)) #t]
+    [((? inner:trivial? head) '<- (? variable? tail)) #t]
     [else #f]))
 
 (define (inner:lambda-param body)
   (match body
-    [(head '<- tail) tail]
+    [((? inner:trivial? head) '<- (? inner:list? tail)) tail]
+    [((? inner:trivial? head) '<- (? variable? tail)) tail]
     [else '()]))
 
 (define (inner:lambda-return body)
   (match body
-    [(head '<- tail) head]
+    [((? inner:trivial? head) '<- (? inner:list? tail)) head]
+    [((? inner:trivial? head) '<- (? variable? tail)) head]
     [else '()]))
 
 (define (inner:list? body)

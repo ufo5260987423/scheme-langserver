@@ -8,8 +8,7 @@
      (scheme-langserver util binary-search)
      (scheme-langserver util natural-order-compare)
      (scheme-langserver analysis identifier reference)
-     (scheme-langserver analysis type rnrs-meta-rules)
-     (scheme-langserver analysis type domain-specific-language inner-type-checker))
+     (scheme-langserver analysis type rnrs-meta-rules))
 
 (define initialized? #f)
 
@@ -113,7 +112,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
     [('vector? fuzzy ...) `(vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('pair? fuzzy ...) `(pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [(fuzzy0 '<- fuzzy1) `(,(private-construct-type-expression-with-meta fuzzy0 list-instance) <- ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
-    [((? keyword? k) fuzzy ...) `(,k ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [(head **1) (map (lambda (expression) (private-construct-type-expression-with-meta expression list-instance)) head)]
     [(? symbol? meta-identifier)
       (cond 
         [(equal? meta-identifier '<-) '<-]
@@ -121,7 +120,6 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
         [(equal? meta-identifier '**1) '**1]
         [(equal? meta-identifier 'something?) 'something?]
         [(equal? meta-identifier 'void?) 'void?]
-        [(keyword? meta-identifier) 'void?]
         [else
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
             (if target-identifier target-identifier meta-identifier))])]))
