@@ -17,6 +17,5 @@
           return-type
           (raise "keyword:apply error!")
         ))]
-    [else '()]))
-
+    [else (raise "keyword:apply error!")]))
 )
