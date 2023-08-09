@@ -13,14 +13,15 @@
   (try
     (private-segment target)
     #t
-    (except c #f)))
+    (except c 
+      (else #f))))
 
 (define (candy:matchable? parameter-template argument-list)
   (equal? 
     'skipped 
     (vector-ref 
       (private-parameter-template+argument-list->match-matrix 
-        (private-segment parameter-tempate) 
+        (private-segment parameter-template) 
         (private-segment argument-list)) 
       0)))
 
@@ -28,7 +29,7 @@
 (define candy:match 
   (case-lambda
     [(parameter-template argument-list)
-      (let* ([rest-segment (private-segment parameter-tempate)]
+      (let* ([rest-segment (private-segment parameter-template)]
           [ready-segment (private-segment argument-list)]
           [matrix (private-parameter-template+argument-list->match-matrix rest-segment ready-segment)])
         (if (equal? 'skipped (vector-ref matrix 0))
@@ -54,7 +55,7 @@
 (define private-parameter-template+argument-list->match-matrix
   (case-lambda 
     [(rest-segments ready-segments)
-      (private-parameter-template+argument-list->match-pair-lists
+      (private-parameter-template+argument-list->match-matrix
         (make-vector (* (+ 1 (length rest-segments)) (+ 1 (length rest-segments))) 'unmatched)
         rest-segments 
         ready-segments
@@ -72,11 +73,11 @@
         ;skipped and continue at two directions
         [(and (zero? row-id) (< 0 column-id))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'down))
-            (if (private-is-... (vector-ref (list->vector ready-segment) (- column-id 1)))
+            (if (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1)))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'right)))]
         [(and (zero? column-id) (< 0 row-id))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'right))
-            (if (private-is-... (vector-ref (list->vector rest-segment) (- row-id 1)))
+            (if (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1)))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'down)))]
 
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,14 +90,14 @@
             (equal? 'matched (matrix-take matrix (- row-id 1) column-id))
             ;in this case, ... and **1 are the same
             (or 
-              (private-is-**1 (vector-ref (list->vector ready-segment) (- column-id 1)))
-              (private-is-... (vector-ref (list->vector ready-segment) (- column-id 1)))))
+              (private-is-**1 (vector-ref (list->vector ready-segments) (- column-id 1)))
+              (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1)))))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'down))
-            (if (or (private-is-**1 (vector-ref (list->vector rest-segment) (- row-id 1)))
-                    (private-is-... (vector-ref (list->vector rest-segment) (- row-id 1))))
+            (if (or (private-is-**1 (vector-ref (list->vector rest-segments) (- row-id 1)))
+                    (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1))))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'right)))
 
-          (if (equal? 'unused (matrix-take row-id column-id))
+          (if (equal? 'unused (matrix-take matrix row-id column-id))
             ;here can't go down for which might leading misunderstanding semantic
             (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'right))]
         [(equal? 'matched (matrix-take matrix (- row-id 1) column-id))
@@ -106,17 +107,17 @@
             (equal? 'matched (matrix-take matrix row-id (- column-id 1)))
             ;in this case, ... and **1 are the same
             (or 
-              (private-is-**1 (vector-ref (list->vector rest-segment) (- row-id 1)))
-              (private-is-... (vector-ref (list->vector rest-segment) (- row-id 1)))))
+              (private-is-**1 (vector-ref (list->vector rest-segments) (- row-id 1)))
+              (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1)))))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'right))
-            (if (or (private-is-**1 (vector-ref (list->vector ready-segment) (- column-id 1)))
-                    (private-is-... (vector-ref (list->vector ready-segment) (- column-id 1))))
+            (if (or (private-is-**1 (vector-ref (list->vector ready-segments) (- column-id 1)))
+                    (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1))))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'down)))
 
-          (if (equal? 'unused (matrix-take row-id column-id))
+          (if (equal? 'unused (matrix-take matrix row-id column-id))
             ;here can't go down for which might leading misunderstanding semantic
             (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'down))]
-        [(equal? 'matched (matrix-take matrix right (- column-id 1)))
+        [(equal? 'matched (matrix-take matrix row-id (- column-id 1)))
           (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'down)]
 
         ;'skipped
@@ -125,10 +126,10 @@
         ;So, **1 , ... and trivial segments are supposed to get matched here and seperately go to different directions.
         [(and 
             (equal? 'skipped (matrix-take matrix (- row-id 1) column-id))
-            (private-is-**1 (vector-ref (list->vector ready-segment) (- column-id 1))))
+            (private-is-**1 (vector-ref (list->vector ready-segments) (- column-id 1))))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'down))
-            (if (or (private-is-**1 (vector-ref (list->vector rest-segment) (- row-id 1)))
-                    (private-is-... (vector-ref (list->vector rest-segment) (- row-id 1))))
+            (if (or (private-is-**1 (vector-ref (list->vector rest-segments) (- row-id 1)))
+                    (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1))))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'right)))
           ;can't skipped!
           ; (if (equal? 'unused (matrix-take row-id column-id))
@@ -136,12 +137,12 @@
         ]
         [(and 
             (equal? 'skipped (matrix-take matrix (- row-id 1) column-id))
-            (private-is-... (vector-ref (list->vector ready-segment) (- column-id 1))))
+            (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1))))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'down))
-            (if (or (private-is-**1 (vector-ref (list->vector rest-segment) (- row-id 1)))
-                    (private-is-... (vector-ref (list->vector rest-segment) (- row-id 1))))
+            (if (or (private-is-**1 (vector-ref (list->vector rest-segments) (- row-id 1)))
+                    (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1))))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'right)))
-          (if (equal? 'unused (matrix-take row-id column-id))
+          (if (equal? 'unused (matrix-take matrix row-id column-id))
             ;here won't involve misunderstanding
             (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'right))]
         [(equal? 'skipped (matrix-take matrix (- row-id 1) column-id))
@@ -149,10 +150,10 @@
 
         [(and 
             (equal? 'skipped (matrix-take matrix row-id (- column-id 1)))
-            (private-is-**1 (vector-ref (list->vector rest-segment) (- row-id 1))))
+            (private-is-**1 (vector-ref (list->vector rest-segments) (- row-id 1))))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'right))
-            (if (or (private-is-**1 (vector-ref (list->vector ready-segment) (- column-id 1)))
-                    (private-is-... (vector-ref (list->vector ready-segment) (- column-id 1))))
+            (if (or (private-is-**1 (vector-ref (list->vector ready-segments) (- column-id 1)))
+                    (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1))))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'down)))
           ;can't be skipped!
           ; (if (equal? 'unused (matrix-take row-id column-id))
@@ -160,12 +161,12 @@
         ]
         [(and 
             (equal? 'skipped (matrix-take matrix row-id (- column-id 1)))
-            (private-is-... (vector-ref (list->vector rest-segment) (- row-id 1))))
+            (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1))))
           (if (not (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'right))
-            (if (or (private-is-**1 (vector-ref (list->vector ready-segment) (- column-id 1)))
-                    (private-is-... (vector-ref (list->vector ready-segment) (- column-id 1))))
+            (if (or (private-is-**1 (vector-ref (list->vector ready-segments) (- column-id 1)))
+                    (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1))))
               (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'matched 'down)))
-          (if (equal? 'unused (matrix-take row-id column-id))
+          (if (equal? 'unused (matrix-take matrix row-id column-id))
             ;here won't involve misunderstanding
             (private-next-step-ok? matrix rest-segments ready-segments row-id column-id 'skipped 'down))]
         [(equal? 'skipped (matrix-take matrix row-id (- column-id 1)))
@@ -180,13 +181,13 @@
         (private-next-step-ok? matrix rest-segments ready-segments row-id column-id status 'down))]
     [(matrix rest-segments ready-segments row-id column-id status direction)
       (cond 
-        [(and (equal? 'right) (< column-id (length ready-segment)))
+        [(and (equal? 'right (< column-id (length ready-segments))))
           (matrix-set! row-id column-id status)
           (private-parameter-template+argument-list->match-matrix matrix rest-segments ready-segments row-id (+ column-id 1))
           (if (equal? 'unused (matrix-take matrix row-id (+ column-id 1)))
             (matrix-set! row-id column-id 'unused))
           (not (equal? 'unused (matrix-take matrix row-id (+ column-id 1))))]
-        [(and (equal? 'down) (< row-id (length rest-segment)))
+        [(and (equal? 'down (< row-id (length rest-segments))))
           (private-parameter-template+argument-list->match-matrix matrix rest-segments ready-segments (+ row-id 1) column-id)
           (if (equal? 'unused (matrix-take matrix (+ row-id 1) column-id))
             (matrix-set! row-id column-id 'unused))

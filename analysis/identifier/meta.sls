@@ -1,85 +1,88 @@
 (library (scheme-langserver analysis identifier meta)
-   (export 
-      construct-type-expression-with-meta
-      find-meta)
-   (import 
-      (rnrs)
-      (scheme-langserver util binary-search)
-      (scheme-langserver util natural-order-compare)
-      (scheme-langserver analysis identifier reference)
-      (scheme-langserver analysis type rnrs-meta-rules))
+  (export 
+     construct-type-expression-with-meta
+     find-meta)
+  (import 
+     (rnrs)
+     (ufo-match)
+     (scheme-langserver util binary-search)
+     (scheme-langserver util natural-order-compare)
+     (scheme-langserver analysis identifier reference)
+     (scheme-langserver analysis type rnrs-meta-rules)
+
+      (scheme-langserver analysis type domain-specific-language inner-type-checker))
 
 (define initialized? #f)
 
 (define (find-meta list-instance)
-   (if (not initialized?)
-      (begin
-         (init-type-expressions)
-         (set! initialized? #t)))
-   (cond
-      [(equal? list-instance '(rnrs)) rnrs]
-      [(equal? list-instance '(scheme)) scheme] 
-      [(equal? list-instance '(chezscheme)) chezscheme]
-      [(equal? list-instance '(rnrs condition)) rnrs-condition]
-      [(equal? list-instance '(rnrs base)) rnrs-base]
-      [(equal? list-instance '(rnrs files)) rnrs-files]
-      [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
-      [(equal? list-instance '(rnrs exception)) rnrs-exception]
-      [(equal? list-instance '(rnrs lists)) rnrs-lists]
-      [(equal? list-instance '(rnrs bytevectors)) rnrs-bytevectors]
-      [(equal? list-instance '(rnrs control)) rnrs-control]
-      [(equal? list-instance '(rnrs unicode)) rnrs-unicode]
-      [(equal? list-instance '(rnrs enums)) rnrs-enums]
-      [(equal? list-instance '(rnrs r5rs)) rnrs-r5rs]
-      [(equal? list-instance '(rnrs eval)) rnrs-eval]
-      [(equal? list-instance '(rnrs hashtables)) rnrs-hashtables]
-      [(equal? list-instance '(rnrs sorting)) rnrs-sorting]
-      [(equal? list-instance '(rnrs programs)) rnrs-programs]
-      [(equal? list-instance '(rnrs mutable-pairs)) rnrs-mutable-pairs]
-      [(equal? list-instance '(rnrs mutable-strings)) rnrs-mutable-strings]
-      [(equal? list-instance '(rnrs io ports)) rnrs-io-ports]
-      [(equal? list-instance '(rnrs io simple)) rnrs-io-simple]
-      [(equal? list-instance '(rnrs arithmetic flonums)) rnrs-arithmetic-flonums]
-      [(equal? list-instance '(rnrs arithmetic bitwise)) rnrs-arithmetic-bitwise]
-      [(equal? list-instance '(rnrs arithmetic fixnums)) rnrs-arithmetic-fixnums]
-      [(equal? list-instance '(rnrs records syntactic)) rnrs-records-syntactic]
-      [(equal? list-instance '(rnrs records procedure)) rnrs-records-procedure]
-      [(equal? list-instance '(rnrs records inspection)) rnrs-records-inspection]
-      [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
-      [(equal? list-instance '(scheme csv7)) scheme-csv7]
-      [else '()]))
+  (if (not initialized?)
+    (begin
+      (init-type-expressions)
+      (set! initialized? #t)))
+  (cond
+    [(equal? list-instance '(rnrs)) rnrs]
+    [(equal? list-instance '(scheme)) scheme] 
+    [(equal? list-instance '(chezscheme)) chezscheme]
+    [(equal? list-instance '(rnrs condition)) rnrs-condition]
+    [(equal? list-instance '(rnrs base)) rnrs-base]
+    [(equal? list-instance '(rnrs files)) rnrs-files]
+    [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
+    [(equal? list-instance '(rnrs exception)) rnrs-exception]
+    [(equal? list-instance '(rnrs lists)) rnrs-lists]
+    [(equal? list-instance '(rnrs bytevectors)) rnrs-bytevectors]
+    [(equal? list-instance '(rnrs control)) rnrs-control]
+    [(equal? list-instance '(rnrs unicode)) rnrs-unicode]
+    [(equal? list-instance '(rnrs enums)) rnrs-enums]
+    [(equal? list-instance '(rnrs r5rs)) rnrs-r5rs]
+    [(equal? list-instance '(rnrs eval)) rnrs-eval]
+    [(equal? list-instance '(rnrs hashtables)) rnrs-hashtables]
+    [(equal? list-instance '(rnrs sorting)) rnrs-sorting]
+    [(equal? list-instance '(rnrs programs)) rnrs-programs]
+    [(equal? list-instance '(rnrs mutable-pairs)) rnrs-mutable-pairs]
+    [(equal? list-instance '(rnrs mutable-strings)) rnrs-mutable-strings]
+    [(equal? list-instance '(rnrs io ports)) rnrs-io-ports]
+    [(equal? list-instance '(rnrs io simple)) rnrs-io-simple]
+    [(equal? list-instance '(rnrs arithmetic flonums)) rnrs-arithmetic-flonums]
+    [(equal? list-instance '(rnrs arithmetic bitwise)) rnrs-arithmetic-bitwise]
+    [(equal? list-instance '(rnrs arithmetic fixnums)) rnrs-arithmetic-fixnums]
+    [(equal? list-instance '(rnrs records syntactic)) rnrs-records-syntactic]
+    [(equal? list-instance '(rnrs records procedure)) rnrs-records-procedure]
+    [(equal? list-instance '(rnrs records inspection)) rnrs-records-inspection]
+    [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
+    [(equal? list-instance '(scheme csv7)) scheme-csv7]
+    [else '()]))
 
 (define (private-process library-instance list-instance)
-   (sort-identifier-references 
-      (map 
-         (lambda (identifier-pair) 
-            (make-identifier-reference (car identifier-pair) '() '() '() library-instance (cadr identifier-pair) '() '()))
-         list-instance)))
+  (sort-identifier-references 
+    (map 
+        (lambda (identifier-pair) 
+          (make-identifier-reference (car identifier-pair) '() '() '() library-instance (cadr identifier-pair) '() '()))
+        list-instance)))
 
 (define (init-type-expressions)
-   (map 
-      (lambda (list-instance)
-         (map 
-            (lambda (identifier-reference)
-               (identifier-reference-type-expressions-set!
-                  identifier-reference
-                  (private-construct-type-expression-with-meta 
-                     (map 
-                        (lambda (item)
-                           (let ([tmp (cdr item)])
-                              (if (null? tmp)
-                                 tmp
-                                 `(,(car tmp) <- ,(cadr tmp)))))
-                        (binary-search
-                           (list->vector rnrs-chez-rules)
-                           (lambda (target0 target1)
-                              (natural-order-compare 
-                                 (symbol->string (car target0))
-                                 (symbol->string (car target1))))
-                           (list (identifier-reference-identifier identifier-reference))))
-                     chezscheme)))
-            list-instance))
-      (list rnrs scheme chezscheme rnrs-condition rnrs-base 
+  (map 
+    (lambda (list-instance)
+        (map 
+          (lambda (identifier-reference)
+              (identifier-reference-type-expressions-set!
+                identifier-reference
+                (private-construct-type-expression-with-meta 
+                    (map 
+                      (lambda (item)
+                          (let ([tmp (cdr item)])
+                            (if (null? tmp)
+                                tmp
+                                (list (car tmp) '<- `(list? ,@(cadr tmp))))))
+                      (binary-search
+                          (list->vector rnrs-chez-rules)
+                          (lambda (target0 target1)
+                            (natural-order-compare 
+                                (symbol->string (car target0))
+                                (symbol->string (car target1))))
+                          (list (identifier-reference-identifier identifier-reference))))
+                    chezscheme)))
+          list-instance))
+    (list rnrs scheme chezscheme rnrs-condition rnrs-base 
 rnrs-files rnrs-syntax-case rnrs-exception rnrs-lists 
 rnrs-bytevectors rnrs-control rnrs-unicode rnrs-enums 
 rnrs-r5rs rnrs-eval rnrs-hashtables rnrs-sorting 
@@ -88,34 +91,44 @@ rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums
 rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
 rnrs-records-syntactic rnrs-records-procedure 
 rnrs-records-inspection chezscheme-csv7 scheme-csv7))
-   ;numeric tower
-   (fold-left 
-      (lambda (parent identifier-reference)
-         (identifier-reference-parents-set! identifier-reference (list parent))
-         identifier-reference)
-      (find (lambda (identifier-reference) (equal? 'fixnum? (identifier-reference-identifier identifier-reference))) chezscheme)
-      (map 
-         (lambda (procedure-name) 
-            (find 
-               (lambda (identifier-reference) 
-                  (equal? procedure-name (identifier-reference-identifier identifier-reference))) chezscheme)) 
-         '(bignum? integer? cflonum? flonum? rational? real? complex?))))
+  ;numeric tower
+  (fold-left 
+    (lambda (parent identifier-reference)
+        (identifier-reference-parents-set! identifier-reference (list parent))
+        identifier-reference)
+    (find (lambda (identifier-reference) (equal? 'fixnum? (identifier-reference-identifier identifier-reference))) chezscheme)
+    (map 
+        (lambda (procedure-name) 
+          (find 
+              (lambda (identifier-reference) 
+                (equal? procedure-name (identifier-reference-identifier identifier-reference))) chezscheme)) 
+        '(bignum? integer? cflonum? flonum? rational? real? complex?))))
 
-(define (construct-type-expression-with-meta meta-identifier)
-   ;;chezscheme is the super set of rnrs
-   (private-construct-type-expression-with-meta meta-identifier chezscheme))
+(define (construct-type-expression-with-meta expression)
+  ;;chezscheme is the super set of rnrs
+  (private-construct-type-expression-with-meta expression chezscheme))
 
-(define (private-construct-type-expression-with-meta meta-identifier list-instance)
-  (cond 
-      [(list? meta-identifier) (map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)]
-      [(vector? meta-identifier) (vector-map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) meta-identifier)]
-      [(equal? meta-identifier '...) '...]
-      [(equal? meta-identifier '**1) '**1]
-      [(equal? meta-identifier 'something?) 'something?]
-      [(equal? meta-identifier 'void?) 'void?]
-      [else 
-         (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
-            (if target-identifier target-identifier meta-identifier))]))
+(define (private-construct-type-expression-with-meta expression list-instance)
+  (match expression
+    [('list? fuzzy ...) `(list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('vector? fuzzy ...) `(vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('pair? fuzzy ...) `(pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [(fuzzy0 '<- fuzzy1) `(,(private-construct-type-expression-with-meta fuzzy0 list-instance) <- ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
+    [('keyword:apply? fuzzy ...) `(keyword:apply? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    ; ['... '...]
+    ; ['**1 '**1]
+    ; ['something? 'something?]
+    ; ['void? 'void?]
+    [(? symbol? meta-identifier)
+      (cond 
+        [(equal? meta-identifier '<-) '<-]
+        [(equal? meta-identifier '...) '...]
+        [(equal? meta-identifier '**1) '**1]
+        [(equal? meta-identifier 'something?) 'something?]
+        [(equal? meta-identifier 'void?) 'void?]
+        [else
+          (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
+            (if target-identifier target-identifier meta-identifier))])]))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)
