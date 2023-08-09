@@ -5,6 +5,8 @@
     (chezscheme)
     (ufo-match)
 
+    (scheme-langserver util contain)
+
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
@@ -15,7 +17,6 @@
           [return-type (inner:lambda-return lambda-template)])
         (if (candy-matchable? param-type params)
           return-type
-          (raise "keyword:apply error!")
-        ))]
+          (raise "keyword:apply error!")))]
     [else (raise "keyword:apply error!")]))
 )

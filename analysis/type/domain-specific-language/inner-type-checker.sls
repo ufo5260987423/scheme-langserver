@@ -8,7 +8,11 @@
 
     inner:list?
     inner:vector?
-    inner:pair?)
+    inner:pair?
+    inner:executable?
+
+    keywords
+    keyword?)
   (import 
     (rnrs)
     (ufo-match)
@@ -18,6 +22,10 @@
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
+;the same to keyword.sls
+(define keywords '(keyword:apply))
+(define (keyword? item) (contain? keywords item))
+
 (define (inner:trivial? expression)
   (cond
     [(private-inner:trivial-item? expression) #t]
@@ -26,7 +34,12 @@
           (contain? (cdr expression) '<-)
           (contain? (cdr expression) 'list?)
           (contain? (cdr expression) 'vector?)
-          (contain? (cdr expression) 'pair?))
+          (contain? (cdr expression) 'pair?)
+          (fold-left
+            (lambda (left right)
+              (and left (contain? (cdr expression) right)))
+            #t
+            keywords))
         #f
         (fold-left
           (lambda (left right)
@@ -39,6 +52,7 @@
         (and 
           (inner:trivial? (inner:lambda-param expression))
           (inner:trivial? (inner:lambda-return expression))))]
+    [(inner:executable? expression) #t]
     [else #f]))
 
 (define (private-inner:trivial-item? item)
@@ -49,6 +63,11 @@
     ;Or in Hott's tongue, something is confired as one of universe. And variable haven't been desided.
     [(equal? 'something? item) #t]
     [(equal? 'void? item) #t]
+    [else #f]))
+
+(define (inner:executable? body)
+  (match body
+    [((? keyword? head) (? inner:trivial? tail) ...) #t]
     [else #f]))
 
 (define (inner:lambda? body)
