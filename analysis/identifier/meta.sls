@@ -8,9 +8,7 @@
      (scheme-langserver util binary-search)
      (scheme-langserver util natural-order-compare)
      (scheme-langserver analysis identifier reference)
-     (scheme-langserver analysis type rnrs-meta-rules)
-
-      (scheme-langserver analysis type domain-specific-language inner-type-checker))
+     (scheme-langserver analysis type rnrs-meta-rules))
 
 (define initialized? #f)
 
