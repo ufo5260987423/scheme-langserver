@@ -10,12 +10,12 @@
 
 (define (keyword:apply . rest)
   (match rest
-    [((? lambda? lambda-template) params ...) 
+    [((? inner:lambda? lambda-template) params ...) 
       (let ([param-type (inner:lambda-param lambda-template)]
           [return-type (inner:lambda-return lambda-template)])
         (if (candy-matchable? param-type params)
           return-type
-          '()
+          (raise "keyword:apply error!")
         ))]
     [else '()]))
 
