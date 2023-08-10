@@ -13,15 +13,16 @@
     [(expression substitution-list)
       (cond
         [(inner:executable? expression)
+          ;the clause sequence is important
           (match expression
+            ;todo
+            ; [((? inner:record-lambda? l) params ...) ]
             [((? inner:lambda? l) params ...)
               (if (inner:list? (inner:lambda-param l))
                   (if (candy:matchable? (cdr (inner:lambda-param l)) (map type:interpret params))
                     (inner:lambda-return l)
                     '())
                 (inner:lambda-return l))]
-            ;todo
-            ; [((? inner:record-lambda? l) params ...) ]
             [else expression])]
         [(list? expression) (map type:interpret expression)]
         [(inner:trivial? expression) expression]

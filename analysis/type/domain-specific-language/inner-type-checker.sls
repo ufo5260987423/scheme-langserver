@@ -14,7 +14,7 @@
     inner:pair?
     inner:executable?)
   (import 
-    (rnrs)
+    (chezscheme)
     (ufo-match)
 
     (scheme-langserver util contain)
@@ -39,7 +39,6 @@
           (map inner:trivial? (cdr expression))))]
     [(inner:lambda? expression) #t]
     [(inner:record? expression) #t]
-    [(inner:record-lambda? expression) #t]
     [(inner:executable? expression) #t]
     [else #f]))
 
@@ -63,7 +62,7 @@
 
 (define (inner:record? body)
   (match body
-    [('record? (? symbol? type-name) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
+    [('record? (? identifier-reference? type-name) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
     [else #f]))
 
 (define (inner:record-lambda? body)
@@ -77,6 +76,7 @@
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) #t]
     [((? inner:trivial? head) '<- (? variable? tail)) #t]
+    [(? inner:record-lambda? t) #t]
     [else #f]))
 
 (define (inner:lambda-param body)
@@ -92,6 +92,20 @@
     [else '()]))
 
 (define (inner:list? body)
+  (match body
+    [('list? item ...) 
+      (and 
+        (candy:segmentable? item)
+        (fold-left 
+          (lambda (left right)
+            (and left (inner:trivial? right)))
+          #t
+          (filter 
+            (lambda (t) (and (not (equal? t '...)) (not (equal? t '**1)))) 
+            item)))]
+    [else #f]))
+
+(define (inner:list-content body)
   (match body
     [('list? (? inner:trivial? item) ...) (candy:segmentable? item)]
     [else #f]))
