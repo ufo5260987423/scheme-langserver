@@ -108,6 +108,13 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 
 (define (private-construct-type-expression-with-meta expression list-instance)
   (match expression
+    [('record? fuzzy ...) expression]
+    [(fuzzy0 '<-record-set! fuzzy1) expression]
+    [(fuzzy0 '<-record-ref fuzzy1) expression]
+    [(fuzzy0 '<-record-constructor fuzzy1) 
+      `(,fuzzy0 <-record-constructor 
+        ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy1))]
+
     [('list? fuzzy ...) `(list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('vector? fuzzy ...) `(vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('pair? fuzzy ...) `(pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
@@ -116,6 +123,9 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
     [(? symbol? meta-identifier)
       (cond 
         [(equal? meta-identifier '<-) '<-]
+        [(equal? meta-identifier '<-record-set!) '<-record-set!]
+        [(equal? meta-identifier '<-record-ref) '<-record-ref]
+        [(equal? meta-identifier '<-record-constructor) '<-record-constructor]
         [(equal? meta-identifier '...) '...]
         [(equal? meta-identifier '**1) '**1]
         [(equal? meta-identifier 'something?) 'something?]

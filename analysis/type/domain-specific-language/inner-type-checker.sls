@@ -6,6 +6,9 @@
     inner:lambda-param
     inner:lambda-return
 
+    inner:record?
+    inner:record-lambda?
+
     inner:list?
     inner:vector?
     inner:pair?
@@ -34,12 +37,9 @@
             (and left right))
           #t
           (map inner:trivial? (cdr expression))))]
-    [(inner:lambda? expression)
-      (if (inner:vector? (inner:lambda-param expression))
-        #f
-        (and 
-          (inner:trivial? (inner:lambda-param expression))
-          (inner:trivial? (inner:lambda-return expression))))]
+    [(inner:lambda? expression) #t]
+    [(inner:record? expression) #t]
+    [(inner:record-lambda? expression) #t]
     [(inner:executable? expression) #t]
     [else #f]))
 
@@ -57,18 +57,21 @@
   (match body
     [((? inner:lambda? head) (? inner:trivial? tail) ...) #t]
     [((? variable? head) (? inner:trivial? tail) ...) #t]
-    [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
+    ; [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
+    [((? inner:record-lambda? head) (? inner:trivial? tail) (? inner:trivial? tail)) #t]
     [else #f]))
 
-; (define (inner:record? body)
-;   (match body
-;     [('record? (? symbol? type) ('pair? method-name value) **1) #t]
-;     [else #f]))
+(define (inner:record? body)
+  (match body
+    [('record? (? symbol? type-name) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
+    [else #f]))
 
-; (define (inner:record-lambda? body)
-;   (match body
-;     [('record-lambda? (? inner:record? record) (? inner:lambda? method)) #t]
-;     [else #f]))
+(define (inner:record-lambda? body)
+  (match body
+    [('void? '<-record-set! ('list? (? inner:record? record) (? inner:trivial? value))) #t]
+    [((? inner:trivial? return) '<-record-ref ('list? (? inner:record? record) (? symbol? method-name))) #t]
+    [((? inner:record? return) '<-record-constructor (? list? params)) #t]
+    [else #f]))
 
 (define (inner:lambda? body)
   (match body
