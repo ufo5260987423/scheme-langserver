@@ -60,6 +60,16 @@
     [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
     [else #f]))
 
+; (define (inner:record? body)
+;   (match body
+;     [('record? (? symbol? type) ('pair? method-name value) **1) #t]
+;     [else #f]))
+
+; (define (inner:record-lambda? body)
+;   (match body
+;     [('record-lambda? (? inner:record? record) (? inner:lambda? method)) #t]
+;     [else #f]))
+
 (define (inner:lambda? body)
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) #t]
