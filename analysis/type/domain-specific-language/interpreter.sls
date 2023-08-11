@@ -33,7 +33,22 @@
           ;the clause sequence is important
           (match expression
             ;todo
-            ; [((? inner:record-lambda? l) params ...) ]
+            [((? inner:record-lambda? l) params ...) 
+              (match (inner:record-lambda-type l)
+                ['<-record-set!
+                  (if (= 2 (length params))
+                    (if (equal? (car params) (inner:record-lambda-record-predicator l))
+                        ))
+                ]
+                ['<-record-ref
+                  (if (= 1 (length params))
+                    (if (equal? (car params) (inner:record-lambda-record-predicator l))
+                        ))
+                  '()
+                ]
+                ['<-record-constructor
+                  '()
+                ])]
             [((? inner:lambda? l) params ...)
               (if (inner:list? (inner:lambda-param l))
                 (if (private-matchable? 

@@ -16,6 +16,10 @@
     (test-equal 
         (type:interpret-result-list (construct-type-expression-with-meta '((number? <- (list? number? number?)) number? number?)))
         (list (construct-type-expression-with-meta 'number?)))
+    (test-equal 
+        (type:interpret-result-list 
+            (construct-type-expression-with-meta '((something? <-record-ref annotation? annotation-expression expression) (record? annotation? (pair? expression symbol?)))))
+        (list (construct-type-expression-with-meta 'symbol?)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

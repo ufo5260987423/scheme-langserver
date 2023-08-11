@@ -11,6 +11,12 @@
     inner:record-head
     inner:record-lambda?
 
+    inner:record-lambda?
+    inner:record-lambda-record-predicator
+    inner:record-lambda-identifier
+    inner:record-lambda-type
+    inner:record-lambda-return
+
     inner:list?
     inner:list-content
     inner:vector?
@@ -42,6 +48,7 @@
           (map inner:trivial? (cdr expression))))]
     [(inner:lambda? expression) #t]
     [(inner:record? expression) #t]
+    [(inner:record-lambda? expression) #t]
     [(inner:executable? expression) #t]
     [else #f]))
 
@@ -58,7 +65,7 @@
 (define (inner:executable? body)
   (match body
     [((? inner:lambda? head) (? inner:trivial? tail) ...) #t]
-    [((? variable? head) (? inner:trivial? tail) ...) #t]
+    ; [((? variable? head) (? inner:trivial? tail) ...) #t]
     ; [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
     [((? inner:record-lambda? head) (? inner:trivial? tail) (? inner:trivial? tail)) #t]
     [else #f]))
@@ -80,16 +87,72 @@
 
 (define (inner:record-lambda? body)
   (match body
-    [('void? '<-record-set! ('list? (? inner:record? record) (? inner:trivial? value))) #t]
-    [((? inner:trivial? return) '<-record-ref ('list? (? inner:record? record) (? symbol? method-name))) #t]
-    [((? inner:record? return) '<-record-constructor (? list? params)) #t]
+    [('void? 
+        '<-record-set! 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? set) 
+        ('list? (? inner:record? record) (? inner:trivial? value))) #t]
+    [((? inner:trivial? return) 
+        '<-record-ref 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? ref) 
+        (? symbol? property-name) 
+        ('list? (? inner:record? record))) #t]
+    [((? inner:record? return) 
+        '<-record-constructor 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? constructor) 
+        (? list? params)) #t]
     [else #f]))
+
+(define (inner:record-lambda-record-predicator body)
+  (match body
+    [('void? 
+        '<-record-set! 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? set) 
+        ('list? (? inner:record? record) (? inner:trivial? value))) record-predicator]
+    [((? inner:trivial? return) 
+        '<-record-ref 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? ref) 
+        (? symbol? property-name) 
+        ('list? (? inner:record? record))) record-predicator]
+    [((? inner:record? return) 
+        '<-record-constructor 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? constructor) 
+        (? list? params)) record-predicator]))
+
+(define (inner:record-lambda-type body)
+  (cadr body))
+
+(define (inner:record-lambda-return body)
+  (car body))
+
+(define (inner:record-lambda-identifier body)
+  (match body
+    [('void? 
+        '<-record-set! 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? set) 
+        ('list? (? inner:record? record) (? inner:trivial? value))) set]
+    [((? inner:trivial? return) 
+        '<-record-ref 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? ref) 
+        (? symbol? property-name) 
+        ('list? (? inner:record? record))) ref]
+    [((? inner:record? return) 
+        '<-record-constructor 
+        (? identifier-reference? record-predicator) 
+        (? identifier-reference? constructor) 
+        (? list? params)) constructor]))
 
 (define (inner:lambda? body)
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) #t]
     [((? inner:trivial? head) '<- (? variable? tail)) #t]
-    [(? inner:record-lambda? t) #t]
     [else #f]))
 
 (define (inner:lambda-param body)
