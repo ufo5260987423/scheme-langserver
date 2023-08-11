@@ -7,9 +7,12 @@
     inner:lambda-return
 
     inner:record?
+    inner:record-properties
+    inner:record-head
     inner:record-lambda?
 
     inner:list?
+    inner:list-content
     inner:vector?
     inner:pair?
     inner:executable?)
@@ -65,6 +68,16 @@
     [('record? (? identifier-reference? type-name) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
     [else #f]))
 
+(define (inner:record-properties body)
+  (if (inner:record? body)
+    (cddr body)
+    '()))
+
+(define (inner:record-head body)
+  (if (inner:record? body)
+    `(record ,(cadr body))
+    '()))
+
 (define (inner:record-lambda? body)
   (match body
     [('void? '<-record-set! ('list? (? inner:record? record) (? inner:trivial? value))) #t]
@@ -107,7 +120,7 @@
 
 (define (inner:list-content body)
   (match body
-    [('list? (? inner:trivial? item) ...) (candy:segmentable? item)]
+    [('list? (? inner:trivial? item) ...) item]
     [else #f]))
 
 (define (inner:vector? body)
