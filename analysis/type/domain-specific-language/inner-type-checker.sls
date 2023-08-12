@@ -8,9 +8,10 @@
 
     inner:record?
     inner:record-properties
-    inner:record-head
-    inner:record-lambda?
+    inner:record-predicator
+    inner:record-variable
 
+    inner:record-lambda?
     inner:record-lambda?
     inner:record-lambda-record-predicator
     inner:record-lambda-identifier
@@ -72,15 +73,20 @@
 
 (define (inner:record? body)
   (match body
-    [('record? (? identifier-reference? type-name) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
+    [('record? (? identifier-reference? predicator) (? variable? variable) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
     [else #f]))
+
+(define (inner:record-variable body)
+  (if (inner:record? body)
+    (caddr body)
+    '()))
 
 (define (inner:record-properties body)
   (if (inner:record? body)
-    (cddr body)
+    (cdddr body)
     '()))
 
-(define (inner:record-head body)
+(define (inner:record-predicator body)
   (if (inner:record? body)
     `(record ,(cadr body))
     '()))
