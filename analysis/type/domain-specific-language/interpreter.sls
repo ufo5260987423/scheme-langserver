@@ -38,11 +38,13 @@
                 ['<-record-set!
                   (if (= 2 (length params))
                     (if (equal? (car params) (inner:record-lambda-record-predicator l))
+                      '()
                         ))
                 ]
                 ['<-record-ref
                   (if (= 1 (length params))
                     (if (equal? (car params) (inner:record-lambda-record-predicator l))
+                      '()
                         ))
                   '()
                 ]
