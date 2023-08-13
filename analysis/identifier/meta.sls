@@ -8,7 +8,8 @@
      (scheme-langserver util binary-search)
      (scheme-langserver util natural-order-compare)
      (scheme-langserver analysis identifier reference)
-     (scheme-langserver analysis type rnrs-meta-rules))
+     (scheme-langserver analysis type rnrs-meta-rules)
+     (scheme-langserver analysis type domain-specific-language variable))
 
 (define initialized? #f)
 
@@ -108,18 +109,26 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 
 (define (private-construct-type-expression-with-meta expression list-instance)
   (match expression
-    [('record? fuzzy ...) expression]
-    [(fuzzy0 '<-record-set! fuzzy1) expression]
-    [(fuzzy0 '<-record-ref fuzzy1) expression]
+    [('record? fuzzy ...) `(record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [(fuzzy0 '<-record-set! fuzzy1) 
+      `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
+        <-record-set!
+        ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
+    [(fuzzy0 '<-record-ref fuzzy1) 
+      `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
+        <-record-ref
+        ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
     [(fuzzy0 '<-record-constructor fuzzy1) 
-      `(,fuzzy0 <-record-constructor 
-        ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy1))]
+      `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
+        <-record-constructor 
+        ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
 
+    [(? variable? fuzzy) fuzzy]
     [('list? fuzzy ...) `(list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('vector? fuzzy ...) `(vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('pair? fuzzy ...) `(pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [(fuzzy0 '<- fuzzy1) `(,(private-construct-type-expression-with-meta fuzzy0 list-instance) <- ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
-    [(head **1) (map (lambda (expression) (private-construct-type-expression-with-meta expression list-instance)) head)]
+    [(head **1) (map (lambda (expression) (private-construct-type-expression-with-meta expression list-instance)) expression)]
     [(? symbol? meta-identifier)
       (cond 
         [(equal? meta-identifier '<-) '<-]

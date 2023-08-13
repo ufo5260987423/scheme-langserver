@@ -9,8 +9,10 @@
 
     (scheme-langserver util cartesian-product)
 
-    (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis type walk-engine)
+
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
@@ -33,24 +35,39 @@
           ;the clause sequence is important
           (match expression
             ;todo
-            [((? inner:record-lambda? l) params ...) 
+            [((? inner:record-lambda? l) (? inner:record? record) (? inner:trivial? params) ...) 
               (match (inner:record-lambda-type l)
                 ['<-record-set!
-                  (if (= 2 (length params))
-                    (if (equal? (car params) (inner:record-lambda-record-predicator l))
-                      '()
-                        ))
-                ]
+                  (if (and (= 1 (length params)) (equal? (inner:record-lambda-record-predicator l) (inner:record-predicator record)))
+                    (begin
+                      (type:environment-result-list-set! 
+                        env
+                        ('void?))
+                      (type:environment-substitution-list-set! 
+                        env
+                        (fold-left
+                          add-to-substitutions 
+                          (type:environment-substitution-list env)
+                          (map 
+                            (lambda (result)
+                              `(,(inner:record-variable record) = ,result))
+                            (type:interpret-result-list (car params) env))))))]
                 ['<-record-ref
-                  (if (= 1 (length params))
-                    (if (equal? (car params) (inner:record-lambda-record-predicator l))
-                      '()
-                        ))
-                  '()
-                ]
+                  (if (and (null? params) (equal? (inner:record-lambda-record-predicator l) (inner:record-predicator record)))
+                    (type:environment-result-list-set! 
+                      env
+                      (map 
+                        (lambda (item) (car (reverse item)))
+                        (filter (lambda (property) (equal? (inner:pair-car property) (cadddr l))) (inner:record-properties record)))
+                      ))]
                 ['<-record-constructor
-                  '()
-                ])]
+                  ; (if (private-matchable? 
+                  ;     (type:interpret-result-list (inner:record-lambda-params l) env)
+                  ;     (apply cartesian-product (map (lambda(param) (type:interpret-result-list param env)) params)))
+                      ;todo:use real constructor!
+                    (type:environment-result-list-set! env (list (inner:record-lambda-return l)))
+                    ; (type:environment-result-list-set! env '()))
+                    ])]
             [((? inner:lambda? l) params ...)
               (if (inner:list? (inner:lambda-param l))
                 (if (private-matchable? 
@@ -58,7 +75,7 @@
                     (apply cartesian-product (map (lambda(param) (type:interpret-result-list param env)) params)))
                   (type:environment-result-list-set! env (list (inner:lambda-return l)))
                   (type:environment-result-list-set! env '()))
-                (type:environment-result-list-set! env (list (inner:lambda-return l))))]
+                (type:environment-result-list-set! env (list (inner:lambda-return l)))) ]
             [else expression])]
         [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
           (type:environment-result-list-set! env 

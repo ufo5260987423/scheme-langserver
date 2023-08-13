@@ -22,6 +22,8 @@
     inner:list-content
     inner:vector?
     inner:pair?
+    inner:pair-car
+    inner:pair-cdr
     inner:executable?)
   (import 
     (chezscheme)
@@ -68,12 +70,13 @@
     [((? inner:lambda? head) (? inner:trivial? tail) ...) #t]
     ; [((? variable? head) (? inner:trivial? tail) ...) #t]
     ; [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
-    [((? inner:record-lambda? head) (? inner:trivial? tail) (? inner:trivial? tail)) #t]
+    [((? inner:record-lambda? head) (? inner:record? tail) (? inner:trivial? tail)) #t]
+    [((? inner:record-lambda? head) (? inner:record? tail)) #t]
     [else #f]))
 
 (define (inner:record? body)
   (match body
-    [('record? (? identifier-reference? predicator) (? variable? variable) ('pair? (? symbol? property) (? inner:trivial? type-value)) **1) #t]
+    [('record? (? identifier-reference? predicator) (? variable? variable) ('pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
     [else #f]))
 
 (define (inner:record-variable body)
@@ -88,7 +91,7 @@
 
 (define (inner:record-predicator body)
   (if (inner:record? body)
-    `(record ,(cadr body))
+    (cadr body)
     '()))
 
 (define (inner:record-lambda? body)
@@ -96,19 +99,15 @@
     [('void? 
         '<-record-set! 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? set) 
-        ('list? (? inner:record? record) (? inner:trivial? value))) #t]
+        (? identifier-reference? ref)) #t]
     [((? inner:trivial? return) 
         '<-record-ref 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref) 
-        (? symbol? property-name) 
-        ('list? (? inner:record? record))) #t]
+        (? identifier-reference? ref)) #t]
     [((? inner:record? return) 
         '<-record-constructor 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? constructor) 
-        (? list? params)) #t]
+        (? identifier-reference? constructor)) #t]
     [else #f]))
 
 (define (inner:record-lambda-record-predicator body)
@@ -116,19 +115,15 @@
     [('void? 
         '<-record-set! 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? set) 
-        ('list? (? inner:record? record) (? inner:trivial? value))) record-predicator]
+        (? identifier-reference? ref)) record-predicator]
     [((? inner:trivial? return) 
         '<-record-ref 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref) 
-        (? symbol? property-name) 
-        ('list? (? inner:record? record))) record-predicator]
+        (? identifier-reference? ref)) record-predicator]
     [((? inner:record? return) 
         '<-record-constructor 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? constructor) 
-        (? list? params)) record-predicator]))
+        (? identifier-reference? constructor)) record-predicator]))
 
 (define (inner:record-lambda-type body)
   (cadr body))
@@ -141,19 +136,16 @@
     [('void? 
         '<-record-set! 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? set) 
-        ('list? (? inner:record? record) (? inner:trivial? value))) set]
+        ;here we use ref, it's consistent to inner:record's properties
+        (? identifier-reference? ref)) ref]
     [((? inner:trivial? return) 
         '<-record-ref 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref) 
-        (? symbol? property-name) 
-        ('list? (? inner:record? record))) ref]
+        (? identifier-reference? ref)) ref]
     [((? inner:record? return) 
         '<-record-constructor 
         (? identifier-reference? record-predicator) 
-        (? identifier-reference? constructor) 
-        (? list? params)) constructor]))
+        (? identifier-reference? constructor)) constructor]))
 
 (define (inner:lambda? body)
   (match body
@@ -201,4 +193,12 @@
   (match body
     [('pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) #t]
     [else #f]))
+
+(define (inner:pair-car body)
+  (match body
+    [('pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy0]))
+
+(define (inner:pair-cdr body)
+  (match body
+    [('pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy1]))
 )

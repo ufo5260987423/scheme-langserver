@@ -10,6 +10,7 @@
     (srfi :64 testing) 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis identifier meta))
 
 (test-begin "type:intepret")
@@ -18,7 +19,9 @@
         (list (construct-type-expression-with-meta 'number?)))
     (test-equal 
         (type:interpret-result-list 
-            (construct-type-expression-with-meta '((something? <-record-ref annotation? annotation-expression expression) (record? annotation? (pair? expression symbol?)))))
+            (construct-type-expression-with-meta 
+                `((something? <-record-ref annotation? annotation-expression) 
+                    (record? annotation? ,(make-variable) (pair? annotation-expression symbol?)))))
         (list (construct-type-expression-with-meta 'symbol?)))
 (test-end)
 
