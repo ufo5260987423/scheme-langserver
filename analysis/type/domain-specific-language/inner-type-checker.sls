@@ -77,6 +77,7 @@
 (define (inner:record? body)
   (match body
     [('record? (? identifier-reference? predicator) (? variable? variable) ('pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
+    [('record? (? identifier-reference? predicator) (? null? non-variable) ('pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
     [else #f]))
 
 (define (inner:record-variable body)

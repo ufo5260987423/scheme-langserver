@@ -51,7 +51,11 @@
                           (map 
                             (lambda (result)
                               `(,(inner:record-variable record) = ,result))
-                            (type:interpret-result-list (car params) env))))))]
+                            (filter 
+                              (lambda (r)
+                                (variable? (inner:record-variable record)))
+                              (type:interpret-result-list (car params) env))
+                            )))))]
                 ['<-record-ref
                   (if (and (null? params) (equal? (inner:record-lambda-record-predicator l) (inner:record-predicator record)))
                     (type:environment-result-list-set! 
