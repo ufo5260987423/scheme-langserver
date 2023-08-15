@@ -79,7 +79,7 @@
                     (apply cartesian-product (map (lambda(param) (type:interpret-result-list param env)) params)))
                   (type:environment-result-list-set! env (list (inner:lambda-return l)))
                   (type:environment-result-list-set! env '()))
-                (type:environment-result-list-set! env (list (inner:lambda-return l)))) ]
+                (type:environment-result-list-set! env (list (inner:lambda-return l))))]
             [else expression])]
         [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
           (type:environment-result-list-set! env 

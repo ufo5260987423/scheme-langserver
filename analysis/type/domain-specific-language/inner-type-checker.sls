@@ -151,6 +151,7 @@
 (define (inner:lambda? body)
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) #t]
+    [((? inner:trivial? head) '<- (? inner:pair? tail)) #t]
     [((? inner:trivial? head) '<- (? variable? tail)) #t]
     [else #f]))
 
