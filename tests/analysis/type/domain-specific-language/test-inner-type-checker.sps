@@ -25,6 +25,9 @@
     (test-equal #t (inner:lambda? (construct-type-expression-with-meta '(number? <- (list? number? number?)))))
     (test-equal #t (inner:trivial? (construct-type-expression-with-meta '((number? <- (list? number? number?)) number? number?))))
     (test-equal #t (inner:executable? (construct-type-expression-with-meta '((number? <- (list? number? number?)) number? number?))))
+    (test-equal 
+        (construct-type-expression-with-meta '(list? number? number? number?)) 
+        (inner:with-macro (construct-type-expression-with-meta '((with (a b c) (list? a b c)) number? number? number?))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

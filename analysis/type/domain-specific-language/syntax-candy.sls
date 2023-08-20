@@ -27,19 +27,16 @@
       (let* ([rest-segment (private-segment parameter-template)]
           [ready-segment (private-segment argument-list)]
           [matrix (private-segments->match-matrix rest-segment ready-segment)])
-        (if (equal? 'skipped (vector-ref matrix 0))
-          '()
-          (candy:match matrix rest-segment ready-segment 0 0)))]
+        (candy:match matrix rest-segment ready-segment 0 0))]
     [(matrix rest-segments ready-segments row-id column-id)
       (if (or (> row-id (length rest-segments))
           (> column-id (length ready-segments)))
         '()
-        (let* ([current-value (matrix-take matrix row-id column-id)]
-            [rest-segment (vector-ref (list->vector rest-segments) row-id)]
-            [ready-segment (vector-ref (list->vector ready-segments) column-id)])
+        (let* ([current-value (matrix-take matrix row-id column-id)])
           (cond 
             [(equal? current-value 'matched)
-              `(,`(,rest-segment . ,ready-segment) 
+              `(,`(,(private-type-of (vector-ref (list->vector rest-segments) (- row-id 1))) . 
+                    ,(private-type-of (vector-ref (list->vector ready-segments) (- column-id 1))))
                 ,@(candy:match matrix rest-segments ready-segments (+ row-id 1) column-id)
                 ,@(candy:match matrix rest-segments ready-segments row-id (+ column-id 1)))]
             [(equal? current-value 'skipped)
@@ -60,6 +57,28 @@
         0)]
     [(matrix rest-segments ready-segments row-id column-id)
       (cond
+        ;In end zone
+        [(and 
+            (= row-id (length rest-segments)) 
+            (= column-id (length ready-segments)))
+          (cond
+            [(or 
+                (equal? 'skipped (matrix-take matrix (- row-id 1) column-id))
+                (equal? 'skipped (matrix-take matrix row-id (- column-id 1))))
+              (matrix-set! matrix row-id column-id 'matched)]
+            [(or
+                (and 
+                  (equal? 'matched (matrix-take matrix (- row-id 1) column-id))
+                  (private-is-**1 (vector-ref (list->vector rest-segments) (- row-id 1))))
+                (and 
+                  (equal? 'matched (matrix-take matrix row-id (- column-id 1)))
+                  (private-is-**1 (vector-ref (list->vector ready-segments) (- column-id 1)))))
+              (matrix-set! matrix row-id column-id 'matched)]
+            [(or 
+                (private-is-... (vector-ref (list->vector rest-segments) (- row-id 1)))
+                (private-is-... (vector-ref (list->vector ready-segments) (- column-id 1))))
+              (matrix-set! matrix row-id column-id 'matched)]
+            [else '()])]
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;In start zone
         [(and (zero? row-id) (zero? column-id)) 
@@ -188,19 +207,15 @@
       (cond 
         [(and (equal? 'right direction) (< column-id (length ready-segments)))
           (matrix-set! matrix row-id column-id status)
-          (if (< column-id (length ready-segments))
-            (begin 
-              (private-segments->match-matrix matrix rest-segments ready-segments row-id (+ column-id 1)))
-              (if (equal? 'unused (matrix-take matrix row-id (+ column-id 1)))
-                (matrix-set! matrix row-id column-id 'unused)))
+          (private-segments->match-matrix matrix rest-segments ready-segments row-id (+ column-id 1))
+          (if (equal? 'unused (matrix-take matrix row-id (+ column-id 1)))
+            (matrix-set! matrix row-id column-id 'unused))
           (not (equal? 'unused (matrix-take matrix row-id column-id)))]
         [(and (equal? 'down direction) (< row-id (length rest-segments)))
           (matrix-set! matrix row-id column-id status)
-          (if (< row-id (length rest-segments))
-            (begin
-              (private-segments->match-matrix matrix rest-segments ready-segments (+ row-id 1) column-id)
-              (if (equal? 'unused (matrix-take matrix (+ row-id 1) column-id))
-                (matrix-set! matrix row-id column-id 'unused))))
+          (private-segments->match-matrix matrix rest-segments ready-segments (+ row-id 1) column-id)
+          (if (equal? 'unused (matrix-take matrix (+ row-id 1) column-id))
+            (matrix-set! matrix row-id column-id 'unused))
           (not (equal? 'unused (matrix-take matrix row-id column-id)))]
         [else #f])]))
 
