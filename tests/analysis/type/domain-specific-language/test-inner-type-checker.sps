@@ -31,7 +31,7 @@
     ;car list?
     (test-equal 
         (construct-type-expression-with-meta 'fixnum?) 
-        (inner:with-macro (construct-type-expression-with-meta '((with ((a b c)) b) (list? fixnum? number?)))))
+        (inner:with-macro (construct-type-expression-with-meta '((with ((a b c **1)) b) (list? fixnum? number?)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
