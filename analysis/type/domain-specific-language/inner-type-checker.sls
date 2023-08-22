@@ -62,16 +62,25 @@
 
 (define (inner:with-macro expression)
   (match expression
-    [(('with ((? symbol? denotions) **1) body) input **1)
+    [(('with (denotions **1) body) inputs **1)
       (try
         (inner:with-macro 
-          (fold-left
-            (lambda (left pair)
-              (private-substitute left (car pair) (cdr pair)))
-            body 
-            (candy:match denotions input)))
+          (private-with-macro body (candy:match denotions inputs)))
         (except c [else (raise (list c 'macro-error))]))]
     [else expression]))
+
+(define (private-with-macro body match-pairs)
+  (fold-left
+    (lambda (left pair)
+      (let ([denotion (car pair)]
+          [input (cdr pair)])
+        (cond 
+          [(symbol? denotion) (private-substitute left denotion input)]
+          [(and (list? denotion) (list? input)) 
+            (private-with-macro body (candy:match denotion input))]
+          [else body])))
+    body 
+    match-pairs))
 
 (define (private-substitute tree from to)
   (if (equal? tree from)

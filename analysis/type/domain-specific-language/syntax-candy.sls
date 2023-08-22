@@ -9,6 +9,11 @@
     (scheme-langserver util contain)
     (scheme-langserver util try))
 
+(define-record-type segment
+  (fields
+    (immutable type)
+    (mutable tail)))
+
 (define (candy:segmentable? target)
   (try
     (private-segment target)
@@ -35,8 +40,8 @@
         (let* ([current-value (matrix-take matrix row-id column-id)])
           (cond 
             [(equal? current-value 'matched)
-              `(,`(,(private-type-of (vector-ref (list->vector rest-segments) (- row-id 1))) . 
-                    ,(private-type-of (vector-ref (list->vector ready-segments) (- column-id 1))))
+              `(,`(,(segment-type (vector-ref (list->vector rest-segments) (- row-id 1))) . 
+                    ,(segment-type (vector-ref (list->vector ready-segments) (- column-id 1))))
                 ,@(candy:match matrix rest-segments ready-segments (+ row-id 1) column-id)
                 ,@(candy:match matrix rest-segments ready-segments row-id (+ column-id 1)))]
             [(equal? current-value 'skipped)
@@ -220,50 +225,27 @@
         [else #f])]))
 
 (define (private-is-... segment) 
-  (if (list? segment)
-    (equal? '... (car (reverse segment))))
-    #f)
+  (equal? '... (segment-tail segment)))
 
 (define (private-is-**1 segment) 
-  (if (list? segment)
-    (equal? '**1 (car (reverse segment))))
-    #f)
+  (equal? '**1 (segment-tail segment)))
 
-(define (private-type-of segment) 
-  (if (list? segment)
-    (car segment)
-    segment))
 
 (define (private-segment rule-list)
-  (let loop ([loop-body rule-list] [result '()])
-    (if (null? loop-body)
-      result
-      (cond
-        [(equal? (car loop-body) '...) 
-          (if (null? result)
-            (raise "wrong rule")
-            (begin
-              (if (or 
-                  (equal? (car (reverse result)) '...)
-                  (equal? (car (reverse result)) '**1))
-                (raise "wrong rule")
-                (loop 
-                  (cdr loop-body) 
-                  (append 
-                    (reverse (cdr (reverse result))) 
-                    `(,(list (car (reverse result)) '...)))))))]
-        [(equal? (car loop-body) '**1) 
-          (if (null? result)
-            (raise "wrong rule")
-            (begin
-              (if (or 
-                  (equal? (car (reverse result)) '...)
-                  (equal? (car (reverse result)) '**1))
-                (raise "wrong rule")
-                (loop 
-                  (cdr loop-body) 
-                  (append 
-                    (reverse (cdr (reverse result))) 
-                    `(,(list (car (reverse result)) '**1)))))))]
-        [else (loop (cdr loop-body) (append result `(,(car loop-body))))]))))
+  (fold-left
+    (lambda (result current-rule)
+      (if (or 
+          (equal? current-rule '...) 
+          (equal? current-rule '**1))
+        (if (null? result)
+          (raise "wrong rule")
+          (let ([current-segment (car (reverse result))])
+            (if (null? (segment-tail current-segment))
+              (begin
+                (segment-tail-set! current-segment current-rule)
+                result)
+              (raise "wrong rule"))))
+        (append result `(,(make-segment current-rule '())))))
+    '()
+    rule-list))
 )
