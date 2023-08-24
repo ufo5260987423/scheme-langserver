@@ -65,7 +65,7 @@
     [(('with (denotions **1) body) inputs **1)
       (try
         (inner:with-macro 
-          (private-with-macro body (candy:match denotions inputs)))
+          (private-with-macro body (candy:match-left denotions inputs)))
         (except c [else (raise (list c 'macro-error))]))]
     [else expression]))
 
@@ -77,7 +77,7 @@
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
           [(and (list? denotion) (list? input)) 
-            (private-with-macro body (candy:match denotion input))]
+            (private-with-macro body (candy:match-left denotion input))]
           [else body])))
     body 
     match-pairs))

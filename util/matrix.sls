@@ -47,24 +47,24 @@
           (loop (+ index 1)))
         result))))
 
-(define (encode rows-number n m)
-  (+ (* n rows-number) m))
+(define (encode columns-number n m)
+  (+ (* n columns-number) m))
 
-(define (decode rows-number i)
-  (let* ([n (floor (/ i rows-number))]
-      [m (- i (encode rows-number n 0))])
+(define (decode columns-number i)
+  (let* ([n (floor (/ i columns-number))]
+      [m (- i (encode columns-number n 0))])
     `(,n ,m)))
 
-(define (matrix-take matrix n m)
-  (if (and n m)
-    (vector-ref matrix (encode (sqrt (vector-length matrix)) n m))))
+(define matrix-take 
+  (case-lambda 
+    [(matrix n m) (matrix-take matrix (sqrt (vector-length matrix)) n m)]
+    [(matrix columns-number n m) (if (and n m) (vector-ref matrix (encode columns-number n m)))]))
 
 (define matrix-set! 
   (case-lambda
     [(matrix n m) (matrix-set! matrix n m 1)]
-    [(matrix n m value) 
-      (if (and n m)
-        (vector-set! matrix (encode (sqrt (vector-length matrix)) n m) value))]))
+    [(matrix n m value) (matrix-set! matrix (sqrt (vector-length matrix)) n m value)]
+    [(matrix columns-number n m value) (if (and n m) (vector-set! matrix (encode columns-number n m) value))]))
 
 
 (define find-cycle

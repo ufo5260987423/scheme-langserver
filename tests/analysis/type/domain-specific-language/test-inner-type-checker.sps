@@ -28,10 +28,14 @@
     (test-equal 
         (construct-type-expression-with-meta '(list? number? number? number?)) 
         (inner:with-macro (construct-type-expression-with-meta '((with (a b c) (list? a b c)) number? number? number?))))
-    ;car list?
+    ; car list?
     (test-equal 
         (construct-type-expression-with-meta 'fixnum?) 
         (inner:with-macro (construct-type-expression-with-meta '((with ((a b c **1)) b) (list? fixnum? number?)))))
+    ; cdr list?
+    (test-equal 
+        (construct-type-expression-with-meta '(number? fixnum?)) 
+        (inner:with-macro (construct-type-expression-with-meta '((with ((a b c **1 )) c) (list? fixnum? number? fixnum?)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
