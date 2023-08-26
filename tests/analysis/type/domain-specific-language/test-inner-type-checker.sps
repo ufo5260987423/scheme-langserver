@@ -35,7 +35,12 @@
     ; cdr list?
     (test-equal 
         (construct-type-expression-with-meta '(inner:list? number? fixnum?)) 
-        (inner:with-macro (construct-type-expression-with-meta '((with ((a b c **1 )) (with-append (inner:list?) c)) (inner:list? fixnum? number? fixnum?)))))
+        (inner:with-macro 
+            (construct-type-expression-with-meta 
+                '((with 
+                    ((a b c **1 )) 
+                    (with-equal? inner:list? a (with-append (inner:list?) c)))
+                (inner:list? fixnum? number? fixnum?)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

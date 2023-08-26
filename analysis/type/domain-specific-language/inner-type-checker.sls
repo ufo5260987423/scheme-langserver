@@ -72,6 +72,10 @@
         (inner:with-macro 
           (append a b))
         (except c [else (raise (list c 'macro-error))]))]
+    [('with-equal? a b body)
+    (try
+        (if (equal? a b) (inner:with-macro body) expression)
+        (except c [else (raise (list c 'macro-error))]))]
     [else expression]))
 
 (define (private-with-macro body match-pairs)
