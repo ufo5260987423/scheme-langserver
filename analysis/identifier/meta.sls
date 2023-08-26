@@ -124,9 +124,9 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
         ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
 
     [(? variable? fuzzy) fuzzy]
-    [('list? fuzzy ...) `(list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
-    [('vector? fuzzy ...) `(vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
-    [('pair? fuzzy ...) `(pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('inner:list? fuzzy ...) `(inner:list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('inner:vector? fuzzy ...) `(inner:vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('inner:pair? fuzzy ...) `(inner:pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [(fuzzy0 '<- fuzzy1) `(,(private-construct-type-expression-with-meta fuzzy0 list-instance) <- ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
     [(head **1) (map (lambda (expression) (private-construct-type-expression-with-meta expression list-instance)) expression)]
     [(? symbol? meta-identifier)

@@ -45,9 +45,9 @@
       [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
         (if (or 
             (contain? (cdr expression) '<-)
-            (contain? (cdr expression) 'list?)
-            (contain? (cdr expression) 'vector?)
-            (contain? (cdr expression) 'pair?))
+            (contain? (cdr expression) 'inner:list?)
+            (contain? (cdr expression) 'inner:vector?)
+            (contain? (cdr expression) 'inner:pair?))
           #f
           (fold-left
             (lambda (left right)
@@ -66,6 +66,11 @@
       (try
         (inner:with-macro 
           (private-with-macro body (candy:match-left denotions inputs)))
+        (except c [else (raise (list c 'macro-error))]))]
+    [('with-append (? list? a) (? list? b))
+      (try
+        (inner:with-macro 
+          (append a b))
         (except c [else (raise (list c 'macro-error))]))]
     [else expression]))
 
@@ -110,8 +115,8 @@
 
 (define (inner:record? body)
   (match body
-    [('record? (? identifier-reference? predicator) (? variable? variable) ('pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
-    [('record? (? identifier-reference? predicator) (? null? non-variable) ('pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
+    [('inner:record? (? identifier-reference? predicator) (? variable? variable) ('inner:pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
+    [('inner:record? (? identifier-reference? predicator) (? null? non-variable) ('inner:pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
     [else #f]))
 
 (define (inner:record-variable body)
@@ -203,7 +208,7 @@
 
 (define (inner:list? body)
   (match body
-    [('list? item ...) 
+    [('inner:list? item ...) 
       (and 
         (candy:segmentable? item)
         (fold-left 
@@ -217,24 +222,24 @@
 
 (define (inner:list-content body)
   (match body
-    [('list? (? inner:trivial? item) ...) item]
+    [('inner:list? (? inner:trivial? item) ...) item]
     [else #f]))
 
 (define (inner:vector? body)
   (match body
-    [('vector? (? inner:trivial? item) ...) (candy:segmentable? item)]
+    [('inner:vector? (? inner:trivial? item) ...) (candy:segmentable? item)]
     [else #f]))
 
 (define (inner:pair? body)
   (match body
-    [('pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) #t]
+    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) #t]
     [else #f]))
 
 (define (inner:pair-car body)
   (match body
-    [('pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy0]))
+    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy0]))
 
 (define (inner:pair-cdr body)
   (match body
-    [('pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy1]))
+    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy1]))
 )
