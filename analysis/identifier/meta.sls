@@ -61,26 +61,20 @@
 (define (init-type-expressions)
   (map 
     (lambda (list-instance)
-        (map 
-          (lambda (identifier-reference)
-              (identifier-reference-type-expressions-set!
-                identifier-reference
-                (private-construct-type-expression-with-meta 
-                    (map 
-                      (lambda (item)
-                          (let ([tmp (cdr item)])
-                            (if (null? tmp)
-                                tmp
-                                (list (car tmp) '<- `(list? ,@(cadr tmp))))))
-                      (binary-search
-                          (list->vector rnrs-chez-rules)
-                          (lambda (target0 target1)
-                            (natural-order-compare 
-                                (symbol->string (car target0))
-                                (symbol->string (car target1))))
-                          (list (identifier-reference-identifier identifier-reference))))
-                    chezscheme)))
-          list-instance))
+      (map 
+        (lambda (identifier-reference)
+          (identifier-reference-type-expressions-set!
+            identifier-reference
+            (private-construct-type-expression-with-meta 
+              (binary-search
+                  (list->vector rnrs-chez-rules)
+                  (lambda (target0 target1)
+                    (natural-order-compare 
+                        (symbol->string (car target0))
+                        (symbol->string (car target1))))
+                  (list (identifier-reference-identifier identifier-reference)))
+              chezscheme)))
+        list-instance))
     (list rnrs scheme chezscheme rnrs-condition rnrs-base 
 rnrs-files rnrs-syntax-case rnrs-exception rnrs-lists 
 rnrs-bytevectors rnrs-control rnrs-unicode rnrs-enums 
