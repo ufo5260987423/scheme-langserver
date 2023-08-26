@@ -31,7 +31,12 @@
     ; car list?
     (test-equal 
         (construct-type-expression-with-meta 'fixnum?) 
-        (inner:with-macro (construct-type-expression-with-meta '((with ((a b c **1)) b) (inner:list? fixnum? number?)))))
+        (inner:with-macro 
+            (construct-type-expression-with-meta 
+                '((with 
+                    ((a b c **1)) 
+                    (with-equal? inner:list? a b))
+                    (inner:list? fixnum? number?)))))
     ; cdr list?
     (test-equal 
         (construct-type-expression-with-meta '(inner:list? number? fixnum?)) 
