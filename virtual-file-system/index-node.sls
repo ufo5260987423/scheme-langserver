@@ -33,7 +33,7 @@
   (import 
     (chezscheme)
     (scheme-langserver util dedupe)
-    (scheme-langserver analysis type variable))
+    (scheme-langserver analysis type domain-specific-language variable))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node

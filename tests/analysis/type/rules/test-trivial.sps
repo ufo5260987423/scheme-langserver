@@ -13,7 +13,7 @@
 
     (scheme-langserver analysis type rules trivial)
     (scheme-langserver analysis type walk-engine)
-    (scheme-langserver analysis type variable)
+    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type util)
 
     (scheme-langserver analysis identifier meta))

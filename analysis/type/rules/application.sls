@@ -19,14 +19,11 @@
       [children (index-node-children index-node)])
     (if (null? children)
       substitutions
-      (let* ([head-index-node (car children)]
-          [reified-head-result (reify substitutions (index-node-variable head-index-node))]
-          [filtered-lambdas (filter lambda? reified-head-result)])
-        (if (null? filtered-lambdas)
-          substitutions
-          ;application rule
-          (fold-left
-            add-to-substitutions
-            substitutions
-            (cartesian-product `(,variable) '(=) (map car filtered-lambdas))))))))
+      (add-to-substitutions
+        substitutions
+        `(,variable = (,(index-node-variable (car children)) (inner:list? ,@(map index-node-variable (cdr children)))))))))
+      ; (begin 
+        ; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
+        ; (pretty-print `(,variable = (,(index-node-variable (car children)) (inner:list? ,@(map index-node-variable (cdr children))))))
+      ; )
 )

@@ -128,6 +128,5 @@
         lambda-process
 
         ;this should be the last
-        application-process
-      ))))
+        application-process))))
 )

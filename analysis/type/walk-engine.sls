@@ -23,7 +23,7 @@
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type variable)
+    (scheme-langserver analysis type domain-specific-language variable)
 
     (ufo-match))
 

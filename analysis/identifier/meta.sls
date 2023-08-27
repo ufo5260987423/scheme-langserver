@@ -103,7 +103,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 
 (define (private-construct-type-expression-with-meta expression list-instance)
   (match expression
-    [('record? fuzzy ...) `(record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('inner:record? fuzzy ...) `(record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [(fuzzy0 '<-record-set! fuzzy1) 
       `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
         <-record-set!
@@ -135,7 +135,8 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
         [(equal? meta-identifier 'void?) 'void?]
         [else
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
-            (if target-identifier target-identifier meta-identifier))])]))
+            (if target-identifier target-identifier meta-identifier))])]
+    [() '()]))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)
