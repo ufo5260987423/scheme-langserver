@@ -10,7 +10,7 @@
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type domain-specific-language walk-engine)
 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language variable)
@@ -81,6 +81,15 @@
                     (type:environment-result-list-set! env '()))
                   (type:environment-result-list-set! env (list (inner:lambda-return l)))) ]
               [else expression])]
+          [(variable? expression)
+          (pretty-print 'variable)
+          (pretty-print expression)
+            (type:environment-result-list-set! env 
+              (fold-left
+                (lambda (left reified-item) 
+                  (append left (type:environment-result-list (type:interpret reified-item env))))
+                '()
+                (reify (type:environment-substitution-list env) expression)))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env 
               (fold-left 

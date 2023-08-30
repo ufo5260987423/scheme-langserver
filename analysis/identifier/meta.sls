@@ -103,7 +103,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 
 (define (private-construct-type-expression-with-meta expression list-instance)
   (match expression
-    [('inner:record? fuzzy ...) `(record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
+    [('inner:record? fuzzy ...) `(inner:record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [(fuzzy0 '<-record-set! fuzzy1) 
       `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
         <-record-set!

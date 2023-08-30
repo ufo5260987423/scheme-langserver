@@ -60,7 +60,7 @@
   (binary-search 
     (list->vector substitutions) 
     substitution-compare 
-    `(,left '? '?)))
+    `(,target '? '?)))
 
 (define (debug:substitution-sorted? substitutions)
   (let loop ([l substitutions]
