@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type rules trivial)
+(library (scheme-langserver analysis type substitutions rules trivial)
   (export trivial-process)
   (import 
     (chezscheme) 
@@ -8,13 +8,12 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type util)
+    (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system document))
 
 (define trivial-process 
   (case-lambda 
@@ -168,9 +167,9 @@
                 (dedupe 
                   (filter 
                     is-pure-identifier-reference-misture? 
-                    (reify 
-                      (document-substitution-list target-document) 
-                      (index-node-variable target-index-node))))))
+                    (interpret 
+                      (index-node-variable target-index-node)
+                      (make-type:environment (document-substitution-list target-document)))))))
             (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
       (apply 
         append 

@@ -20,6 +20,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
+    (scheme-langserver analysis type substitutions util)
 
     (ufo-match))
 
@@ -75,17 +76,4 @@
         (pretty-print 'debug:sorted-sorted)
         (pretty-print (car s))
         #f])))
-
-(define (substitution-compare item0 item1)
-  (natural-order-compare 
-    (variable->uuid->string (car item0))
-    (variable->uuid->string (car item1))))
-
-(define add-to-substitutions 
-  (case-lambda 
-    [(target) (list target)]
-    [(substitutions target)
-      (if (null? target)
-        substitutions
-        (dedupe (merge substitution-compare substitutions (list target))))]))
 )

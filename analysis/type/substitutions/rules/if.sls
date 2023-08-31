@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type rules if)
+(library (scheme-langserver analysis type substitutions rules if)
   (export if-process)
   (import 
     (chezscheme) 
@@ -7,12 +7,10 @@
     (scheme-langserver util try)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type util)
-    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system document))
 
 (define (if-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]

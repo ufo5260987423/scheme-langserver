@@ -2,7 +2,9 @@
   (export 
     type:interpret
     type:interpret-result-list
-    type:environment-result-list)
+    type:environment-result-list
+
+    make-type:environment)
   (import 
     (chezscheme)
     (ufo-match)
@@ -19,7 +21,11 @@
 (define-record-type type:environment
   (fields
     (mutable substitution-list)
-    (mutable result-list)))
+    (mutable result-list))
+  (protocol
+    (lambda (new)
+      (lambda (substitution-list)
+        (new substitution-list '())))))
 
 (define type:interpret-result-list
   (case-lambda 
@@ -100,7 +106,7 @@
           [else (type:environment-result-list-set! env (list expression))]))
       env]
     [(expression)
-      (type:interpret expression (make-type:environment '() '()))]))
+      (type:interpret expression (make-type:environment '()))]))
 
 (define private-matchable? 
   (case-lambda 

@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type rnrs-meta-rules)
+(library (scheme-langserver analysis type substitutions rnrs-meta-rules)
   (export rnrs-chez-rules)
   (import 
     (chezscheme)

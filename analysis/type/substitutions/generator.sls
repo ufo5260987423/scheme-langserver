@@ -1,9 +1,7 @@
-(library (scheme-langserver analysis type type-inferencer)
+(library (scheme-langserver analysis type substitutions generator)
   (export 
-    type-inference-for
-    pretty-print-substitution
     construct-substitution-list-for
-    find-type-conflicts)
+    pretty-print-substitution )
   (import 
     (chezscheme)
 
@@ -17,34 +15,13 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     
-    (scheme-langserver analysis type rules if)
-    (scheme-langserver analysis type rules let)
-    (scheme-langserver analysis type rules lambda)
-    (scheme-langserver analysis type rules trivial)
-    (scheme-langserver analysis type rules define)
-    (scheme-langserver analysis type rules application)
-
-    (scheme-langserver analysis type util)
-    (scheme-langserver analysis type walk-engine))
-
-(define find-type-conflicts 
-  (case-lambda 
-    [(index-node document) 
-      (let ([types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))])
-        (if (< (length types) 2)
-          '()
-          (fold-left 
-            (lambda (tmp-result pair)
-              (if (has-intersection? (car pair) (cadr pair))
-                tmp-result
-                `(,@tmp-result ,pair)))
-            '()
-            (cartesian-product types types))))]
-    [(document) 
-      (filter
-        (lambda (index-node) 
-          (not (is-first-child? index-node)))
-        (find-leaves (document-index-node-list document)))]))
+    (scheme-langserver analysis type substitutions rules if)
+    (scheme-langserver analysis type substitutions rules let)
+    (scheme-langserver analysis type substitutions rules lambda)
+    (scheme-langserver analysis type substitutions rules trivial)
+    (scheme-langserver analysis type substitutions rules define)
+    (scheme-langserver analysis type substitutions rules application)
+    (scheme-langserver analysis type substitutions util))
 
 (define (pretty-print-substitution document)
   (pretty-print (map 
@@ -58,11 +35,6 @@
               r)])
         `(,l ,m ,r-o)))
     (document-substitution-list document))))
-
-;; We regard the indexes and references as a graph of existed variable and values. 
-;; try to get result type by substitution
-(define (type-inference-for index-node document)
-  (dedupe (reify (document-substitution-list document) (index-node-variable index-node))))
 
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
@@ -78,19 +50,21 @@
 
 ;gradule typing: unsafe convertion
 (define (private-add-implicit-convertions substitutions index-node)
-; (pretty-print 'implicit0)
-  (let ([children (index-node-children index-node)])
-    (if (null? children)
-      substitutions
-      (let* ([base (fold-left private-add-implicit-convertions substitutions children)]
-          [head-index-node (car children)]
-          [rest-index-nodes (cdr children)]
-          [reified-head-result (reify base (index-node-variable head-index-node))]
-          [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
-          [return-variable (index-node-variable index-node)])
-; (pretty-print 'implicit1)
-; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
-        (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes)))))
+  substitutions
+; ; (pretty-print 'implicit0)
+;   (let ([children (index-node-children index-node)])
+;     (if (null? children)
+;       substitutions
+;       (let* ([base (fold-left private-add-implicit-convertions substitutions children)]
+;           [head-index-node (car children)]
+;           [rest-index-nodes (cdr children)]
+;           [reified-head-result (reify base (index-node-variable head-index-node))]
+;           [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
+;           [return-variable (index-node-variable index-node)])
+; ; (pretty-print 'implicit1)
+; ; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
+;         (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes))))
+        )
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]

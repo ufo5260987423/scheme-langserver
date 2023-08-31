@@ -36,7 +36,6 @@
     (scheme-langserver util sub-list)
 
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type type-inferencer)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis tokenizer)

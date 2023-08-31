@@ -6,8 +6,8 @@
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type util)
-    (scheme-langserver analysis type type-inferencer)
+    (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -29,16 +29,15 @@
       [path (uri->path (text-document-uri text-document))]
       [file-node (walk-file (workspace-file-node workspace) path)]
       [document (file-node-document file-node)]
-      [text (document-text document)])
-    (refresh-workspace-for workspace file-node)
-    (construct-substitution-list-for document)
+      [text (document-text document)]
+      [substitution-list (document-substitution-list document)])
     (try
       ;I'd only check leaf index-node
       (vector-map 
         (lambda (index-node)
           (let ([s (index-node-start index-node)]
               [e (index-node-end index-node)]
-              [types (dedupe (filter is-pure-identifier-reference-misture? (type-inference-for index-node document)))])
+              [types (dedupe (filter is-pure-identifier-reference-misture? (interprete (index-node-variable index-node) subsitution-list)))])
           (private-make-diagnostic s e 3 
               (fold-left 
                 (lambda (remain current) 

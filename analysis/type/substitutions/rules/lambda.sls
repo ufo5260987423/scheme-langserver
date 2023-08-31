@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type rules lambda)
+(library (scheme-langserver analysis type substitutions rules lambda)
   (export lambda-process)
   (import 
     (chezscheme) 
@@ -8,13 +8,11 @@
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type util)
+    (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type walk-engine)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system document))
 
 (define (lambda-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]

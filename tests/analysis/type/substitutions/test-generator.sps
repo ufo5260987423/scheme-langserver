@@ -20,9 +20,9 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type type-inferencer)
+    (scheme-langserver analysis type substitutions generator)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type domain-specific-language walk-engine)
 
     (scheme-langserver protocol alist-access-object))
 

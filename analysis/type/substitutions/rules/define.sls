@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis type rules define)
+(library (scheme-langserver analysis type substitutions rules define)
   (export define-process)
   (import 
     (chezscheme) 
@@ -8,12 +8,10 @@
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type util)
-    (scheme-langserver analysis type walk-engine)
+    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system document))
 
 (define (define-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]
