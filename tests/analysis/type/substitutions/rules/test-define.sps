@@ -20,10 +20,11 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type type-inferencer)
+    (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language walk-engine)
-    (scheme-langserver analysis type util)
+
+    (scheme-langserver analysis type substitutions generator)
 
     (scheme-langserver protocol alist-access-object))
 
@@ -37,6 +38,7 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitution-list-for target-document)
+        (pretty-print (annotation-stripped (index-node-datum/annotations target-index-node)))
         (test-equal #t  (contain? (map car (filter lambda? (type-inference-for target-index-node target-document))) check-base)))
 (test-end)
 

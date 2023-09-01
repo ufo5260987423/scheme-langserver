@@ -20,10 +20,11 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type type-inferencer)
+    (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions generator)
 
     (scheme-langserver protocol alist-access-object))
 
@@ -35,9 +36,13 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 8 44)))]
+            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'string?)])
         (construct-substitution-list-for target-document)
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+            check-base)))
 (test-end)
 
 (test-begin "case-lambda procedure type access")
@@ -48,6 +53,7 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
+            [variable (index-node-variable target-index-node)]
             [check-base0 (construct-type-expression-with-meta '(boolean? <- (string? string? integer? integer?)))]
             [check-base1 (construct-type-expression-with-meta '(boolean? <- (string? string?)))])
         (construct-substitution-list-for target-document)
@@ -69,9 +75,14 @@
         ;     (pretty-print 'all3)
         ;     (pretty-print (document-substitution-list target-document))
         ; )
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base0))
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base1))
-        )
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                check-base0))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                check-base1)))
 (test-end)
 
 (test-begin "cross clause type access")
@@ -82,9 +93,13 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 14)))]
+            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'string? )])
         (construct-substitution-list-for target-document)
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                check-base)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
