@@ -20,10 +20,11 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type type-inferencer)
+    (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions generator)
 
     (scheme-langserver protocol alist-access-object))
 
@@ -35,9 +36,13 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 8 20)))]
+            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'integer?)])
         (construct-substitution-list-for target-document)
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                check-base)))
 (test-end)
 
 (test-begin "variable access")
@@ -48,9 +53,13 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 12 25)))]
+            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'integer?)])
         (construct-substitution-list-for target-document)
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                check-base)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

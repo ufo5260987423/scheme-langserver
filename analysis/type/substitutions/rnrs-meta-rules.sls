@@ -48,6 +48,7 @@
 (display-string (void? <- (inner:list? string?)))
 (div (number? <- (inner:list? number? number?)))
 (div0 (number? <- (inner:list? number? number?)))
+(string-length (integer? <- (inner:list? (inner:list? string?))))
 (>= (boolean? <- (inner:list? real? real? **1)))
 (annotation? (boolean? <- (inner:list? something?)))
 (assertion-violation? (boolean? <- (inner:list? something?)))
