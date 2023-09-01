@@ -11,10 +11,11 @@
 
     (scheme-langserver util contain)
 
-    (scheme-langserver analysis type rules trivial)
     (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type domain-specific-language variable)
+
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions rules trivial)
 
     (scheme-langserver analysis identifier meta))
 
@@ -26,7 +27,7 @@
             [variable (make-variable)]
             [allow-unquote? #f]
             [unquoted? #t]
-            [check-base (construct-type-expression-with-meta '(fixnum?))]
+            [check-base (construct-type-expression-with-meta '(inner:list? fixnum?))]
             [substitutions (trivial-process document index-node variable expression substitutions allow-unquote? unquoted?)])
         (test-equal #t (contain? (reify substitutions variable) check-base)))
 (test-end)
@@ -39,7 +40,7 @@
             [variable (make-variable)]
             [allow-unquote? #f]
             [unquoted? #t]
-            [check-base (construct-type-expression-with-meta '#(fixnum?))]
+            [check-base (construct-type-expression-with-meta '(inner:vector? fixnum?))]
             [substitutions (trivial-process document index-node variable expression substitutions allow-unquote? unquoted?)])
         (test-equal #t (contain? (reify substitutions variable) check-base)))
 (test-end)
