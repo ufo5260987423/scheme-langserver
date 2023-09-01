@@ -92,10 +92,6 @@
             (type:environment-result-list-set! env 
               (fold-left
                 (lambda (left reified-item) 
-                  ; (pretty-print 'fold-left)
-                  ; (pretty-print left)
-                  ; (pretty-print 'reified-item)
-                  ; (pretty-print reified-item)
                   (if (equal? reified-item expression)
                     left
                     (dedupe `(,@left ,@(type:interpret-result-list reified-item env)))))
