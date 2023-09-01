@@ -4,6 +4,7 @@
      find-meta)
   (import 
      (rnrs)
+     (only (chezscheme) pretty-print)
      (ufo-match)
      (scheme-langserver util binary-search)
      (scheme-langserver util natural-order-compare)
@@ -66,14 +67,16 @@
           (identifier-reference-type-expressions-set!
             identifier-reference
             (private-construct-type-expression-with-meta 
-              (binary-search
+              (map 
+                cadr
+                (binary-search
                   (list->vector rnrs-chez-rules)
                   (lambda (target0 target1)
                     (natural-order-compare 
-                        (symbol->string (car target0))
-                        (symbol->string (car target1))))
-                  (list (identifier-reference-identifier identifier-reference)))
-              chezscheme)))
+                      (symbol->string (car target0))
+                      (symbol->string (car target1))))
+                  (list (identifier-reference-identifier identifier-reference))))
+                chezscheme)))
         list-instance))
     (list rnrs scheme chezscheme rnrs-condition rnrs-base 
 rnrs-files rnrs-syntax-case rnrs-exception rnrs-lists 

@@ -4,8 +4,7 @@
     construct-parameter-variable-products-with
     construct-substitutions-between-index-nodes
     substitution-compare
-    add-to-substitutions
-    type->string)
+    add-to-substitutions)
   (import 
     (chezscheme)
     (scheme-langserver util dedupe)
@@ -36,27 +35,4 @@
       (if (null? target)
         substitutions
         (dedupe (merge substitution-compare substitutions (list target))))]))
-
-(define (type->string type)
-  (cond
-    [(list? type) 
-      (string-append 
-        "(" 
-        (fold-left 
-          (lambda (remain current) 
-            (if (equal? "" remain) current (string-append remain " " current))) 
-            "" 
-          (map type->string type))
-        ")")]
-    [(vector? type) 
-      (string-append 
-        "#(" 
-        (fold-left 
-          (lambda (remain current) 
-            (if (equal? "" remain) current (string-append remain " " current))) 
-            "" 
-          (map type->string (vector->list type)))
-        ")")]
-    [(symbol? type) (symbol->string type)]
-    [(identifier-reference? type) (type->string (identifier-reference-identifier type))]))
 )

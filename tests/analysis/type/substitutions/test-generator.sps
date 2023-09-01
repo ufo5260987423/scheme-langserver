@@ -23,6 +23,7 @@
     (scheme-langserver analysis type substitutions generator)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language walk-engine)
+    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object))
 
@@ -32,9 +33,7 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
             [target-document (file-node-document target-file-node)])
-        (pretty-print 'aa0)
         (construct-substitution-list-for target-document)
-        (pretty-print 'aa1)
         (test-equal #f (null? (document-substitution-list target-document))))
 (test-end)
 
@@ -45,12 +44,13 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 70)))])
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 70)))]
+            [variable (index-node-variable target-index-node)])
         (construct-substitution-list-for target-document)
         (test-equal 
             #t 
             (contain? 
-                (type-inference-for target-index-node target-document) 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
                 (construct-type-expression-with-meta 'fixnum?))))
 (test-end)
 
@@ -61,10 +61,10 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))])
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
+            [variable (index-node-variable target-index-node)])
         (construct-substitution-list-for target-document)
-        (pretty-print 'aa1)
-        (test-equal (car (car (walk (document-substitution-list target-document) (index-node-variable target-index-node)))) (index-node-variable target-index-node)))
+        (test-equal (car (car (walk (document-substitution-list target-document) variable))) variable))
 (test-end)
 
 (test-begin "type-inference-for symbol")
@@ -75,9 +75,13 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
+            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta '(boolean? <- (inner:list? real? real? **1)))])
         (construct-substitution-list-for target-document)
-        (test-equal #t (contain? (type-inference-for target-index-node target-document) check-base)))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+                check-base)))
 (test-end)
 
 ; (test-begin "type-inference-for debug: index-a")

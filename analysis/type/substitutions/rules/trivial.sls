@@ -150,8 +150,8 @@
           [type-expressions (identifier-reference-type-expressions identifier-reference)])
         (cond 
           ;it's in r6rs library?
-          [(null? target-index-node) 
-            (cartesian-product `(,variable) '(:) type-expressions)]
+          [(null? target-index-node)
+            (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]
           ;local
           ;You can't cache and speed up this clause by distinguishing variable in/not in 
           ;identifier-reference-initialization-index-node scope, because reify depdends on 
@@ -167,7 +167,7 @@
                 (dedupe 
                   (filter 
                     is-pure-identifier-reference-misture? 
-                    (interpret 
+                    (type:interpret-result-list 
                       (index-node-variable target-index-node)
                       (make-type:environment (document-substitution-list target-document)))))))
             (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
