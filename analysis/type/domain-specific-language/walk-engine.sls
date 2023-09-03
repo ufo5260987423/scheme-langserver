@@ -47,8 +47,10 @@
                 (apply append (map (lambda (item) (reify substitutions item new-memory)) walk-results))])
             `(,@reified-results ,target-expression))] 
         [(list? target-expression) 
-        (pretty-print 'expression)
-        (pretty-print target-expression)
+          ; (pretty-print 'expression)
+          ; (print-graph #t)
+          ; (pretty-print target-expression)
+      
           (apply cartesian-product (map (lambda (item) (reify substitutions item memory)) target-expression))]
         [else `(,target-expression)])]))
 
