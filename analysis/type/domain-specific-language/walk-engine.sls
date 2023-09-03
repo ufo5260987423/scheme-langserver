@@ -44,15 +44,23 @@
                     (and (not (null? item)) (not (contain? new-memory item)))) 
                   (map caddr (walk substitutions target-expression)))]
               [reified-results 
-                (apply append (map (lambda (item) (reify substitutions item new-memory)) walk-results))])
+                (dedupe 
+                  (apply append 
+                    (map 
+                      (lambda (item) 
+                        (reify substitutions item new-memory))
+                      (dedupe walk-results))))])
+          (pretty-print 'target-expression)
+          (pretty-print (length walk-results))
+          (pretty-print (length reified-results))
+          (print-graph #t)
+          (pretty-print target-expression)
+          (pretty-print walk-results)
             `(,@reified-results ,target-expression))] 
         [(list? target-expression) 
-          ; (pretty-print 'expression)
-          ; (print-graph #t)
-          ; (pretty-print target-expression)
-      
           (apply cartesian-product (map (lambda (item) (reify substitutions item memory)) target-expression))]
-        [else `(,target-expression)])]))
+        [else 
+        `(,target-expression)])]))
 
 (define (walk substitutions target)
   (binary-search 

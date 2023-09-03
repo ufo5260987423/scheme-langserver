@@ -140,9 +140,6 @@
     #f))
 
 (define (private-process document identifier-reference index-node variable)
-  (variable-identifier-references-set!
-    variable
-    `(,@(variable-identifier-references variable) ,identifier-reference))
   (sort substitution-compare
     (if (null? (identifier-reference-parents identifier-reference))
       (let* ([target-document (identifier-reference-document identifier-reference)]

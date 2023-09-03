@@ -3,10 +3,7 @@
     make-variable
     variable?
     pure-variable?
-    variable->uuid->string
-
-    variable-identifier-references
-    variable-identifier-references-set!)
+    variable->uuid->string)
   (import 
     (uuid)
     (chezscheme)
@@ -14,12 +11,11 @@
 
 (define-record-type variable
   (fields
-    (immutable uuid)
-    (mutable identifier-references))
+    (immutable uuid))
   (protocol
     (lambda (new)
       (lambda ()
-        (new (random-uuid) '())))))
+        (new (random-uuid))))))
 
 (define (variable->uuid->string variable)
   (uuid->string (variable-uuid variable)))
