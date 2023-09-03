@@ -1,5 +1,6 @@
 (library (scheme-langserver virtual-file-system index-node)
   (export 
+    debug:print-expression
     pick-index-node-from
     pick-index-node-parent-of
     pick-index-node-with-mapper 
@@ -52,6 +53,9 @@
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
         (new parent start end datum/annotations (make-variable) children references-export-to-other-node references-import-in-this-node excluded-references)))))
+
+(define (debug:print-expression index-node)
+  (pretty-print (annotation-stripped (index-node-datum/annotations index-node))))
 
 (define (find-leaves index-node-list)
   (fold-left 

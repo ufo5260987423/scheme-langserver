@@ -158,7 +158,30 @@
           ;implicit conversion and there may be several nested variable initializations for
           ;which we can't cleanly decide when to do the imlicit conversion.
           [(equal? document target-document)
-            (list `(,variable = ,(index-node-variable target-index-node)))]
+            (append
+              `((,variable = ,(index-node-variable target-index-node)))
+              ;implicit conversion for gradual typing
+              (cond 
+                [(null? (index-node-parent index-node)) '()]
+                [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
+                  (let* ([ancestor (index-node-parent index-node)]
+                      [children (index-node-children ancestor)]
+                      [head (car children)]
+                      [head-variable (index-node-variable head)]
+                      [rests (cdr children)]
+                      [rest-variables (map index-node-variable rests)]
+                      [index (private-index-of (list->vector rests) index-node)]
+                      [symbols (private-generate-symbols "d" (length rest-variables))])
+                    (if (= index (length rests))
+                      '()
+                      `((,(index-node-variable target-index-node) 
+                          = 
+                          ((with ((a b c)) 
+                            ((with ((x ,@symbols))
+                              ,(vector-ref (list->vector symbols) index))
+                              c)) 
+                            ,head-variable)))))]
+                [else '()]))]
           ;import
           [else 
             (if (null? type-expressions)
@@ -176,4 +199,17 @@
         (map 
           (lambda (parent) (private-process document parent index-node variable))
           (identifier-reference-parents identifier-reference))))))
+
+(define (private-generate-symbols base-string max)
+  (let loop ([result '()])
+    (if (< (length result) max)
+      (loop `(,@result ,(string->symbol (string-append base-string (number->string (length result))))))
+      result)))
+
+(define (private-index-of target-vector target-index-node)
+  (let loop ([i 0])
+    (cond 
+      [(= i (vector-length target-vector)) i]
+      [(equal? (vector-ref target-vector i) target-index-node) i]
+      [else (loop (+ i 1))])))
 )

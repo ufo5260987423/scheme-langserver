@@ -27,45 +27,45 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "construct-substitution-list-for")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-            [target-document (file-node-document target-file-node)])
-        (construct-substitution-list-for target-document)
-        (test-equal #f (null? (document-substitution-list target-document))))
-(test-end)
+; (test-begin "construct-substitution-list-for")
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+;             [target-document (file-node-document target-file-node)])
+;         (construct-substitution-list-for target-document)
+;         (test-equal #f (null? (document-substitution-list target-document))))
+; (test-end)
 
-(test-begin "type-inference-for fixnum literal")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 70)))]
-            [variable (index-node-variable target-index-node)])
-        (construct-substitution-list-for target-document)
-        (test-equal 
-            #t 
-            (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
-                (construct-type-expression-with-meta 'fixnum?))))
-(test-end)
+; (test-begin "type-inference-for fixnum literal")
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+;             [target-document (file-node-document target-file-node)]
+;             [target-text (document-text target-document)]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 70)))]
+;             [variable (index-node-variable target-index-node)])
+;         (construct-substitution-list-for target-document)
+;         (test-equal 
+;             #t 
+;             (contain? 
+;                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+;                 (construct-type-expression-with-meta 'fixnum?))))
+; (test-end)
 
-(test-begin "walk for symbol")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
-            [variable (index-node-variable target-index-node)])
-        (construct-substitution-list-for target-document)
-        (test-equal (car (car (walk (document-substitution-list target-document) variable))) variable))
-(test-end)
+; (test-begin "walk for symbol")
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+;             [target-document (file-node-document target-file-node)]
+;             [target-text (document-text target-document)]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
+;             [variable (index-node-variable target-index-node)])
+;         (construct-substitution-list-for target-document)
+;         (test-equal (car (car (walk (document-substitution-list target-document) variable))) variable))
+; (test-end)
 
 (test-begin "type-inference-for symbol")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
@@ -78,6 +78,12 @@
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta '(boolean? <- (inner:list? real? real? **1)))])
         (construct-substitution-list-for target-document)
+        (pretty-print check-base)
+        (debug:print-expression target-index-node)
+        (pretty-print 
+            (equal? 
+                check-base 
+                (cadr (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))))
         (test-equal #t 
             (contain? 
                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))

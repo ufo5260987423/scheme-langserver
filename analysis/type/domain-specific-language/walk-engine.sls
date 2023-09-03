@@ -46,16 +46,11 @@
               [reified-results 
                 (apply append (map (lambda (item) (reify substitutions item new-memory)) walk-results))])
             `(,@reified-results ,target-expression))] 
-        [(or (list? target-expression) (vector? target-expression))
-          (let* ([is-list? (list? target-expression)]
-              [normalized (if is-list? target-expression (vector->list target-expression))]
-              [reified-list (map (lambda (item) (reify substitutions item memory)) normalized)]
-              [cartesian-product-list (apply cartesian-product reified-list)])
-            (if is-list? cartesian-product-list (map list->vector cartesian-product-list)))]
+        [(list? target-expression) 
+        (pretty-print 'expression)
+        (pretty-print target-expression)
+          (apply cartesian-product (map (lambda (item) (reify substitutions item memory)) target-expression))]
         [else `(,target-expression)])]))
-
-(define (private-filter-not-null list-instance)
-  (filter (lambda (item) (not (null? item))) list-instance))
 
 (define (walk substitutions target)
   (binary-search 
