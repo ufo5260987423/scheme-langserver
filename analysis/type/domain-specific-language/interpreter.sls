@@ -35,7 +35,8 @@
 (define type:interpret-result-list
   (case-lambda 
     [(expression) (type:environment-result-list (type:interpret expression))]
-    [(expression env) (type:environment-result-list (type:interpret expression env))]))
+    [(expression env) (type:environment-result-list (type:interpret expression env))]
+    [(expression env memory) (type:environment-result-list (type:interpret expression env memory))]))
 
 (define type:interpret 
   (case-lambda 
@@ -101,6 +102,13 @@
                   (lambda (item) 
                     (and (not (null? item)) (not (contain? new-memory item)))) 
                   (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
+          [(macro? expression)
+              (apply append 
+                (map 
+                  (lambda (input) 
+                    (map (lambda (for-template) (macro-head-execute-with expression for-template)) (type:interpret-result-list input env new-memory)))
+                  (macro-inputs expression)))
+          ]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env)) expression)))]
           [else (type:environment-result-list-set! env (list expression))]))
@@ -116,9 +124,88 @@
         (if (apply candy:matchable? (car cartesian-product-list))
           #t
           (private-matchable? (cdr cartesian-product-list))))]
-    [(a-list b-list)
+    [(a-list b-list) 
       (private-matchable? (cartesian-product a-list b-list))]))
 
+(define (macro? expression)
+  (match expression
+    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) #t]
+    [else #f]))
+
+(define (macro-inputs expression)
+  (match expression
+    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) inputs]
+    [else '()]))
+
+(define (macro-head-execute-with expression interpreted-inputs)
+  (match expression
+    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
+      (execute-macro `((with ,denotions ,body) ,@interpreted-inputs))]
+    [else expression]))
+
+(define (private-macro-template? expression)
+  (cond
+    [(list? expression) 
+      (fold-left
+        (lambda (left right)
+          (and left (private-macro-template? right)))
+        #t
+        expression)]
+    [(symbol? expression) 
+      (cond
+        [(equal? expression 'something?) #f]
+        [(equal? expression 'void?) #f]
+        [(equal? expression '<-) #f]
+        [(equal? expression '<-record-ref) #f]
+        [(equal? expression '<-record-set!) #f]
+        [(equal? expression '<-record-constructor) #f]
+        [(equal? expression 'inner:list?) #f]
+        [(equal? expression 'inner:pair?) #f]
+        [(equal? expression 'inner:vector?) #f]
+        [(equal? expression 'inner:record?) #f]
+        [else #t])]
+    [else #f]))
+
+(define (execute-macro expression)
+  (match expression
+    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
+      (try
+        (execute-macro
+          (private-with body (candy:match-left denotions inputs)))
+        (except c [else (raise (list c 'macro-error))]))]
+    ;only usable in with-macro
+    [('with-append (? list? a) (? list? b))
+      (try
+        (append a b)
+        (except c [else (raise (list c 'macro-error))]))]
+    ;only usable in with-macro
+    [('with-equal? a b body)
+      (try
+        (if (equal? a b) body expression)
+        (except c [else (raise (list c 'macro-error))]))]
+    [else expression]))
+
+(define (private-with body match-pairs)
+  (fold-left
+    (lambda (left pair)
+      (let ([denotion (car pair)]
+          [input (cdr pair)])
+        (cond 
+          [(symbol? denotion) (private-substitute left denotion input)]
+          [(and (list? denotion) (list? input)) 
+            (private-with body (candy:match-left denotion input))]
+          [else body])))
+  body 
+  match-pairs))
+
+(define (private-substitute tree from to)
+  (if (equal? tree from)
+    to
+    (if (list? tree)
+      (map (lambda (item) (private-substitute item from to)) tree)
+      tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;substitutions;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (substitution:walk substitutions target)
   (binary-search 
     (list->vector substitutions) 

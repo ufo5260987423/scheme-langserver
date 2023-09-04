@@ -21,8 +21,6 @@
     inner:list?
     inner:list-content
 
-    inner:with
-
     inner:vector?
     inner:pair?
     inner:pair-car
@@ -39,67 +37,28 @@
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
 (define (inner:trivial? pre-expression)
-  (let ([expression (inner:with pre-expression)])
-    (cond
-      [(private-inner:trivial-item? expression) #t]
-      [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
-        (if (or 
-            (contain? (cdr expression) '<-)
-            (contain? (cdr expression) '<-record-set!)
-            (contain? (cdr expression) '<-record-ref)
-            (contain? (cdr expression) '<-record-constructor)
-            (contain? (cdr expression) 'inner:list?)
-            (contain? (cdr expression) 'inner:vector?)
-            (contain? (cdr expression) 'inner:pair?))
-          #f
-          (fold-left
-            (lambda (left right)
-              (and left right))
-            #t
-            (map inner:trivial? (cdr expression))))]
-      [(inner:lambda? expression) #t]
-      [(inner:record? expression) #t]
-      [(inner:record-lambda? expression) #t]
-      [(inner:executable? expression) #t]
-      [else #f])))
-
-(define (inner:with expression)
-  (match expression
-    [(('with (denotions **1) body) inputs **1)
-      (try
-        (inner:with 
-          (private-with body (candy:match-left denotions inputs)))
-        (except c [else (raise (list c 'macro-error))]))]
-    [('with-append (? list? a) (? list? b))
-      (try
-        (inner:with 
-          (append a b))
-        (except c [else (raise (list c 'macro-error))]))]
-    [('with-equal? a b body)
-    (try
-        (if (equal? a b) (inner:with body) expression)
-        (except c [else (raise (list c 'macro-error))]))]
-    [else expression]))
-
-(define (private-with body match-pairs)
-  (fold-left
-    (lambda (left pair)
-      (let ([denotion (car pair)]
-          [input (cdr pair)])
-        (cond 
-          [(symbol? denotion) (private-substitute left denotion input)]
-          [(and (list? denotion) (list? input)) 
-            (private-with body (candy:match-left denotion input))]
-          [else body])))
-    body 
-    match-pairs))
-
-(define (private-substitute tree from to)
-  (if (equal? tree from)
-    to
-    (if (list? tree)
-      (map (lambda (item) (private-substitute item from to)) tree)
-      tree)))
+  (cond
+    [(private-inner:trivial-item? expression) #t]
+    [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
+      (if (or 
+          (contain? (cdr expression) '<-)
+          (contain? (cdr expression) '<-record-set!)
+          (contain? (cdr expression) '<-record-ref)
+          (contain? (cdr expression) '<-record-constructor)
+          (contain? (cdr expression) 'inner:list?)
+          (contain? (cdr expression) 'inner:vector?)
+          (contain? (cdr expression) 'inner:pair?))
+        #f
+        (fold-left
+          (lambda (left right)
+            (and left right))
+          #t
+          (map inner:trivial? (cdr expression))))]
+    [(inner:lambda? expression) #t]
+    [(inner:record? expression) #t]
+    [(inner:record-lambda? expression) #t]
+    [(inner:executable? expression) #t]
+    [else #f]))
 
 (define (private-inner:trivial-item? item)
   (cond
