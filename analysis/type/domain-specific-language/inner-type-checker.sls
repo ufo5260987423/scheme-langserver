@@ -45,6 +45,9 @@
       [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
         (if (or 
             (contain? (cdr expression) '<-)
+            (contain? (cdr expression) '<-record-set!)
+            (contain? (cdr expression) '<-record-ref)
+            (contain? (cdr expression) '<-record-constructor)
             (contain? (cdr expression) 'inner:list?)
             (contain? (cdr expression) 'inner:vector?)
             (contain? (cdr expression) 'inner:pair?))
