@@ -27,11 +27,11 @@
     (test-equal #t (inner:executable? (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?))))
     (test-equal 
         (construct-type-expression-with-meta '(inner:list? number? number? number?)) 
-        (inner:with-macro (construct-type-expression-with-meta '((with (a b c) (inner:list? a b c)) number? number? number?))))
+        (inner:with (construct-type-expression-with-meta '((with (a b c) (inner:list? a b c)) number? number? number?))))
     ; car list?
     (test-equal 
         (construct-type-expression-with-meta 'fixnum?) 
-        (inner:with-macro 
+        (inner:with
             (construct-type-expression-with-meta 
                 '((with 
                     ((a b c **1)) 
@@ -40,7 +40,7 @@
     ; cdr list?
     (test-equal 
         (construct-type-expression-with-meta '(inner:list? number? fixnum?)) 
-        (inner:with-macro 
+        (inner:with
             (construct-type-expression-with-meta 
                 '((with 
                     ((a b c **1 )) 

@@ -21,7 +21,7 @@
     inner:list?
     inner:list-content
 
-    inner:with-macro
+    inner:with
 
     inner:vector?
     inner:pair?
@@ -39,7 +39,7 @@
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
 (define (inner:trivial? pre-expression)
-  (let ([expression (inner:with-macro pre-expression)])
+  (let ([expression (inner:with pre-expression)])
     (cond
       [(private-inner:trivial-item? expression) #t]
       [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
@@ -63,25 +63,25 @@
       [(inner:executable? expression) #t]
       [else #f])))
 
-(define (inner:with-macro expression)
+(define (inner:with expression)
   (match expression
     [(('with (denotions **1) body) inputs **1)
       (try
-        (inner:with-macro 
-          (private-with-macro body (candy:match-left denotions inputs)))
+        (inner:with 
+          (private-with body (candy:match-left denotions inputs)))
         (except c [else (raise (list c 'macro-error))]))]
     [('with-append (? list? a) (? list? b))
       (try
-        (inner:with-macro 
+        (inner:with 
           (append a b))
         (except c [else (raise (list c 'macro-error))]))]
     [('with-equal? a b body)
     (try
-        (if (equal? a b) (inner:with-macro body) expression)
+        (if (equal? a b) (inner:with body) expression)
         (except c [else (raise (list c 'macro-error))]))]
     [else expression]))
 
-(define (private-with-macro body match-pairs)
+(define (private-with body match-pairs)
   (fold-left
     (lambda (left pair)
       (let ([denotion (car pair)]
@@ -89,7 +89,7 @@
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
           [(and (list? denotion) (list? input)) 
-            (private-with-macro body (candy:match-left denotion input))]
+            (private-with body (candy:match-left denotion input))]
           [else body])))
     body 
     match-pairs))

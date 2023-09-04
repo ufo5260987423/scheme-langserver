@@ -38,7 +38,7 @@
   (case-lambda 
     [(pre-expression env)
       (type:environment-result-list-set! env '())
-      (let ([expression (inner:with-macro pre-expression)])
+      (let ([expression (inner:with pre-expression)])
         (cond
           [(inner:executable? expression)
             ;the clause sequence is important
