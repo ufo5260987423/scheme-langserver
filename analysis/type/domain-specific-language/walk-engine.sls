@@ -2,11 +2,8 @@
   (export 
     walk
     reify
-    add-to-substitutions
 
-    debug:substitution-sorted? 
-
-    substitution-compare)
+    debug:substitution-sorted?)
   (import 
     (chezscheme)
 

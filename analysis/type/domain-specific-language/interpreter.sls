@@ -13,8 +13,9 @@
     (scheme-langserver util dedupe)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type domain-specific-language walk-engine)
+    (scheme-langserver analysis type substitutions util)
 
+    (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
