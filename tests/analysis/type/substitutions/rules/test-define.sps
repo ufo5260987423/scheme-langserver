@@ -22,7 +22,6 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type domain-specific-language walk-engine)
 
     (scheme-langserver analysis type substitutions generator)
 

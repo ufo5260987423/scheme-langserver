@@ -11,8 +11,8 @@
 
     (scheme-langserver util contain)
 
-    (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type domain-specific-language variable)
+    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions rules trivial)
@@ -29,7 +29,7 @@
             [unquoted? #t]
             [check-base (construct-type-expression-with-meta '(inner:list? fixnum?))]
             [substitutions (trivial-process document index-node variable expression substitutions allow-unquote? unquoted?)])
-        (test-equal #t (contain? (reify substitutions variable) check-base)))
+        (test-equal #t (contain? (type:interpret-result-list variable (make-type:environment substitutions)) check-base)))
 (test-end)
 
 (test-begin "literal vector")
@@ -42,7 +42,7 @@
             [unquoted? #t]
             [check-base (construct-type-expression-with-meta '(inner:vector? fixnum?))]
             [substitutions (trivial-process document index-node variable expression substitutions allow-unquote? unquoted?)])
-        (test-equal #t (contain? (reify substitutions variable) check-base)))
+        (test-equal #t (contain? (type:interpret-result-list variable (make-type:environment substitutions)) check-base)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
