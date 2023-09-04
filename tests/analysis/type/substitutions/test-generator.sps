@@ -22,7 +22,6 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions generator)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object))
@@ -64,7 +63,7 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
             [variable (index-node-variable target-index-node)])
         (construct-substitution-list-for target-document)
-        (test-equal (car (car (walk (document-substitution-list target-document) variable))) variable))
+        (test-equal (car (car (substitution:walk (document-substitution-list target-document) variable))) variable))
 (test-end)
 
 (test-begin "type-inference-for symbol")
@@ -78,12 +77,6 @@
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta '(boolean? <- (inner:list? real? real? **1)))])
         (construct-substitution-list-for target-document)
-        (pretty-print check-base)
-        (debug:print-expression target-index-node)
-        (pretty-print 
-            (equal? 
-                check-base 
-                (cadr (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))))
         (test-equal #t 
             (contain? 
                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))

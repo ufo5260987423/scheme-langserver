@@ -4,18 +4,21 @@
     type:interpret-result-list
     type:environment-result-list
 
+    substitution:walk
+
     make-type:environment)
   (import 
     (chezscheme)
     (ufo-match)
 
+    (scheme-langserver util binary-search)
+    (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
     (scheme-langserver util dedupe)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
 
-    (scheme-langserver analysis type domain-specific-language walk-engine)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
@@ -36,9 +39,9 @@
 
 (define type:interpret 
   (case-lambda 
-    [(pre-expression env)
+    [(expression env memory)
       (type:environment-result-list-set! env '())
-      (let ([expression (inner:with pre-expression)])
+      (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
           [(inner:executable? expression)
             ;the clause sequence is important
@@ -92,18 +95,18 @@
           [(variable? expression)
             (type:environment-result-list-set! env 
               (fold-left
-                (lambda (left reified-item) 
-                  (if (equal? reified-item expression)
-                    left
-                    (dedupe `(,@left ,@(type:interpret-result-list reified-item env)))))
-                `(,expression)
-                (reify (type:environment-substitution-list env) expression)))]
+                (lambda (left reified-item) `(,@left ,@(type:interpret-result-list reified-item env)))
+                '()
+                (filter 
+                  (lambda (item) 
+                    (and (not (null? item)) (not (contain? new-memory item)))) 
+                  (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env)) expression)))]
           [else (type:environment-result-list-set! env (list expression))]))
       env]
-    [(expression)
-      (type:interpret expression (make-type:environment '()))]))
+    [(expression env) (type:interpret expression env '())]
+    [(expression) (type:interpret expression (make-type:environment '()) '())]))
 
 (define private-matchable? 
   (case-lambda 
@@ -115,4 +118,24 @@
           (private-matchable? (cdr cartesian-product-list))))]
     [(a-list b-list)
       (private-matchable? (cartesian-product a-list b-list))]))
+
+(define (substitution:walk substitutions target)
+  (binary-search 
+    (list->vector substitutions) 
+    substitution-compare 
+    `(,target '? '?)))
+
+(define (debug:substitution-sorted? substitutions)
+  (let loop ([l substitutions]
+      [s (sort substitution-compare substitutions)])
+    (cond 
+      [(and (null? l) (null? s)) #t]
+      [(or (null? l) (null? s)) #f]
+      [(equal? (car (car l)) (car (car s))) (loop (cdr l) (cdr s))]
+      [else 
+        (pretty-print 'debug:sorted-origin)
+        (pretty-print (car l))
+        (pretty-print 'debug:sorted-sorted)
+        (pretty-print (car s))
+        #f])))
 )
