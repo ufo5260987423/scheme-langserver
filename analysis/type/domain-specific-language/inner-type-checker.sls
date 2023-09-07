@@ -36,7 +36,7 @@
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
-(define (inner:trivial? pre-expression)
+(define (inner:trivial? expression)
   (cond
     [(private-inner:trivial-item? expression) #t]
     [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
