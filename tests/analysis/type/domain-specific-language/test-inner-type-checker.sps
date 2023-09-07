@@ -9,7 +9,9 @@
     (chezscheme) 
     (srfi :64 testing) 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
-    (scheme-langserver analysis identifier meta))
+    (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis identifier meta)
+    (scheme-langserver util contain))
 
 (test-begin "inner:checkers")
     (test-equal #t (inner:list? '(inner:list?)))
@@ -25,27 +27,30 @@
     (test-equal #t (inner:lambda? (construct-type-expression-with-meta '(number? <- (inner:list? number? number?)))))
     (test-equal #t (inner:trivial? (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?))))
     (test-equal #t (inner:executable? (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?))))
-    (test-equal 
-        (construct-type-expression-with-meta '(inner:list? number? number? number?)) 
-        (inner:with (construct-type-expression-with-meta '((with (a b c) (inner:list? a b c)) number? number? number?))))
+    (test-equal #t
+        (contain?
+            (type:interpret-result-list (construct-type-expression-with-meta '((with (a b c) (inner:list? a b c)) number? number? number?)))
+            (construct-type-expression-with-meta '(inner:list? number? number? number?))))
     ; car list?
-    (test-equal 
-        (construct-type-expression-with-meta 'fixnum?) 
-        (inner:with
-            (construct-type-expression-with-meta 
-                '((with 
-                    ((a b c **1)) 
-                    (with-equal? inner:list? a b))
-                    (inner:list? fixnum? number?)))))
+    (test-equal #t
+        (contain? 
+            (type:interpret-result-list 
+                (construct-type-expression-with-meta 
+                    '((with 
+                        ((a b c **1)) 
+                        (with-equal? inner:list? a b))
+                        (inner:list? fixnum? number?))))
+            (construct-type-expression-with-meta 'fixnum?)))
     ; cdr list?
-    (test-equal 
-        (construct-type-expression-with-meta '(inner:list? number? fixnum?)) 
-        (inner:with
-            (construct-type-expression-with-meta 
-                '((with 
-                    ((a b c **1 )) 
-                    (with-equal? inner:list? a (with-append (inner:list?) c)))
-                (inner:list? fixnum? number? fixnum?)))))
+    (test-equal #t
+        (contain?
+            (type:interpret-result-list
+                (construct-type-expression-with-meta 
+                    '((with 
+                        ((a b c **1 )) 
+                        (with-equal? inner:list? a (with-append (inner:list?) c)))
+                        (inner:list? fixnum? number? fixnum?))))
+            (construct-type-expression-with-meta '(inner:list? number? fixnum?))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

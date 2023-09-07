@@ -15,6 +15,7 @@
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
     (scheme-langserver util dedupe)
+    (scheme-langserver util try)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
@@ -105,10 +106,9 @@
           [(macro? expression)
               (apply append 
                 (map 
-                  (lambda (input) 
-                    (map (lambda (for-template) (macro-head-execute-with expression for-template)) (type:interpret-result-list input env new-memory)))
-                  (macro-inputs expression)))
-          ]
+                  (lambda (for-template) 
+                    (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)) 
+                  (type:interpret-result-list (macro-inputs expression) env new-memory)))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env)) expression)))]
           [else (type:environment-result-list-set! env (list expression))]))
@@ -170,18 +170,17 @@
   (match expression
     [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
       (try
-        (execute-macro
-          (private-with body (candy:match-left denotions inputs)))
+        (execute-macro (private-with body (candy:match-left denotions inputs)))
         (except c [else (raise (list c 'macro-error))]))]
     ;only usable in with-macro
     [('with-append (? list? a) (? list? b))
       (try
-        (append a b)
+        (execute-macro (append a b))
         (except c [else (raise (list c 'macro-error))]))]
     ;only usable in with-macro
     [('with-equal? a b body)
       (try
-        (if (equal? a b) body expression)
+        (if (equal? a b) (execute-macro body) expression)
         (except c [else (raise (list c 'macro-error))]))]
     [else expression]))
 
