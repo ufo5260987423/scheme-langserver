@@ -38,10 +38,14 @@
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'integer?)])
         (construct-substitution-list-for target-document)
+        ; (pretty-print 
+        ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+        ; )
         (test-equal #t 
             (contain? 
                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
-                check-base)))
+                check-base))
+                )
 (test-end)
 
 (test-begin "variable access")

@@ -163,6 +163,7 @@
                 ; [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
                 ;   (let* ([ancestor (index-node-parent index-node)]
                 ;       [children (index-node-children ancestor)]
+                ;       [target-variable (index-node-variable target-index-node)]
                 ;       [head (car children)]
                 ;       [head-variable (index-node-variable head)]
                 ;       [rests (cdr children)]
@@ -171,7 +172,7 @@
                 ;       [symbols (private-generate-symbols "d" (length rest-variables))])
                 ;     (if (= index (length rests))
                 ;       '()
-                ;       `((,(index-node-variable target-index-node) 
+                ;       `((,target-variable 
                 ;           = 
                 ;           ((with ((a b c)) 
                 ;             ((with ((x ,@symbols))

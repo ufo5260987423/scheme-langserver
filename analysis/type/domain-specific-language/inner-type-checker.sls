@@ -188,8 +188,8 @@
 
 (define (inner:list-content body)
   (match body
-    [('inner:list? (? inner:trivial? item) ...) item]
-    [else #f]))
+    [('inner:list? item ...) item]
+    [else '()]))
 
 (define (inner:vector? body)
   (match body
@@ -203,9 +203,11 @@
 
 (define (inner:pair-car body)
   (match body
-    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy0]))
+    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy0]
+    [else '()]))
 
 (define (inner:pair-cdr body)
   (match body
-    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy1]))
+    [('inner:pair? (? inner:trivial? fuzzy0) (? inner:trivial? fuzzy1)) fuzzy1]
+    [else '()]))
 )
