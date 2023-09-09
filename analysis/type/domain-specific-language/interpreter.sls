@@ -115,14 +115,6 @@
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           [(list? expression)
-          ; (pretty-print 'list?)
-          ; (pretty-print expression)
-          ; (pretty-print 
-          ;         (map 
-          ;           (lambda (type) (type:interpret-result-list type env new-memory))
-          ;           (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression))
-          ;           )
-          ; )
             (type:environment-result-list-set! 
               env 
                 (apply append 
