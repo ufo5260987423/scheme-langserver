@@ -19,4 +19,4 @@
       substitutions
       (add-to-substitutions
         substitutions
-        `(,variable = (,(index-node-variable (car children)) (inner:list? ,@(map index-node-variable (cdr children))))))))))
+        `(,variable = (,(index-node-variable (car children)) ,@(map index-node-variable (cdr children)))))))))

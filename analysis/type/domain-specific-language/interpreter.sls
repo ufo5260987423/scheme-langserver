@@ -45,6 +45,8 @@
       (type:environment-result-list-set! env '())
       (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
+          [(contain? memory expression) 
+            (type:environment-result-list-set! env `(,expression))]
           [(inner:executable? expression)
             ;the clause sequence is important
             (match expression
@@ -68,7 +70,7 @@
                               (filter 
                                 (lambda (r)
                                   (variable? (inner:record-variable record)))
-                                (type:interpret-result-list (car params) env))
+                                (type:interpret-result-list (car params) env new-memory))
                               )))))]
                   ['<-record-ref
                     (if (and (null? params) (equal? (inner:record-lambda-record-predicator l) (inner:record-predicator record)))
@@ -88,21 +90,22 @@
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
                   (if (private-matchable? 
-                      (type:interpret-result-list (inner:list-content (inner:lambda-param l)) env)
-                      (apply cartesian-product (map (lambda(param) (type:interpret-result-list param env)) params)))
+                      (type:interpret-result-list (inner:list-content (inner:lambda-param l)) env new-memory)
+                      (apply cartesian-product (map (lambda(param) (type:interpret-result-list param env new-memory)) params)))
                     (type:environment-result-list-set! env (list (inner:lambda-return l)))
                     (type:environment-result-list-set! env '()))
                   (type:environment-result-list-set! env (list (inner:lambda-return l)))) ]
               [else expression])]
           [(variable? expression)
-            (type:environment-result-list-set! env 
-              (fold-left
-                (lambda (left reified-item) `(,@left ,@(type:interpret-result-list reified-item env)))
-                '()
-                (filter 
-                  (lambda (item) 
-                    (and (not (null? item)) (not (contain? new-memory item)))) 
-                  (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
+            (let ([maybe
+                  (fold-left
+                    (lambda (left reified-item) `(,@left ,@(type:interpret-result-list reified-item env new-memory)))
+                    '()
+                    (filter 
+                      (lambda (item) 
+                        (and (not (null? item)) (not (contain? new-memory item)))) 
+                      (map caddr (substitution:walk (type:environment-substitution-list env) expression))))])
+              (type:environment-result-list-set! env (if (null? maybe) '(something?) maybe)))]
           [(macro? expression)
               (apply append 
                 (map 
@@ -110,7 +113,23 @@
                     (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)) 
                   (type:interpret-result-list (macro-inputs expression) env new-memory)))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
-            (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env)) expression)))]
+            (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
+          [(list? expression)
+          ; (pretty-print 'list?)
+          ; (pretty-print expression)
+          ; (pretty-print 
+          ;         (map 
+          ;           (lambda (type) (type:interpret-result-list type env new-memory))
+          ;           (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression))
+          ;           )
+          ; )
+            (type:environment-result-list-set! 
+              env 
+                (apply append 
+                  (map 
+                    (lambda (type) (type:interpret-result-list type env new-memory))
+                    (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))
+          ]
           [else (type:environment-result-list-set! env (list expression))]))
       env]
     [(expression env) (type:interpret expression env '())]
