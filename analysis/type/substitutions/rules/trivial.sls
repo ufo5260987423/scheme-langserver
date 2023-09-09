@@ -160,25 +160,27 @@
               ;implicit conversion for gradual typing
               (cond 
                 [(null? (index-node-parent index-node)) '()]
-                ; [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
-                ;   (let* ([ancestor (index-node-parent index-node)]
-                ;       [children (index-node-children ancestor)]
-                ;       [target-variable (index-node-variable target-index-node)]
-                ;       [head (car children)]
-                ;       [head-variable (index-node-variable head)]
-                ;       [rests (cdr children)]
-                ;       [rest-variables (map index-node-variable rests)]
-                ;       [index (private-index-of (list->vector rests) index-node)]
-                ;       [symbols (private-generate-symbols "d" (length rest-variables))])
-                ;     (if (= index (length rests))
-                ;       '()
-                ;       `((,target-variable 
-                ;           = 
-                ;           ((with ((a b c)) 
-                ;             ((with ((x ,@symbols))
-                ;               ,(vector-ref (list->vector symbols) index))
-                ;               c)) 
-                ;             ,head-variable)))))]
+                [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
+                  (let* ([ancestor (index-node-parent index-node)]
+                      [children (index-node-children ancestor)]
+                      [target-variable (index-node-variable target-index-node)]
+                      [head (car children)]
+                      [head-variable (index-node-variable head)]
+                      [rests (cdr children)]
+                      [rest-variables (map index-node-variable rests)]
+                      [index (private-index-of (list->vector rests) index-node)]
+                      [symbols (private-generate-symbols "d" (length rest-variables))])
+                    (append `((,(index-node-variable index-node) = ,target-variable))
+                      (if (= index (length rests))
+                        '()
+                        `((,target-variable 
+                            = 
+                            ((with ((a b c)) 
+                              ((with ((x ,@symbols))
+                                ,(vector-ref (list->vector symbols) index))
+                                c)) 
+                              ,head-variable))))
+                    ))]
                 [else '()]))]
           ;import
           [else 

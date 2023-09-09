@@ -107,16 +107,22 @@
                       (lambda (item) 
                         (and (not (null? item)) (not (contain? new-memory item)))) 
                       (map caddr (substitution:walk (type:environment-substitution-list env) expression))))])
-              (type:environment-result-list-set! env (if (null? maybe) '(something?) maybe)))]
+              (type:environment-result-list-set! env (if (null? maybe) `(,expression) maybe)))]
           [(macro? expression)
-            (type:environment-result-list-set! env 
-              (apply append 
-                (map 
-                  (lambda (for-template) 
-                    (try
-                      (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
-                      (except c [else '()]))) 
-                  (type:interpret-result-list (macro-inputs expression) env new-memory))))]
+            (let ([inputs 
+                  (map 
+                    (lambda (item) (type:interpret-result-list item env new-memory)) 
+                    (macro-inputs expression))])
+              (type:environment-result-list-set! env 
+                (if (>= (length inputs) 2)
+                  (apply append 
+                    (map 
+                      (lambda (for-template) 
+                        (try
+                          (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
+                          (except c [else '()])))
+                      (apply cartesian-product inputs)))
+                  '())))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           [(list? expression)
