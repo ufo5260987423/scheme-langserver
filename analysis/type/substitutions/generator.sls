@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis type substitutions generator)
   (export 
     construct-substitution-list-for
-    pretty-print-substitution )
+    pretty-print-substitution)
   (import 
     (chezscheme)
 
@@ -39,32 +39,11 @@
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
     document 
-    (fold-left 
-      private-add-implicit-convertions
-      (apply 
-        append
-        (map 
-          (lambda (index-node) (private-construct-substitution-list document index-node '()))
-          (document-index-node-list document)))
-      (document-index-node-list document))))
-
-;gradule typing: unsafe convertion
-(define (private-add-implicit-convertions substitutions index-node)
-  substitutions
-; ; (pretty-print 'implicit0)
-;   (let ([children (index-node-children index-node)])
-;     (if (null? children)
-;       substitutions
-;       (let* ([base (fold-left private-add-implicit-convertions substitutions children)]
-;           [head-index-node (car children)]
-;           [rest-index-nodes (cdr children)]
-;           [reified-head-result (reify base (index-node-variable head-index-node))]
-;           [filtered-lambdas (dedupe (filter lambda? reified-head-result))]
-;           [return-variable (index-node-variable index-node)])
-; ; (pretty-print 'implicit1)
-; ; (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
-;         (lambda-templates->new-substitution-list base filtered-lambdas `(,return-variable) rest-index-nodes))))
-        )
+    (apply 
+      append
+      (map 
+        (lambda (index-node) (private-construct-substitution-list document index-node '()))
+        (document-index-node-list document)))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]
