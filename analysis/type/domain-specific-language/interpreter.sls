@@ -42,6 +42,14 @@
 (define type:interpret 
   (case-lambda 
     [(expression env memory)
+      ; (if (not (contain? memory expression))
+      ;   (begin
+      ;     (print-graph #t)
+      ;     (pretty-print 'interpret)
+      ;     (pretty-print expression)
+      ;     (pretty-print 'done)
+      ;     (pretty-print (length memory))
+      ;     ))
       (type:environment-result-list-set! env '())
       (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
@@ -114,15 +122,15 @@
                     (lambda (item) (type:interpret-result-list item env new-memory)) 
                     (macro-inputs expression))])
               (type:environment-result-list-set! env 
-                (if (>= (length inputs) 2)
+                (if (zero? (length inputs))
+                  '()
                   (apply append 
                     (map 
                       (lambda (for-template) 
                         (try
                           (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
                           (except c [else '()])))
-                      (apply cartesian-product inputs)))
-                  '())))]
+                      (apply cartesian-product inputs))))))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           [(list? expression)

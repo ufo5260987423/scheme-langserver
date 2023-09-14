@@ -170,17 +170,15 @@
                       [rest-variables (map index-node-variable rests)]
                       [index (private-index-of (list->vector rests) index-node)]
                       [symbols (private-generate-symbols "d" (length rest-variables))])
-                    (append `((,(index-node-variable index-node) = ,target-variable))
-                      (if (= index (length rests))
-                        '()
-                        `((,target-variable 
-                            = 
-                            ((with ((a b c)) 
-                              ((with ((x ,@symbols))
-                                ,(vector-ref (list->vector symbols) index))
-                                c)) 
-                              ,head-variable))))
-                    ))]
+                    (if (= index (length rests))
+                      '()
+                      `((,target-variable 
+                          = 
+                          ((with ((a b c)) 
+                            ((with ((x ,@symbols))
+                              ,(vector-ref (list->vector symbols) index))
+                              c)) 
+                            ,head-variable)))))]
                 [else '()]))]
           ;import
           [else 
