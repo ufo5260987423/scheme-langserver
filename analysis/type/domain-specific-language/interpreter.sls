@@ -42,14 +42,6 @@
 (define type:interpret 
   (case-lambda 
     [(expression env memory)
-      ; (if (not (contain? memory expression))
-      ;   (begin
-      ;     (print-graph #t)
-      ;     (pretty-print 'interpret)
-      ;     (pretty-print expression)
-      ;     (pretty-print 'done)
-      ;     (pretty-print (length memory))
-      ;     ))
       (type:environment-result-list-set! env '())
       (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
