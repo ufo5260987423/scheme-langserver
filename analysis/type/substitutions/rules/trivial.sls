@@ -104,7 +104,7 @@
                           [first `(,@(car ahead-result) ,v)]
                           [last `(,@(cadr ahead-result) ,@r)])
                         `(,first ,last))))
-                    `((,(if is-list? 'inner:list? 'inner:vector?))())
+                  `((,(if is-list? 'inner:list? 'inner:vector?))())
                   (if is-list? expression (vector->list expression)))]
               [variable-list (car final-result)]
               [extend-substitution-list (cadr final-result)])
