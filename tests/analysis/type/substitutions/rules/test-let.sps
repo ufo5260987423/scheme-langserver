@@ -38,6 +38,7 @@
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'integer?)])
         (construct-substitution-list-for target-document)
+        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
         (test-equal #t 
             (contain? 
                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
