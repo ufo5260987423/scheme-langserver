@@ -159,6 +159,8 @@
               `((,variable = ,(index-node-variable target-index-node)))
               ;implicit conversion for gradual typing
               (cond 
+              ; this can't be excluded by identifier-catching rules
+                [(equal? index-node target-index-node) '()]
                 [(null? (index-node-parent index-node)) '()]
                 [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
                   (let* ([ancestor (index-node-parent index-node)]
@@ -170,6 +172,11 @@
                       [rest-variables (map index-node-variable rests)]
                       [index (private-index-of (list->vector rests) index-node)]
                       [symbols (private-generate-symbols "d" (length rest-variables))])
+                    ; (pretty-print 'trivial)
+                    ; (debug:print-expression index-node)
+                    ; (pretty-print variable)
+                    ; (debug:print-expression head)
+                    ; (pretty-print head-variable)
                     (if (= index (length rests))
                       '()
                       `((,target-variable 
