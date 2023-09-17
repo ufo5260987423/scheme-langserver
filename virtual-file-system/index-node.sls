@@ -1,6 +1,9 @@
 (library (scheme-langserver virtual-file-system index-node)
   (export 
     debug:print-expression
+    debug:print-expression&variable
+    debug:recursive-print-expression&variable
+
     pick-index-node-from
     pick-index-node-parent-of
     pick-index-node-with-mapper 
@@ -56,6 +59,14 @@
 
 (define (debug:print-expression index-node)
   (pretty-print (annotation-stripped (index-node-datum/annotations index-node))))
+
+(define (debug:print-expression&variable index-node)
+  (debug:print-expression index-node)
+  (pretty-print (index-node-variable index-node)))
+
+(define (debug:recursive-print-expression&variable index-node)
+  (debug:print-expression&variable index-node)
+  (map debug:recursive-print-expression&variable (index-node-children index-node)))
 
 (define (find-leaves index-node-list)
   (fold-left 

@@ -172,11 +172,6 @@
                       [rest-variables (map index-node-variable rests)]
                       [index (private-index-of (list->vector rests) index-node)]
                       [symbols (private-generate-symbols "d" (length rest-variables))])
-                    ; (pretty-print 'trivial)
-                    ; (debug:print-expression index-node)
-                    ; (pretty-print variable)
-                    ; (debug:print-expression head)
-                    ; (pretty-print head-variable)
                     (if (= index (length rests))
                       '()
                       `((,target-variable 
