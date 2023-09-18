@@ -89,14 +89,12 @@ jobs:
           ./configure -m="${{ matrix.config.machine }}"
           make -j $(getconf _NPROCESSORS_ONLN)
           sudo make install
-          cd ..
       - name: Install Chez-exe
         run: |
           cd chez-exe
           scheme --script gen-config.ss --bootpath "../ChezScheme/${{ matrix.config.machine }}/boot/${{ matrix.config.machine }}"
           make -j $(getconf _NPROCESSORS_ONLN)
           sudo make install
-          cd ..
       - name: Install Akku
         run: |
 # Install Akku.csm following https://github.com/weinholt/uuid
@@ -105,27 +103,23 @@ jobs:
           curl -A "$TRAVIS_REPO_SLUG" -LO "https://archive.akkuscm.org/get-akku.sh{,.sig}"
           gpg --verify get-akku.sh.sig get-akku.sh && bash get-akku.sh
           ~/bin/akku install
-          cd ..
       - name: Build 
         run: |
           cd scheme-langserver
           ~/.local/bin/akku install
           bash .akku/env
-          cd ..
       - name: Test 
         run: |
           cd scheme-langserver
           ~/.local/bin/akku install
           bash .akku/env
           bash test.sh
-          cd ..
       - name: Compile 
         run: |
           cd scheme-langserver
           ~/.local/bin/akku install
           bash .akku/env
           compile-chez-program run.ss
-          cd ..
 
       # - name: Setup tmate session
       #   if: success() || failure()
