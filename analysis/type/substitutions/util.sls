@@ -4,15 +4,31 @@
     construct-parameter-variable-products-with
     construct-substitutions-between-index-nodes
     substitution-compare
-    add-to-substitutions)
+    add-to-substitutions
+    type->string)
   (import 
     (chezscheme)
     (scheme-langserver util dedupe)
+
     (scheme-langserver util cartesian-product)
     (scheme-langserver util natural-order-compare)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver virtual-file-system index-node))
+
+(define (type->string type)
+  (cond
+    [(list? type) 
+      (string-append 
+        "(" 
+        (fold-left 
+          (lambda (remain current) 
+            (if (equal? "" remain) current (string-append remain " " current))) 
+            "" 
+          (map type->string type))
+        ")")]
+    [(symbol? type) (symbol->string type)]
+    [(identifier-reference? type) (type->string (identifier-reference-identifier type))]))
 
 (define (construct-substitutions-between-index-nodes substitutions left-index-node right-index-node symbol)
   (cartesian-product `(,(index-node-variable left-index-node)) `(,symbol) `(,(index-node-variable right-index-node))))

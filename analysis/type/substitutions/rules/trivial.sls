@@ -188,11 +188,9 @@
               (identifier-reference-type-expressions-set! 
                 identifier-reference 
                 (dedupe 
-                  (filter 
-                    is-pure-identifier-reference-misture? 
-                    (type:interpret-result-list 
-                      (index-node-variable target-index-node)
-                      (make-type:environment (document-substitution-list target-document)))))))
+                  (type:interpret-result-list 
+                    (index-node-variable target-index-node)
+                    (make-type:environment (document-substitution-list target-document))))))
             (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
       (apply 
         append 

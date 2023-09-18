@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis identifier rules library-import)
-  (export import-process)
+  (export 
+    import-process
+    process-library-identifier-excluded-references)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -24,13 +26,25 @@
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (index-node-children index-node))]
-      [else 
-      ; this makes sense 
-        (try
-          (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (match-import index-node root-file-node root-library-node document index-node)
-          (except c [else '()]))])
+      [else '()])
     index-node))
+
+(define process-library-identifier-excluded-references 
+  (case-lambda 
+    [(document) 
+      (map 
+        (lambda (index-node)
+          (process-library-identifier-excluded-references document index-node 0))
+        (document-index-node-list document))]
+    [(document index-node depth) 
+      (if (library-identifier? document index-node)
+        (index-node-excluded-references-set! index-node (find-available-references-for document index-node))
+        (if (< depth 3)
+          (map 
+            (lambda (current-index-node)
+              (process-library-identifier-excluded-references document current-index-node (+ 1 depth)))
+            (index-node-children index-node))
+          '()))]))
 
 (define (filter-empty-list list-instance)
   (filter 

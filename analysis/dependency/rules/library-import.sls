@@ -1,7 +1,6 @@
 (library (scheme-langserver analysis dependency rules library-import)
   (export 
-    library-import-process
-    is-library-identifiers?)
+    library-import-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -12,20 +11,6 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
-
-(define (is-library-identifiers? document index-node)
-  (try
-    (let* ([parent (index-node-parent index-node)]
-        [grand-parent (index-node-parent parent)])
-      (cond 
-        [(not (null? (match-import grand-parent))) 
-          (guard-for document grand-parent 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          #t]
-        [(not (null? (match-import (index-node-parent grand-parent)))) 
-          (guard-for document (index-node-parent grand-parent) 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          #t]
-        [else #f]))
-    (except c [else #f])))
 
 (define (library-import-process index-node)
   (apply append 

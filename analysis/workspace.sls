@@ -150,12 +150,14 @@
           ; (pretty-print 'bbb)
           (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)
-          (walk-and-process root-file-node document index-node)
+          (walk&process root-file-node document index-node)
           (export-process root-file-node document index-node)
+          (process-library-identifier-excluded-references document)
           ; (pretty-print 'ddd)
           ; (document-reference-list-set! 
           ;   document 
           ;   (append (document-reference-list document) (index-node-references-export-to-other-node index-node)))
+
             )
         target-index-nodes)
         ;;todo
@@ -226,7 +228,7 @@
       (init-references workspace-instance refreshable-batches))))
 
 ;; rules must be run as ordered
-(define (walk-and-process root-file-node document index-node)
+(define (walk&process root-file-node document index-node)
   (find 
     (lambda (func)
       (not (null? (func root-file-node document index-node))))
@@ -239,11 +241,12 @@
       lambda-process
       syntax-process
       load-process))
-
-  (map 
-    (lambda (child-index-node) 
-      (walk-and-process root-file-node document child-index-node)) 
-    (index-node-children index-node)))
+  (if (not (library-identifier? document index-node))
+    (map 
+      (lambda (child-index-node) 
+        (walk&process root-file-node document child-index-node)) 
+      (index-node-children index-node))
+    '()))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)

@@ -20,8 +20,9 @@
     transform
     
     sort-identifier-references
-    is-pure-identifier-reference-misture?
-    is-ancestor-of?)
+    pure-identifier-reference-misture?
+    is-ancestor-of?
+    library-identifier?)
   (import 
     (chezscheme)
 
@@ -125,18 +126,22 @@
               (index-node-references-export-to-other-node target-index-node)
               identifier-reference)))))))
 
-(define (is-pure-identifier-reference-misture? expression)
-  (cond 
-    [(list? expression) (not (contain? (map is-pure-identifier-reference-misture? expression) #f))]
-    [(vector? expression) (not (contain? (map is-pure-identifier-reference-misture? (vector->list expression)) #f))]
-    [else 
-      (or 
-        (equal? '<- expression) 
-        (equal? 'something? expression) 
-        (equal? 'void? expression) 
-        (equal? '**1 expression) 
-        (equal? '... expression) 
-        (identifier-reference? expression))]))
+(define (pure-identifier-reference-misture? expression)
+  (if (list? expression) 
+    (not (contain? (map pure-identifier-reference-misture? expression) #f))
+    (or 
+      (equal? '<- expression) 
+      (equal? '<-record-set!  expression) 
+      (equal? '<-record-ref  expression) 
+      (equal? '<-record-constructor expression) 
+      (equal? '**1 expression) 
+      (equal? '... expression) 
+      (equal? 'something? expression) 
+      (equal? 'void? expression) 
+      (equal? 'inner:list? expression) 
+      (equal? 'inner:pair? expression) 
+      (equal? 'inner:vector? expression) 
+      (identifier-reference? expression))))
 
 (define (sort-identifier-references identifier-references)
   (sort 
@@ -170,6 +175,36 @@
         (if (find (lambda (r) (equal? r (identifier-reference-library-identifier candidate))) library-identifier-rest)
         candidate
           #f)))))
+
+(define (library-identifier? document index-node)
+  (let* ([parent (index-node-parent index-node)]
+      [check? 
+        (lambda () 
+          (let ([grandparent (index-node-parent parent)]
+              [sibling (index-node-children parent)]
+              [bigest-sibling (car (index-node-children parent))])
+            (if (null? grandparent)
+              #f
+              (and 
+                (not (equal? bigest-sibling index-node))
+                (contain? sibling index-node)
+                (match (annotation-stripped (index-node-datum/annotations grandparent))
+                  [('library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
+                  [else #f])))))])
+    (if (null? parent)
+      #f
+      (match (annotation-stripped (index-node-datum/annotations parent))
+        [('library identifier _ ...) 
+          (and 
+            (equal? (cadr (index-node-children parent)) index-node)
+            (not (check?)))]
+        [('import identifier **1) (check?)]
+        [('only identifier _ ...) (check?)]
+        [('rename identifier _ ...) (check?)]
+        [('prefix identifier _ ...) (check?)]
+        [('except identifier _ ...) (check?)]
+        [('alias identifier _ ...) (check?)]
+        [else #f]))))
 
 (define find-available-references-for
   (case-lambda

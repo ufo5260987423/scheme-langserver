@@ -37,7 +37,7 @@
         (lambda (index-node)
           (let ([s (index-node-start index-node)]
               [e (index-node-end index-node)]
-              [types (dedupe (filter is-pure-identifier-reference-misture? (interprete (index-node-variable index-node) subsitution-list)))])
+              [types (dedupe (filter pure-identifier-reference-misture? (type:interpret-result-list (index-node-variable index-node) substitution-list)))])
           (private-make-diagnostic s e 3 
               (fold-left 
                 (lambda (remain current) 
