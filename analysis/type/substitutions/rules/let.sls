@@ -40,8 +40,8 @@
               substitutions 
               ;for let index-node
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for loop procedure
                 (cartesian-product `(,loop-variable) '(=) loop-procedure-details)
               ;for key value index-nodes
@@ -57,8 +57,8 @@
               substitutions 
               ;for let index-node
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
                 (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         ; [('fluid-let (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
@@ -120,8 +120,8 @@
               substitutions 
               ;for let index-node
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
                 (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         ; [('let*-values (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
@@ -154,8 +154,8 @@
               substitutions 
               ;for let index-node
               (append
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
                 (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [('letrec-syntax (((? symbol? identifier) value) ... ) _ **1) 
@@ -169,8 +169,8 @@
               substitutions 
               ;for let index-node
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
                 (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [('letrec* (((? symbol? identifier) value) ...) _ **1) 
@@ -184,8 +184,8 @@
               substitutions 
               ;for let index-node
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
                 (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes)))))]
         [else substitutions])
@@ -197,6 +197,6 @@
       [expression (annotation-stripped ann)]
       [children (index-node-children parent-index-node)])
     (match expression 
-      [((? symbol? left) value) (construct-substitutions-between-index-nodes substitutions (car children) (cadr children) '=)]
+      [((? symbol? left) value) (construct-substitutions-between-index-nodes (car children) (cadr children) '=)]
       [else '()])))
 )

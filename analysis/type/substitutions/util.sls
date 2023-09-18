@@ -30,11 +30,11 @@
     [(symbol? type) (symbol->string type)]
     [(identifier-reference? type) (type->string (identifier-reference-identifier type))]))
 
-(define (construct-substitutions-between-index-nodes substitutions left-index-node right-index-node symbol)
+(define (construct-substitutions-between-index-nodes left-index-node right-index-node symbol)
   (cartesian-product `(,(index-node-variable left-index-node)) `(,symbol) `(,(index-node-variable right-index-node))))
 
 (define (construct-parameter-variable-products-with parameter-index-nodes)
-  (apply cartesian-product (map list (map index-node-variable parameter-index-nodes))))
+  (apply cartesian-product `((inner:list?) ,@(map list (map index-node-variable parameter-index-nodes)))))
 
 (define (construct-lambdas-with return-variables parameter-variable-products)
   (cartesian-product return-variables '(<-) parameter-variable-products))

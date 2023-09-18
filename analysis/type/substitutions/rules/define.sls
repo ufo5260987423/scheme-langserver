@@ -45,8 +45,8 @@
               add-to-substitutions
               substitutions
               (append 
-                (construct-substitutions-between-index-nodes substitutions identifier-index-node tail-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions tail-index-node identifier-index-node '=))))]
+                (construct-substitutions-between-index-nodes identifier-index-node tail-index-node '=)
+                (construct-substitutions-between-index-nodes tail-index-node identifier-index-node '=))))]
         [else substitutions])
       (except c
         [else substitutions]))))

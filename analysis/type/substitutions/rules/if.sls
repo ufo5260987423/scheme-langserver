@@ -25,8 +25,8 @@
               add-to-substitutions
               substitutions 
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node index-node '=))))]
+                (construct-substitutions-between-index-nodes index-node return-index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node index-node '=))))]
         [('if _  clause0 clause1) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let (
@@ -36,10 +36,10 @@
               add-to-substitutions
               substitutions 
               (append 
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node0 '=)
-                (construct-substitutions-between-index-nodes substitutions index-node return-index-node1 '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node0 index-node '=)
-                (construct-substitutions-between-index-nodes substitutions return-index-node1 index-node '=))))]
+                (construct-substitutions-between-index-nodes index-node return-index-node0 '=)
+                (construct-substitutions-between-index-nodes index-node return-index-node1 '=)
+                (construct-substitutions-between-index-nodes return-index-node0 index-node '=)
+                (construct-substitutions-between-index-nodes return-index-node1 index-node '=))))]
         [('cond clause **1)
           (guard-for document index-node 'cond '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (fold-left
@@ -63,7 +63,7 @@
     (match expression
       [(predicator tail **1) 
         (append
-          (construct-substitutions-between-index-nodes substitutions root-index-node last-child '=)
-          (construct-substitutions-between-index-nodes substitutions last-child root-index-node '=)) ]
+          (construct-substitutions-between-index-nodes root-index-node last-child '=)
+          (construct-substitutions-between-index-nodes last-child root-index-node '=)) ]
       [else '()])))
 )

@@ -62,10 +62,12 @@
         ; (pretty-print 'proc)
         ; (if (not (debug:substitution-sorted? current-substitutions))
         ;   (pretty-print proc))
-        (dedupe 
-          (filter
-            (lambda (a) (not (null? a)))
-            (proc document index-node current-substitutions))))
+        (if (= (length current-substitutions) (length children-substitution-list))
+          (dedupe 
+            (filter
+              (lambda (a) (not (null? a)))
+              (proc document index-node current-substitutions)))
+          current-substitutions))
       children-substitution-list
       ;all these processor except trivial-process must add its result to current index-node
       ;such as for (app param ...), app's result type could be (return-type (param-type ...))
