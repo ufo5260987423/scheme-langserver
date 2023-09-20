@@ -43,12 +43,13 @@
   (case-lambda 
     [(expression env memory)
       (type:environment-result-list-set! env '())
-      (if (not (contain? memory expression))
-        (begin
-          (print-graph #t)
-          (pretty-print 'interpret)
-          (pretty-print (length memory))
-          (pretty-print expression)))
+      ; (if (not (contain? memory expression))
+      ;   (begin
+      ;     (print-graph #t)
+      ;     (pretty-print 'interpret)
+      ;     (pretty-print (length memory))
+      ;     (pretty-print memory)
+      ;     (pretty-print expression)))
       (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
           [(contain? memory expression) 
@@ -141,12 +142,12 @@
                       cartesian-product 
                       (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      (if (not (contain? memory expression))
-        (begin
-          (print-graph #t)
-          (pretty-print 'byebye)
-          (pretty-print (length memory))
-          (pretty-print expression)))
+      ; (if (not (contain? memory expression))
+      ;   (begin
+      ;     (print-graph #t)
+      ;     (pretty-print 'byebye)
+      ;     (pretty-print (length memory))
+      ;     (pretty-print expression)))
       env]
     [(expression env) (type:interpret expression env '())]
     [(expression) (type:interpret expression (make-type:environment '()) '())]))
