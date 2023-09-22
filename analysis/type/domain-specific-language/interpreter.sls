@@ -96,14 +96,17 @@
                       ])]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
-                  (if (private-matchable? 
-                      (type:interpret-result-list (inner:list-content (inner:lambda-param l)) env new-memory)
-                      (apply 
-                        cartesian-product 
-                        (map (lambda (param) (type:interpret-result-list param env new-memory)) params)))
-                    (type:environment-result-list-set! env (list (inner:lambda-return l)))
-                    (type:environment-result-list-set! env '()))
-                  (type:environment-result-list-set! env (list (inner:lambda-return l)))) ]
+                  (let ([pre (type:interpret-result-list (inner:list-content (inner:lambda-param l)) env new-memory)])
+                    (if (private-matchable? pre (list params))
+                      (type:environment-result-list-set! env (list (inner:lambda-return l)))
+                      (if (private-matchable? 
+                          pre
+                          (apply 
+                            cartesian-product 
+                            (map (lambda (param) (type:interpret-result-list param env new-memory)) params)))
+                        (type:environment-result-list-set! env (list (inner:lambda-return l)))
+                        (type:environment-result-list-set! env '()))))
+                  (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
             (let ([maybe
@@ -135,12 +138,12 @@
           [(list? expression)
             (type:environment-result-list-set! 
               env 
-                (apply append 
-                  (map 
-                    (lambda (type) (type:interpret-result-list type env new-memory))
-                    (apply 
-                      cartesian-product 
-                      (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
+              (apply append 
+                (map 
+                  (lambda (type) (type:interpret-result-list type env new-memory))
+                  (apply 
+                    cartesian-product 
+                    (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
       ; (if (not (contain? memory expression))
       ;   (begin
