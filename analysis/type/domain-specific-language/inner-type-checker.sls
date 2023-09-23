@@ -39,21 +39,9 @@
 (define (inner:trivial? expression)
   (cond
     [(private-inner:trivial-item? expression) #t]
-    [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
-      (if (or 
-          (contain? (cdr expression) '<-)
-          (contain? (cdr expression) '<-record-set!)
-          (contain? (cdr expression) '<-record-ref)
-          (contain? (cdr expression) '<-record-constructor)
-          (contain? (cdr expression) 'inner:list?)
-          (contain? (cdr expression) 'inner:vector?)
-          (contain? (cdr expression) 'inner:pair?))
-        #f
-        (fold-left
-          (lambda (left right)
-            (and left right))
-          #t
-          (map inner:trivial? (cdr expression))))]
+    [(inner:list? expression) #t]
+    [(inner:vector? expression) #t]
+    [(inner:pair? expression) #t]
     [(inner:lambda? expression) #t]
     [(inner:record? expression) #t]
     [(inner:record-lambda? expression) #t]

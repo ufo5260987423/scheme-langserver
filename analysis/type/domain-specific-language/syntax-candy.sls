@@ -4,6 +4,7 @@
     candy:matchable?
     candy:match
     candy:match-left
+    candy:match-right
     
     segment?
     segment-type
@@ -29,6 +30,9 @@
 (define (candy:matchable? parameter-template argument-list)
   (equal? 'skipped 
     (vector-ref (private-segments->match-matrix (private-segment parameter-template) (private-segment argument-list)) 0)))
+
+(define (candy:match-right parameter-template argument-list)
+  (map (lambda (match-segment-pair) `(,(segment-type (car match-segment-pair)) . ,(segment-type (cdr match-segment-pair)))) (candy:match parameter-template argument-list)))
 
 (define (candy:match-left parameter-template argument-list)
   (fold-left 

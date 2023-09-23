@@ -123,16 +123,15 @@
                   (map 
                     (lambda (item) (type:interpret-result-list item env new-memory)) 
                     (macro-inputs expression))])
-              (type:environment-result-list-set! env 
-                (if (zero? (length inputs))
-                  '()
-                  (apply append 
-                    (map 
-                      (lambda (for-template) 
-                        (try
-                          (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
-                          (except c [else '()])))
-                      (apply cartesian-product inputs))))))]
+              (type:environment-result-list-set! 
+                env 
+                (apply append 
+                  (map 
+                    (lambda (for-template) 
+                      (try
+                        (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
+                        (except c [else '()])))
+                    (apply cartesian-product inputs)))))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           [(list? expression)
@@ -208,7 +207,9 @@
 (define (execute-macro expression)
   (match expression
     [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
-      (execute-macro (private-with body (candy:match-left denotions inputs)))]
+      (if (candy:matchable? denotions inputs)
+        (execute-macro (private-with body (candy:match-left denotions inputs)))
+        expression)]
     ;only usable in with-macro
     [('with-append (? list? a) (? list? b)) (execute-macro (append a b))]
     ;only usable in with-macro
@@ -223,7 +224,9 @@
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
           [(and (list? denotion) (list? input)) 
-            (private-with body (candy:match-left denotion input))]
+            (if (or (contain? input '**1) (contain? input '...))
+              (private-with body (candy:match-right denotion input))
+              (private-with body (candy:match-left denotion input)))]
           [else (raise 'macro-not-match)])))
     body 
     match-pairs))
