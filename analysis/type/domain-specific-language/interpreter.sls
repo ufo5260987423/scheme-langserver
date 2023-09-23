@@ -134,6 +134,8 @@
                     (apply cartesian-product inputs)))))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
+          ;this is important, because there're many form of (variable variable), 
+          ;must be interpreted as (inner:lambda? inner:trivial) so that it can be continually interpreted
           [(list? expression)
             (type:environment-result-list-set! 
               env 
