@@ -33,25 +33,26 @@
       (lambda (substitution-list)
         (new substitution-list '())))))
 
+(define PRIVATE-MAX-DEPTH 10)
+
 (define type:interpret-result-list
   (case-lambda 
     [(expression) (type:environment-result-list (type:interpret expression))]
     [(expression env) (type:environment-result-list (type:interpret expression env))]
     [(expression env memory) (type:environment-result-list (type:interpret expression env memory))]))
 
+
 (define type:interpret 
   (case-lambda 
-    [(expression env memory)
+    [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      (if (not (contain? memory expression))
-        (begin
-          (print-graph #t)
-          (pretty-print 'interpret)
-          (pretty-print (length memory))
-          (pretty-print expression)
-          ))
       (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
+          [(<= max-depth (length memory)) 
+            ; (pretty-print 'max)
+            ; (print-graph #t)
+            ; (pretty-print memory)
+            (type:environment-result-list-set! env `(,expression))]
           [(contain? memory expression) 
             (type:environment-result-list-set! env `(,expression))]
           [(inner:executable? expression)
@@ -146,13 +147,8 @@
                     cartesian-product 
                     (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      (if (not (contain? memory expression))
-        (begin
-          (print-graph #t)
-          (pretty-print 'byebye)
-          (pretty-print (length memory))
-          (pretty-print expression)))
       env]
+    [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
     [(expression) (type:interpret expression (make-type:environment '()) '())]))
 
