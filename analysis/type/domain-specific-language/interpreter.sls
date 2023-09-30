@@ -33,7 +33,7 @@
       (lambda (substitution-list)
         (new substitution-list '())))))
 
-(define PRIVATE-MAX-DEPTH 15)
+(define PRIVATE-MAX-DEPTH 10)
 
 (define type:interpret-result-list
   (case-lambda 
