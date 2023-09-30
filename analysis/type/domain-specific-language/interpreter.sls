@@ -33,7 +33,7 @@
       (lambda (substitution-list)
         (new substitution-list '())))))
 
-(define PRIVATE-MAX-DEPTH 10)
+(define PRIVATE-MAX-DEPTH 15)
 
 (define type:interpret-result-list
   (case-lambda 
@@ -155,9 +155,8 @@
       ;   (begin
       ;     (pretty-print 'bye)
       ;     (print-graph #t)
+      ;     (pretty-print (or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression)))
       ;     (pretty-print expression)
-      ;     (pretty-print 'branch)
-      ;     (pretty-print (macro? expression))
       ;     (pretty-print 'result)
       ;     (pretty-print (type:environment-result-list env))))
       env]
