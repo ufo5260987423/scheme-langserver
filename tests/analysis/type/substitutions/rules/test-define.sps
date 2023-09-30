@@ -35,10 +35,12 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))]
+            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitution-list-for target-document)
-        (pretty-print (annotation-stripped (index-node-datum/annotations target-index-node)))
-        (test-equal #t  (contain? (map car (filter lambda? (type-inference-for target-index-node target-document))) check-base)))
+        (test-equal #t 
+            (contain? 
+                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
