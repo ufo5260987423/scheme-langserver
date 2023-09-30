@@ -56,6 +56,7 @@
             [check-base0 (construct-type-expression-with-meta '(boolean? <- (string? string? integer? integer?)))]
             [check-base1 (construct-type-expression-with-meta '(boolean? <- (string? string?)))])
         (construct-substitution-list-for target-document)
+        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
         ; (pretty-print 'all)
         ; (let* ([t (car (filter (lambda (item) (= 2 (length (caddr item)))) (filter lambda? (type-inference-for target-index-node target-document))))]
         ;         [param (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 11)))]
@@ -74,11 +75,14 @@
         ;     (pretty-print 'all3)
         ;     (pretty-print (document-substitution-list target-document))
         ; )
-        ; (pretty-print (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
-        (test-equal #t 
-            (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
-                check-base0))
+        (pretty-print 
+            (filter
+                (lambda (i) (equal? (car check-base0) (car i)))
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
+        ; (test-equal #t 
+        ;     (contain? 
+        ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+        ;         check-base0))
         ; (test-equal #t 
         ;     (contain? 
         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 

@@ -41,11 +41,15 @@
     [(expression env) (type:environment-result-list (type:interpret expression env))]
     [(expression env memory) (type:environment-result-list (type:interpret expression env memory))]))
 
-
 (define type:interpret 
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
+      ; (if (not (contain? memory expression))
+      ;   (begin
+      ;     (pretty-print 'interpret)
+      ;     (print-graph #t)
+      ;     (pretty-print expression)))
       (let ([new-memory (dedupe `(,@memory ,expression))])
         (cond
           [(<= max-depth (length memory)) 
@@ -147,6 +151,15 @@
                     cartesian-product 
                     (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
+      ; (if (not (contain? memory expression))
+      ;   (begin
+      ;     (pretty-print 'bye)
+      ;     (print-graph #t)
+      ;     (pretty-print expression)
+      ;     (pretty-print 'branch)
+      ;     (pretty-print (macro? expression))
+      ;     (pretty-print 'result)
+      ;     (pretty-print (type:environment-result-list env))))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
@@ -222,9 +235,11 @@
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
           [(and (list? denotion) (list? input)) 
-            (if (or (contain? input '**1) (contain? input '...))
-              (private-with body (candy:match-right denotion input))
-              (private-with body (candy:match-left denotion input)))]
+            (if (candy:matchable? denotion input)
+              (if (or (contain? input '**1) (contain? input '...))
+                (private-with body (candy:match-right denotion input))
+                (private-with body (candy:match-left denotion input)))
+              (raise 'macro-not-match))]
           [else (raise 'macro-not-match)])))
     body 
     match-pairs))
