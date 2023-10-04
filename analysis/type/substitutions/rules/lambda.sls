@@ -20,7 +20,7 @@
       [children (index-node-children index-node)])
     (try
       (match expression
-        [('lambda ((? symbol? identifiers) **1) _ **1 ) 
+        [('lambda ((? symbol? identifiers) ...) _ **1 ) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([variable (index-node-variable index-node)]
 
@@ -55,7 +55,7 @@
   (let ([children (index-node-children clause-index-node)]
       [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
     (match expression
-      [(((? symbol? parameter) **1) _ **1) 
+      [(((? symbol? parameter) ...) _ **1) 
         (cartesian-product
           root-variables
           '(=)

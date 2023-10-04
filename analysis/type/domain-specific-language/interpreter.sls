@@ -14,7 +14,6 @@
     (scheme-langserver util binary-search)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
-    (scheme-langserver util dedupe)
     (scheme-langserver util try)
 
     (scheme-langserver analysis identifier reference)
@@ -45,13 +44,13 @@
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      ; (if (not (contain? memory expression))
-      ;   (begin
-      ;     (pretty-print 'interpret)
-      ;     (print-graph #t)
-      ;     (pretty-print expression)))
-      (let ([new-memory (dedupe `(,@memory ,expression))])
+      ; (pretty-print 'interpret)
+      (print-graph #t)
+      (pretty-print (length memory))
+      (pretty-print expression)
+      (let ([new-memory `(,@memory ,expression)])
         (cond
+          [(null? expression) expression]
           [(<= max-depth (length memory)) 
             ; (pretty-print 'max)
             ; (print-graph #t)
@@ -114,15 +113,16 @@
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
-            (let ([maybe
-                  (fold-left
-                    (lambda (left reified-item) `(,@left ,@(type:interpret-result-list reified-item env new-memory)))
-                    '()
-                    (filter 
-                      (lambda (item) 
-                        (and (not (null? item)) (not (contain? new-memory item)))) 
-                      (map caddr (substitution:walk (type:environment-substitution-list env) expression))))])
-              (type:environment-result-list-set! env (if (null? maybe) `(,expression) maybe)))]
+            (type:environment-result-list-set! 
+              env 
+              (apply append 
+                (map 
+                  (lambda (item)
+                    (let ([reified (caddr item)])
+                      (if (equal? reified expression) 
+                        `(,reified)
+                        (type:interpret-result-list reified env new-memory))))
+                  (substitution:walk (type:environment-substitution-list env) expression))))]
           [(macro? expression)
             (let ([inputs 
                   (map 
@@ -146,19 +146,16 @@
               env 
               (apply append 
                 (map 
-                  (lambda (type) (type:interpret-result-list type env new-memory))
+                  (lambda (type) 
+                    (if (equal? type expression)
+                      `(,type)
+                      (type:interpret-result-list type env new-memory)))
                   (apply 
                     cartesian-product 
                     (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      ; (if (not (contain? memory expression))
-      ;   (begin
-      ;     (pretty-print 'bye)
-      ;     (print-graph #t)
-      ;     (pretty-print (or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression)))
-      ;     (pretty-print expression)
-      ;     (pretty-print 'result)
-      ;     (pretty-print (type:environment-result-list env))))
+      ; (pretty-print 'bye)
+      ; (pretty-print expression)
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]

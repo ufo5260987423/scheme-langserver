@@ -149,6 +149,8 @@
           ;it's in r6rs library?
           [(null? target-index-node)
             (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]
+          ; this can't be excluded by identifier-catching rules
+          [(equal? index-node target-index-node) '()]
           ;local
           ;You can't cache and speed up this clause by distinguishing variable in/not in 
           ;identifier-reference-initialization-index-node scope, because reify depdends on 
@@ -159,8 +161,6 @@
               `((,variable = ,(index-node-variable target-index-node)))
               ;implicit conversion for gradual typing
               (cond 
-              ; this can't be excluded by identifier-catching rules
-                [(equal? index-node target-index-node) '()]
                 [(null? (index-node-parent index-node)) '()]
                 [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
                   (let* ([ancestor (index-node-parent index-node)]
