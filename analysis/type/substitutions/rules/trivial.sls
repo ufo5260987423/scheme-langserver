@@ -162,7 +162,10 @@
               ;implicit conversion for gradual typing
               (cond 
                 [(null? (index-node-parent index-node)) '()]
-                [(is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node)
+                [(and 
+                    (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
+                    (or (equal? 'parameter (identifier-reference-type identifier-reference))
+                      (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
                   (let* ([ancestor (index-node-parent index-node)]
                       [children (index-node-children ancestor)]
                       [target-variable (index-node-variable target-index-node)]

@@ -58,16 +58,34 @@
 ;         (construct-substitution-list-for target-document)
 ;         (print-graph #t)
 ;         (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-;         (pretty-print 'sss)
-;         (pretty-print (document-substitution-list target-document))
+;         (let* (
+;             [substitutions (document-substitution-list target-document)]
+;             [tmp (type:interpret-result-list variable (make-type:environment substitutions))]
+;             [substitutions0 (remove-from-substitutions substitutions (lambda (i) (equal? variable (car i))))]
+;             [substitutions1 (fold-left add-to-substitutions substitutions0 (map (lambda (i) `(,variable = ,i)) tmp))]
+;             [unsolved-tmp (filter (lambda (i) (not (type:solved? i))) tmp)]
+;             )
+;             (pretty-print 'count)
+;             (pretty-print (length tmp))
+;             (pretty-print (length (filter type:solved? tmp)))
+;             (map 
+;                 (lambda (i)
+;                     (pretty-print 'aa0)
+;                     (pretty-print (type:interpret-result-list i (make-type:environment substitutions1))))
+;                 unsolved-tmp)
+;             ; (pretty-print (type:interpret-result-list variable (make-type:environment substitutions1)))
+;             )
+;         ; (pretty-print 
+;         ;     (filter (lambda (i) (not (type:solved? i)))
+;         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
 ;         ; (test-equal #t 
 ;         ;     (contain? 
 ;         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
 ;         ;         check-base0))
-;         (test-equal #t 
-;             (contain? 
-;                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
-;                 check-base1))
+;         ; (test-equal #t 
+;         ;     (contain? 
+;         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+;         ;         check-base1))
 ;                 )
 ; (test-end)
 

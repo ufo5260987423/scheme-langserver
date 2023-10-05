@@ -5,6 +5,7 @@
     construct-substitutions-between-index-nodes
     substitution-compare
     add-to-substitutions
+    remove-from-substitutions
     type->string)
   (import 
     (chezscheme)
@@ -51,4 +52,7 @@
       (if (null? target)
         substitutions
         (dedupe (merge substitution-compare substitutions (list target))))]))
+
+(define (remove-from-substitutions substitutions predicator)
+  (filter (lambda (substitution) (not (predicator substitution))) substitutions))
 )

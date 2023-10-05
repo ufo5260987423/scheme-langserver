@@ -3,6 +3,7 @@
     type:interpret
     type:interpret-result-list
     type:environment-result-list
+    type:solved?
 
     substitution:walk
 
@@ -40,14 +41,29 @@
     [(expression env) (type:environment-result-list (type:interpret expression env))]
     [(expression env memory) (type:environment-result-list (type:interpret expression env memory))]))
 
+(define (type:solved? expression)
+  (cond
+    [(variable? expression) #f]
+    [(macro? expression) #f]
+    [(inner:executable? expression) #f]
+    [(list? expression)
+      (if (not (inner:trivial? expression))
+        #f
+        (fold-left 
+          (lambda (r l)
+            (and r (type:solved? l)))
+          #t
+          expression))]
+    [else #t]))
+
 (define type:interpret 
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
       ; (pretty-print 'interpret)
-      (print-graph #t)
-      (pretty-print (length memory))
-      (pretty-print expression)
+      ; (print-graph #t)
+      ; (pretty-print (length memory))
+      ; (pretty-print expression)
       (let ([new-memory `(,@memory ,expression)])
         (cond
           [(null? expression) expression]
@@ -150,12 +166,16 @@
                     (if (equal? type expression)
                       `(,type)
                       (type:interpret-result-list type env new-memory)))
-                  (apply 
-                    cartesian-product 
-                    (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
+                  ;interpret first item in order to confirm is it executable or macro
+                  (map 
+                    (lambda (item)
+                      `(,item ,@(cdr expression)))
+                    (type:interpret-result-list (car expression) env new-memory)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      ; (pretty-print 'bye)
+      ; (pretty-print 'bye0)
       ; (pretty-print expression)
+      ; (pretty-print 'bye1)
+      ; (pretty-print (type:environment-result-list env))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
