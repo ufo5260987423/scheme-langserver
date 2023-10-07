@@ -116,16 +116,11 @@
                       ])]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
-                  (let ([pre (type:interpret-result-list (inner:list-content (inner:lambda-param l)) env new-memory)])
-                    (if (private-matchable? pre (list params))
+                  ;Assume that lambda-param, after interpreting, it won't change it form.
+                  (let ([pres (type:interpret-result-list (inner:lambda-param l) env new-memory)])
+                    (if (find (lambda (pre) (candy:matchable? (inner:list-content pre) params)) pres)
                       (type:environment-result-list-set! env (list (inner:lambda-return l)))
-                      (if (private-matchable? 
-                          pre
-                          (apply 
-                            cartesian-product 
-                            (map (lambda (param) (type:interpret-result-list param env new-memory)) params)))
-                        (type:environment-result-list-set! env (list (inner:lambda-return l)))
-                        (type:environment-result-list-set! env '()))))
+                      (type:environment-result-list-set! env '())))
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
@@ -155,8 +150,9 @@
                     (apply cartesian-product inputs)))))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
-          ;this is important, because there're many form of (variable variable), 
-          ;must be interpreted as (inner:lambda? inner:trivial) so that it can be continually interpreted
+          ;'list?' deeply involved the syntax of the DSL, though it's acturally not the case in DSL.
+          ;This senario means current expression is not strict inner type expression, but after some 
+          ;process on macro and triangular substitution, it may bring a executable one.
           [(list? expression)
             (type:environment-result-list-set! 
               env 
@@ -167,10 +163,10 @@
                       `(,type)
                       (type:interpret-result-list type env new-memory)))
                   ;interpret first item in order to confirm is it executable or macro
-                  (map 
-                    (lambda (item)
-                      `(,item ,@(cdr expression)))
-                    (type:interpret-result-list (car expression) env new-memory)))))]
+                  (apply 
+                    cartesian-product
+                    (map 
+                      (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
       ; (pretty-print 'bye0)
       ; (pretty-print expression)
