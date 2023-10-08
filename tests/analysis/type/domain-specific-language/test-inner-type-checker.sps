@@ -51,6 +51,9 @@
                         (with-equal? inner:list? a (with-append (inner:list?) c)))
                         (inner:list? fixnum? number? fixnum?))))
             (construct-type-expression-with-meta '(inner:list? number? fixnum?))))
+    (test-equal 
+        (inner:?->pair (construct-type-expression-with-meta '(inner:list? number? number?)))
+        (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

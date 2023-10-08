@@ -21,6 +21,8 @@
     inner:list?
     inner:list-content
 
+    inner:?->pair
+
     inner:vector?
     inner:pair?
     inner:pair-car
@@ -35,6 +37,11 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
+
+(define (inner:?->pair target)
+  (match target
+    [(inner:list? item _ **1) `(inner:pair? ,item ,(inner:?->pair `(inner:list? ,@_)))]
+    [else target]))
 
 (define (inner:trivial? expression)
   (cond

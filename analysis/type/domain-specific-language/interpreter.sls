@@ -5,6 +5,10 @@
     type:environment-result-list
     type:solved?
 
+    type:->?
+    type:<-?
+    type:=?
+
     substitution:walk
 
     make-type:environment)
@@ -35,11 +39,58 @@
 
 (define PRIVATE-MAX-DEPTH 10)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define type:->?
+  (case-lambda
+    [(left right env) (type:->? left right env PRIVATE-MAX-DEPTH)]
+    [(left right env max-depth) 
+      (cond
+        [(equal? left right) #t]
+        [(equal? right 'something?) #t]
+        [(and (identifier-reference? left) (identifier-reference? right)) 
+          (if (null? (identifier-reference-parents right))
+            #f
+            (if (contain? (identifier-reference-parents right) left)
+              #t
+              (fold-left
+                (lambda (l r)
+                  (if l
+                    (type:->? left r env max-depth)
+                    #f))
+                #t
+                (identifier-reference-parents right))))]
+        ; [(and (inner:lambda? left) (inner:lambda? right)) ]
+        [(and (list? left) (list? right)) 
+          (let* ([processed-left (inner:?->pair left)]
+              [processed-right (inner:?->pair right)])
+            (if (candy:matchable? processed-left processed-right)
+              (fold-left
+                (lambda (l pair)
+                  (if l
+                    (type:->? (car pair) (cdr pair) env)
+                    #f))
+                #t
+                (candy:match-left processed-left processed-right))
+              #f))]
+        [else  (contain? (type:interpret-result-list left env '() max-depth) right)])]))
+
+(define type:<-?
+  (case-lambda
+    [(left right env) (type:->? right left env PRIVATE-MAX-DEPTH)]
+    [(left right env max-depth) (type:->? right left env max-depth)]))
+
+(define type:=?
+  (case-lambda
+    [(left right env) (and (type:->? left right env PRIVATE-MAX-DEPTH) (type:<-? left right env PRIVATE-MAX-DEPTH))]
+    [(left right env max-depth) (and (type:->? left right env max-depth) (type:<-? left right env max-depth))]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:interpret-result-list
   (case-lambda 
     [(expression) (type:environment-result-list (type:interpret expression))]
     [(expression env) (type:environment-result-list (type:interpret expression env))]
-    [(expression env memory) (type:environment-result-list (type:interpret expression env memory))]))
+    [(expression env memory) (type:environment-result-list (type:interpret expression env memory))]
+    [(expression env memory max-depth) (type:environment-result-list (type:interpret expression env memory max-depth))]))
 
 (define (type:solved? expression)
   (cond
@@ -60,10 +111,10 @@
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      (pretty-print 'interpret)
-      (print-graph #t)
-      (pretty-print (length memory))
-      (pretty-print expression)
+      ; (pretty-print 'interpret)
+      ; (print-graph #t)
+      ; (pretty-print (length memory))
+      ; (pretty-print expression)
       (let ([new-memory `(,@memory ,expression)])
         (cond
           [(null? expression) expression]
@@ -170,10 +221,10 @@
                     (map 
                       (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      (pretty-print 'bye0)
-      (pretty-print expression)
-      (pretty-print 'bye1)
-      (pretty-print (type:environment-result-list env))
+      ; (pretty-print 'bye0)
+      ; (pretty-print expression)
+      ; (pretty-print 'bye1)
+      ; (pretty-print (type:environment-result-list env))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]

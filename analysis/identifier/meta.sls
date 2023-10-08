@@ -4,7 +4,7 @@
      find-meta)
   (import 
      (rnrs)
-     (only (chezscheme) pretty-print)
+     (only (chezscheme) pretty-print print-graph)
      (ufo-match)
      (scheme-langserver util binary-search)
      (scheme-langserver util natural-order-compare)
@@ -98,9 +98,13 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
           (find 
               (lambda (identifier-reference) 
                 (equal? procedure-name (identifier-reference-identifier identifier-reference))) chezscheme)) 
-        '(bignum? integer? cflonum? flonum? rational? real? complex?))))
+        '(bignum? integer? cflonum? flonum? rational? real? complex? number?))))
 
 (define (construct-type-expression-with-meta expression)
+  (if (not initialized?)
+    (begin
+      (init-type-expressions)
+      (set! initialized? #t)))
   ;;chezscheme is the super set of rnrs
   (private-construct-type-expression-with-meta expression chezscheme))
 
