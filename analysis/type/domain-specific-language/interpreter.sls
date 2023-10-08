@@ -167,14 +167,22 @@
                       ])]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
-                  ;Assume that lambda-param, after interpreting, it won't change it form.
-                  (let* ([pres (type:interpret-result-list (inner:lambda-param l) env new-memory)]
-                      [find-result (find (lambda (pre) (candy:matchable? (inner:list-content pre) params)) pres)])
-                    (if find-result 
-                      ; (type:environment-result-list-set! env (list (private-with (inner:lambda-return l) find-result)))
-                      (type:environment-result-list-set! env (list (inner:lambda-return l)))
-                      (type:environment-result-list-set! env '())))
-                  (type:environment-result-list-set! env (list (inner:lambda-return l))))]
+                  (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params)
+                    (type:environment-result-list-set! env 
+                      (type:interpret-result-list 
+                        (private-with (inner:lambda-return l) (candy:match-left (inner:list-content (inner:lambda-param l)) params))
+                        env
+                        new-memory))
+                    (type:environment-result-list-set! env '()))
+                  ; ;Assume that lambda-param, after interpreting, it won't change it form.
+                  ; (let* ([pres (type:interpret-result-list (inner:lambda-param l) env new-memory)]
+                  ;     [find-result (find (lambda (pre) (candy:matchable? (inner:list-content pre) params)) pres)])
+                  ;   (if find-result 
+                  ;     ; (type:environment-result-list-set! env (list (private-with (inner:lambda-return l) find-result)))
+                  ;     (type:environment-result-list-set! env (list (inner:lambda-return l)))
+                  ;     (type:environment-result-list-set! env '())))
+                  (type:environment-result-list-set! env (list (inner:lambda-return l)))
+                  )]
               [else expression])]
           [(variable? expression)
             (type:environment-result-list-set! 
@@ -288,8 +296,12 @@
           [input (cdr pair)])
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
-          ; [(variable? denotion) (private-substitute left denotion input)]
-          ; [(identifier-reference? denoton) ]
+          [(variable? denotion) (private-substitute left denotion input)]
+          ; [(identifier-reference? denotion) 
+          ;   (if (type:<- denotion input env)
+          ;     left
+          ;     (riase 'macro-not-match))]
+          [(identifier-reference? denotion) left]
           [(and (list? denotion) (list? input)) 
             (if (candy:matchable? denotion input)
               (if (or (contain? input '**1) (contain? input '...))

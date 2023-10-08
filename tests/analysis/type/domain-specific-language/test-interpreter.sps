@@ -8,6 +8,7 @@
     ; (rnrs (6)) 
     (chezscheme) 
     (srfi :64 testing) 
+    (scheme-langserver util contain) 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language variable)
@@ -23,11 +24,11 @@
                 `((something? <-record-ref annotation? annotation-expression) 
                     (inner:record? annotation? ,(make-variable) (inner:pair? annotation-expression symbol?)))))
         (list (construct-type-expression-with-meta 'symbol?)))
-    ; (test-equal #t
-    ;     (contain? 
-    ;         (let ([v (make-variable)])
-    ;             (type:interpret-result-list `((,v <- (inner:list? ,v)) ,(construct-type-expression-with-meta 'number?))))
-    ;         (construct-type-expression-with-meta 'number?)))
+    (test-equal #t
+        (contain? 
+            (let ([v (make-variable)])
+                (type:interpret-result-list `((,v <- (inner:list? ,v)) ,(construct-type-expression-with-meta 'number?))))
+            (construct-type-expression-with-meta 'number?)))
 (test-end)
 
 (test-begin "type:->?/<-?/=? ")

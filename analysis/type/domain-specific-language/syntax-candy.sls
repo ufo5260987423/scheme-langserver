@@ -41,29 +41,33 @@
   (case-lambda 
     [(parameter-template argument-list) (candy:match-left (candy:match parameter-template argument-list))]
     [(match-segment-pairs)
-      (fold-left 
-        (lambda (result match-segment-pair)
-          (cond 
-            [(and 
-              (null? result)
-              (or 
+      (map 
+        (lambda (pair)
+          `(,(segment-type (car pair)) . ,(cdr pair)))
+        (fold-left 
+          (lambda (result match-segment-pair)
+            (cond 
+              [(and 
+                (null? result)
+                (or 
+                  (private-is-... (car match-segment-pair))
+                  (private-is-**1 (car match-segment-pair))))
+                `((,(car match-segment-pair) . (,(segment-type (cdr match-segment-pair)))))]
+              [(null? result)
+                `((,(car match-segment-pair) . ,(segment-type (cdr match-segment-pair))))]
+              [(or 
                 (private-is-... (car match-segment-pair))
-                (private-is-**1 (car match-segment-pair))))
-              `((,(segment-type (car match-segment-pair)) . (,(segment-type (cdr match-segment-pair)))))]
-            [(null? result)
-              `((,(segment-type (car match-segment-pair)) . ,(segment-type (cdr match-segment-pair))))]
-            [(or 
-              (private-is-... (car match-segment-pair))
-              (private-is-**1 (car match-segment-pair)))
-              (let ([last-left (car (car (reverse result)))]
-                  [last-right (cdr (car (reverse result)))]
-                  [ahead (reverse (cdr (reverse result)))])
-                (if (equal? last-left (segment-type (car match-segment-pair)))
-                  (append ahead `((,last-left . ,(append last-right (list (segment-type (cdr match-segment-pair)))))))
-                  (append result `((,(segment-type (car match-segment-pair)) . (,(segment-type (cdr match-segment-pair))))))))]
-            [else (append result `((,(segment-type (car match-segment-pair)) . ,(segment-type (cdr match-segment-pair)))))]))
-        '()
-        match-segment-pairs)]))
+                (private-is-**1 (car match-segment-pair)))
+                (let ([last-left (car (car (reverse result)))]
+                    [last-right (cdr (car (reverse result)))]
+                    [ahead (reverse (cdr (reverse result)))])
+                  (if (equal? last-left (car match-segment-pair))
+                    (append ahead `((,last-left . ,(append last-right (list (segment-type (cdr match-segment-pair)))))))
+                    (append result `((,(car match-segment-pair) . (,(segment-type (cdr match-segment-pair))))))))]
+              [else (append result `((,(car match-segment-pair) . ,(segment-type (cdr match-segment-pair)))))]))
+          '()
+          match-segment-pairs))
+        ]))
 
 ;NOTE: a complecated case is like regexes abc+ and ab...c
 (define candy:match 
