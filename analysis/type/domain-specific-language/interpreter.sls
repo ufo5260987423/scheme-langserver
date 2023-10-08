@@ -60,10 +60,10 @@
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      ; (pretty-print 'interpret)
-      ; (print-graph #t)
-      ; (pretty-print (length memory))
-      ; (pretty-print expression)
+      (pretty-print 'interpret)
+      (print-graph #t)
+      (pretty-print (length memory))
+      (pretty-print expression)
       (let ([new-memory `(,@memory ,expression)])
         (cond
           [(null? expression) expression]
@@ -117,8 +117,10 @@
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
                   ;Assume that lambda-param, after interpreting, it won't change it form.
-                  (let ([pres (type:interpret-result-list (inner:lambda-param l) env new-memory)])
-                    (if (find (lambda (pre) (candy:matchable? (inner:list-content pre) params)) pres)
+                  (let* ([pres (type:interpret-result-list (inner:lambda-param l) env new-memory)]
+                      [find-result (find (lambda (pre) (candy:matchable? (inner:list-content pre) params)) pres)])
+                    (if find-result 
+                      ; (type:environment-result-list-set! env (list (private-with (inner:lambda-return l) find-result)))
                       (type:environment-result-list-set! env (list (inner:lambda-return l)))
                       (type:environment-result-list-set! env '())))
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
@@ -168,25 +170,14 @@
                     (map 
                       (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      ; (pretty-print 'bye0)
-      ; (pretty-print expression)
-      ; (pretty-print 'bye1)
-      ; (pretty-print (type:environment-result-list env))
+      (pretty-print 'bye0)
+      (pretty-print expression)
+      (pretty-print 'bye1)
+      (pretty-print (type:environment-result-list env))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
     [(expression) (type:interpret expression (make-type:environment '()) '())]))
-
-(define private-matchable? 
-  (case-lambda 
-    [(cartesian-product-list)
-      (if (null? cartesian-product-list)
-        #f
-        (if (apply candy:matchable? (car cartesian-product-list))
-          #t
-          (private-matchable? (cdr cartesian-product-list))))]
-    [(a-list b-list) 
-      (private-matchable? (cartesian-product a-list b-list))]))
 
 (define (macro? expression)
   (match expression
@@ -246,6 +237,8 @@
           [input (cdr pair)])
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
+          ; [(variable? denotion) (private-substitute left denotion input)]
+          ; [(identifier-reference? denoton) ]
           [(and (list? denotion) (list? input)) 
             (if (candy:matchable? denotion input)
               (if (or (contain? input '**1) (contain? input '...))
