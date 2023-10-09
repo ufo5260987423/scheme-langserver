@@ -14,6 +14,7 @@
     (scheme-langserver virtual-file-system library-node)
 
     (scheme-langserver util contain)
+    (scheme-langserver util dedupe)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -21,6 +22,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions generator)
@@ -44,50 +46,31 @@
             check-base)))
 (test-end)
 
-; (test-begin "case-lambda procedure type access")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-;             [target-document (file-node-document target-file-node)]
-;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
-;             [variable (index-node-variable target-index-node)]
-;             [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
-;             [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
-;         (construct-substitution-list-for target-document)
-;         (print-graph #t)
-;         (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-;         (let* (
-;             [substitutions (document-substitution-list target-document)]
-;             [tmp (type:interpret-result-list variable (make-type:environment substitutions))]
-;             [substitutions0 (remove-from-substitutions substitutions (lambda (i) (equal? variable (car i))))]
-;             [substitutions1 (fold-left add-to-substitutions substitutions0 (map (lambda (i) `(,variable = ,i)) tmp))]
-;             [unsolved-tmp (filter (lambda (i) (not (type:solved? i))) tmp)]
-;             )
-;             (pretty-print 'count)
-;             (pretty-print (length tmp))
-;             (pretty-print (length (filter type:solved? tmp)))
-;             (map 
-;                 (lambda (i)
-;                     (pretty-print 'aa0)
-;                     (pretty-print (type:interpret-result-list i (make-type:environment substitutions1))))
-;                 unsolved-tmp)
-;             (pretty-print (contain? (type:interpret-result-list variable (make-type:environment substitutions1)) check-base1))
-;             )
-;         ; (pretty-print 
-;         ;     (filter (lambda (i) (not (type:solved? i)))
-;         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
-;         ; (test-equal #t 
-;         ;     (contain? 
-;         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
-;         ;         check-base0))
-;         ; (test-equal #t 
-;         ;     (contain? 
-;         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
-;         ;         check-base1))
-;                 )
-; (test-end)
+(test-begin "case-lambda procedure type access")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
+            [variable (index-node-variable target-index-node)]
+            [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
+            [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
+        (construct-substitution-list-for target-document)
+        (print-graph #t)
+        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
+        (test-equal #t 
+            (contain? 
+                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                check-base0))
+        (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+        ; (test-equal #t 
+        ;     (contain? 
+        ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+        ;         check-base1))
+                )
+(test-end)
 
 (test-begin "cross clause type access")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]

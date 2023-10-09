@@ -19,6 +19,7 @@
     (scheme-langserver util binary-search)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
+    (scheme-langserver util dedupe)
     (scheme-langserver util try)
 
     (scheme-langserver analysis identifier reference)
@@ -233,6 +234,9 @@
       ; (pretty-print expression)
       ; (pretty-print 'bye1)
       ; (pretty-print (type:environment-result-list env))
+      (type:environment-result-list-set! 
+        env 
+        (dedupe (type:environment-result-list env)))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
