@@ -96,7 +96,7 @@
 (define (type:solved? expression)
   (cond
     [(variable? expression) #f]
-    [(macro? expression) #f]
+    [(inner:macro? expression) #f]
     [(inner:executable? expression) #f]
     [(list? expression)
       (if (not (inner:trivial? expression))
@@ -166,6 +166,16 @@
                       (type:environment-result-list-set! env (list (inner:record-lambda-return l)))
                       ; (type:environment-result-list-set! env '()))
                       ])]
+              [((? inner:macro? l) params ...)
+                (type:environment-result-list-set! 
+                  env 
+                  (apply append 
+                    (map 
+                      (lambda (for-template) 
+                        (try
+                          (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
+                          (except c [else (list expression)])))
+                      (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) params)))))]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
                   (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params)
@@ -182,34 +192,19 @@
                   ;     ; (type:environment-result-list-set! env (list (private-with (inner:lambda-return l) find-result)))
                   ;     (type:environment-result-list-set! env (list (inner:lambda-return l)))
                   ;     (type:environment-result-list-set! env '())))
-                  (type:environment-result-list-set! env (list (inner:lambda-return l)))
-                  )]
+                  (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
             (type:environment-result-list-set! 
               env 
               (apply append 
                 (map 
-                  (lambda (item)
-                    (let ([reified (caddr item)])
-                      (if (equal? reified expression) 
-                        `(,reified)
-                        (type:interpret-result-list reified env new-memory))))
-                  (substitution:walk (type:environment-substitution-list env) expression))))]
-          [(macro? expression)
-            (let ([inputs 
-                  (map 
-                    (lambda (item) (type:interpret-result-list item env new-memory)) 
-                    (macro-inputs expression))])
-              (type:environment-result-list-set! 
-                env 
-                (apply append 
-                  (map 
-                    (lambda (for-template) 
-                      (try
-                        (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
-                        (except c [else '()])))
-                    (apply cartesian-product inputs)))))]
+                  (lambda (reified)
+                    (if (equal? reified expression) 
+                      `(,reified)
+                      (type:interpret-result-list reified env new-memory)))
+                  (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
+          [(inner:macro? expression) (type:environment-result-list-set! env `(,expression)) ]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           ;'list?' deeply involved the syntax of the DSL, though it's acturally not the case in DSL.
@@ -242,48 +237,15 @@
     [(expression env) (type:interpret expression env '())]
     [(expression) (type:interpret expression (make-type:environment '()) '())]))
 
-(define (macro? expression)
-  (match expression
-    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) #t]
-    [else #f]))
-
-(define (macro-inputs expression)
-  (match expression
-    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) inputs]
-    [else '()]))
-
 (define (macro-head-execute-with expression interpreted-inputs)
   (match expression
-    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
+    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
       (execute-macro `((with ,denotions ,body) ,@interpreted-inputs))]
     [else (raise 'macro-not-match)]))
 
-(define (private-macro-template? expression)
-  (cond
-    [(list? expression) 
-      (fold-left
-        (lambda (left right)
-          (and left (private-macro-template? right)))
-        #t
-        expression)]
-    [(symbol? expression) 
-      (cond
-        [(equal? expression 'something?) #f]
-        [(equal? expression 'void?) #f]
-        [(equal? expression '<-) #f]
-        [(equal? expression '<-record-ref) #f]
-        [(equal? expression '<-record-set!) #f]
-        [(equal? expression '<-record-constructor) #f]
-        [(equal? expression 'inner:list?) #f]
-        [(equal? expression 'inner:pair?) #f]
-        [(equal? expression 'inner:vector?) #f]
-        [(equal? expression 'inner:record?) #f]
-        [else #t])]
-    [else #f]))
-
 (define (execute-macro expression)
   (match expression
-    [(('with ((? private-macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
+    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
       (if (candy:matchable? denotions inputs)
         (execute-macro (private-with body (candy:match-left denotions inputs)))
         expression)]

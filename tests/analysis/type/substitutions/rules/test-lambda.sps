@@ -64,7 +64,17 @@
             (contain? 
                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
                 check-base0))
-        (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+        (let* ([r0 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))]
+                [r1 (filter type:solved? r0)]
+                [s0 (document-substitution-list target-document)]
+                [s0-1 (map caddr s0)]
+                [s1 (remove-from-substitutions s0 (lambda (i) (equal? variable (car i))))]
+                [s2 (fold-left add-to-substitutions s1 (map (lambda(i) `(,variable = ,i)) r1))]
+                [r2 (filter (lambda (i) (not (contain? r1 i))) r0)])
+            (pretty-print (contain? (apply append (map
+                (lambda (i) (type:interpret-result-list i (make-type:environment s2)))
+                r2)) check-base1))
+        )
         ; (test-equal #t 
         ;     (contain? 
         ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 

@@ -21,6 +21,9 @@
     inner:list?
     inner:list-content
 
+    inner:macro?
+    inner:macro-template?
+
     inner:?->pair
 
     inner:vector?
@@ -50,9 +53,38 @@
     [(inner:vector? expression) #t]
     [(inner:pair? expression) #t]
     [(inner:lambda? expression) #t]
+    [(inner:macro? expression) #t]
     [(inner:record? expression) #t]
     [(inner:record-lambda? expression) #t]
     [(inner:executable? expression) #t]
+    [else #f]))
+
+(define (inner:macro? expression)
+  (match expression
+    [('with ((? inner:macro-template? denotions) **1) body) #t]
+    [else #f]))
+
+(define (inner:macro-template? expression)
+  (cond
+    [(list? expression) 
+      (fold-left
+        (lambda (left right)
+          (and left (inner:macro-template? right)))
+        #t
+        expression)]
+    [(symbol? expression) 
+      (cond
+        [(equal? expression 'something?) #f]
+        [(equal? expression 'void?) #f]
+        [(equal? expression '<-) #f]
+        [(equal? expression '<-record-ref) #f]
+        [(equal? expression '<-record-set!) #f]
+        [(equal? expression '<-record-constructor) #f]
+        [(equal? expression 'inner:list?) #f]
+        [(equal? expression 'inner:pair?) #f]
+        [(equal? expression 'inner:vector?) #f]
+        [(equal? expression 'inner:record?) #f]
+        [else #t])]
     [else #f]))
 
 (define (private-inner:trivial-item? item)
@@ -68,6 +100,7 @@
 (define (inner:executable? body)
   (match body
     [((? inner:lambda? head) (? inner:trivial? tail) ...) #t]
+    [((? inner:macro? head) (? inner:trivial? tail) ...) #t]
     ; [((? variable? head) (? inner:trivial? tail) ...) #t]
     ; [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
     [((? inner:record-lambda? head) (? inner:record? tail) (? inner:trivial? tail)) #t]
