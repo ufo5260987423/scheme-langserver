@@ -71,7 +71,7 @@
                 [s1 (remove-from-substitutions s0 (lambda (i) (equal? variable (car i))))]
                 [s2 (fold-left add-to-substitutions s1 (map (lambda(i) `(,variable = ,i)) r1))]
                 [r2 (filter (lambda (i) (not (contain? r1 i))) r0)])
-            (pretty-print (contain? (apply append (map
+            (test-equal #t (contain? (apply append (map
                 (lambda (i) (type:interpret-result-list i (make-type:environment s2)))
                 r2)) check-base1))
         )
