@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis type domain-specific-language inner-type-checker)
   (export 
     inner:trivial?
+    inner:contain?
 
     inner:lambda?
     inner:lambda-param
@@ -97,14 +98,30 @@
     [(equal? 'void? item) #t]
     [else #f]))
 
+;inner:macro? cases should be excuted before inner:lambda? and inner:record-lambda? cases
+;so, excecpt inner:macro? should be exclude in other cases
 (define (inner:executable? body)
   (match body
-    [((? inner:lambda? head) (? inner:trivial? tail) ...) #t]
+    [((? inner:lambda? head) (? inner:trivial? tail) ...) 
+      (not (inner:contain? body inner:macro?))]
     [((? inner:macro? head) (? inner:trivial? tail) ...) #t]
     ; [((? variable? head) (? inner:trivial? tail) ...) #t]
     ; [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
-    [((? inner:record-lambda? head) (? inner:record? tail) (? inner:trivial? tail)) #t]
-    [((? inner:record-lambda? head) (? inner:record? tail)) #t]
+    [((? inner:record-lambda? head) (? inner:record? tail) (? inner:trivial? tail)) 
+      (not (inner:contain? body inner:macro?))]
+    [((? inner:record-lambda? head) (? inner:record? tail)) 
+      (not (inner:contain? body inner:macro?))]
+    [else #f]))
+
+(define (inner:contain? body func)
+  (cond 
+    [(func body) #t]
+    [(list? body) 
+      (fold-left
+        (lambda (l r)
+          (if l #t (inner:contain? r func)))
+        #f
+        body)]
     [else #f]))
 
 (define (inner:record? body)

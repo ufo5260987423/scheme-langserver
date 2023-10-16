@@ -38,7 +38,7 @@
       (lambda (substitution-list)
         (new substitution-list '())))))
 
-(define PRIVATE-MAX-DEPTH 10)
+(define PRIVATE-MAX-DEPTH 11)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
@@ -174,6 +174,8 @@
                       (lambda (for-template) 
                         (try
                           (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
+                          ;thie except branch brings a problem that the expression may nest many things into itself 
+                          ;and leads to non-stop result.
                           (except c [else (list expression)])))
                       (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) params)))))]
               [((? inner:lambda? l) params ...)
@@ -204,13 +206,17 @@
                       `(,reified)
                       (type:interpret-result-list reified env new-memory)))
                   (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
-          [(inner:macro? expression) (type:environment-result-list-set! env `(,expression)) ]
+          ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
+          [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           ;'list?' deeply involved the syntax of the DSL, though it's acturally not the case in DSL.
           ;This senario means current expression is not strict inner type expression, but after some 
           ;process on macro and triangular substitution, it may bring a executable one.
-          [(list? expression)
+          ;这里如果没有not，会死循环，如果有not，well……则对于扩展以后的，组合的结果，就不能正确执行，就没法真正的扩展方程。
+          ;这当然是可以想象的，因为组合就是macro执行失败的结果，就是第一轮的结果
+          ;解决的方案是把macro抽出来，挨个儿去搞，去解决问题。
+          [(and (list? expression) (not (inner:contain? expression inner:macro?)))
             (type:environment-result-list-set! 
               env 
               (apply append 
