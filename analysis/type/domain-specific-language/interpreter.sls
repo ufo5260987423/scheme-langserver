@@ -228,9 +228,8 @@
           ;'list?' deeply involved the syntax of the DSL, though it's acturally not the case in DSL.
           ;This senario means current expression is not strict inner type expression, but after some 
           ;process on macro and triangular substitution, it may bring a executable one.
-          ;这里如果没有not，会死循环，如果有not，well……则对于扩展以后的，组合的结果，就不能正确执行，就没法真正的扩展方程。
-          ;这当然是可以想象的，因为组合就是macro执行失败的结果，就是第一轮的结果
-          ;解决的方案是把macro抽出来，挨个儿去搞，去解决问题。
+          ;If here's no "not", it will leads to error because of its item maybe failed macro indicated
+          ;by above "except" branch. The only solution is type:depature&interpret->result-list.
           [(and (list? expression) (not (inner:contain? expression inner:macro?)))
             (type:environment-result-list-set! 
               env 

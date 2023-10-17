@@ -58,7 +58,7 @@
             [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
             [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
         (construct-substitution-list-for target-document)
-        (print-graph #t)
+        ; (print-graph #t)
         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
         (let* ([r0 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))]
                 [r1 (filter type:solved? r0)]
@@ -74,8 +74,7 @@
                         (map
                             (lambda (i) (type:depature&interpret->result-list i (make-type:environment s2)))
                             r2)) 
-                    check-base1))
-        ))
+                    check-base1))))
 (test-end)
 
 (test-begin "cross clause type access")
