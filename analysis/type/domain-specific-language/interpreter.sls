@@ -39,7 +39,7 @@
       (lambda (substitution-list)
         (new substitution-list '())))))
 
-(define PRIVATE-MAX-DEPTH 11)
+(define PRIVATE-MAX-DEPTH 10)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
