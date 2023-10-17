@@ -68,9 +68,13 @@
                 [s2 (fold-left add-to-substitutions s1 (map (lambda(i) `(,variable = ,i)) r1))]
                 [r2 (filter (lambda (i) (not (contain? r1 i))) r0)])
             (test-equal #t (contain? r0 check-base0))
-            ; (test-equal #t (contain? (apply append (map
-            ;     (lambda (i) (type:interpret-result-list i (make-type:environment s2)))
-            ;     r2)) check-base1))
+            (test-equal #t 
+                (contain? 
+                    (apply append 
+                        (map
+                            (lambda (i) (type:depature&interpret->result-list i (make-type:environment s2)))
+                            r2)) 
+                    check-base1))
         ))
 (test-end)
 

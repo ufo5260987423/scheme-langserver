@@ -4,6 +4,7 @@
     type:interpret-result-list
     type:environment-result-list
     type:solved?
+    type:depature&interpret->result-list
 
     type:->?
     type:<-?
@@ -107,6 +108,20 @@
           #t
           expression))]
     [else #t]))
+
+(define type:depature&interpret->result-list
+  (case-lambda
+    [(expression env) (type:depature&interpret->result-list expression env PRIVATE-MAX-DEPTH)]
+    [(expression env max-depth)
+      (cond
+        [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
+        [(and (list? expression) (inner:contain? expression inner:macro?)) 
+          (apply append 
+            (map 
+              (lambda (item) (type:interpret-result-list item env '() max-depth))
+              (apply cartesian-product
+                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression))))]
+        [else (type:interpret-result-list expression env '() max-depth)])]))
 
 (define type:interpret 
   (case-lambda 
