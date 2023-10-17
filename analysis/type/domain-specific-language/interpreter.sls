@@ -116,11 +116,11 @@
       (cond
         [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
         [(and (list? expression) (inner:contain? expression inner:macro?)) 
-          (apply append 
+          (dedupe (apply append 
             (map 
               (lambda (item) (type:interpret-result-list item env '() max-depth))
               (apply cartesian-product
-                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression))))]
+                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression)))))]
         [else (type:interpret-result-list expression env '() max-depth)])]))
 
 (define type:interpret 
