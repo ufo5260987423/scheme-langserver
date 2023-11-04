@@ -10,14 +10,6 @@
     inner:record?
     inner:record-properties
     inner:record-predicator
-    inner:record-variable
-
-    inner:record-lambda?
-    inner:record-lambda?
-    inner:record-lambda-record-predicator
-    inner:record-lambda-identifier
-    inner:record-lambda-type
-    inner:record-lambda-return
 
     inner:list?
     inner:list-content
@@ -56,7 +48,6 @@
     [(inner:lambda? expression) #t]
     [(inner:macro? expression) #t]
     [(inner:record? expression) #t]
-    [(inner:record-lambda? expression) #t]
     [(inner:executable? expression) #t]
     [else #f]))
 
@@ -98,7 +89,7 @@
     [(equal? 'void? item) #t]
     [else #f]))
 
-;inner:macro? cases should be excuted before inner:lambda? and inner:record-lambda? cases
+;inner:macro? cases should be excuted before inner:lambda? cases
 ;so, excecpt inner:macro? should be exclude in other cases
 (define (inner:executable? body)
   (match body
@@ -107,10 +98,6 @@
     [((? inner:macro? head) (? inner:trivial? tail) ...) #t]
     ; [((? variable? head) (? inner:trivial? tail) ...) #t]
     ; [((? identifier-reference? head) (? inner:trivial? tail) ...) #t]
-    [((? inner:record-lambda? head) (? inner:record? tail) (? inner:trivial? tail)) 
-      (not (inner:contain? body inner:macro?))]
-    [((? inner:record-lambda? head) (? inner:record? tail)) 
-      (not (inner:contain? body inner:macro?))]
     [else #f]))
 
 (define (inner:contain? body func)
@@ -126,77 +113,18 @@
 
 (define (inner:record? body)
   (match body
-    [('inner:record? (? identifier-reference? predicator) (? variable? variable) ('inner:pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
-    [('inner:record? (? identifier-reference? predicator) (? null? non-variable) ('inner:pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
+    [('inner:record? (? identifier-reference? predicator) ('inner:pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
     [else #f]))
-
-(define (inner:record-variable body)
-  (if (inner:record? body)
-    (caddr body)
-    '()))
 
 (define (inner:record-properties body)
   (if (inner:record? body)
-    (cdddr body)
+    (cddr body)
     '()))
 
 (define (inner:record-predicator body)
   (if (inner:record? body)
     (cadr body)
     '()))
-
-(define (inner:record-lambda? body)
-  (match body
-    [('void? 
-        '<-record-set! 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref)) #t]
-    [((? inner:trivial? return) 
-        '<-record-ref 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref)) #t]
-    [((? inner:record? return) 
-        '<-record-constructor 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? constructor)) #t]
-    [else #f]))
-
-(define (inner:record-lambda-record-predicator body)
-  (match body
-    [('void? 
-        '<-record-set! 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref)) record-predicator]
-    [((? inner:trivial? return) 
-        '<-record-ref 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref)) record-predicator]
-    [((? inner:record? return) 
-        '<-record-constructor 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? constructor)) record-predicator]))
-
-(define (inner:record-lambda-type body)
-  (cadr body))
-
-(define (inner:record-lambda-return body)
-  (car body))
-
-(define (inner:record-lambda-identifier body)
-  (match body
-    [('void? 
-        '<-record-set! 
-        (? identifier-reference? record-predicator) 
-        ;here we use ref, it's consistent to inner:record's properties
-        (? identifier-reference? ref)) ref]
-    [((? inner:trivial? return) 
-        '<-record-ref 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? ref)) ref]
-    [((? inner:record? return) 
-        '<-record-constructor 
-        (? identifier-reference? record-predicator) 
-        (? identifier-reference? constructor)) constructor]))
 
 (define (inner:lambda? body)
   (match body

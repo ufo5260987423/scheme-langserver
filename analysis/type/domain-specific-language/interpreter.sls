@@ -49,6 +49,10 @@
       (cond
         [(equal? left right) #t]
         [(equal? right 'something?) #t]
+        [(and (identifier-reference? left) (inner:record? right)) 
+          (equal? left (cadr right))]
+        [(and (inner:record? right) (identifier-reference? right)) 
+          (equal? right (cadr left))]
         [(and (identifier-reference? left) (identifier-reference? right)) 
           (if (null? (identifier-reference-parents right))
             #f
@@ -144,43 +148,6 @@
           [(inner:executable? expression)
             ;the clause sequence is important
             (match expression
-              ;todo
-              [((? inner:record-lambda? l) (? inner:record? record) (? inner:trivial? params) ...) 
-                (match (inner:record-lambda-type l)
-                  ['<-record-set!
-                    (if (and (= 1 (length params)) (equal? (inner:record-lambda-record-predicator l) (inner:record-predicator record)))
-                      (begin
-                        (type:environment-result-list-set! 
-                          env
-                          ('void?))
-                        (type:environment-substitution-list-set! 
-                          env
-                          (fold-left
-                            add-to-substitutions 
-                            (type:environment-substitution-list env)
-                            (map 
-                              (lambda (result)
-                                `(,(inner:record-variable record) = ,result))
-                              (filter 
-                                (lambda (r)
-                                  (variable? (inner:record-variable record)))
-                                (type:interpret-result-list (car params) env new-memory))
-                              )))))]
-                  ['<-record-ref
-                    (if (and (null? params) (equal? (inner:record-lambda-record-predicator l) (inner:record-predicator record)))
-                      (type:environment-result-list-set! 
-                        env
-                        (map 
-                          (lambda (item) (car (reverse item)))
-                          (filter (lambda (property) (equal? (inner:pair-car property) (cadddr l))) (inner:record-properties record)))))]
-                  ['<-record-constructor
-                    ; (if (private-matchable? 
-                    ;     (type:interpret-result-list (inner:record-lambda-params l) env)
-                    ;     (apply cartesian-product (map (lambda(param) (type:interpret-result-list param env)) params)))
-                        ;todo:use real constructor!
-                      (type:environment-result-list-set! env (list (inner:record-lambda-return l)))
-                      ; (type:environment-result-list-set! env '()))
-                      ])]
               [((? inner:macro? l) params ...)
                 (type:environment-result-list-set! 
                   env 
