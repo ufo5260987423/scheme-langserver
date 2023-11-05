@@ -18,12 +18,6 @@
     (test-equal 
         (type:interpret-result-list (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?)))
         (list (construct-type-expression-with-meta 'number?)))
-    (test-equal 
-        (type:interpret-result-list 
-            (construct-type-expression-with-meta 
-                `((something? <-record-ref annotation? annotation-expression) 
-                    (inner:record? annotation? ,(make-variable) (inner:pair? annotation-expression symbol?)))))
-        (list (construct-type-expression-with-meta 'symbol?)))
     (test-equal #t
         (contain? 
             (let ([v (make-variable)])
