@@ -18,6 +18,7 @@
     (scheme-langserver analysis type substitutions rules if)
     (scheme-langserver analysis type substitutions rules let)
     (scheme-langserver analysis type substitutions rules lambda)
+    (scheme-langserver analysis type substitutions rules record)
     (scheme-langserver analysis type substitutions rules trivial)
     (scheme-langserver analysis type substitutions rules define)
     (scheme-langserver analysis type substitutions rules application)
@@ -81,6 +82,7 @@
         let-process
         if-process
         lambda-process
+        record-process
 
         ;this should be the last
         application-process))))
