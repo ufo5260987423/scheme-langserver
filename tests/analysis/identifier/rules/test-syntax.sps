@@ -19,7 +19,7 @@
 
 
 (test-begin "syntax-process")
-    (let* ( [workspace (init-workspace "./util")]
+    (let* ( [workspace (init-workspace "./util" '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [target-file-node (walk-file root-file-node "./util/try.sls")]
             [document (file-node-document target-file-node)]

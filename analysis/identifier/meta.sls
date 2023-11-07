@@ -24,6 +24,21 @@
     [(equal? list-instance '(scheme)) scheme] 
     [(equal? list-instance '(chezscheme)) chezscheme]
     [(equal? list-instance '(rnrs condition)) rnrs-condition]
+    ; https://www.gnu.org/software/guile/manual/html_node/rnrs.html
+    [(equal? list-instance '(rnrs (6))) rnrs]
+    [(equal? list-instance '(rnrs base (6))) rnrs-base]
+    [(equal? list-instance '(rnrs arithmetic fixnums base (6))) rnrs-arithmetic-fixnums]
+    [(equal? list-instance '(rnrs bytevectors (6))) rnrs-bytevectors]
+    [(equal? list-instance '(rnrs conditions (6))) rnrs-condition]
+    [(equal? list-instance '(rnrs control (6))) rnrs-control]
+    [(equal? list-instance '(rnrs exceptions (6))) rnrs-exception]
+    [(equal? list-instance '(rnrs hashtable (6))) rnrs-hashtables]
+    [(equal? list-instance '(rnrs lists (6))) rnrs-lists]
+    [(equal? list-instance '(rnrs mutable-pairs (6))) rnrs-mutable-pairs]
+    [(equal? list-instance '(rnrs io ports (6))) rnrs-io-ports]
+    [(equal? list-instance '(rnrs io simple (6))) rnrs-io-simple]
+    [(equal? list-instance '(rnrs records syntactic (6))) rnrs-records-syntactic]
+    [(equal? list-instance '(rnrs unicode (6))) rnrs-unicode]
     [(equal? list-instance '(rnrs base)) rnrs-base]
     [(equal? list-instance '(rnrs files)) rnrs-files]
     [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
@@ -144,6 +159,9 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
             (if target-identifier target-identifier meta-identifier))])]
     [() '()]))
+(define rnrs-6 (private-process '(rnrs (6)) '(
+
+)))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)
@@ -174,7 +192,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (&violation	syntax)
 (&warning	syntax)
 (&who	syntax)
-(*	Category)
+(*	procedure)
 (+	procedure)
 (-	procedure)
 (...	syntax)
@@ -2084,7 +2102,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (unsyntax	syntax)
 (indirect-export	syntax)
 (char-lower-case?	procedure)
-(*	Category)
+(*	procedure)
 (+	procedure)
 (/	procedure)
 (port-transcoder	procedure)
@@ -3660,7 +3678,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (unsyntax	syntax)
 (indirect-export	syntax)
 (char-lower-case?	procedure)
-(*	Category)
+(*	procedure)
 (+	procedure)
 (-	procedure)
 (/	procedure)

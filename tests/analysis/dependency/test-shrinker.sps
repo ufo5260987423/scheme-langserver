@@ -15,7 +15,7 @@
     (scheme-langserver analysis dependency file-linkage))
 
 (test-begin "test shrink-paths")
-    (let* ([root-file-node (init-virtual-file-system (current-directory) '() akku-acceptable-file?)]
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))]
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (init-file-linkage root-library-node)]
             [paths (get-init-reference-path file-linkage)])

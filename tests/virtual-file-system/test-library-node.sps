@@ -11,7 +11,7 @@
     (scheme-langserver analysis workspace))
 
 (test-begin "walk-library")
-    (let* ( [root-file-node (init-virtual-file-system "./util/" '() akku-acceptable-file?)]
+    (let* ( [root-file-node (init-virtual-file-system "./util/" '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))]
             [root-library-node (init-library-node root-file-node)])
         (test-equal "io.sls"
             (file-node-name (car (library-node-file-nodes 

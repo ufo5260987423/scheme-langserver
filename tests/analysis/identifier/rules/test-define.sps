@@ -16,7 +16,7 @@
 
 
 (test-begin "define-process")
-    (let* ( [root-file-node (init-virtual-file-system "./util" '() akku-acceptable-file?)]
+    (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
             [target-file-node (walk-file root-file-node "./util/io.sls")]
             [document (file-node-document target-file-node)]
             [index-node (car (document-index-node-list document))])

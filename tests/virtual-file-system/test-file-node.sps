@@ -10,7 +10,7 @@
     (scheme-langserver analysis workspace))
 
 (test-begin "walk-file")
-    (let* ( [root-file-node (init-virtual-file-system "./util/" '() akku-acceptable-file?)])
+    (let* ( [root-file-node (init-virtual-file-system "./util/" '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))])
         (test-equal "io.sls" (file-node-name (walk-file root-file-node "./util/io.sls"))))
 (test-end)
 

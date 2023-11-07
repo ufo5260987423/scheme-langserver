@@ -28,7 +28,7 @@
     (scheme-langserver protocol alist-access-object))
 
 (test-begin "define for type inference")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]

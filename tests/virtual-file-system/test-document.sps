@@ -16,7 +16,7 @@
 
 (test-begin "walk-file for .scm and find document")
     (let* ( [target-path (string-append (current-directory) "/.akku/lib/srfi/%3a13")]
-            [root-file-node (init-virtual-file-system target-path '() akku-acceptable-file?)]
+            [root-file-node (init-virtual-file-system target-path '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))]
             [target-file-node (walk-file root-file-node (string-append target-path "/srfi-13.scm"))])
         (test-equal #f (null? (docuent-index-node-list (file-node-document target-file-node)))))
 (test-end)

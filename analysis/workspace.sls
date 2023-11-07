@@ -36,6 +36,7 @@
     (scheme-langserver util sub-list)
 
     (scheme-langserver analysis identifier meta)
+    (scheme-langserver analysis type substitutions generator)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis tokenizer)
@@ -72,7 +73,7 @@
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
-      [root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
+      [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-library-node)]
       [paths (get-init-reference-path file-linkage)]
@@ -89,17 +90,19 @@
     [(path threaded?) (init-workspace path 'akku threaded? #f)]
     [(path threaded? ss/scm-import-rnrs?) (init-workspace path 'akku threaded? ss/scm-import-rnrs?)]
     [(path identifier threaded? ss/scm-import-rnrs?) 
-      (cond 
-        [(equal? 'akku identifier) 
-          (let* ([root-file-node (init-virtual-file-system path '() akku-acceptable-file?)]
-              [root-library-node (init-library-node root-file-node)]
-              [file-linkage (init-file-linkage root-library-node)]
-              [paths (get-init-reference-path file-linkage)]
-              [batches (shrink-paths file-linkage paths)])
-        ; (pretty-print 'aaa)
-            (init-references root-file-node root-library-node threaded? batches ss/scm-import-rnrs?)
-        ; (pretty-print 'eee)
-            (make-workspace root-file-node root-library-node file-linkage identifier threaded? ss/scm-import-rnrs?))])]))
+      (let* ([root-file-node 
+            (init-virtual-file-system path '() 
+              (cond
+                [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+                [else (lambda (fuzzy) #t)]))]
+          [root-library-node (init-library-node root-file-node)]
+          [file-linkage (init-file-linkage root-library-node)]
+          [paths (get-init-reference-path file-linkage)]
+          [batches (shrink-paths file-linkage paths)])
+    ; (pretty-print 'aaa)
+        (init-references root-file-node root-library-node threaded? batches ss/scm-import-rnrs?)
+    ; (pretty-print 'eee)
+        (make-workspace root-file-node root-library-node file-linkage identifier threaded? ss/scm-import-rnrs?))]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -140,7 +143,13 @@
             '()))
         (private-init-references root-file-node root-library-node document index-node-list ss/scm-import-rnrs?)
         ; (pretty-print 'test1)
-        ; (construct-substitution-list-for document)
+        ; (try
+        ;   (if (is-ss/scm? document)
+        ;     (if (equal? #t ss/scm-import-rnrs?) 
+        ;         (construct-substitution-list-for document)
+        ;       '())
+        ;     (construct-substitution-list-for document))
+        ;   (except c [else (pretty-print target-path)]))
 
         (document-refreshable?-set! document #f))]
     [(root-file-node root-library-node document target-index-nodes ss/scm-import-rnrs?)
@@ -157,12 +166,8 @@
           ; (document-reference-list-set! 
           ;   document 
           ;   (append (document-reference-list document) (index-node-references-export-to-other-node index-node)))
-
-            )
-        target-index-nodes)
-        ;;todo
-        ; (type-inference-for document)
-        ]))
+        )
+        target-index-nodes)]))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]
