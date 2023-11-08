@@ -15,6 +15,19 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
+(define private-char? (construct-type-expression-with-meta 'char?))
+(define private-string? (construct-type-expression-with-meta 'string?))
+(define private-boolean? (construct-type-expression-with-meta 'boolean?))
+(define private-fixnum? (construct-type-expression-with-meta 'fixnum?))
+(define private-bignum? (construct-type-expression-with-meta 'bignum?))
+(define private-integer? (construct-type-expression-with-meta 'integer?))
+(define private-cflonum? (construct-type-expression-with-meta 'cflonum?))
+(define private-flonum? (construct-type-expression-with-meta 'flonum?))
+(define private-rational? (construct-type-expression-with-meta 'rational?))
+(define private-real? (construct-type-expression-with-meta 'real?))
+(define private-complex? (construct-type-expression-with-meta 'complex?))
+(define private-number? (construct-type-expression-with-meta 'number?))
+
 (define trivial-process 
   (case-lambda 
     [(document index-node substitutions) 
@@ -29,18 +42,18 @@
     [(document index-node variable expression substitutions allow-unquote? unquoted?)
       (cond
         ;These clauses won't be affected by quote
-        [(char? expression) (list `(,variable : ,(construct-type-expression-with-meta 'char?)))]
-        [(string? expression) (list `(,variable : ,(construct-type-expression-with-meta 'string?)))]
-        [(boolean? expression) (list `(,variable : ,(construct-type-expression-with-meta 'boolean?)))]
-        [(fixnum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'fixnum?)))]
-        [(bignum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'bignum?)))]
-        [(integer? expression) (list `(,variable : ,(construct-type-expression-with-meta 'integer?)))]
-        [(cflonum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'cflonum?)))]
-        [(flonum? expression) (list `(,variable : ,(construct-type-expression-with-meta 'flonum?)))]
-        [(rational? expression) (list `(,variable : ,(construct-type-expression-with-meta 'rational?)))]
-        [(real? expression) (list `(,variable : ,(construct-type-expression-with-meta 'real?)))]
-        [(complex? expression) (list `(,variable : ,(construct-type-expression-with-meta 'complex?)))]
-        [(number? expression) (list `(,variable : ,(construct-type-expression-with-meta 'number?)))]
+        [(char? expression) (list `(,variable : ,private-char?))]
+        [(string? expression) (list `(,variable : ,private-string?))]
+        [(boolean? expression) (list `(,variable : ,private-boolean?))]
+        [(fixnum? expression) (list `(,variable : ,private-fixnum?))]
+        [(bignum? expression) (list `(,variable : ,private-bignum?))]
+        [(integer? expression) (list `(,variable : ,private-integer?))]
+        [(cflonum? expression) (list `(,variable : ,private-cflonum?))]
+        [(flonum? expression) (list `(,variable : ,private-flonum?))]
+        [(rational? expression) (list `(,variable : ,private-rational?))]
+        [(real? expression) (list `(,variable : ,private-real?))]
+        [(complex? expression) (list `(,variable : ,private-complex?))]
+        [(number? expression) (list `(,variable : ,private-number?))]
 
         [(and (symbol? expression) unquoted?)
           (sort substitution-compare
