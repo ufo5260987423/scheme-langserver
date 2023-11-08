@@ -150,6 +150,7 @@
         ;       '())
         ;     (construct-substitution-list-for document))
         ;   (except c [else (pretty-print target-path)]))
+        ; (pretty-print (length (document-substitution-list document)))
 
         (document-refreshable?-set! document #f))]
     [(root-file-node root-library-node document target-index-nodes ss/scm-import-rnrs?)

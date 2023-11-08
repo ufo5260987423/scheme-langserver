@@ -42,8 +42,8 @@
 
 (define (substitution-compare item0 item1)
   (natural-order-compare 
-    (variable->uuid->string (car item0))
-    (variable->uuid->string (car item1))))
+    (variable-uuid (car item0))
+    (variable-uuid (car item1))))
 
 (define add-to-substitutions 
   (case-lambda 

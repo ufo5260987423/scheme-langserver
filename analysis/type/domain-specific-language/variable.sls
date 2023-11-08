@@ -3,7 +3,7 @@
     make-variable
     variable?
     pure-variable?
-    variable->uuid->string)
+    variable-uuid)
   (import 
     (uuid)
     (chezscheme)
@@ -15,10 +15,7 @@
   (protocol
     (lambda (new)
       (lambda ()
-        (new (random-uuid))))))
-
-(define (variable->uuid->string variable)
-  (uuid->string (variable-uuid variable)))
+        (new (uuid->string (random-uuid)))))))
 
 (define (pure-variable? body)
   (cond
