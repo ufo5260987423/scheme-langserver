@@ -21,29 +21,24 @@
         [('if _  clause0) 
           (guard-for document index-node 'if '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([return-index-node (car (reverse children))])
-            (fold-left 
-              add-to-substitutions
+            (append
               substitutions 
-              (append 
-                (construct-substitutions-between-index-nodes index-node return-index-node '=)
-                (construct-substitutions-between-index-nodes return-index-node index-node '=))))]
+              (construct-substitutions-between-index-nodes index-node return-index-node '=)
+              (construct-substitutions-between-index-nodes return-index-node index-node '=)))]
         [('if _  clause0 clause1) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let (
               [return-index-node0 (cadr (reverse children))]
               [return-index-node1 (car (reverse children))])
-            (fold-left
-              add-to-substitutions
+            (append
               substitutions 
-              (append 
-                (construct-substitutions-between-index-nodes index-node return-index-node0 '=)
-                (construct-substitutions-between-index-nodes index-node return-index-node1 '=)
-                (construct-substitutions-between-index-nodes return-index-node0 index-node '=)
-                (construct-substitutions-between-index-nodes return-index-node1 index-node '=))))]
+              (construct-substitutions-between-index-nodes index-node return-index-node0 '=)
+              (construct-substitutions-between-index-nodes index-node return-index-node1 '=)
+              (construct-substitutions-between-index-nodes return-index-node0 index-node '=)
+              (construct-substitutions-between-index-nodes return-index-node1 index-node '=)))]
         [('cond clause **1)
           (guard-for document index-node 'cond '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (fold-left
-            add-to-substitutions
+          (append
             substitutions
             (apply 
               append 

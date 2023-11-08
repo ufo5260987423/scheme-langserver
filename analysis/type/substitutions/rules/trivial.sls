@@ -21,8 +21,7 @@
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
           [variable (index-node-variable index-node)])
-        (fold-left 
-          add-to-substitutions 
+        (append
           substitutions
           (if (null? (index-node-children index-node))
             (trivial-process document index-node variable expression substitutions #f #t)

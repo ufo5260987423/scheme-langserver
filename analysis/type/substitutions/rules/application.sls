@@ -17,6 +17,6 @@
       [children (index-node-children index-node)])
     (if (null? children)
       substitutions
-      (add-to-substitutions
+      (append
         substitutions
-        `(,variable = (,(index-node-variable (car children)) ,@(map index-node-variable (cdr children)))))))))
+        `((,variable = (,(index-node-variable (car children)) ,@(map index-node-variable (cdr children))))))))))

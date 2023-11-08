@@ -40,24 +40,23 @@
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
     document 
-    (apply 
-      append
-      (map 
-        (lambda (index-node) (private-construct-substitution-list document index-node '()))
-        (document-index-node-list document)))))
+    (sort 
+      substitution-compare
+      (apply 
+        append
+        (map 
+          (lambda (index-node) (private-construct-substitution-list document index-node '()))
+          (document-index-node-list document))))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]
       [children-substitution-list
-        (fold-left
-          add-to-substitutions
-          '()
-          (apply 
-            append 
-            (map 
-              (lambda (child) 
-                (private-construct-substitution-list document child base-substitution-list))
-              children)))])
+        (apply 
+          append 
+          (map 
+            (lambda (child) 
+              (private-construct-substitution-list document child base-substitution-list))
+            children))])
     (fold-left
       (lambda (current-substitutions proc)
         ; (pretty-print 'proc)

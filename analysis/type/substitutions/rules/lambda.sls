@@ -30,16 +30,14 @@
               ;((? symbol? identifier) **1) index-nodes
               [parameter-index-nodes (index-node-children (cadr children))]
               [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)])
-            (fold-left
-              add-to-substitutions
+            (append 
               substitutions 
               (cartesian-product `(,variable) '(=) (construct-lambdas-with `(,return-variable) parameter-variable-products))))]
         [('case-lambda clause **1) 
           (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([variable (index-node-variable index-node)]
               [clause-index-nodes (cdr children)])
-            (fold-left
-              add-to-substitutions
+            (append 
               substitutions
               (apply 
                 append 

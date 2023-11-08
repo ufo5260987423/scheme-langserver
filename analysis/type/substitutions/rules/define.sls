@@ -30,8 +30,7 @@
               [parameter-index-nodes (cdr (cadr (index-node-children index-node)))]
               [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)]
               [lambda-details (construct-lambdas-with (list return-variable) parameter-variable-products)])
-            (fold-left
-              add-to-substitutions
+            (append
               substitutions
               (map 
                 (lambda (product)
@@ -41,8 +40,7 @@
           (guard-for document index-node 'define '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([identifier-index-node (cadr (index-node-children index-node))]
               [tail-index-node (car (reverse (index-node-children index-node)))])
-            (fold-left
-              add-to-substitutions
+            (append
               substitutions
               (append 
                 (construct-substitutions-between-index-nodes identifier-index-node tail-index-node '=)
