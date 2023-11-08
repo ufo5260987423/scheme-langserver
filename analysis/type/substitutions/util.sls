@@ -9,7 +9,6 @@
     type->string)
   (import 
     (chezscheme)
-    (scheme-langserver util dedupe)
 
     (scheme-langserver util cartesian-product)
     (scheme-langserver util natural-order-compare)
@@ -51,7 +50,7 @@
     [(substitutions target)
       (if (null? target)
         substitutions
-        (dedupe (merge substitution-compare substitutions (list target))))]))
+        (merge substitution-compare substitutions (list target)))]))
 
 (define (remove-from-substitutions substitutions predicator)
   (filter (lambda (substitution) (not (predicator substitution))) substitutions))

@@ -40,13 +40,14 @@
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
     document 
-    (sort 
-      substitution-compare
-      (apply 
-        append
-        (map 
-          (lambda (index-node) (private-construct-substitution-list document index-node '()))
-          (document-index-node-list document))))))
+    (dedupe 
+      (sort 
+        substitution-compare
+        (apply 
+          append
+          (map 
+            (lambda (index-node) (private-construct-substitution-list document index-node '()))
+            (document-index-node-list document)))))))
 
 (define (private-construct-substitution-list document index-node base-substitution-list)
   (let* ([children (index-node-children index-node)]
@@ -63,10 +64,9 @@
         ; (if (not (debug:substitution-sorted? current-substitutions))
         ;   (pretty-print proc))
         (if (= (length current-substitutions) (length children-substitution-list))
-          (dedupe 
-            (filter
-              (lambda (a) (not (null? a)))
-              (proc document index-node current-substitutions)))
+          (filter
+            (lambda (a) (not (null? a)))
+            (proc document index-node current-substitutions))
           current-substitutions))
       children-substitution-list
       ;all these processor except trivial-process must add its result to current index-node
