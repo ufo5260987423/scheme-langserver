@@ -126,18 +126,6 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (define (private-construct-type-expression-with-meta expression list-instance)
   (match expression
     [('inner:record? fuzzy ...) `(inner:record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
-    [(fuzzy0 '<-record-set! fuzzy1) 
-      `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
-        <-record-set!
-        ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
-    [(fuzzy0 '<-record-ref fuzzy1) 
-      `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
-        <-record-ref
-        ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
-    [(fuzzy0 '<-record-constructor fuzzy1) 
-      `(,(private-construct-type-expression-with-meta fuzzy0 list-instance)
-        <-record-constructor 
-        ,(private-construct-type-expression-with-meta fuzzy1 list-instance))]
 
     [(? variable? fuzzy) fuzzy]
     [('inner:list? fuzzy ...) `(inner:list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
@@ -148,9 +136,6 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
     [(? symbol? meta-identifier)
       (cond 
         [(equal? meta-identifier '<-) '<-]
-        [(equal? meta-identifier '<-record-set!) '<-record-set!]
-        [(equal? meta-identifier '<-record-ref) '<-record-ref]
-        [(equal? meta-identifier '<-record-constructor) '<-record-constructor]
         [(equal? meta-identifier '...) '...]
         [(equal? meta-identifier '**1) '**1]
         [(equal? meta-identifier 'something?) 'something?]
@@ -159,9 +144,6 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
             (if target-identifier target-identifier meta-identifier))])]
     [() '()]))
-(define rnrs-6 (private-process '(rnrs (6)) '(
-
-)))
 
 (define rnrs (private-process '(rnrs) '(
 (&assertion	syntax)

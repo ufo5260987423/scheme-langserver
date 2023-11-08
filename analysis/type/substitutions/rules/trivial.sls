@@ -27,6 +27,7 @@
 (define private-real? (construct-type-expression-with-meta 'real?))
 (define private-complex? (construct-type-expression-with-meta 'complex?))
 (define private-number? (construct-type-expression-with-meta 'number?))
+(define private-symbol? (construct-type-expression-with-meta 'symbol?))
 
 (define trivial-process 
   (case-lambda 
@@ -63,7 +64,7 @@
                 (lambda (identifier-reference) 
                   (private-process document identifier-reference index-node variable))
                 (find-available-references-for document index-node expression))))]
-        [(symbol? expression) (list `(,variable : ,(construct-type-expression-with-meta 'symbol?)))]
+        [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
         ;here, must be a list or vector
         [(and (private-quasiquote? expression) unquoted?)
