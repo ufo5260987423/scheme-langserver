@@ -83,36 +83,6 @@
                 check-base)))
 (test-end)
 
-; (test-begin "gradual typing: index-a")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-;             [target-document (file-node-document target-file-node)]
-;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 16 75)))]
-;             [variable (index-node-variable target-index-node)]
-;             [check-base (construct-type-expression-with-meta 'integer?)])
-;         (construct-substitution-list-for target-document)
-;         (pretty-print (annotation-stripped (index-node-datum/annotations target-index-node)))
-        ; (pretty-print (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
-        ; (test-equal #t 
-        ;     (contain?  
-        ;         (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
-        ;         check-base))
-;                 )
-; (test-end)
-
-; (test-begin "sorted substitution")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-;             [target-document (file-node-document target-file-node)])
-;         (construct-substitution-list-for target-document)
-;         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
-; (test-end)
-
 ; (test-begin "debug:tmp")
 ;     (let* ([workspace (init-workspace (current-directory))]
 ;             [root-file-node (workspace-file-node workspace)]
