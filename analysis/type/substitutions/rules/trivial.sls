@@ -200,6 +200,9 @@
                 [else '()]))]
           ;import
           [else 
+            ; (pretty-print 'import)
+            ; (print-graph #t)
+            ; (pretty-print (document-uri (identifier-reference-document identifier-reference)))
             (if (null? type-expressions)
               (identifier-reference-type-expressions-set! 
                 identifier-reference 
