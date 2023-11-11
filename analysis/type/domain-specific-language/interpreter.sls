@@ -5,6 +5,7 @@
     type:environment-result-list
     type:solved?
     type:depature&interpret->result-list
+    type:recursive-interpret-result-list
 
     type:->?
     type:<-?
@@ -40,6 +41,7 @@
         (new substitution-list '())))))
 
 (define PRIVATE-MAX-DEPTH 10)
+(define PRIVATE-MAX-RECURSION 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
@@ -112,6 +114,31 @@
           #t
           expression))]
     [else #t]))
+
+(define type:recursive-interpret-result-list
+  (case-lambda 
+    [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION)]
+    [(expression env max-depth max-recursion) 
+      (let loop ([i 0]
+          [target-expression-list `(,expression)]
+          [env-iterator (make-type:environment (type:environment-substitution-list env))]
+          [result '()])
+        (if (= max-recursion i)
+          (dedupe result)
+          (let* ([r0 
+                (apply append 
+                  (map
+                    (lambda (e) (type:depature&interpret->result-list e env-iterator max-depth))
+                    target-expression-list))]
+              [r1 (filter type:solved? r0)]
+              [s0 (type:environment-substitution-list env-iterator)]
+              [s1 (remove-from-substitutions s0 (lambda (i) (equal? expression (car i))))]
+              [s2 (fold-left add-to-substitutions s1 (map (lambda(i) `(,expression = ,i)) r1))])
+            (loop 
+              (+ 1 i)
+              (filter (lambda (maybe) (not (type:solved? maybe))) r0)
+              (make-type:environment s2)
+              (append result r1)))))]))
 
 (define type:depature&interpret->result-list
   (case-lambda
