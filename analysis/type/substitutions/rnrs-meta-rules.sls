@@ -64,6 +64,7 @@
 (div0 (number? <- (inner:list? number? number?)))
 (string-length (integer? <- (inner:list? string?)))
 (string-ref (char? <- (inner:list? string? integer?)))
+(vector-ref (something? <- (inner:list? (inner:vector? something?) integer?)))
 (>= (boolean? <- (inner:list? real? real? **1)))
 (annotation? (boolean? <- (inner:list? something?)))
 (assertion-violation? (boolean? <- (inner:list? something?)))

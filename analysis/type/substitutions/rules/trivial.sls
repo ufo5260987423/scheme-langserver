@@ -177,6 +177,20 @@
                 [(null? (index-node-parent index-node)) '()]
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
+                    (is-first-child? index-node) 
+                    (or (equal? 'parameter (identifier-reference-type identifier-reference))
+                      (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
+                  ; '()
+                  (let* ([ancestor (index-node-parent index-node)]
+                      [children (index-node-children ancestor)]
+                      [rests (cdr children)]
+                      [rest-variables (map index-node-variable rests)]
+                      [return (private-find-return-variable index-node (identifier-reference-initialization-index-node identifier-reference))])
+                    (if (null? return)
+                      '()
+                      `((,variable = (,return <- (inner:list? ,@rest-variables))))))]
+                [(and 
+                    (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
                     (or (equal? 'parameter (identifier-reference-type identifier-reference))
                       (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
                   (let* ([ancestor (index-node-parent index-node)]
@@ -216,6 +230,29 @@
         (map 
           (lambda (parent) (private-process document parent index-node variable))
           (identifier-reference-parents identifier-reference))))))
+
+(define (private-find-return-variable target-index-node define-index-node)
+  (cond 
+    [(not (is-ancestor? define-index-node target-index-node)) '()]
+    [(and (is-first-child? target-index-node) (null? (index-node-parent target-index-node))) '()]
+    [(is-first-child? target-index-node) (private-find-return-variable (index-node-parent target-index-node) define-index-node)]
+    [else 
+      (let* ([ancestor (index-node-parent target-index-node)]
+          [children (index-node-children ancestor)]
+          [target-variable (index-node-variable target-index-node)]
+          [head (car children)]
+          [head-variable (index-node-variable head)]
+          [rests (cdr children)]
+          [rest-variables (map index-node-variable rests)]
+          [index (private-index-of (list->vector rests) target-index-node)]
+          [symbols (private-generate-symbols "d" (length rest-variables))])
+        (if (= index (length rests))
+          '()
+          `((with ((a b c)) 
+              ((with ((x ,@symbols))
+                ,(vector-ref (list->vector symbols) index))
+                c)) 
+            ,head-variable)))]))
 
 (define (private-generate-symbols base-string max)
   (let loop ([result '()])

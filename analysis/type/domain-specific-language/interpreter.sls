@@ -217,7 +217,7 @@
                   (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
           [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
-          [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression) (inner:record? expression))
+          [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
             (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           ;'list?' deeply involved the syntax of the DSL, though it's acturally not the case in DSL.
           ;This senario means current expression is not strict inner type expression, but after some 
@@ -239,13 +239,14 @@
                     (map 
                       (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
-      ; (pretty-print 'bye0)
-      ; (pretty-print expression)
-      ; (pretty-print 'bye1)
-      ; (pretty-print (type:environment-result-list env))
       (type:environment-result-list-set! 
         env 
         (dedupe (type:environment-result-list env)))
+      ; (pretty-print 'bye0)
+      ; (pretty-print expression)
+      ; (pretty-print 'bye1)
+      ; (pretty-print (length (type:environment-result-list env)))
+      ; (pretty-print (type:environment-result-list env))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
