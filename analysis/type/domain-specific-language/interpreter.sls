@@ -4,6 +4,7 @@
     type:interpret-result-list
     type:environment-result-list
     type:solved?
+    type:partially-solved?
     type:depature&interpret->result-list
     type:recursive-interpret-result-list
 
@@ -42,6 +43,7 @@
 
 (define PRIVATE-MAX-DEPTH 10)
 (define PRIVATE-MAX-RECURSION 2)
+(define PRIVATE-MAX-CARTESIAN-PRODUCT 500000)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
@@ -115,6 +117,14 @@
           expression))]
     [else #t]))
 
+(define (type:partially-solved? expression)
+  (if (list? expression)
+    (fold-left 
+      (lambda (l r) (if l #t (type:partially-solved? r)))
+      #f
+      expression)
+    (type:solved? expression)))
+
 (define type:recursive-interpret-result-list
   (case-lambda 
     [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION)]
@@ -150,7 +160,9 @@
           (dedupe (apply append 
             (map 
               (lambda (item) (type:interpret-result-list item env '() max-depth))
-              (apply cartesian-product
+              (apply 
+                (private-generate-cartesian-product-procedure)
+                ; cartesian-product
                 (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression)))))]
         [else (type:interpret-result-list expression env '() max-depth)])]))
 
@@ -186,7 +198,10 @@
                           ;thie except branch brings a problem that the expression may nest many things into itself 
                           ;and leads to non-stop result.
                           (except c [else (list expression)])))
-                      (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) params)))))]
+                      (apply 
+                        (private-generate-cartesian-product-procedure)
+                        ; cartesian-product 
+                        (map (lambda (item) (type:interpret-result-list item env new-memory)) params)))))]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
                   (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params)
@@ -218,7 +233,11 @@
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
           [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
-            (type:environment-result-list-set! env (apply cartesian-product (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
+            (type:environment-result-list-set! env 
+              (apply 
+                (private-generate-cartesian-product-procedure)
+                ; cartesian-product 
+                (map (lambda (item) (type:interpret-result-list item env new-memory)) expression)))]
           ;'list?' deeply involved the syntax of the DSL, though it's acturally not the case in DSL.
           ;This senario means current expression is not strict inner type expression, but after some 
           ;process on macro and triangular substitution, it may bring a executable one.
@@ -235,7 +254,8 @@
                       (type:interpret-result-list type env new-memory)))
                   ;interpret first item in order to confirm is it executable or macro
                   (apply 
-                    cartesian-product
+                    (private-generate-cartesian-product-procedure)
+                    ; cartesian-product
                     (map 
                       (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
           [else (type:environment-result-list-set! env (list expression))]))
@@ -300,6 +320,26 @@
       (map (lambda (item) (private-substitute item from to)) tree)
       tree)))
 
+(define private-generate-cartesian-product-procedure 
+  (case-lambda 
+    [() (private-generate-cartesian-product-procedure PRIVATE-MAX-CARTESIAN-PRODUCT)]
+    [(max) 
+      (lambda target-list
+        (cdr 
+          (fold-left 
+            (lambda (left right)
+              (if (car left)
+                `(#t . ,(cdr left))
+                (let ([filtered-result (map right (cdr left))])
+                  (if (> max (apply * (map length filtered-result)))
+                    `(#t . ,(apply cartesian-product filtered-result))
+                    `(#f . ,filtered-result)))))
+            `(#f . ,target-list)
+            (list 
+              (lambda (i) i)
+              (lambda (i) (filter type:partially-solved? i))
+              (lambda (i) (filter type:solved? i))
+              (lambda (i) (filter (lambda (oh-my-god) #f) i))))))]))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;substitutions;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (substitution:walk substitutions target)
   (binary-search 

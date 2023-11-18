@@ -44,8 +44,8 @@
             [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
         (construct-substitution-list-for target-document)
         (let ([tmp (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))])
-            (contain? tmp check-base0)
-            (contain? tmp check-base1)))
+            (test-equal #t (contain? tmp check-base0))
+            (test-equal #t (contain? tmp check-base1))))
 (test-end)
 
 (test-begin "type:intepret")
