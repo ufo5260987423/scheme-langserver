@@ -43,6 +43,7 @@
                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
 (test-end)
 
+; a better cutting is needed
 ; (test-begin "cartesian-products may slow down the inference because combination blows up")
 ;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
 ;             [root-file-node (workspace-file-node workspace)]
@@ -53,10 +54,8 @@
 ;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))]
 ;             [variable (index-node-variable target-index-node)]
 ;             [check-base (construct-type-expression-with-meta 'boolean?)])
-;         (pretty-print 'start)
 ;         (construct-substitution-list-for target-document)
-;         (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-;         (pretty-print 'start0)
+;         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
 ;         (test-equal #t 
 ;             (contain? 
 ;                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))

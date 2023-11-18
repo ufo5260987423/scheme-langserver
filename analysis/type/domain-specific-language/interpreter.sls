@@ -117,13 +117,16 @@
           expression))]
     [else #t]))
 
-(define (type:partially-solved? expression)
-  (if (list? expression)
-    (fold-left 
-      (lambda (l r) (if l #t (type:partially-solved? r)))
-      #f
-      expression)
-    (type:solved? expression)))
+(define type:partially-solved? 
+  (case-lambda 
+    [(expression) (type:partially-solved? expression 1)]
+    [(expression minium-solved-leaves) 
+      (letrec ([get-leaves 
+            (lambda (current-expression)
+              (if (list? current-expression)
+                (apply append (map get-leaves current-expression))
+                `(,current-expression)))])
+        (<= minium-solved-leaves (length (filter type:solved? (get-leaves expression))))) ]))
 
 (define type:recursive-interpret-result-list
   (case-lambda 
@@ -330,14 +333,18 @@
             (lambda (left right)
               (if (car left)
                 `(#t . ,(cdr left))
-                (let ([filtered-result (map right (cdr left))])
-                  (if (> max (apply * (map length filtered-result)))
+                (let* ([filtered-result (map right (cdr left))]
+                    [amount (apply * (map length filtered-result))])
+                  ; (pretty-print amount)
+                  (if (> max amount)
                     `(#t . ,(apply cartesian-product filtered-result))
                     `(#f . ,filtered-result)))))
             `(#f . ,target-list)
             (list 
               (lambda (i) i)
               (lambda (i) (filter type:partially-solved? i))
+              (lambda (i) (filter (lambda (r) (type:partially-solved? r 2)) i))
+              (lambda (i) (filter (lambda (r) (type:partially-solved? r 3)) i))
               (lambda (i) (filter type:solved? i))
               (lambda (i) (filter (lambda (oh-my-god) #f) i))))))]))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;substitutions;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
