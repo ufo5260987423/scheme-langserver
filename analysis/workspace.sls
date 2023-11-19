@@ -16,6 +16,8 @@
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
+    workspace-ss/scm-import-rnrs?
+    workspace-type-inference?
 
     update-file-node-with-tail
 
