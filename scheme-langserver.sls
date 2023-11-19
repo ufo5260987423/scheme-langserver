@@ -205,13 +205,13 @@
 
     (if (null? (server-mutex server-instance))
       (begin 
-        (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance)))
+        (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance) (server-type-inference? server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
         (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
           (begin 
-            (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance)))
+            (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance) (server-type-inference? server-instance)))
             (server-work-done-progress?-set! server-instance workDoneProgress?)
             (success-response id (make-alist 'capabilities server-capabilities)))
           (fail-response id server-error-start "server has been initialized"))))))

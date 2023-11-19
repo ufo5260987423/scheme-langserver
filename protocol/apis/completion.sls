@@ -3,6 +3,8 @@
   (import 
     (chezscheme) 
 
+    (scheme-langserver analysis type domain-specific-language interpreter)
+
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
 
@@ -37,15 +39,17 @@
             (if (null? (annotation-stripped (index-node-datum/annotations target-index-node)))
               ""
               (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node))))
-            ""))])
+            ""))]
+      [whole-list
+        (filter 
+          (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
+          (find-available-references-for document target-index-node))])
     ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector (map 
       identifier-reference->completion-item-alist 
       (sort
         (lambda (a b) (natural-order-compare (symbol->string (identifier-reference-identifier a)) (symbol->string (identifier-reference-identifier b))))
-        (filter 
-          (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
-          (find-available-references-for document target-index-node)))))))
+        whole-list)))))
 
 (define (identifier-reference->completion-item-alist reference)
   (make-alist 'label (symbol->string (identifier-reference-identifier reference))))
