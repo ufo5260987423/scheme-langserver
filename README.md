@@ -107,14 +107,19 @@ lvim.builtin.cmp.sources = {
 ```
 >NOTE: detailed configuration for `lvim.builtin.cmp.sources` and `LspAttach` can refer [this page](https://github.com/LunarVim/LunarVim/blob/b1c72541549d042487510ad3e676de7af046d410/lua/lvim/core/cmp.lua#L133) and [this page](https://github.com/neovim/nvim-lspconfig).
 
-### Enable Multi-thread Response and Indexing
-Current scheme-langserver haven't been fully tested in multi-thread scenario, and corresponding functionalities is default disabled. Please make sure you'd truly want to enable multi-thread features and the following changes were what you wanted.
+### Enable multi-thread, ss/scm-import-rnrs or type-inference
+Scheme-langserver has facilitated many higher level functions, but they shouldn't be fully convinced and tested. If you want to have a try, just step [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 
-Taking [LunarVim](https://www.lunarvim.org/) as an example, stepping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
 local util = require 'lspconfig.util'
 local bin_name = '{path-to-run}'
+
+--the first 'enable' is for multi-thread mechanism. 
 local cmd = { bin_name ,'{path-to-log}','enable'}
+--the second 'enable' is for for extensions SS, and SCM. Most programmers suppose their codes are writing for a running environment and don't provide any library information. However, some issues request for adding basic default context, so advanced language features could be used.
+-- local cmd = { bin_name ,'{path-to-log}','disable', 'enable'}
+-- the third 'enable' is for type inference.
+-- local cmd = { bin_name ,'{path-to-log}','disable', 'disable' ,'enable'}
 
 return {
   default_config = {
@@ -131,32 +136,6 @@ https://github.com/ufo5260987423/scheme-langserver
   },
 }
 ```
-
-### Enable ss/scm-import-rnrs
-For extensions SS, and SCM, most programmers suppose their codes are writing for a running environment and don't provide any library information. However, some issues request for adding basic default context, so advanced language features could be used.
-
-Taking [LunarVim](https://www.lunarvim.org/) as an example, stepping [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
-```lua
-local util = require 'lspconfig.util'
-local bin_name = '{path-to-run}'
-local cmd = { bin_name ,'{path-to-log}','disable','enable'}
-
-return {
-  default_config = {
-    cmd = cmd,
-    filetypes = { 'scheme' },
-    root_dir = util.find_git_ancestor,
-    single_file_support = true,
-  },
-  docs = {
-    description = [[
-https://github.com/ufo5260987423/scheme-langserver
-`scheme-langserver`, a language server protocol implementation for scheme
-]]   ,
-  },
-}
-```
-Above 'disable' is for multi-thread mechanism. Users can change it as needed.
 
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
