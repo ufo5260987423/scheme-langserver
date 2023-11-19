@@ -260,7 +260,7 @@
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() ss/scm-import-rnrs?)])
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() ss/scm-import-rnrs? type-inference?)])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 
