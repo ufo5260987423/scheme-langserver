@@ -30,7 +30,7 @@
     (scheme-langserver protocol alist-access-object))
 
 (test-begin "parameter-index-node type access")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
@@ -47,7 +47,7 @@
 (test-end)
 
 (test-begin "case-lambda procedure type access")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
@@ -78,7 +78,7 @@
 (test-end)
 
 (test-begin "cross clause type access")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]

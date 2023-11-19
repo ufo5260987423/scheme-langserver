@@ -28,7 +28,7 @@
     (scheme-langserver protocol alist-access-object))
 
 (test-begin "define for type inference")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
@@ -45,7 +45,7 @@
 
 ; a better cutting is needed
 ; (test-begin "cartesian-products may slow down the inference because combination blows up")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
 ;             [root-file-node (workspace-file-node workspace)]
 ;             [root-library-node (workspace-library-node workspace)]
 ;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/binary-search.sls"))]

@@ -19,7 +19,7 @@
 
 
 (test-begin "let-process")
-    (let* ( [workspace (init-workspace "./util" '() #f #f)]
+    (let* ( [workspace (init-workspace "./util" '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [target-file-node (walk-file root-file-node "./util/natural-order-compare.sls")]
             [document (file-node-document target-file-node)]

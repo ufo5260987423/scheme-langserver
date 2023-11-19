@@ -43,7 +43,7 @@
 
 (define PRIVATE-MAX-DEPTH 10)
 (define PRIVATE-MAX-RECURSION 2)
-(define PRIVATE-MAX-CARTESIAN-PRODUCT 500000)
+(define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
@@ -335,6 +335,7 @@
                 `(#t . ,(cdr left))
                 (let* ([filtered-result (map right (cdr left))]
                     [amount (apply * (map length filtered-result))])
+                  ; (pretty-print 'cartesian)
                   ; (pretty-print amount)
                   (if (> max amount)
                     `(#t . ,(apply cartesian-product filtered-result))

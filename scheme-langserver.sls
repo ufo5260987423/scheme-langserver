@@ -224,6 +224,7 @@
             (standard-output-port) 
             '() 
             #f
+            #f
             #f)]
         [(log-path) 
           (init-server 
@@ -235,10 +236,13 @@
               'block 
               (make-transcoder (utf-8-codec))) 
             #f
+            #f
             #f)]
         [(log-path enable-multi-thread?) 
-          (init-server log-path enable-multi-thread? #f)]
+          (init-server log-path enable-multi-thread? #f #f)]
         [(log-path enable-multi-thread? ss/scm-import-rnrs?) 
+          (init-server log-path enable-multi-thread? ss/scm-import-rnrs? #f)]
+        [(log-path enable-multi-thread? ss/scm-import-rnrs? type-inference?) 
           (init-server 
             (standard-input-port) 
             (standard-output-port) 
@@ -248,10 +252,11 @@
               'block 
               (make-transcoder (utf-8-codec))) 
             (equal? enable-multi-thread? "enable")
-            (equal? ss/scm-import-rnrs? "enable"))]
+            (equal? ss/scm-import-rnrs? "enable")
+            (equal? type-inference? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
-          (init-server input-port output-port log-port enable-multi-thread? #f)]
-        [(input-port output-port log-port enable-multi-thread? ss/scm-import-rnrs?) 
+          (init-server input-port output-port log-port enable-multi-thread? #f #f)]
+        [(input-port output-port log-port enable-multi-thread? ss/scm-import-rnrs? type-inference?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]

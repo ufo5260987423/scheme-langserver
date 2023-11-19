@@ -69,7 +69,8 @@
     (immutable facet)
     ;only for identifer catching and type inference
     (immutable threaded?)
-    (immutable ss/scm-import-rnrs?)))
+    (immutable ss/scm-import-rnrs?)
+    (immutable type-inference?)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -86,10 +87,11 @@
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku #f #f)]
-    [(path threaded?) (init-workspace path 'akku threaded? #f)]
-    [(path threaded? ss/scm-import-rnrs?) (init-workspace path 'akku threaded? ss/scm-import-rnrs?)]
-    [(path identifier threaded? ss/scm-import-rnrs?) 
+    [(path) (init-workspace path 'akku #f #f #f)]
+    [(path threaded?) (init-workspace path 'akku threaded? #f #f)]
+    [(path threaded? ss/scm-import-rnrs?) (init-workspace path 'akku threaded? ss/scm-import-rnrs? #f)]
+    [(path threaded? ss/scm-import-rnrs? type-inference?) (init-workspace path 'akku threaded? ss/scm-import-rnrs? type-inference?)]
+    [(path identifier threaded? ss/scm-import-rnrs? type-inference?) 
       (let* ([root-file-node 
             (init-virtual-file-system path '() 
               (cond
@@ -100,9 +102,9 @@
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
     ; (pretty-print 'aaa)
-        (init-references root-file-node root-library-node threaded? batches ss/scm-import-rnrs?)
+        (init-references root-file-node root-library-node threaded? batches ss/scm-import-rnrs? type-inference?)
     ; (pretty-print 'eee)
-        (make-workspace root-file-node root-library-node file-linkage identifier threaded? ss/scm-import-rnrs?))]))
+        (make-workspace root-file-node root-library-node file-linkage identifier threaded? ss/scm-import-rnrs? type-inference?))]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -117,20 +119,21 @@
         (workspace-library-node workspace-instance)
         (workspace-threaded? workspace-instance)
         target-paths
-        (workspace-ss/scm-import-rnrs? workspace-instance))]
-    [(root-file-node root-library-node threaded? target-paths ss/scm-import-rnrs?)
+        (workspace-ss/scm-import-rnrs? workspace-instance)
+        (workspace-type-inference? workspace-instance))]
+    [(root-file-node root-library-node threaded? target-paths ss/scm-import-rnrs? type-inference?)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
             ((if threaded? threaded-map map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node path ss/scm-import-rnrs?))
+                (private-init-references root-file-node root-library-node path ss/scm-import-rnrs? type-inference?))
               batch)
             (loop (cdr paths)))))]))
 
 (define private-init-references 
   (case-lambda 
-    [(root-file-node root-library-node target-path ss/scm-import-rnrs?)
+    [(root-file-node root-library-node target-path ss/scm-import-rnrs? type-inference?)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
@@ -141,19 +144,23 @@
           (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
             (sort-identifier-references (find-meta '(chezscheme)))
             '()))
-        (private-init-references root-file-node root-library-node document index-node-list ss/scm-import-rnrs?)
+        (private-init-references root-file-node root-library-node document index-node-list)
         ; (pretty-print 'test1)
-        ; (try
-        ;   (if (is-ss/scm? document)
-        ;     (if (equal? #t ss/scm-import-rnrs?) 
-        ;       (construct-substitution-list-for document)
-        ;       '())
-        ;     (construct-substitution-list-for document))
-        ;   (except c [else (pretty-print target-path)]))
+        (if type-inference?
+          (try
+            (if (is-ss/scm? document)
+              (if (equal? #t ss/scm-import-rnrs?) 
+                (construct-substitution-list-for document)
+                '())
+              (construct-substitution-list-for document))
+            (except c 
+              [else 
+                ; (pretty-print target-path)
+                '()])))
         ; (pretty-print (length (document-substitution-list document)))
 
         (document-refreshable?-set! document #f))]
-    [(root-file-node root-library-node document target-index-nodes ss/scm-import-rnrs?)
+    [(root-file-node root-library-node document target-index-nodes)
       (map 
         (lambda (index-node)
           (clear-references-for index-node)
