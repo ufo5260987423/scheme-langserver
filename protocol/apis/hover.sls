@@ -22,7 +22,6 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover
 (define (hover workspace params)
-;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [uri (text-document-uri text-document)]
       [position (alist->position (assq-ref params 'position))]

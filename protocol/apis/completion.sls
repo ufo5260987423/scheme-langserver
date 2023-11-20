@@ -24,7 +24,6 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionParams
 (define (completion workspace params)
-;;todo:get mutex
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [position (alist->position (assq-ref params 'position))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
