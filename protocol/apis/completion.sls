@@ -61,16 +61,26 @@
         (map 
           (lambda (identifier-reference)
             `(,identifier-reference . 
-                ,(let* ([current-index-node (identifier-reference-index-node identifier-reference)]
-                      [current-variable (index-node-variable current-index-node)]
-                      [current-document (identifier-reference-document identifier-reference)]
-                      [current-substitutions (document-substitution-list current-document)]
-                      [current-env (make-type:environment current-substitutions)]
-                      [current-types (type:interpret-result-list current-variable current-env)])
+                ,(cond 
+                  [(not (null? (identifier-reference-type-expressions identifier-reference))) 
                     (find 
                       (lambda (current-pair)
-                        (type:->? (car current-pair) (cdr current-pair)))
-                      (cartesian-product current-types position-types)))))
+                        (type:->? (car current-pair) (cdr current-pair) env))
+                      (cartesian-product (identifier-reference-type-expressions identifier-reference) position-types))]
+                  [(null? (identifier-reference-index-node identifier-reference)) #f]
+                  [else 
+                    (let* ([current-index-node (identifier-reference-index-node identifier-reference)]
+                        [current-variable (index-node-variable current-index-node)]
+                        [current-document (identifier-reference-document identifier-reference)]
+                        [current-substitutions (document-substitution-list current-document)]
+                        [current-env (make-type:environment current-substitutions)]
+                        [current-types (type:interpret-result-list current-variable current-env)])
+                      (if (null? (identifier-reference-type-expressions identifier-reference))
+                        (identifier-reference-type-expressions-set! identifier-reference current-types))
+                      (find 
+                        (lambda (current-pair)
+                          (type:->? (car current-pair) (cdr current-pair) env))
+                        (cartesian-product current-types position-types)))])))
           target-identifier-reference-list)]
       [true-list (map car (filter (lambda (current-pair) (cdr current-pair)) target-identifiers-with-types))]
       [false-list (map car (filter (lambda (current-pair) (not (cdr current-pair))) target-identifiers-with-types))])
