@@ -3,11 +3,11 @@
     "method": "textDocument/completion",
     "params": {
         "textDocument" : {
-            "uri" : "file://~a/util/io.sls"
+            "uri" : "file://~a/util/natural-order-compare.sls"
         },
         "position" : {
-            "line": 15,
-            "character": 0 
+            "line": 12,
+            "character": 24 
         }
     },
     "jsonrpc": "2.0"

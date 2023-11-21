@@ -9,6 +9,8 @@
     pick-index-node-with-mapper 
     pick-index-node-cover-mapper
 
+    get-root-ancestor
+
     make-index-node
     index-node?
     index-node-parent
@@ -114,6 +116,11 @@
   (if (null? (index-node-parent index-node))
     #f
     (equal? index-node (car (index-node-children (index-node-parent index-node))))))
+
+(define (get-root-ancestor index-node)
+  (if (null? (index-node-parent index-node))
+    index-node
+    (get-root-ancestor (index-node-parent index-node))))
 
 (define (clear-references-for index-node)
   (index-node-references-export-to-other-node-set! index-node '())

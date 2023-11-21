@@ -61,6 +61,7 @@
 
 (test-begin "type:->?/<-?/=? ")
     (test-equal #t (type:->? (construct-type-expression-with-meta 'integer?) (construct-type-expression-with-meta 'number?) (make-type:environment '())))
+    (test-equal #t (type:->? (construct-type-expression-with-meta 'integer?) (construct-type-expression-with-meta 'real?) (make-type:environment '())))
     (test-equal #f (type:->? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
     (test-equal #t (type:<-? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
     (test-equal #f (type:=? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))

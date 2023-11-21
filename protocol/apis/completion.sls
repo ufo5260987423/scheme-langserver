@@ -4,6 +4,7 @@
     (chezscheme) 
 
     (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis type substitutions rules trivial)
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
@@ -49,13 +50,41 @@
     (list->vector (map 
       identifier-reference->completion-item-alist 
       (if type-inference?
-        (sort-with-type-inferences (document-substitution-list document) target-index-node whole-list)
+        (sort-with-type-inferences document target-index-node whole-list)
         (sort-identifier-references whole-list))))))
 
-(define (sort-with-type-inferences substitutions position-index-node target-identifier-reference-list)
-  (let* ([position-variable (index-node-variable position-index-node)]
+(define (private-generate-position-expression index-node)
+  (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))
+    (let* ([ancestor (index-node-parent index-node)]
+        [children (index-node-children ancestor)]
+        [rests (cdr children)]
+        [rest-variables (map index-node-variable rests)]
+        [return (find-return-variable index-node (get-root-ancestor index-node))])
+      (if (null? return)
+        '()
+        `(,return <- (inner:list? ,@rest-variables))))
+    (let* ([ancestor (index-node-parent index-node)]
+        [children (index-node-children ancestor)]
+        [head (car children)]
+        [head-variable (index-node-variable head)]
+        [rests (cdr children)]
+        [rest-variables (map index-node-variable rests)]
+        [index (index-of (list->vector rests) index-node)]
+        [symbols (generate-symbols-with "d" (length rest-variables))])
+      (if (= index (length rests))
+        '()
+        `((with ((a b c)) 
+          ((with ((x ,@symbols))
+            ,(vector-ref (list->vector symbols) index))
+            c)) 
+          ,head-variable)))))
+
+(define (sort-with-type-inferences target-document position-index-node target-identifier-reference-list)
+  (print-graph #t)
+  (let* ([substitutions (document-substitution-list target-document)]
+      [position-expression (private-generate-position-expression position-index-node)]
       [env (make-type:environment substitutions)]
-      [position-types (type:interpret-result-list position-variable env)]
+      [position-types (type:interpret-result-list position-expression env)]
       [target-identifiers-with-types 
         (map 
           (lambda (identifier-reference)
@@ -64,7 +93,7 @@
                   [(not (null? (identifier-reference-type-expressions identifier-reference))) 
                     (find 
                       (lambda (current-pair)
-                        (type:->? (car current-pair) (cdr current-pair) env))
+                        (type:->? (car current-pair) (cadr current-pair) env))
                       (cartesian-product (identifier-reference-type-expressions identifier-reference) position-types))]
                   [(null? (identifier-reference-index-node identifier-reference)) #f]
                   [else 
@@ -78,7 +107,7 @@
                         (identifier-reference-type-expressions-set! identifier-reference current-types))
                       (find 
                         (lambda (current-pair)
-                          (type:->? (car current-pair) (cdr current-pair) env))
+                          (type:->? (car current-pair) (cadr current-pair) env))
                         (cartesian-product current-types position-types)))])))
           target-identifier-reference-list)]
       [true-list (map car (filter (lambda (current-pair) (cdr current-pair)) target-identifiers-with-types))]

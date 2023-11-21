@@ -1,5 +1,9 @@
 (library (scheme-langserver analysis type substitutions rules trivial)
-  (export trivial-process)
+  (export 
+    trivial-process
+    find-return-variable 
+    generate-symbols-with 
+    index-of)
   (import 
     (chezscheme) 
 
@@ -180,12 +184,11 @@
                     (is-first-child? index-node) 
                     (or (equal? 'parameter (identifier-reference-type identifier-reference))
                       (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
-                  ; '()
                   (let* ([ancestor (index-node-parent index-node)]
                       [children (index-node-children ancestor)]
                       [rests (cdr children)]
                       [rest-variables (map index-node-variable rests)]
-                      [return (private-find-return-variable index-node (identifier-reference-initialization-index-node identifier-reference))])
+                      [return (find-return-variable index-node (identifier-reference-initialization-index-node identifier-reference))])
                     (if (null? return)
                       '()
                       `((,variable = (,return <- (inner:list? ,@rest-variables))))))]
@@ -200,8 +203,8 @@
                       [head-variable (index-node-variable head)]
                       [rests (cdr children)]
                       [rest-variables (map index-node-variable rests)]
-                      [index (private-index-of (list->vector rests) index-node)]
-                      [symbols (private-generate-symbols "d" (length rest-variables))])
+                      [index (index-of (list->vector rests) index-node)]
+                      [symbols (generate-symbols-with "d" (length rest-variables))])
                     (if (= index (length rests))
                       '()
                       `((,target-variable 
@@ -231,11 +234,11 @@
           (lambda (parent) (private-process document parent index-node variable))
           (identifier-reference-parents identifier-reference))))))
 
-(define (private-find-return-variable target-index-node define-index-node)
+(define (find-return-variable target-index-node define-index-node)
   (cond 
     [(not (is-ancestor? define-index-node target-index-node)) '()]
     [(and (is-first-child? target-index-node) (null? (index-node-parent target-index-node))) '()]
-    [(is-first-child? target-index-node) (private-find-return-variable (index-node-parent target-index-node) define-index-node)]
+    [(is-first-child? target-index-node) (find-return-variable (index-node-parent target-index-node) define-index-node)]
     [else 
       (let* ([ancestor (index-node-parent target-index-node)]
           [children (index-node-children ancestor)]
@@ -244,8 +247,8 @@
           [head-variable (index-node-variable head)]
           [rests (cdr children)]
           [rest-variables (map index-node-variable rests)]
-          [index (private-index-of (list->vector rests) target-index-node)]
-          [symbols (private-generate-symbols "d" (length rest-variables))])
+          [index (index-of (list->vector rests) target-index-node)]
+          [symbols (generate-symbols-with "d" (length rest-variables))])
         (if (= index (length rests))
           '()
           `((with ((a b c)) 
@@ -254,13 +257,13 @@
                 c)) 
             ,head-variable)))]))
 
-(define (private-generate-symbols base-string max)
+(define (generate-symbols-with base-string max)
   (let loop ([result '()])
     (if (< (length result) max)
       (loop `(,@result ,(string->symbol (string-append base-string (number->string (length result))))))
       result)))
 
-(define (private-index-of target-vector target-index-node)
+(define (index-of target-vector target-index-node)
   (let loop ([i 0])
     (cond 
       [(= i (vector-length target-vector)) i]

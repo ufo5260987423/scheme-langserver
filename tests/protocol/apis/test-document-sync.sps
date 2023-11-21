@@ -43,7 +43,7 @@
         [did-change-header (string-append 
         ; "GET /example.http HTTP/1.1\r\n"
         "Content-Length: "
-        (number->string (bytevector-length (string->utf8 did-open-json)))
+        (number->string (bytevector-length (string->utf8 did-change-json)))
         "\r\n\r\n")]
 
         [did-close-json (format (read-string "./tests/resources/did-close.json") (current-directory))]
