@@ -3,24 +3,25 @@
 
 Implementing support like autocomplete, goto definition, or documentation on hover is a significant effort for programming. However, comparing to other language like java, python, javascript and c, language server protocol implementation for lisp language are just made in a vacuum. [Geiser](https://gitlab.com/emacs-geiser), [racket langserver](https://github.com/jeapostrophe/racket-langserver) and [swish-lint](https://github.com/becls/swish-lint) etc., their works are all based on `repl`(Read-Eval-Print Loop) or keyword tokenizer instead of programming. For example, if a programmer was coding on an unaccomplished project, in which the codes were not fully runnable, [Geiser](https://gitlab.com/emacs-geiser) or any others would only complete top-level binding identifiers listed by `environment-symbols` procedure (for [Chez](https://cisco.github.io/ChezScheme/)). Which means for local bindings and unaccomplished codes, though making effort for programming is supposed of the importance mostly, [Geiser](https://gitlab.com/emacs-geiser) and its counterparts help nothing. Familiar cases occur with goto definition and many other functionalities.
 
-A primary cause is, for scheme and other lisp dialects, their abundant data sets and flexible control structures raise program analysis a big challenge. In fact, scheme even don't have commonly acknowledged project management frameworks and [corresponding extension system](https://stackoverflow.com/questions/36240629/whats-the-proper-scheme-file-extension). As for extensions SS, and SCM, most programmers suppose their codes are writing for a running environment and don't provide any library information. Although with [Akku](https://akkuscm.org/) and [Snow](http://snow-fort.org/), SLS and SLD files can base a project on a stable library framework, `load`, `load-program` and many other procedures which maintain dynamic library linkages make static code analysis telling less.
+A primary cause is, for scheme and other lisp dialects, their abundant data sets and flexible control structures raise program analysis a big challenge. Especially the dynamic type system and macro, it seems like that scheme is mainly used for genius and meta/macro programming. But I say, no! Scheme can do many interesting things if a better programming environment was provided. And now I'll work on this.
 
-This package is a language server protocol implementation helping scheme programming. It provides completion, definition and will provide many other functionalities for SLS and SLD files. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme. 
+This package is a language server protocol implementation helping scheme programming. It provides completion, definition and type inference. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme. 
 
-This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5.
+This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5. 
 
-Your donation will make this world better. Also, you can issue your advice and I might implement if it was available.
+I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. Donating please use the following link. And foundation please send me email directly.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 >NOTE: 
 This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
 
 ## Recent Status
-I'm working for user-friendly diagnostic issues by making type inference rules for higher-order procedures like `car`. Otherwise, I have a plan to do some profiling to accelerate index speed.
+I'll keep fixing bugs, profiling the code, and collecting information for my giant book(in Chinese, but if foreigners are interested in it, an English version will be considered.) on this homemade DSL and background mechanism. This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
->NOTE: This project is still in early development, so you may run into rough edges with any of the features. The following list shows the status of various features.
+I'm now visiting [Coimbra University](https://www.google.com.hk/maps/place/University+of+Coimbra/@40.2151996,-8.4224772,13z/data=!4m6!3m5!1s0xd22f909b72d402f:0x2c4969e6ec176a72!8m2!3d40.2076394!4d-8.4260932!16zL20vMDM1NjV5?entry=ttu), would anyone want to visit me?(Please make an appointment)
+
 ### Release 
-1.0.13: Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism making operation **much more smooth**.
+1.1.0: Type inference has been embedded into autocompletion! And it uses a homemade DSL(Domain Specific Language) making type representation and interpreting much easier.  But, I actually do not recommend anyone use this type inference in production because there are many efficiency and soundness problems which I haven't solved. A detailed outline should be referred in [documentation](#detailed-document).
 
 More details refer to [this file](./doc/release-log.md).
 ## Setup
@@ -136,6 +137,7 @@ https://github.com/ufo5260987423/scheme-langserver
   },
 }
 ```
+>NOTE: the type inference is in its very early stage. Even for small code file it may take much more time than your expectation.
 
 ### TODO: Installation for [VScode](https://code.visualstudio.com/)
 
@@ -155,8 +157,15 @@ https://github.com/ufo5260987423/scheme-langserver
 9. Cross-platform parallel indexing.
 10. Self-made source code annotator to be compatible with .sps files.
 11. Peephole optimization for API requests.
-12. Type inference.
-13. Virtual identifier catching machine for .sps, .ss, .scm files.
+12. Type inference with a homemade DSL interpreter(I'm very proud of it!). And now it has been embedded into the auto-completion. As the following figure indicated, the "length-b" and "length-a" having "integer?" type are in the front of those recommended options because they can match the parameter type requiring from "<=". 
+![Autocompletion with type inference](./doc/figure/auto-completion-with-type-inference.png "Autocompletion with type inference")
+A test in can prove this result, just run `scheme --script tests/protocol/apis/test-completion.sps` and the log file `scheme-langserver.log` would contain results like this:
+```bash
+send-message
+2023 11 21 11 26 41 967266866
+{"jsonrpc":"2.0","id":"3","result":[{"label":"length-a"},{"label":"length-b"},{"label":"lambda"},{"label":"latin-1-codec"},{"label":"lcm"},{"label":"least-fixnum"},{"label":"length"},{"label":"let"},{"label":"let*"},{"label":"let*-values"},{"label":"let-syntax"},{"label":"let-values"},{"label":"letrec"},{"label":"letrec*"},{"label":"letrec-syntax"},{"label":"lexical-violation?"},{"label":"list"},{"label":"list->string"},{"label":"list->vector"},{"label":"list-ref"},{"label":"list-sort"},{"label":"list-tail"},{"label":"list?"},{"label":"log"},{"label":"lookahead-char"},{"label":"lookahead-u8"}]}
+```
+13.  Virtual identifier catching machine for .sps, .ss, .scm files.
 
 ### TODOs
 14. Renaming. 
@@ -215,5 +224,5 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ## Detailed Document
 1. [Catching identifier bindings](./doc/analysis/identifier.md)
 2. [Synchronizing](./doc/util/synchronize.md)
-3. [Type inference](./doc/analysis/type-inference.md), [类型推断](./doc/analysis/type-inference.cn.md)
+3. [Type inference](./doc/analysis/type-inference.md),~~[类型推断](./doc/analysis/type-inference.cn.md)~~(Deprecated, and I'm writing a Chinese book for it)
 4. [API Analysis](./doc/protocol/analysis.md)
