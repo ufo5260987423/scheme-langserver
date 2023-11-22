@@ -18,6 +18,7 @@
     inner:macro-template?
 
     inner:?->pair
+    inner:type->string
 
     inner:vector?
     inner:pair?
@@ -33,6 +34,18 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
+
+(define (inner:type->string target)
+  (cond
+    [(null? target) "() "]
+    [(list? target) (string-append "(" (apply string-append (map inner:type->string target)) ") ")]
+    [(symbol? target) (symbol->string target)]
+    [(variable? target) (string-append "[variable " (variable-uuid target) "] ")]
+    [(identifier-reference? target) (string-append "[identifier-refrence " (symbol->string (identifier-reference-identifier target))  "] ")]
+    [else 
+      (print-graph #t)
+      (pretty-print target)
+      (raise "can't do the transformation")]))
 
 (define (inner:?->pair target)
   (match target

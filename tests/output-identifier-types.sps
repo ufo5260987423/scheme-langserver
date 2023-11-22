@@ -12,6 +12,7 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules library-import))
@@ -35,7 +36,7 @@
                     [else '()])
                 (print-graph #t)
                 (pretty-print (identifier-reference-identifier identifier-reference))
-                (pretty-print (identifier-reference-type-expressions identifier-reference)))
+                (pretty-print (map inner:type->string (identifier-reference-type-expressions identifier-reference))))
             identifier-references))
 (test-end)
 
