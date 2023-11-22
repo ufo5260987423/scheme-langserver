@@ -41,7 +41,7 @@
             setters)
           (identifier-reference-type-expressions-set! 
             predicator
-            `(boolean? <- (inner:list? something?)))
+            `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
           (identifier-reference-type-expressions-set! 
             constructor 
             `((,predicator <- (inner:list? something? ...)))))]
