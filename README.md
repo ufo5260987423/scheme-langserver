@@ -1,5 +1,6 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
+>NOTE: This language server is mainly for scheme code with .scm, .ss, .sls and .sld extensions. And packages should be imported with Akku for now. There may notice something about ".akku/list" file, please issue me, and I'll gradually fix them.
 
 Implementing support like autocomplete, goto definition, or documentation on hover is a significant effort for programming. However, comparing to other language like java, python, javascript and c, language server protocol implementation for lisp language are just made in a vacuum. [Geiser](https://gitlab.com/emacs-geiser), [racket langserver](https://github.com/jeapostrophe/racket-langserver) and [swish-lint](https://github.com/becls/swish-lint) etc., their works are all based on `repl`(Read-Eval-Print Loop) or keyword tokenizer instead of programming. For example, if a programmer was coding on an unaccomplished project, in which the codes were not fully runnable, [Geiser](https://gitlab.com/emacs-geiser) or any others would only complete top-level binding identifiers listed by `environment-symbols` procedure (for [Chez](https://cisco.github.io/ChezScheme/)). Which means for local bindings and unaccomplished codes, though making effort for programming is supposed of the importance mostly, [Geiser](https://gitlab.com/emacs-geiser) and its counterparts help nothing. Familiar cases occur with goto definition and many other functionalities.
 
@@ -12,13 +13,10 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. Donating please use the following link. And foundation please send me email directly.
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
->NOTE: 
-This implementation is mainly appliable for .sls and .sld files, because .ss and .sps suppose that they're executing in a running virtual machine. [A detailed discussion](https://github.com/ufo5260987423/scheme-langserver/discussions/27) is now running.
-
 ## Recent Status
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book(in Chinese, but if foreigners are interested in it, an English version will be considered.) on this homemade DSL and background mechanism. This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
-I'm now visiting [Coimbra University](https://www.google.com.hk/maps/place/University+of+Coimbra/@40.2151996,-8.4224772,13z/data=!4m6!3m5!1s0xd22f909b72d402f:0x2c4969e6ec176a72!8m2!3d40.2076394!4d-8.4260932!16zL20vMDM1NjV5?entry=ttu), would anyone want to visit me?(Please make an appointment)
+I'm now visiting [Coimbra University](https://www.google.com.hk/maps/place/University+of+Coimbra/@40.2151996,-8.4224772,13z/data=!4m6!3m5!1s0xd22f909b72d402f:0x2c4969e6ec176a72!8m2!3d40.2076394!4d-8.4260932!16zL20vMDM1NjV5?entry=ttu), would anyone want to visit me?(Please make me an appointment)
 
 ### Release 
 1.1.0: Type inference has been embedded into autocompletion! And it uses a homemade DSL(Domain Specific Language) making type representation and interpreting much easier.  But, I actually do not recommend anyone use this type inference in production because there are many efficiency and soundness problems which I haven't solved. A detailed outline should be referred in [documentation](#detailed-document).
