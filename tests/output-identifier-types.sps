@@ -19,23 +19,24 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #t #f #t)]  
+            [workspace (init-workspace target-path #f #f #t)]  
             [root-library-node (workspace-library-node workspace)]
             [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (map 
             (lambda (identifier-reference)
+                (print-graph #t)
+                (pretty-print (identifier-reference-identifier identifier-reference))
                 (cond 
                     [(null? (identifier-reference-index-node identifier-reference)) '()]
                     [(null? (identifier-reference-type-expressions identifier-reference))
                         (let* ([target-document (identifier-reference-document identifier-reference)]
-                            [env (make-type:environment (document-substitution-list target-document))])
-                            (identifier-reference-type-expressions-set! 
-                                identifier-reference
-                                (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)))]
+                            [env (make-type:environment (document-substitution-list target-document))]
+                            ; [result (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)]
+                            [result (type:interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)]
+                            )
+                            (identifier-reference-type-expressions-set! identifier-reference result))]
                     [else '()])
-                (print-graph #t)
-                (pretty-print (identifier-reference-identifier identifier-reference))
                 (pretty-print (map inner:type->string (identifier-reference-type-expressions identifier-reference))))
             identifier-references))
 (test-end)
