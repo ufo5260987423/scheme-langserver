@@ -10,7 +10,7 @@ This package is a language server protocol implementation helping scheme program
 
 This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5. 
 
-I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can click [this patron page](https://patreon.com/PoorProgrammer?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=creatorshare_creator&utm_content=join_link) to donate monthly or just donate 10 USD just once time with the following paypal link. 
+I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can click [this patron page](https://www.patreon.com/PoorProgrammer/membership) to donate monthly or just donate 10 USD just once time with the following paypal link. 
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
