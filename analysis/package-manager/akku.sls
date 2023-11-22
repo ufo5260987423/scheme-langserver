@@ -12,14 +12,15 @@
       [akku-path (string-append root ".akku")]
       [akku-lib-path (string-append root ".akku/lib")]
       [path->library (make-hashtable string-hash equal?)])
-    (map 
-      (lambda (line) 
-        (let* ([first-tab-index (string-index line #\tab)]
-            [second-tab-index (string-index line #\tab (+ 1 first-tab-index))]
-            [target-path (string-drop-right line (- (string-length line) first-tab-index))]
-            [target-library (string-drop (string-drop-right line (- (string-length line) second-tab-index)) (+ 1 first-tab-index))])
-          (hashtable-set! path->library (string-append root target-path) target-library))) 
-      (read-lines list-path))
+    (if (file-exists? list-path)
+      (map 
+        (lambda (line) 
+          (let* ([first-tab-index (string-index line #\tab)]
+              [second-tab-index (string-index line #\tab (+ 1 first-tab-index))]
+              [target-path (string-drop-right line (- (string-length line) first-tab-index))]
+              [target-library (string-drop (string-drop-right line (- (string-length line) second-tab-index)) (+ 1 first-tab-index))])
+            (hashtable-set! path->library (string-append root target-path) target-library))) 
+        (read-lines list-path)))
     (lambda (path)
       (cond 
         [(string-contains path "/.git/") #f]
