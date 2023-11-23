@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
-;; Copyright (c) 2022 WANG Zheng
+;; Copyright (c) 2022-2023 WANG Zheng
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 ;;to read log and reproduce similar action for debug
@@ -19,7 +19,7 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #t #f #t)]  
+            [workspace (init-workspace target-path #f #f #t)]  
             [root-library-node (workspace-library-node workspace)]
             [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
             [identifier-references (import-references root-library-node target-library-identifier)])

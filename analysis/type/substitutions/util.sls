@@ -6,7 +6,7 @@
     substitution-compare
     add-to-substitutions
     remove-from-substitutions
-    type->string)
+    substitution->string)
   (import 
     (chezscheme)
 
@@ -14,21 +14,15 @@
     (scheme-langserver util natural-order-compare)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver virtual-file-system index-node))
 
-(define (type->string type)
-  (cond
-    [(list? type) 
-      (string-append 
-        "(" 
-        (fold-left 
-          (lambda (remain current) 
-            (if (equal? "" remain) current (string-append remain " " current))) 
-            "" 
-          (map type->string type))
-        ")")]
-    [(symbol? type) (symbol->string type)]
-    [(identifier-reference? type) (type->string (identifier-reference-identifier type))]))
+(define (substitution->string substitution)
+  (fold-left 
+    (lambda (left right)
+      (string-append left (inner:type->string right) " "))
+    ""
+    substitution))
 
 (define (construct-substitutions-between-index-nodes left-index-node right-index-node symbol)
   (cartesian-product `(,(index-node-variable left-index-node)) `(,symbol) `(,(index-node-variable right-index-node))))

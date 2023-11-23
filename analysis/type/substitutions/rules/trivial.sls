@@ -8,11 +8,13 @@
     (chezscheme) 
 
     (scheme-langserver util dedupe)
+    (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions rules record)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language interpreter)
 
@@ -214,6 +216,10 @@
                               ,(vector-ref (list->vector symbols) index))
                               c)) 
                             ,head-variable)))))]
+                [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
+                  (if (null? (identifier-reference-type-expressions identifier-reference))
+                    (record-process document (identifier-reference-initialization-index-node identifier-reference) '()))
+                  (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
                 [else '()]))]
           ;import
           [else 
