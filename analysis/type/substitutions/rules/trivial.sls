@@ -8,11 +8,13 @@
     (chezscheme) 
 
     (scheme-langserver util dedupe)
+    (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions rules record)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language interpreter)
 
@@ -214,19 +216,28 @@
                               ,(vector-ref (list->vector symbols) index))
                               c)) 
                             ,head-variable)))))]
+                [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
+                  (if (null? (identifier-reference-type-expressions identifier-reference))
+                    (record-process document (identifier-reference-initialization-index-node identifier-reference) '()))
+                  (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
                 [else '()]))]
           ;import
           [else 
             ; (pretty-print 'import)
             ; (print-graph #t)
             ; (pretty-print (document-uri (identifier-reference-document identifier-reference)))
-            (if (null? type-expressions)
-              (identifier-reference-type-expressions-set! 
-                identifier-reference 
-                (dedupe 
-                  (type:interpret-result-list 
-                    (index-node-variable target-index-node)
-                    (make-type:environment (document-substitution-list target-document))))))
+            (let ([run 
+                  (lambda ()
+                    (if (null? type-expressions)
+                      (identifier-reference-type-expressions-set! 
+                        identifier-reference 
+                        (dedupe 
+                          (type:interpret-result-list 
+                            (index-node-variable target-index-node)
+                            (make-type:environment (document-substitution-list target-document)))))))])
+              (if (null? (document-mutex target-document))
+                (run)
+                (with-mutex (document-mutex target-document) (run))))
             (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
       (apply 
         append 

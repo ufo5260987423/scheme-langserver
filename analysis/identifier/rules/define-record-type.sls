@@ -131,7 +131,8 @@
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
+                (sort-identifier-references 
+                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references 
@@ -139,7 +140,8 @@
 
               (index-node-references-export-to-other-node-set!
                 set-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,set-identifier-reference)))
+                (sort-identifier-references 
+                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references
@@ -171,7 +173,8 @@
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
+                (sort-identifier-references
+                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references
@@ -179,7 +182,7 @@
 
               (index-node-references-export-to-other-node-set!
                 set-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,set-identifier-reference)))
+                (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references 
@@ -211,7 +214,8 @@
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
+                (sort-identifier-references
+                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references
@@ -219,7 +223,8 @@
 
               (index-node-references-export-to-other-node-set!
                 set-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,set-identifier-reference)))
+                (sort-identifier-references
+                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references
@@ -240,7 +245,8 @@
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
+                (sort-identifier-references
+                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references
@@ -261,7 +267,8 @@
                     '())])
               (index-node-references-export-to-other-node-set!
                 get-index-node
-                (append (index-node-references-export-to-other-node index-node) `(,get-identifier-reference)))
+                (sort-identifier-references
+                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
               (index-node-references-import-in-this-node-set!
                 target-parent-index-node
                 (sort-identifier-references

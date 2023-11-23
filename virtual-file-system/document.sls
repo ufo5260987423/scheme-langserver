@@ -3,6 +3,7 @@
     make-document
     document?
     document-uri
+    document-mutex
     document-text
     document-text-set!
     document-index-node-list
@@ -21,6 +22,8 @@
 (define-record-type document 
   (fields 
     (immutable uri)
+    ;now it is only used for type-inference in analysis/type/substitutions/trivial.sls
+    (immutable mutex)
     (mutable text)
     (mutable index-node-list)
     (mutable reference-list)
@@ -28,8 +31,8 @@
     (mutable refreshable?))
   (protocol
     (lambda (new)
-      (lambda (uri text index-node-list reference-list)
-        (new uri text index-node-list reference-list '() #t)))))
+      (lambda (uri mutex text index-node-list reference-list)
+        (new uri mutex text index-node-list reference-list '() #t)))))
 
 (define (is-ss/scm? document)
   (fold-left 

@@ -76,7 +76,7 @@
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
-      [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
+      [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")) (workspace-threaded? workspace-instance))]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-library-node)]
       [paths (get-init-reference-path file-linkage)]
@@ -98,7 +98,8 @@
             (init-virtual-file-system path '() 
               (cond
                 [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-                [else (lambda (fuzzy) #t)]))]
+                [else (lambda (fuzzy) #t)])
+              threaded?)]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-library-node)]
           [paths (get-init-reference-path file-linkage)]
@@ -263,36 +264,41 @@
       (index-node-children index-node))
     '()))
 
-(define (init-virtual-file-system path parent my-filter)
-  (if (my-filter path)
-    (let* ([name (path->name path)] 
-          [folder? (file-directory? path)]
-          [document 
-            (if folder? 
-              '() 
-              (init-document path))]
-          [node (make-file-node path name parent folder? '() document)]
-          [children (if folder?
-              (map 
-                (lambda(p) 
-                  (init-virtual-file-system 
-                    (string-append path 
-                      (if (string-suffix? (list->string (list (directory-separator))) path)
-                        ""
-                        (list->string (list (directory-separator))))
-                      p) 
-                    node 
-                    my-filter)) 
-                (directory-list path))
-              '())])
-      (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
-      node)
-    '()))
+(define init-virtual-file-system 
+  (case-lambda 
+    [(path parent my-filter) (init-virtual-file-system path parent my-filter #f)]
+    [(path parent my-filter threaded?)
+      (if (my-filter path)
+        (let* ([name (path->name path)] 
+              [folder? (file-directory? path)]
+              [document 
+                (if folder? 
+                  '() 
+                  (init-document path threaded?))]
+              [node (make-file-node path name parent folder? '() document)]
+              [children (if folder?
+                  (map 
+                    (lambda(p) 
+                      (init-virtual-file-system 
+                        (string-append path 
+                          (if (string-suffix? (list->string (list (directory-separator))) path)
+                            ""
+                            (list->string (list (directory-separator))))
+                          p) 
+                        node 
+                        my-filter
+                        threaded?)) 
+                    (directory-list path))
+                  '())])
+          (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
+          node)
+        '())]))
 
-(define (init-document path)
+(define (init-document path threaded?)
   (let ([uri (path->uri path)])
     (make-document 
       uri 
+      (if threaded? (make-mutex) '())
       (read-string path) 
       (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
       '())))

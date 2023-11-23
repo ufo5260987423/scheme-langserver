@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier rules library-import)
   (export 
     import-process
+    import-references
     process-library-identifier-excluded-references)
   (import 
     (chezscheme) 

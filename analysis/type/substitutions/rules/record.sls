@@ -27,24 +27,26 @@
             [constructor (find (lambda(identifier) (equal? (identifier-reference-type identifier) 'constructor)) collection)]
             [getters (filter (lambda(identifier) (equal? (identifier-reference-type identifier) 'getter)) collection)]
             [setters (filter (lambda(identifier) (equal? (identifier-reference-type identifier) 'setter)) collection)])
-          (map 
-            (lambda (getter)
+          (if (null? (identifier-reference-type-expressions predicator))
+            (begin
+              (map 
+                (lambda (getter)
+                  (identifier-reference-type-expressions-set! 
+                    getter
+                    `((something? <- (inner:list? ,predicator)))))
+                getters)
+              (map 
+                (lambda (setter)
+                  (identifier-reference-type-expressions-set! 
+                    setter
+                    `((void? <- (inner:list? ,predicator something?)))))
+                setters)
               (identifier-reference-type-expressions-set! 
-                getter
-                `((something? <- (inner:list? ,predicator)))))
-            getters)
-          (map 
-            (lambda (setter)
+                predicator
+                `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
               (identifier-reference-type-expressions-set! 
-                setter
-                `((void? <- (inner:list? ,predicator something?)))))
-            setters)
-          (identifier-reference-type-expressions-set! 
-            predicator
-            `(boolean? <- (inner:list? something?)))
-          (identifier-reference-type-expressions-set! 
-            constructor 
-            `((,predicator <- (inner:list? something? ...)))))]
+                constructor 
+                `((,predicator <- (inner:list? something? ...)))))))]
       [else '()])
     substitutions))
 
