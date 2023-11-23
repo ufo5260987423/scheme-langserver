@@ -220,13 +220,18 @@
             ; (pretty-print 'import)
             ; (print-graph #t)
             ; (pretty-print (document-uri (identifier-reference-document identifier-reference)))
-            (if (null? type-expressions)
-              (identifier-reference-type-expressions-set! 
-                identifier-reference 
-                (dedupe 
-                  (type:interpret-result-list 
-                    (index-node-variable target-index-node)
-                    (make-type:environment (document-substitution-list target-document))))))
+            (let ([run 
+                  (lambda ()
+                    (if (null? type-expressions)
+                      (identifier-reference-type-expressions-set! 
+                        identifier-reference 
+                        (dedupe 
+                          (type:interpret-result-list 
+                            (index-node-variable target-index-node)
+                            (make-type:environment (document-substitution-list target-document)))))))])
+              (if (null? (document-mutex target-document))
+                (run)
+                (with-mutex (document-mutex target-document) (run))))
             (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
       (apply 
         append 
