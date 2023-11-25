@@ -11,6 +11,5 @@
                     #f
                     (if (equal? item (car body))
                         #t
-                        (loop (cdr body)))))
-            ]))
+                        (loop (cdr body)))))]))
 )
