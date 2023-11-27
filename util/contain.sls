@@ -9,7 +9,7 @@
             (let loop ([body list-instance])
                 (if (null? body)
                     #f
-                    (if (equal? item (car body))
+                    (if (equal-predicator item (car body))
                         #t
                         (loop (cdr body)))))]))
 )

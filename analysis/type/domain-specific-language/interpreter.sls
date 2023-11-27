@@ -132,6 +132,7 @@
   (case-lambda 
     [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION)]
     [(expression env max-depth max-recursion) 
+      ; (debug:pretty-print-substitution (type:environment-substitution-list env))
       (let loop ([i 0]
           [target-expression-list `(,expression)]
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
@@ -157,6 +158,8 @@
   (case-lambda
     [(expression env) (type:depature&interpret->result-list expression env PRIVATE-MAX-DEPTH)]
     [(expression env max-depth)
+      ; (pretty-print 'depature)
+      ; (pretty-print expression)
       (cond
         [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
         [(and (list? expression) (inner:contain? expression inner:macro?)) 

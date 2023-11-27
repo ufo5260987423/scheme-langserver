@@ -6,6 +6,7 @@
     substitution-compare
     add-to-substitutions
     remove-from-substitutions
+    debug:pretty-print-substitution
     substitution->string)
   (import 
     (chezscheme)
@@ -16,6 +17,19 @@
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver virtual-file-system index-node))
+
+(define (debug:pretty-print-substitution substitutions)
+  (pretty-print (map 
+    (lambda (substitution)
+      (let* ([l (car substitution)]
+          [r (car (reverse substitution))]
+          [m (cadr substitution)]
+          [r-o 
+            (if (identifier-reference? r)
+              (identifier-reference-identifier r)
+              r)])
+        `(,l ,m ,r-o)))
+    substitutions)))
 
 (define (substitution->string substitution)
   (fold-left 

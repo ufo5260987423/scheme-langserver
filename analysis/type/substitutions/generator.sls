@@ -1,7 +1,6 @@
 (library (scheme-langserver analysis type substitutions generator)
   (export 
-    construct-substitution-list-for
-    pretty-print-substitution)
+    construct-substitution-list-for)
   (import 
     (chezscheme)
 
@@ -23,19 +22,6 @@
     (scheme-langserver analysis type substitutions rules define)
     (scheme-langserver analysis type substitutions rules application)
     (scheme-langserver analysis type substitutions util))
-
-(define (pretty-print-substitution document)
-  (pretty-print (map 
-    (lambda (substitution)
-      (let* ([l (car substitution)]
-          [r (car (reverse substitution))]
-          [m (cadr substitution)]
-          [r-o 
-            (if (identifier-reference? r)
-              (identifier-reference-identifier r)
-              r)])
-        `(,l ,m ,r-o)))
-    (document-substitution-list document))))
 
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 

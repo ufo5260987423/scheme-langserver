@@ -190,10 +190,11 @@
                       [children (index-node-children ancestor)]
                       [rests (cdr children)]
                       [rest-variables (map index-node-variable rests)]
+                      [target-variable (index-node-variable target-index-node)]
                       [return (find-return-variable index-node (identifier-reference-initialization-index-node identifier-reference))])
                     (if (null? return)
                       '()
-                      `((,variable = (,return <- (inner:list? ,@rest-variables))))))]
+                      `((,target-variable = (,return <- (inner:list? ,@rest-variables))))))]
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
                     (or (equal? 'parameter (identifier-reference-type identifier-reference))
