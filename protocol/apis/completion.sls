@@ -58,11 +58,8 @@
     (let* ([ancestor (index-node-parent index-node)]
         [children (index-node-children ancestor)]
         [rests (cdr children)]
-        [rest-variables (map index-node-variable rests)]
-        [return (find-return-variable index-node (get-root-ancestor index-node))])
-      (if (null? return)
-        '()
-        `(,return <- (inner:list? ,@rest-variables))))
+        [rest-variables (map index-node-variable rests)])
+      `(,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))
     (let* ([ancestor (index-node-parent index-node)]
         [children (index-node-children ancestor)]
         [head (car children)]
