@@ -271,6 +271,7 @@
       ; (pretty-print 'bye0)
       ; (pretty-print expression)
       ; (pretty-print 'bye1)
+      ; (pretty-print (length memory))
       ; (pretty-print (length (type:environment-result-list env)))
       ; (pretty-print (type:environment-result-list env))
       env]

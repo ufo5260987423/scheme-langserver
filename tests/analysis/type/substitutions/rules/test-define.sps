@@ -59,10 +59,10 @@
 ;         (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
 ;         (pretty-print 'subsitutions)
 ;         (debug:pretty-print-substitution (document-substitution-list target-document))
-;         (pretty-print 'variable)
-;         (pretty-print variable)
-;         ; (pretty-print (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
-;         (pretty-print (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
+;         ; (pretty-print 'variable)
+;         ; (pretty-print variable)
+;         (pretty-print (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
+;         ; (pretty-print (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
 ;         ; (test-equal #t 
 ;         ;     (contain? 
 ;         ;         (map car (filter list? (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base))
