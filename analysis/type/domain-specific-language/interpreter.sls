@@ -138,7 +138,7 @@
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
           [result '()])
         (if (= max-recursion i)
-          (dedupe result)
+          (dedupe (append result target-expression-list))
           (let* ([r0 
                 (apply append 
                   (map
