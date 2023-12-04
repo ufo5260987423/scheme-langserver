@@ -21,6 +21,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language variable)
 
     (scheme-langserver analysis type substitutions util)
@@ -54,6 +55,7 @@
         (construct-substitution-list-for target-document)
         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
         ; (debug:pretty-print-substitution (document-substitution-list target-document))
+        ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))

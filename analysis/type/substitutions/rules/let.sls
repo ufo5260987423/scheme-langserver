@@ -185,6 +185,9 @@
       [expression (annotation-stripped ann)]
       [children (index-node-children parent-index-node)])
     (match expression 
-      [((? symbol? left) value) (construct-substitutions-between-index-nodes (car children) (cadr children) '=)]
+      [((? symbol? left) value) 
+        (append 
+          (construct-substitutions-between-index-nodes (car children) (cadr children) '=)
+          (construct-substitutions-between-index-nodes (cadr children) (car children) '=))]
       [else '()])))
 )
