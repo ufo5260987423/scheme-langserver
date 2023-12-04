@@ -225,3 +225,11 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 2. [Synchronizing](./doc/util/synchronize.md)
 3. [Type inference](./doc/analysis/type-inference.md),~~[类型推断](./doc/analysis/type-inference.cn.md)~~(Deprecated, and I'm writing a Chinese book for it)
 4. [API Analysis](./doc/protocol/analysis.md)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ufo5260987423/scheme-langserver&type=Date)](https://star-history.com/#ufo5260987423/scheme-langserver)
+
+## Contributors
+
+![Contributors](https://contrib.rocks/image?repo=ufo5260987423/scheme-langserver)

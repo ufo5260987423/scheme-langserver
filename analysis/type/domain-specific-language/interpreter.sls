@@ -132,12 +132,13 @@
   (case-lambda 
     [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION)]
     [(expression env max-depth max-recursion) 
+      ; (debug:pretty-print-substitution (type:environment-substitution-list env))
       (let loop ([i 0]
           [target-expression-list `(,expression)]
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
           [result '()])
         (if (= max-recursion i)
-          (dedupe result)
+          (dedupe (append result target-expression-list))
           (let* ([r0 
                 (apply append 
                   (map
@@ -157,6 +158,8 @@
   (case-lambda
     [(expression env) (type:depature&interpret->result-list expression env PRIVATE-MAX-DEPTH)]
     [(expression env max-depth)
+      ; (pretty-print 'depature)
+      ; (pretty-print expression)
       (cond
         [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
         [(and (list? expression) (inner:contain? expression inner:macro?)) 
@@ -207,20 +210,17 @@
                         (map (lambda (item) (type:interpret-result-list item env new-memory)) params)))))]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
-                  (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params)
-                    (type:environment-result-list-set! env 
-                      (type:interpret-result-list 
-                        (private-with (inner:lambda-return l) (candy:match-left (inner:list-content (inner:lambda-param l)) params))
-                        env
-                        new-memory))
-                    (type:environment-result-list-set! env '()))
-                  ; ;Assume that lambda-param, after interpreting, it won't change it form.
-                  ; (let* ([pres (type:interpret-result-list (inner:lambda-param l) env new-memory)]
-                  ;     [find-result (find (lambda (pre) (candy:matchable? (inner:list-content pre) params)) pres)])
-                  ;   (if find-result 
-                  ;     ; (type:environment-result-list-set! env (list (private-with (inner:lambda-return l) find-result)))
-                  ;     (type:environment-result-list-set! env (list (inner:lambda-return l)))
-                  ;     (type:environment-result-list-set! env '())))
+                  (if (inner:contain? l variable?)
+                    (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params) 
+                      (try
+                        (type:environment-result-list-set! env 
+                          (type:interpret-result-list 
+                            (private-with (inner:lambda-return l) (candy:match-left (inner:list-content (inner:lambda-param l)) params))
+                            env
+                            new-memory))
+                        (except c (type:environment-result-list-set! env '())))
+                      (type:environment-result-list-set! env '()))
+                    (type:environment-result-list-set! env (list (inner:lambda-return l))))
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
@@ -268,6 +268,7 @@
       ; (pretty-print 'bye0)
       ; (pretty-print expression)
       ; (pretty-print 'bye1)
+      ; (pretty-print (length memory))
       ; (pretty-print (length (type:environment-result-list env)))
       ; (pretty-print (type:environment-result-list env))
       env]
@@ -279,7 +280,7 @@
   (match expression
     [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
       (execute-macro `((with ,denotions ,body) ,@interpreted-inputs))]
-    [else (raise 'macro-not-match)]))
+    [else (raise 'macro-not-match:macro-head-execute-with)]))
 
 (define (execute-macro expression)
   (match expression
@@ -301,6 +302,7 @@
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
           [(variable? denotion) (private-substitute left denotion input)]
+          ; [(variable? input) (private-substitute denotion left input)]
           ; [(identifier-reference? denotion) 
           ;   (if (type:<- denotion input env)
           ;     left
@@ -311,8 +313,8 @@
               (if (or (contain? input '**1) (contain? input '...))
                 (private-with body (candy:match-right denotion input))
                 (private-with body (candy:match-left denotion input)))
-              (raise 'macro-not-match))]
-          [else (raise 'macro-not-match)])))
+              (raise 'macro-not-match:private-with-list?))]
+          [else (raise 'macro-not-match:private-with-else)])))
     body 
     match-pairs))
 

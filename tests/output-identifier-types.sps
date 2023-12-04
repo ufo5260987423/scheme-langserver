@@ -19,9 +19,9 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #f #f #t)]  
+            [workspace (init-workspace target-path #t #f #t)]  
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
+            [target-library-identifier '(scheme-langserver util contain)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (pretty-print 'output-identifier-types)
         (map 
