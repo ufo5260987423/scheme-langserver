@@ -48,6 +48,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules define-record-type)
+    (scheme-langserver analysis identifier rules do)
     (scheme-langserver analysis identifier rules library-define)
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
@@ -141,7 +142,7 @@
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         ; (pretty-print 'test0)
-        ; (pretty-print target-path)
+        (pretty-print target-path)
         (document-reference-list-set! 
           document 
           (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
@@ -254,6 +255,7 @@
       define-record-type-process
       ;;2
       let-process
+      do-process
       lambda-process
       syntax-process
       load-process))
