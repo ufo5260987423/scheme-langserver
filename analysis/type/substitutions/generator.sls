@@ -15,6 +15,7 @@
     (scheme-langserver analysis identifier meta)
     
     (scheme-langserver analysis type substitutions rules if)
+    (scheme-langserver analysis type substitutions rules do)
     (scheme-langserver analysis type substitutions rules let)
     (scheme-langserver analysis type substitutions rules lambda)
     (scheme-langserver analysis type substitutions rules record)
@@ -64,6 +65,7 @@
 
         ;their position and order, I don't care.
         define-process
+        do-process
         let-process
         if-process
         lambda-process

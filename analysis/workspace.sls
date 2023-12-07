@@ -142,7 +142,7 @@
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         ; (pretty-print 'test0)
-        (pretty-print target-path)
+        ; (pretty-print target-path)
         (document-reference-list-set! 
           document 
           (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
