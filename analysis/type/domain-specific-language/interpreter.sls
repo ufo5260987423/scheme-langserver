@@ -8,6 +8,8 @@
     type:depature&interpret->result-list
     type:recursive-interpret-result-list
 
+    type:interpret->strings
+
     type:->?
     type:<-?
     type:=?
@@ -45,6 +47,22 @@
 (define PRIVATE-MAX-RECURSION 2)
 (define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
 
+(define (type:interpret->strings target)
+  (map inner:type->string (type:interpret-result-list (private-substitute-variable&macro target))))
+
+(define (private-substitute-variable&macro target)
+  (cond 
+    [(inner:macro? target) 'something?]
+    [(variable? target) 'something?]
+    [(null? target) target]
+    [(symbol? target) target]
+    [(list? target) 
+      (let ([tmp (map private-substitute-variable&macro target)])
+        (if (equal? 'something? (car tmp))
+          'something?
+          tmp))]
+    [(and (list? target) (equal? 'something? (car target))) 'something?]
+    [else target]))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
   (case-lambda

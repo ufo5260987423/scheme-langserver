@@ -11,6 +11,9 @@
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
+
+    (scheme-langserver util dedupe)
+
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis workspace)
@@ -21,12 +24,12 @@
     (let* ([target-path (current-directory)] 
             [workspace (init-workspace target-path #t #f #t)]  
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver util contain)]
+            [target-library-identifier '(scheme-langserver util natural-order-compare)]
             [identifier-references (import-references root-library-node target-library-identifier)])
+        (print-graph #t)
         (pretty-print 'output-identifier-types)
         (map 
             (lambda (identifier-reference)
-                (print-graph #t)
                 (pretty-print (identifier-reference-identifier identifier-reference))
                 (cond 
                     [(null? (identifier-reference-index-node identifier-reference)) '()]
@@ -38,7 +41,7 @@
                             )
                             (identifier-reference-type-expressions-set! identifier-reference result))]
                     [else '()])
-                (pretty-print (map inner:type->string (identifier-reference-type-expressions identifier-reference))))
+                (pretty-print (dedupe (apply append (map type:interpret->strings (identifier-reference-type-expressions identifier-reference))))))
             identifier-references))
 (test-end)
 
