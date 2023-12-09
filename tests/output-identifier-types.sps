@@ -33,15 +33,16 @@
                 (pretty-print (identifier-reference-identifier identifier-reference))
                 (cond 
                     [(null? (identifier-reference-index-node identifier-reference)) '()]
-                    [(null? (identifier-reference-type-expressions identifier-reference))
+                    ;because the identiier-reference-type-expression may be the result of type:interpret-result-list
+                    [else
                         (let* ([target-document (identifier-reference-document identifier-reference)]
                             [env (make-type:environment (document-substitution-list target-document))]
-                            [result (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)]
-                            ; [result (type:interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)]
-                            )
-                            (identifier-reference-type-expressions-set! identifier-reference result))]
-                    [else '()])
-                (pretty-print (dedupe (apply append (map type:interpret->strings (identifier-reference-type-expressions identifier-reference))))))
+                            [result (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
+                            (identifier-reference-type-expressions-set! identifier-reference result))])
+                (pretty-print 
+                    (filter 
+                        (lambda (i) (not (equal? i "something? ")))
+                        (dedupe (apply append (map type:interpret->strings (identifier-reference-type-expressions identifier-reference)))))))
             identifier-references))
 (test-end)
 
