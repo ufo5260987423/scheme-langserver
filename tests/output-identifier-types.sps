@@ -33,7 +33,7 @@
                 (pretty-print (identifier-reference-identifier identifier-reference))
                 (cond 
                     [(null? (identifier-reference-index-node identifier-reference)) '()]
-                    ;because the identiier-reference-type-expression may be the result of type:interpret-result-list
+                    ;because the identifier-reference-type-expression may be the result of type:interpret-result-list
                     [else
                         (let* ([target-document (identifier-reference-document identifier-reference)]
                             [env (make-type:environment (document-substitution-list target-document))]
