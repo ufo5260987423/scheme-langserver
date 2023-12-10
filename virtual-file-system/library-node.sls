@@ -10,6 +10,7 @@
     library-node-file-nodes-set!
     library-node-children
     library-node-children-set!
+    library-node-name->string
     walk-library)
   (import (rnrs))
 
@@ -19,6 +20,18 @@
     (immutable parent)
     (mutable children)
     (mutable file-nodes)))
+
+(define (library-node-name->string target)
+  (if (symbol? target)
+    (symbol->string target)
+    (string-append 
+      (fold-left 
+        (lambda (left right)
+          (string-append left " " (library-node-name->string right)))
+        "("
+        target)
+      ")")))
+
 (define (delete-library-node-from-tree current-library-node)
   (library-node-children-set!
     (library-node-parent current-library-node)

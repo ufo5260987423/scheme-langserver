@@ -21,6 +21,7 @@ gen### JetBrains template
 *.so
 *.boot
 run
+output-type-analysis
 *.chez
 *.generated.c
 *.wpo
