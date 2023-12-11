@@ -14,6 +14,7 @@
 
     (scheme-langserver util dedupe)
 
+    (scheme-langserver analysis type substitutions rules trivial)
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis workspace)
@@ -24,7 +25,8 @@
     (let* ([target-path (current-directory)] 
             [workspace (init-workspace target-path #t #f #t)]  
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver util natural-order-compare)]
+            ; [target-library-identifier '(scheme-langserver util natural-order-compare)]
+            [target-library-identifier '(industria crypto rsa)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (print-graph #t)
         (pretty-print 'output-identifier-types)

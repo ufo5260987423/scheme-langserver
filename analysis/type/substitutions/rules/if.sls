@@ -8,6 +8,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions rules trivial)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
@@ -50,6 +51,28 @@
                 (lambda (clause-index-node)
                   (private-clause-process substitutions index-node clause-index-node))
                 (cdr children))))]
+        [('case (? symbol? expression) clause **1)
+          (guard-for document index-node 'case '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let* ([clauses (cddr children)]
+              [clauses-children (map index-node-children clauses)]
+              [previous (map car clauses-children)]
+              [latters (map cadr clauses-children)]
+              [expression-variable (index-node-variable (cadr children))])
+            (append substitutions
+              (apply append 
+                (map 
+                  (lambda (local-expression)
+                    (trivial-process document index-node expression-variable local-expression '() #f #f))
+                  (map annotation-stripped (apply append (map index-node-datum/annotations (map index-node-children previous))))))
+              (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters))))]
+        [('case expression clause **1)
+          (guard-for document index-node 'case '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (let* ([clauses (cddr children)]
+              [clauses-children (map index-node-children clauses)]
+              [previous (map car clauses-children)]
+              [latters (map cadr clauses-children)])
+            (append substitutions
+              (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters))))]
         [else substitutions])
       (except c
         [else substitutions]))))
