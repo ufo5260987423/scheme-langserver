@@ -74,7 +74,10 @@
                         (map
                             (lambda (i) (type:depature&interpret->result-list i (make-type:environment s2)))
                             r2)) 
-                    check-base1))))
+                    check-base1)))
+        (test-equal #t
+            (contain? (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+                check-base1)))
 (test-end)
 
 (test-begin "cross clause type access")

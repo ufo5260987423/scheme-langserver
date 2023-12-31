@@ -48,6 +48,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules define-record-type)
+    (scheme-langserver analysis identifier rules do)
     (scheme-langserver analysis identifier rules library-define)
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
@@ -254,6 +255,7 @@
       define-record-type-process
       ;;2
       let-process
+      do-process
       lambda-process
       syntax-process
       load-process))

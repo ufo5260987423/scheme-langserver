@@ -5,6 +5,8 @@
         read-to-CRNL
 
         read-string
+
+        write-lines 
         write-string)
     (import (rnrs))
 

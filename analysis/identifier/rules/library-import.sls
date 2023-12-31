@@ -2,6 +2,7 @@
   (export 
     import-process
     import-references
+    import-from-external-index-node
     process-library-identifier-excluded-references)
   (import 
     (chezscheme) 
@@ -346,7 +347,7 @@
     (if (null? candidate-file-nodes)
       (find-meta library-identifier)
       (apply append 
-        (map import-from-external-file 
+        (map import-from-external-index-node
           (filter
             (lambda (index-node)
               (match (annotation-stripped (index-node-datum/annotations index-node))
@@ -354,7 +355,7 @@
                 (else #f)))
             candidate-index-node-list))))))
 
-(define (import-from-external-file root-index-node)
+(define (import-from-external-index-node root-index-node)
   (let* ([ann (index-node-datum/annotations root-index-node)]
       [expression (annotation-stripped ann)])
     (match expression 
