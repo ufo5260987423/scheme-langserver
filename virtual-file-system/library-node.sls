@@ -19,6 +19,7 @@
     (immutable parent)
     (mutable children)
     (mutable file-nodes)))
+
 (define (delete-library-node-from-tree current-library-node)
   (library-node-children-set!
     (library-node-parent current-library-node)
