@@ -25,7 +25,7 @@
     (let* ([target-path (current-directory)] 
             [workspace (init-workspace target-path #t #f #t)]
             [port (open-file-output-port (string-append (current-directory) "/output/workspace"))])
-        (fasl-write workspace port))
+        (fasl-write (workspace-library-node workspace) port))
 (test-end)
 
 ; (test-begin "output-identifier-types")
