@@ -9,15 +9,25 @@
     (chezscheme) 
     (srfi :64 testing) 
 
+    (scheme-langserver virtual-file-system file-node)
+    (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
+    (scheme-langserver virtual-file-system library-node)
+
     (scheme-langserver util contain)
 
-    (scheme-langserver analysis type domain-specific-language variable)
+    (scheme-langserver analysis package-manager akku)
+    (scheme-langserver analysis workspace)
+    (scheme-langserver analysis tokenizer)
+    (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type domain-specific-language interpreter)
-
+    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions generator)
     (scheme-langserver analysis type substitutions rules trivial)
 
-    (scheme-langserver analysis identifier meta))
+    (scheme-langserver protocol alist-access-object))
 
 (test-begin "literal list")
     (let* ([expression '(1)]

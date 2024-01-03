@@ -42,10 +42,17 @@
           [variable (index-node-variable index-node)])
         (append
           substitutions
-          (if (null? (index-node-children index-node))
+          (if (or 
+              (null? (index-node-children index-node))
+              (private-quasiquote? expression))
             (trivial-process document index-node variable expression substitutions #f #t)
             '())))]
     [(document index-node variable expression substitutions allow-unquote? unquoted?)
+      ; (debug:print-expression index-node)
+      ; (pretty-print variable)
+      ; (pretty-print expression)
+      ; (pretty-print allow-unquote?)
+      ; (pretty-print unquoted?)
       (cond
         ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,private-char?))]
@@ -99,14 +106,15 @@
             substitutions 
             #f 
             #t)]
-        [(and (private-unquote-slicing? expression) (or (not allow-unquote?) unquoted?)) '()]
+        [(and (private-unquote-splicing? expression) (or (not allow-unquote?) unquoted?)) '()]
 
         [(or (list? expression) (vector? expression))
+          ; (pretty-print 'list)
           (let* ([is-list? (list? expression)]
               [final-result
                 (fold-left 
                   (lambda (ahead-result current-expression)
-                    (if (and (private-unquote-slicing? current-expression) allow-unquote? (not unquoted?))
+                    (if (and (private-unquote-splicing? current-expression) allow-unquote? (not unquoted?))
                       (let loop ([body (cdr current-expression)]
                           [current-result ahead-result])
                         (if (null? body)
@@ -129,32 +137,24 @@
             (sort substitution-compare `(,@extend-substitution-list (,variable = ,variable-list))))]
         [else '()])]))
 
-(define (private-unquote-slicing? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quasiquote-slicing (car expression))
-      #f)
+(define (private-unquote-splicing? expression)
+  (if (pair? expression)
+    (equal? 'unquote-splicing (car expression))
     #f))
 
 (define (private-unquote? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quasiquote (car expression))
-      #f)
+  (if (pair? expression)
+    (equal? 'unquote (car expression))
     #f))
 
 (define (private-quote? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quote (car expression))
-      #f)
+  (if (pair? expression)
+    (equal? 'quote (car expression))
     #f))
 
 (define (private-quasiquote? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quasiquote (car expression))
-      #f)
+  (if (pair? expression)
+    (equal? 'quasiquote (car expression))
     #f))
 
 (define (private-process document identifier-reference index-node variable)

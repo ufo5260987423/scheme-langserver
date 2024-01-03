@@ -48,8 +48,8 @@
     (fold-left
       (lambda (current-substitutions proc)
         ; (pretty-print 'proc)
-        ; (if (not (debug:substitution-sorted? current-substitutions))
-        ;   (pretty-print proc))
+        ; (debug:print-expression index-node)
+        ; (pretty-print proc)
         (if (= (length current-substitutions) (length children-substitution-list))
           (filter
             (lambda (a) (not (null? a)))
