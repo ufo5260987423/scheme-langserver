@@ -15,7 +15,6 @@
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions rules record)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
