@@ -25,5 +25,4 @@
 
 (define (windows?)
   (string-suffix? (symbol->string (machine-type)) "nt"))
-
 )

@@ -190,6 +190,8 @@
                       [rests (cdr children)]
                       [rest-variables (map index-node-variable rests)]
                       [target-variable (index-node-variable target-index-node)])
+                    ; (pretty-print (document-uri document))
+                    ; (pretty-print `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))
                     `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))]
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
