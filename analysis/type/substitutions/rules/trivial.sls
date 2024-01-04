@@ -222,22 +222,14 @@
                 [else '()]))]
           ;import
           [else 
-            ; (pretty-print 'import)
-            ; (print-graph #t)
-            ; (pretty-print (document-uri (identifier-reference-document identifier-reference)))
-            (let ([run 
-                  (lambda ()
-                    (if (null? type-expressions)
-                      (identifier-reference-type-expressions-set! 
-                        identifier-reference 
-                        (dedupe 
-                          (type:interpret-result-list 
-                            (index-node-variable target-index-node)
-                            (make-type:environment (document-substitution-list target-document)))))))])
-              (if (null? (document-mutex target-document))
-                (run)
-                (with-mutex (document-mutex target-document) (run))))
-            (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
+            (if (null? type-expressions)
+              (append 
+                (cartesian-product 
+                  `(,variable) 
+                  '(=) 
+                  (index-node-variable (identifier-reference-index-node identifier-reference)))
+                (document-substitution-list target-document))
+              (cartesian-product `(,variable) '(:) `(,type-expressions)))]))
       (apply 
         append 
         (map 
