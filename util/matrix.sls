@@ -94,6 +94,5 @@
               '())))
         (if (find (lambda (t) (= n t)) path)
           (append path `(,n))
-          '())
-        )]))
+          '()))]))
 )

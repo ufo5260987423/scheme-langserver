@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver util try)
+    (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
@@ -37,6 +38,16 @@
               [loop-procedure-details (construct-lambdas-with `(,return-variable) parameter-variable-products)])
             (append 
               substitutions 
+              (apply append 
+                (map 
+                  (lambda (current-index-node)
+                    (private-process-loop 
+                      document 
+                      loop-identifier 
+                      current-index-node 
+                      loop-index-node 
+                      (map index-node-variable key-index-nodes)))
+                  (cdddr children)))
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -64,7 +75,7 @@
         ;       (let* ([identifier-parent-index-node (car rest)]
         ;             [identifier-index-node (car (index-node-children identifier-parent-index-node))])
         ;         (index-node-excluded-references-set! 
-        ;           identifier-parent-index-node
+        ;           identifier-parent-index-nofind-available-references-forde
         ;           (append 
         ;             (index-node-excluded-references identifier-parent-index-node)
         ;             (private-process identifier-index-node index-node '() document 'variable)))
@@ -82,7 +93,7 @@
         ;             (private-process identifier-index-node index-node '() document 'syntax-variable)))
         ;         (loop (cdr rest)))))]
         ; [('let-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
-        ;   (guard-for document index-node 'let-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        ;   (guard-for document index-node 'lefind-available-references-fort-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ;   (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
         ;     (if (not (null? rest))
         ;       (let* ([identifier-parent-index-node (car rest)]
@@ -99,7 +110,7 @@
         ;     (if (not (null? rest))
         ;       (let* ([identifier-parent-index-node (car rest)]
         ;             [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-        ;         (index-node-excluded-references-set! 
+        ;         (index-node-excluded-referenfind-available-references-forces-set! 
         ;           identifier-parent-index-node
         ;           (append 
         ;             (index-node-excluded-references identifier-parent-index-node)
@@ -190,4 +201,31 @@
           (construct-substitutions-between-index-nodes (car children) (cadr children) '=)
           (construct-substitutions-between-index-nodes (cadr children) (car children) '=))]
       [else '()])))
+
+(define (private-process-loop document loop-identifier current-index-node loop-index-node key-index-node-variables)
+  (fold-left
+    (lambda (left right)
+      (append left (private-process-loop document loop-identifier right loop-index-node key-index-node-variables)))
+    (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
+        [check? (lambda (target) (equal? loop-identifier target))])
+      (match expression
+        [((? check? loop-target) _ **1)
+          (print-graph #t)
+          (if (and 
+              (contain? 
+                (map identifier-reference-index-node (find-available-references-for document current-index-node loop-identifier)) 
+                loop-index-node)
+              (= (length key-index-node-variables) (length _)))
+            (let loop ([rest-variables (map index-node-variable (cdr (index-node-children current-index-node)))]
+                [key-variables key-index-node-variables]
+                [new-substitutions '()])
+              (if (null? rest-variables)
+                new-substitutions
+                (loop 
+                  (cdr rest-variables)
+                  (cdr key-variables)
+                  `(,@new-substitutions (,(car key-variables) = ,(car rest-variables))))))
+            '())]
+        [else '()]))
+    (index-node-children current-index-node)))
 )

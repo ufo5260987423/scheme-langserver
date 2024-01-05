@@ -36,7 +36,7 @@
             [workspace (init-workspace target-path #t #f #t)]
             ; [workspace (load-with (init-workspace target-path #t #f #f) file-node)]
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver util natural-order-compare)]
+            [target-library-identifier '(scheme-langserver util matrix)]
             ; [target-library-identifier '(scheme-langserver util contain)]
             ; [target-library-identifier '(industria crypto rsa)]
             [identifier-references (import-references root-library-node target-library-identifier)])
