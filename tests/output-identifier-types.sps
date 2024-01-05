@@ -52,6 +52,7 @@
                         (let* ([target-document (identifier-reference-document identifier-reference)]
                             [env (make-type:environment (document-substitution-list target-document))]
                             [result (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
+                            ; [result (type:interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
                             (identifier-reference-type-expressions-set! identifier-reference result))])
                 (pretty-print 
                     (filter 

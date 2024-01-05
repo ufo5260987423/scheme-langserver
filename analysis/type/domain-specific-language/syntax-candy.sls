@@ -111,6 +111,8 @@
             (= row-id (vector-length rest-segments)) 
             (= column-id (vector-length ready-segments)))
           (cond
+            [(and (zero? row-id) (zero? column-id))
+              (matrix-set! matrix (+ 1 (vector-length ready-segments)) row-id column-id 'skipped)]
             [(or 
                 (equal? 'skipped (matrix-take matrix (+ 1 (vector-length ready-segments)) (- row-id 1) column-id))
                 (equal? 'skipped (matrix-take matrix (+ 1 (vector-length ready-segments)) row-id (- column-id 1))))
