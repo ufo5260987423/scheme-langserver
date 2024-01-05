@@ -76,26 +76,22 @@
                 check-base)))
 (test-end)
 
-; (test-begin "loop declaration")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-;             [target-document (file-node-document target-file-node)]
-;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 15 10)))]
-;             [variable (index-node-variable target-index-node)]
-;             [check-base (construct-type-expression-with-meta '((inner:list? something? ...) <- (inner:list? something? something? )))])
-;         (construct-substitution-list-for target-document)
-;         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-;         (pretty-print 
-;             (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) )
-;         ; (pretty-print 
-;         ;     (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
-;         (test-equal #t 
-;             (contain? 
-;                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
-;                 check-base)))
-; (test-end)
+(test-begin "loop declaration")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 15 10)))]
+            [variable (index-node-variable target-index-node)]
+            [check-base (construct-type-expression-with-meta '((inner:list? something? ...) <- (inner:list? number? (inner:list? something? ...))))])
+        (construct-substitution-list-for target-document)
+        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
+        (test-equal #t 
+            (contain? 
+                (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+                check-base)))
+(test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
