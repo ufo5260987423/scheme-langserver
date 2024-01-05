@@ -174,7 +174,7 @@
                     (identifier-reference-library-identifier reference)
                     'pointer
                     `(,reference)
-                    '())) 
+                    (identifier-reference-type-expressions reference))) 
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
           (if (null? grand-parent-index-node)
@@ -218,7 +218,7 @@
                         (identifier-reference-library-identifier reference)
                         'pointer
                         `(,reference)
-                        '())) 
+                        (identifier-reference-type-expressions reference))) 
                     current-references)])
 
               (index-node-references-import-in-this-node-set! 
@@ -283,7 +283,7 @@
                         (identifier-reference-library-identifier reference)
                         'pointer
                         `(,reference)
-                        '())) 
+                        (identifier-reference-type-expressions reference)))
                     current-references)])
 
               (index-node-references-import-in-this-node-set! 

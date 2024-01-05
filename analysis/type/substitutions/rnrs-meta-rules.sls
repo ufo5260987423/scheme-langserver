@@ -46,6 +46,8 @@
 (bignum? (boolean? <- (inner:list? )))
 (binary-port? (boolean? <- (inner:list? something?)))
 (bitwise-bit-set? (boolean? <- (inner:list? )))
+(bitwise-reverse-bit-field (integer? <- (inner:list? integer? integer? integer?)))
+(bitwise-rotate-bit-field (integer? <- (inner:list? integer? integer? integer? integer?)))
 (boolean? (boolean? <- (inner:list? something?)))
 (boolean=? (boolean? <- (inner:list? boolean? boolean?)))
 (bound-identifier=? (boolean? <- (inner:list? )))

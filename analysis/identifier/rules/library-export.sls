@@ -72,7 +72,7 @@
                       library-identifiers
                       'pointer
                       references
-                      '()))))
+                      (apply append (map identifier-reference-type-expressions references))))))
               `(,@result ,external-index-node)))
           '()
           (cdr (index-node-children index-node)))]
@@ -93,8 +93,8 @@
                   initialization-index-node 
                   library-identifiers
                   'pointer
-                  '()
-                  '()))
+                  references
+                  (apply append (map identifier-reference-type-expressions references))))
                 references))))]
       [else '()])))
 )

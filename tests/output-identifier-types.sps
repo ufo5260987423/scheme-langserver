@@ -21,24 +21,13 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules library-import))
 
-; (test-begin "output-workspace")
-;     (let* ([target-path (current-directory)] 
-;             [workspace (init-workspace target-path #t #f #t)]
-;             [port (open-file-output-port (string-append (current-directory) "/output/workspace"))]
-;             [target (workspace-file-node workspace)])
-;         (fasl-write target port))
-; (test-end)
-
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [input-port (open-file-input-port (string-append (current-directory) "/output/workspace"))]
-            [file-node (fasl-read input-port)]
             [workspace (init-workspace target-path #t #f #t)]
-            ; [workspace (load-with (init-workspace target-path #t #f #f) file-node)]
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver util matrix)]
+            ; [target-library-identifier '(scheme-langserver util matrix)]
             ; [target-library-identifier '(scheme-langserver util contain)]
-            ; [target-library-identifier '(industria crypto rsa)]
+            [target-library-identifier '(hashing private compat)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (print-graph #t)
         (pretty-print 'output-identifier-types)
