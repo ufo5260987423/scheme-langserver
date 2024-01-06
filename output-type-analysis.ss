@@ -15,12 +15,21 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier rules library-import))
 
+(define (recursive-top identifier-reference)
+  (if (null? (identifier-reference-parents identifier-reference))
+    `(,identifier-reference)
+    (apply append (map recursive-top (identifier-reference-parents identifier-reference)))))
+
 (define (step-library-identifiers current-library-node)
   (fold-left 
     (lambda (left file-node)
       (let* ([target-document (file-node-document file-node)]
           [index-node-list (document-index-node-list target-document)]
-          [identifier-list (apply append (map import-from-external-index-node index-node-list))]
+          [identifier-list 
+            (apply append 
+              (map 
+                recursive-top
+                (apply append (map import-from-external-index-node index-node-list))))]
           [path (file-node-path file-node)])
         (pretty-print path)
         (append left 
@@ -28,19 +37,18 @@
             (map 
               (lambda (identifier-reference)
                 (append 
-                  (list 
-                    (symbol->string (identifier-reference-identifier identifier-reference))
-                    (library-node-name->string (identifier-reference-library-identifier identifier-reference))
-                    path)
+                  (map list 
+                    (list 
+                      (symbol->string (identifier-reference-identifier identifier-reference))
+                      (library-node-name->string (identifier-reference-library-identifier identifier-reference))
+                      path))
                   (filter 
                     (lambda (i) (not (equal? i "something? ")))
                     (dedupe 
                       (map type:interpret->strings 
                         (if (null? (identifier-reference-index-node identifier-reference))
-                          (identifier-reference-type-expressions identifier-reference)
-                          (
-                            ; type:recursive-interpret-result-list 
-                            type:interpret-result-list 
+                          (identifier-reference-type-expressions identifier-reference) 
+                          (type:recursive-interpret-result-list 
                             (index-node-variable (identifier-reference-index-node identifier-reference)) 
                             (make-type:environment (document-substitution-list target-document)))))))))
               identifier-list)))))
@@ -51,6 +59,8 @@
     [output-path (cadr (command-line-arguments))]
     [workspace (init-workspace target-path #t #f #t)]  
     [root-library-node (workspace-library-node workspace)])
-  (write-lines 
-      (step-library-identifiers root-library-node)
-      output-path))
+  (pretty-print (step-library-identifiers root-library-node))
+  ; (map 
+  ;   (lambda (lines) (write-lines lines output-path))
+  ;   (step-library-identifiers root-library-node))
+    )

@@ -25,9 +25,9 @@
     (let* ([target-path (current-directory)] 
             [workspace (init-workspace target-path #t #f #t)]
             [root-library-node (workspace-library-node workspace)]
-            ; [target-library-identifier '(scheme-langserver util matrix)]
+            [target-library-identifier '(scheme-langserver util matrix)]
             ; [target-library-identifier '(scheme-langserver util contain)]
-            [target-library-identifier '(hashing private compat)]
+            ; [target-library-identifier '(hashing private compat)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (print-graph #t)
         (pretty-print 'output-identifier-types)
