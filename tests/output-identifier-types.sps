@@ -25,7 +25,7 @@
     (let* ([target-path (current-directory)] 
             [workspace (init-workspace target-path #t #f #t)]
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver util matrix)]
+            [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
             ; [target-library-identifier '(scheme-langserver util contain)]
             ; [target-library-identifier '(hashing private compat)]
             [identifier-references (import-references root-library-node target-library-identifier)])
@@ -35,13 +35,13 @@
             (lambda (identifier-reference)
                 (pretty-print (identifier-reference-identifier identifier-reference))
                 (cond 
-                    [(null? (identifier-reference-index-node identifier-reference)) '()]
+                    [(not (null? (identifier-reference-index-node identifier-reference))) '()]
                     ;because the identifier-reference-type-expression may be the result of type:interpret-result-list
                     [else
                         (let* ([target-document (identifier-reference-document identifier-reference)]
                             [env (make-type:environment (document-substitution-list target-document))]
-                            [result (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
-                            ; [result (type:interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
+                            [result 
+                                (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
                             (identifier-reference-type-expressions-set! identifier-reference result))])
                 (pretty-print 
                     (filter 

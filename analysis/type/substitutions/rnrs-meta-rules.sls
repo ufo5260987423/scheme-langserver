@@ -433,6 +433,7 @@
 (petite? (boolean? <- (inner:list? )))
 (port? (boolean? <- (inner:list? something?)))
 (positive? (boolean? <- (inner:list? real?)))
+(pretty-print (void? <- (inner:list? something? textual-port? ...)))
 (procedure? (boolean? <- (inner:list? something?)))
 (put-hash-table! (void? <- (inner:list? hash-table? something? something?)))
 (quotient (integer? <- (inner:list? integer? integer?)))

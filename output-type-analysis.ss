@@ -56,7 +56,9 @@
                         (apply append 
                           (map 
                             type:interpret->strings 
-                            (if (null? (identifier-reference-document ir))
+                            (if (or 
+                                (null? (identifier-reference-document ir)) 
+                                (not (null? (identifier-reference-type-expressions ir))))
                               (identifier-reference-type-expressions ir)
                               (type:recursive-interpret-result-list 
                                 (index-node-variable (identifier-reference-index-node ir)) 
