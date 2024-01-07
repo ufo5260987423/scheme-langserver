@@ -190,11 +190,16 @@
                 (contain? sibling index-node)
                 (match (annotation-stripped (index-node-datum/annotations grandparent))
                   [('library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
+                  [('define-library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
                   [else #f])))))])
     (if (null? parent)
       #f
       (match (annotation-stripped (index-node-datum/annotations parent))
         [('library identifier _ ...) 
+          (and 
+            (equal? (cadr (index-node-children parent)) index-node)
+            (not (check?)))]
+        [('define-library identifier _ ...) 
           (and 
             (equal? (cadr (index-node-children parent)) index-node)
             (not (check?)))]

@@ -23,7 +23,7 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #t #f #t)]
+            [workspace (init-workspace target-path #f #t #t)]
             [root-library-node (workspace-library-node workspace)]
             [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
             ; [target-library-identifier '(scheme-langserver util contain)]
@@ -35,13 +35,21 @@
             (lambda (identifier-reference)
                 (pretty-print (identifier-reference-identifier identifier-reference))
                 (cond 
-                    [(not (null? (identifier-reference-index-node identifier-reference))) '()]
-                    ;because the identifier-reference-type-expression may be the result of type:interpret-result-list
+                    [(not (null? (identifier-reference-type-expressions identifier-reference))) '()]
+                    ;because the identifier-reference-type-expressions may be the result of type:interpret-result-list
+                    [(null? (identifier-reference-document identifier-reference)) '()]
                     [else
+                (pretty-print 'else)
+                (pretty-print (length (document-substitution-list (identifier-reference-document identifier-reference))))
                         (let* ([target-document (identifier-reference-document identifier-reference)]
                             [env (make-type:environment (document-substitution-list target-document))]
                             [result 
-                                (type:recursive-interpret-result-list (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
+                                (
+                                    type:interpret-result-list
+                                    ; type:recursive-interpret-result-list 
+                                    (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
+                (pretty-print 'else1)
+                (pretty-print result)
                             (identifier-reference-type-expressions-set! identifier-reference result))])
                 (pretty-print 
                     (filter 

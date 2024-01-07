@@ -75,7 +75,7 @@
         ;       (let* ([identifier-parent-index-node (car rest)]
         ;             [identifier-index-node (car (index-node-children identifier-parent-index-node))])
         ;         (index-node-excluded-references-set! 
-        ;           identifier-parent-index-nofind-available-references-forde
+        ;           identifier-parent-index-node
         ;           (append 
         ;             (index-node-excluded-references identifier-parent-index-node)
         ;             (private-process identifier-index-node index-node '() document 'variable)))
@@ -93,7 +93,7 @@
         ;             (private-process identifier-index-node index-node '() document 'syntax-variable)))
         ;         (loop (cdr rest)))))]
         ; [('let-syntax (((? symbol? identifier) no-use ... ) **1 ) _ ... ) 
-        ;   (guard-for document index-node 'lefind-available-references-fort-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        ;   (guard-for document index-node 'let-syntax '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ;   (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
         ;     (if (not (null? rest))
         ;       (let* ([identifier-parent-index-node (car rest)]
@@ -110,7 +110,7 @@
         ;     (if (not (null? rest))
         ;       (let* ([identifier-parent-index-node (car rest)]
         ;             [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-        ;         (index-node-excluded-referenfind-available-references-forces-set! 
+        ;         (index-node-excluded-references-set! 
         ;           identifier-parent-index-node
         ;           (append 
         ;             (index-node-excluded-references identifier-parent-index-node)

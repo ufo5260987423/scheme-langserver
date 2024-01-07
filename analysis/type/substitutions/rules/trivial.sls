@@ -226,7 +226,7 @@
                 (cartesian-product 
                   `(,variable) 
                   '(=) 
-                  (index-node-variable (identifier-reference-index-node identifier-reference)))
+                  `(,(index-node-variable (identifier-reference-index-node identifier-reference))))
                 (document-substitution-list target-document))
               (cartesian-product `(,variable) '(:) `(,type-expressions)))]))
       (apply 
