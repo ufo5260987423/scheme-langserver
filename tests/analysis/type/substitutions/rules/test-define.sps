@@ -61,20 +61,20 @@
                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
 (test-end)
 
-; (test-begin "debug for index-node.sls:debug:print-expressions")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f #t)]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
-;             [target-document (file-node-document target-file-node)]
-;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 61 10)))]
-;             [variable (index-node-variable target-index-node)]
-;             [check-base 'void?])
-;         (test-equal #t 
-;             (contain? 
-;                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
-; (test-end)
+(test-begin "debug for index-node.sls:debug:print-expressions")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f #t)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 61 10)))]
+            [variable (index-node-variable target-index-node)]
+            [check-base 'void?])
+        (test-equal #t 
+            (contain? 
+                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
+(test-end)
 
 ; a better cutting is needed
 ; (test-begin "cartesian-products may slow down the inference because combination blows up")
