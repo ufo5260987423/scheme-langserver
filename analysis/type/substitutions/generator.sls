@@ -40,14 +40,18 @@
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [children (index-node-children index-node)]
       [variable (index-node-variable index-node)])
+    ; (pretty-print 'generate)
     ; (pretty-print expression)
     ; (pretty-print (document-uri document))
-    ; (pretty-print (null? children))
-    ; (pretty-print (length children))
+    ; (pretty-print variable)
     (cond
-      [(null? children) (trivial-process document index-node variable expression base-substitution-list allow-unquote? quoted?)]
+      [(null? children) 
+        ; (pretty-print 'cao5)
+        (append base-substitution-list 
+          (trivial-process document index-node variable expression base-substitution-list allow-unquote? quoted?))]
       ;here, must be a list or vector
       [(and (not quoted?) (quasiquote? index-node document))
+        ; (pretty-print 'cao6)
         (private-construct-substitution-list 
           document 
           (car children) 
@@ -56,6 +60,7 @@
           #t 
           #t)]
       [(and (not quoted?) (quote? index-node document))
+        ; (pretty-print 'cao0)
         (private-construct-substitution-list 
           document 
           (car children) 
@@ -64,23 +69,21 @@
           #f 
           #t)]
       [(not quoted?)
+        ; (pretty-print 'cao1)
         (let ([children-substitution-list
-              (apply 
-                append 
-                (map 
-                  (lambda (child) 
-                    (private-construct-substitution-list document child base-substitution-list #f #f))
-                  children))])
+              (fold-left 
+                (lambda (previous-substitutions child-index-node)
+                  (private-construct-substitution-list document child-index-node previous-substitutions #f #f))
+                base-substitution-list
+                children)])
           (fold-left
-            (lambda (current-substitutions proc)
+            (lambda (previous-substitutions proc)
               ; (pretty-print 'proc)
               ; (debug:print-expression index-node)
               ; (pretty-print proc)
-              (if (= (length current-substitutions) (length children-substitution-list))
-                (filter
-                  (lambda (a) (not (null? a)))
-                  (proc document index-node current-substitutions))
-                current-substitutions))
+              (if (= (length previous-substitutions) (length children-substitution-list))
+                (append previous-substitutions (proc document index-node previous-substitutions))
+                previous-substitutions))
             children-substitution-list
             ;all these processor except trivial-process must add its result to current index-node
             ;such as for (app param ...), app's result type could be (return-type (param-type ...))
@@ -100,6 +103,7 @@
               ;this should be the last
               application-process)))]
       [(and quoted? allow-unquote? (unquote? index-node document))
+        ; (pretty-print 'cao8)
         (private-construct-substitution-list 
           document 
           (car children) 
@@ -108,6 +112,7 @@
           #f 
           #f)]
       [(and quoted? (or (list? expression) (vector? expression)))
+        ; (pretty-print 'cao9)
         (let* ([final-result
               (fold-left 
                 (lambda (ahead-result current-index-node)
@@ -119,7 +124,8 @@
                     (if (and (unquote-splicing? current-index-node document) allow-unquote? (not (null? current-children)))
                       `(,(append first children-variables) . 
                         ,(fold-left
-                          (lambda (l r) (private-construct-substitution-list document r l #f #f))
+                          (lambda (previous-substitutions child-index-node) 
+                            (private-construct-substitution-list document child-index-node previous-substitutions #f #f))
                           last
                           current-children))
                       `((,@first ,variable) . 
@@ -128,10 +134,17 @@
                 children)]
             [variable-list (car final-result)]
             [extend-substitution-list (cdr final-result)])
-          `(,@extend-substitution-list (,variable = ,variable-list)))]
+        ; (pretty-print 'cao10)
+            ; (pretty-print (length base-substitution-list ))
+            ; (pretty-print 
+            ;   (length 
+            ;   `(,@base-substitution-list ,@extend-substitution-list (,variable = ,variable-list))
+            ;   ))
+          `(,@base-substitution-list ,@extend-substitution-list (,variable = ,variable-list))
+          )]
       [quoted? 
-        (trivial-process document index-node variable expression base-substitution-list #f quoted?)]
-      [else base-substitution-list]
-    )
-  ))
+        ; (pretty-print 'cao9)
+        (append base-substitution-list 
+          (trivial-process document index-node variable expression base-substitution-list #f quoted?))]
+      [else base-substitution-list])))
 )

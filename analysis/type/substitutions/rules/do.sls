@@ -22,13 +22,11 @@
         [('do ((var init update ...) **1) (test result ...) _ ... ) 
           (guard-for document index-node 'do '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([children (index-node-children index-node)]
-            [var-index-node (cadr children)])
-            (append 
-              substitutions
-              (apply append (map private-process (index-node-children var-index-node)))))]
-        [else substitutions])
+              [var-index-node (cadr children)])
+            (apply append (map private-process (index-node-children var-index-node))))]
+        [else '()])
       (except c
-        [else substitutions]))))
+        [else '()]))))
 
 (define (private-process target-index-node)
   (let* ([ann (index-node-datum/annotations target-index-node)]

@@ -37,7 +37,6 @@
               ;((return-variable (parameter-variable ...)) **1)
               [loop-procedure-details (construct-lambdas-with `(,return-variable) parameter-variable-products)])
             (append 
-              substitutions 
               (apply append 
                 (map 
                   (lambda (current-index-node)
@@ -54,7 +53,10 @@
               ;for loop procedure
               (cartesian-product `(,loop-variable) '(=) loop-procedure-details)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+              (apply append 
+                (map 
+                  (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) 
+                  key-value-index-nodes))))]
         [('let (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
@@ -62,7 +64,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -123,7 +124,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -155,7 +155,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -168,7 +167,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -181,15 +179,14 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
               (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
-        [else substitutions])
+        [else '()])
       (except c
-        [else substitutions]))))
+        [else '()]))))
 
 (define (private-process-key-value substitutions parent-index-node)
   (let* ([ann (index-node-datum/annotations parent-index-node)]
@@ -210,10 +207,11 @@
         [check? (lambda (target) (equal? loop-identifier target))])
       (match expression
         [((? check? loop-target) _ **1)
-          (print-graph #t)
           (if (and 
               (contain? 
-                (map identifier-reference-index-node (find-available-references-for document current-index-node loop-identifier)) 
+                (map 
+                  identifier-reference-index-node 
+                  (find-available-references-for document current-index-node loop-identifier)) 
                 loop-index-node)
               (= (length key-index-node-variables) (length _)))
             (let loop ([rest-variables (map index-node-variable (cdr (index-node-children current-index-node)))]

@@ -30,17 +30,15 @@
               [parameter-index-nodes (cdr (index-node-children (cadr (index-node-children index-node))))]
               [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)]
               [lambda-details (construct-lambdas-with (list return-variable) parameter-variable-products)])
-            (append substitutions (cartesian-product `(,identifier-variable) '(=) lambda-details)))]
+            (cartesian-product `(,identifier-variable) '(=) lambda-details))]
         [('define (? symbol? identifiers) tail) 
           (guard-for document index-node 'define '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([identifier-index-node (cadr (index-node-children index-node))]
               [tail-index-node (car (reverse (index-node-children index-node)))])
-            (append
-              substitutions
-              (append 
-                (construct-substitutions-between-index-nodes identifier-index-node tail-index-node '=)
-                (construct-substitutions-between-index-nodes tail-index-node identifier-index-node '=))))]
-        [else substitutions])
+            (append 
+              (construct-substitutions-between-index-nodes identifier-index-node tail-index-node '=)
+              (construct-substitutions-between-index-nodes tail-index-node identifier-index-node '=)))]
+        [else '()])
       (except c
-        [else substitutions]))))
+        [else '()]))))
 )

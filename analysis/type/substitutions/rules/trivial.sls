@@ -39,11 +39,9 @@
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
           [variable (index-node-variable index-node)])
-        (append
-          substitutions
-          (if (null? (index-node-children index-node))
-            (trivial-process document index-node variable expression substitutions #f #f)
-            '())))]
+        (if (null? (index-node-children index-node))
+          (trivial-process document index-node variable expression substitutions #f #f)
+          '()))]
     [(document index-node variable expression substitutions allow-unquote? quoted?)
       ; (pretty-print 'trivial)
       ; (pretty-print variable)
@@ -67,13 +65,12 @@
         [(number? expression) (list `(,variable : ,private-number?))]
 
         [(and (symbol? expression) (not quoted?))
-          (sort substitution-compare
-            (apply 
-              append 
-              (map 
-                (lambda (identifier-reference) 
-                  (private-process document identifier-reference index-node variable))
-                (find-available-references-for document index-node expression))))]
+          (apply 
+            append 
+            (map 
+              (lambda (identifier-reference) 
+                (private-process document identifier-reference index-node variable))
+              (find-available-references-for document index-node expression)))]
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
         ;here, must be a list or vector
@@ -131,7 +128,7 @@
                   (if is-list? expression (vector->list expression)))]
               [variable-list (car final-result)]
               [extend-substitution-list (cadr final-result)])
-            (sort substitution-compare `(,@extend-substitution-list (,variable = ,variable-list))))]
+            `(,@extend-substitution-list (,variable = ,variable-list)))]
          [else '()])]))
 
 (define (private-process document identifier-reference index-node variable)

@@ -46,9 +46,9 @@
                 `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
               (identifier-reference-type-expressions-set! 
                 constructor 
-                `((,predicator <- (inner:list? something? ...)))))))]
-      [else '()])
-    substitutions))
+                `((,predicator <- (inner:list? something? ...))))))
+            '())]
+      [else '()])))
 
 (define (private-collect-identifiers index-node)
   (if (null? (index-node-references-export-to-other-node index-node))
