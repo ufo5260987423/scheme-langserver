@@ -84,15 +84,15 @@
 (test-end)
 
 ; (test-begin "debug:tmp")
-;     (let* ([workspace (init-workspace (current-directory))]
+;     (let* ([workspace (init-workspace (current-directory) '() #f #t #f)]
 ;             [root-file-node (workspace-file-node workspace)]
 ;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/industria/crypto/math.sls"))]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/chibi/test.scm"))]
 ;             [target-document (file-node-document target-file-node)])
 ;         (pretty-print 'aa0)
 ;         (construct-substitution-list-for target-document)
 ;         (pretty-print 'aa1)
-;         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
+;         )
 ; (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

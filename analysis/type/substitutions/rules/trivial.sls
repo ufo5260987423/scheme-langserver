@@ -74,37 +74,10 @@
               (find-available-references-for document index-node expression)))]
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
-        ;here, must be a list or vector
-        [(and (private-quasiquote? index-node document expression) (not quoted?))
-          (trivial-process 
-            document 
-            index-node 
-            variable 
-            (cadr expression) 
-            substitutions 
-            #t 
-            #f)]
-        [(private-quote? index-node document expression) 
-          (trivial-process 
-            document 
-            index-node 
-            variable 
-            (cadr expression) 
-            substitutions 
-            #f 
-            #f)]
-        [(and (private-unquote? index-node document expression) allow-unquote? quoted?)
-          (trivial-process 
-            document 
-            index-node 
-            variable 
-            (cadr expression) 
-            substitutions 
-            #f 
-            #t)]
-        [(and (private-unquote-splicing? index-node document expression) (or (not allow-unquote?) quoted?)) '()]
-
+        ; [(and (pair? expression) (not (list? expression)))
+        ; ]
         [(or (list? expression) (vector? expression))
+          ; (pretty-print 'aaa3)
           (let* ([is-list? (list? expression)]
               [final-result
                 (fold-left 

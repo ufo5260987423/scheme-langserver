@@ -98,8 +98,9 @@
       (let* ([root-file-node 
             (init-virtual-file-system path '() 
               (cond
+                ;todo:add more filter
                 [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-                [else (lambda (fuzzy) #t)]))]
+                [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-library-node)]
           [paths (get-init-reference-path file-linkage)]

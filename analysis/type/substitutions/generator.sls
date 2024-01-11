@@ -134,16 +134,9 @@
                 children)]
             [variable-list (car final-result)]
             [extend-substitution-list (cdr final-result)])
-        ; (pretty-print 'cao10)
-            ; (pretty-print (length base-substitution-list ))
-            ; (pretty-print 
-            ;   (length 
-            ;   `(,@base-substitution-list ,@extend-substitution-list (,variable = ,variable-list))
-            ;   ))
-          `(,@base-substitution-list ,@extend-substitution-list (,variable = ,variable-list))
-          )]
+          `(,@base-substitution-list ,@extend-substitution-list (,variable = ,variable-list)))]
       [quoted? 
-        ; (pretty-print 'cao9)
+        ; (pretty-print 'cao11)
         (append base-substitution-list 
           (trivial-process document index-node variable expression base-substitution-list #f quoted?))]
       [else base-substitution-list])))
