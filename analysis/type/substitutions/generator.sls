@@ -138,6 +138,6 @@
       [quoted? 
         ; (pretty-print 'cao11)
         (append base-substitution-list 
-          (trivial-process document index-node variable expression base-substitution-list #f quoted?))]
+          (trivial-process document index-node variable expression base-substitution-list allow-unquote? quoted?))]
       [else base-substitution-list])))
 )
