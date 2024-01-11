@@ -196,27 +196,4 @@
       [(= i (vector-length target-vector)) i]
       [(equal? (vector-ref target-vector i) target-index-node) i]
       [else (loop (+ i 1))])))
-
-
-(define (private-unquote-splicing? index-node document expression)
-  (private index-node document expression 'unquote-splicing))
-
-(define (private-unquote? index-node document expression)
-  (private index-node document expression 'unquote))
-
-(define (private-quote? index-node document expression)
-  (private index-node document expression 'quote))
-
-(define (private-quasiquote? index-node document expression)
-  (private index-node document expression 'quasiquote))
-
-(define (private index-node document expression target)
-  (if (pair? expression)
-    (if (equal? target (car expression))
-      (try
-        (guard-for document index-node target '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-        #t
-        (except c [else #f]))
-      #f)
-    #f))
 )
