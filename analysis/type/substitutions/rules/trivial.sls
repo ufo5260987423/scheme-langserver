@@ -9,6 +9,7 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
+    (scheme-langserver util try)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
@@ -74,7 +75,7 @@
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
         ;here, must be a list or vector
-        [(and (quasiquote? index-node document) (not quoted?))
+        [(and (private-quasiquote? index-node document expression) (not quoted?))
           (trivial-process 
             document 
             index-node 
@@ -83,7 +84,7 @@
             substitutions 
             #t 
             #f)]
-        [(quote? index-node document) 
+        [(private-quote? index-node document expression) 
           (trivial-process 
             document 
             index-node 
@@ -92,7 +93,7 @@
             substitutions 
             #f 
             #f)]
-        [(and (unquote? index-node document) allow-unquote? quoted?)
+        [(and (private-unquote? index-node document expression) allow-unquote? quoted?)
           (trivial-process 
             document 
             index-node 
@@ -101,14 +102,14 @@
             substitutions 
             #f 
             #t)]
-        [(and (unquote-splicing? index-node document) (or (not allow-unquote?) quoted?)) '()]
+        [(and (private-unquote-splicing? index-node document expression) (or (not allow-unquote?) quoted?)) '()]
 
         [(or (list? expression) (vector? expression))
           (let* ([is-list? (list? expression)]
               [final-result
                 (fold-left 
                   (lambda (ahead-result current-expression)
-                    (if (and (unquote-splicing? current-expression) allow-unquote? quoted?)
+                    (if (and (private-unquote-splicing? index-node document current-expression) allow-unquote? quoted?)
                       (let loop ([body (cdr current-expression)]
                           [current-result ahead-result])
                         (if (null? body)
@@ -129,7 +130,7 @@
               [variable-list (car final-result)]
               [extend-substitution-list (cadr final-result)])
             `(,@extend-substitution-list (,variable = ,variable-list)))]
-         [else '()])]))
+        [else '()])]))
 
 (define (private-process document identifier-reference index-node variable)
   (sort substitution-compare
@@ -222,4 +223,27 @@
       [(= i (vector-length target-vector)) i]
       [(equal? (vector-ref target-vector i) target-index-node) i]
       [else (loop (+ i 1))])))
+
+
+(define (private-unquote-splicing? index-node document expression)
+  (private index-node document expression 'unquote-splicing))
+
+(define (private-unquote? index-node document expression)
+  (private index-node document expression 'unquote))
+
+(define (private-quote? index-node document expression)
+  (private index-node document expression 'quote))
+
+(define (private-quasiquote? index-node document expression)
+  (private index-node document expression 'quasiquote))
+
+(define (private index-node document expression target)
+  (if (pair? expression)
+    (if (equal? target (car expression))
+      (try
+        (guard-for document index-node target '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        #t
+        (except c [else #f]))
+      #f)
+    #f))
 )

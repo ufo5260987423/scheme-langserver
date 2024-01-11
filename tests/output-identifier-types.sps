@@ -23,7 +23,7 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #f #t #t)]
+            [workspace (init-workspace target-path #t #t #t)]
             [root-library-node (workspace-library-node workspace)]
             [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
             ; [target-library-identifier '(scheme-langserver util contain)]
