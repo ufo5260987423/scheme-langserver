@@ -74,10 +74,20 @@
               (find-available-references-for document index-node expression)))]
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
-        ; [(and (pair? expression) (not (list? expression)))
-        ; ]
+        [(and (pair? expression) (not (list? expression)))
+          ; (pretty-print 'trivial)
+          ; (pretty-print expression)
+          ; (pretty-print (car expression))
+          ; (pretty-print (cdr expression))
+          (let* ([f (car expression)]
+              [l (cdr expression)]
+              [new-variable-f (make-variable)]
+              [new-variable-l (make-variable)])
+            (append 
+              `((,variable = (inner:pair? new-variable-f new-variable-l)))
+              (trivial-process document index-node new-variable-f f substitutions allow-unquote? quoted?)
+              (trivial-process document index-node new-variable-l l substitutions allow-unquote? quoted?)))]
         [(or (list? expression) (vector? expression))
-          ; (pretty-print 'aaa3)
           (let* ([is-list? (list? expression)]
               [final-result
                 (fold-left 

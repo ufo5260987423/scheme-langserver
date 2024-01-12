@@ -111,6 +111,18 @@
             (,variable = ,(index-node-variable (car children))))
           #f 
           #f)]
+          ;shold process unquote-splicing
+      ; [(and quoted? (pair? expression) (not (list? expression)))
+      ;   (pretty-print 'cao9)
+      ;   (pretty-print expression)
+      ;   (let* ([f (car expression)]
+      ;       [l (cdr expression)]
+      ;       [new-variable-f (make-variable)]
+      ;       [new-variable-l (make-variable)])
+      ;     (append 
+      ;       `((,variable = (inner:pair? new-variable-f new-variable-l)))
+      ;       (trivial-process document index-node new-variable-f f substitutions allow-unquote? quoted?)
+      ;       (trivial-process document index-node new-variable-l l substitutions allow-unquote? quoted?)))]
       [(and quoted? (or (list? expression) (vector? expression)))
         ; (pretty-print 'cao9)
         (let* ([final-result
