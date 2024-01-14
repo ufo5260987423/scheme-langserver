@@ -333,6 +333,22 @@
                   (lambda (reference) 
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
+      [('for (library-identifier **1) import-level) 
+        (if (or
+            (equal? 'run import-level)
+            (equal? '(meta 0) import-level)
+            ; (equal? 'expand import-level)
+            ; (equal? '(meta 1) import-level)
+            )
+          (let ([tmp (filter identifier-reference? (import-references root-library-node library-identifier))])
+            (if (null? grand-parent-index-node)
+              (document-reference-list-set! 
+                document
+                (sort-identifier-references (append (document-reference-list document) tmp)))
+              (index-node-references-import-in-this-node-set! 
+                grand-parent-index-node 
+                (sort-identifier-references
+                  (append (index-node-references-import-in-this-node grand-parent-index-node) tmp))))))]
       [(library-identifier **1) 
         (let ([tmp (filter identifier-reference? (import-references root-library-node library-identifier))])
           (if (null? grand-parent-index-node)

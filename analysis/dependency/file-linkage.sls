@@ -113,7 +113,6 @@
       (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-from-recursive matrix from-node-id))
       '())))
 
-;; this procedure won't be trouble with graph cycle
 (define (get-init-reference-path linkage)
   (let* ([node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
       [visited-ids (make-vector node-count)]
