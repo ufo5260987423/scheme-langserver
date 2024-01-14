@@ -69,7 +69,7 @@
 
 (let* ([target-path (car (command-line-arguments))] 
     [output-path (cadr (command-line-arguments))]
-    [workspace (init-workspace target-path #t #f #t)]  
+    [workspace (init-workspace target-path #t #t #t)]  
     [root-library-node (workspace-library-node workspace)])
   (call-with-output-file output-path
     (lambda (port)
