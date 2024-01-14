@@ -23,10 +23,10 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #t #t #t)]
+            [workspace (init-workspace target-path #f #t #t)]
             [root-library-node (workspace-library-node workspace)]
-            ; [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
-            [target-library-identifier '(scheme-langserver util contain)]
+            [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
+            ; [target-library-identifier '(scheme-langserver util contain)]
             ; [target-library-identifier '(hashing private compat)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (print-graph #t)
@@ -39,17 +39,13 @@
                     ;because the identifier-reference-type-expressions may be the result of type:interpret-result-list
                     [(null? (identifier-reference-document identifier-reference)) '()]
                     [else
-                (pretty-print 'else)
-                (pretty-print (length (document-substitution-list (identifier-reference-document identifier-reference))))
                         (let* ([target-document (identifier-reference-document identifier-reference)]
                             [env (make-type:environment (document-substitution-list target-document))]
                             [result 
                                 (
-                                    type:interpret-result-list
-                                    ; type:recursive-interpret-result-list 
+                                    ; type:interpret-result-list
+                                    type:recursive-interpret-result-list 
                                     (index-node-variable (identifier-reference-index-node identifier-reference)) env)])
-                (pretty-print 'else1)
-                (pretty-print result)
                             (identifier-reference-type-expressions-set! identifier-reference result))])
                 (pretty-print 
                     (filter 
