@@ -23,10 +23,10 @@
 
 (test-begin "output-identifier-types")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #f #t #t)]
+            [workspace (init-workspace target-path #t #t #t)]
             [root-library-node (workspace-library-node workspace)]
-            [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
-            ; [target-library-identifier '(scheme-langserver util contain)]
+            ; [target-library-identifier '(scheme-langserver virtual-file-system index-node)]
+            [target-library-identifier '(scheme-langserver util contain)]
             ; [target-library-identifier '(hashing private compat)]
             [identifier-references (import-references root-library-node target-library-identifier)])
         (print-graph #t)

@@ -87,7 +87,7 @@
 ;     (let* ([workspace (init-workspace (current-directory) '() #f #t #f)]
 ;             [root-file-node (workspace-file-node workspace)]
 ;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/chibi/test.scm"))]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/arew/json/body.scm"))]
 ;             [target-document (file-node-document target-file-node)])
 ;         (pretty-print 'aa0)
 ;         (construct-substitution-list-for target-document)
