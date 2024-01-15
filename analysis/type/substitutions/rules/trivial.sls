@@ -186,13 +186,40 @@
                   `(,variable) 
                   '(=) 
                   `(,(index-node-variable (identifier-reference-index-node identifier-reference))))
-                (document-substitution-list target-document))
+                (private-get-reachable (document-substitution-list target-document) variable))
               (cartesian-product `(,variable) '(:) `(,type-expressions)))]))
       (apply 
         append 
         (map 
           (lambda (parent) (private-process document parent index-node variable))
           (identifier-reference-parents identifier-reference))))))
+
+(define (private-get-reachable substitution-list variable)
+  (let loop (
+      [current-variables `(,variable)]
+      [result '()]
+      [exclude '(,variable)])
+    (let* ([current-result 
+          (map 
+            (lambda (v)
+              (filter 
+                (lambda (s)
+                  (equal? (car s) v))
+                substitution-list))
+            current-variables)]
+        [variables (filter (lambda (v) (not (contain? exclude v))) (private-get-variables current-result))])
+      (if (null? variables)
+        result
+        (loop 
+          variables
+          (append result current-result)
+          (append exclude variables))))))
+
+(define (private-get-variables tree)
+  (cond 
+    [(list? tree) (apply append (map private-get-variables tree))]
+    [(variable? tree) `(,tree)]
+    [else '()]))
 
 (define (generate-symbols-with base-string max)
   (let loop ([result '()])

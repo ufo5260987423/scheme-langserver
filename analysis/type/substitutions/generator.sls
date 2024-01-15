@@ -27,7 +27,7 @@
 (define (construct-substitution-list-for document)
   (document-substitution-list-set! 
     document 
-    (dedupe 
+    (ordered-dedupe 
       (sort 
         substitution-compare
         (apply 

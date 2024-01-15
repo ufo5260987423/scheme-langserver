@@ -171,7 +171,7 @@
                 (pretty-print 'workspace-error)
                 (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
                 '()])))
-
+        ; (pretty-print (length (document-substitution-list document)))
         (document-refreshable?-set! document #f))]
     [(root-file-node root-library-node document target-index-nodes)
       (map 
