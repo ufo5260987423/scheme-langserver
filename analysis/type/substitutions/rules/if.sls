@@ -66,6 +66,9 @@
               [previous (map car clauses-children)]
               [latters (map cadr clauses-children)])
             (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters)))]
+        [('unless clause expression **1)
+          (guard-for document index-node 'unless '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (construct-substitutions-between-index-nodes index-node (car (reverse children)) '=)]
         [else '()])
       (except c
         [else '()]))))
