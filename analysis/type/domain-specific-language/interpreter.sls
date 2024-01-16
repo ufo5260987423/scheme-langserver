@@ -265,20 +265,19 @@
           ;If here's no "not", it will leads to error because of its item maybe failed macro indicated
           ;by above "except" branch. The only solution is type:depature&interpret->result-list.
           [(and (list? expression) (not (inner:contain? expression inner:macro?)))
-            (type:environment-result-list-set! 
-              env 
-              (apply append 
-                (map 
-                  (lambda (type) 
-                    (if (equal? type expression)
-                      `(,type)
-                      (type:interpret-result-list type env new-memory)))
-                  ;interpret first item in order to confirm is it executable or macro
-                  (apply 
-                    (private-generate-cartesian-product-procedure)
-                    ; cartesian-product
+            (let ([filtered 
+                  (filter
+                    (lambda (r) (or (inner:macro? r) (inner:lambda? r)))
+                    (type:interpret-result-list (car expression) env new-memory))])
+              (type:environment-result-list-set! 
+                env 
+                (if (null? filtered)
+                  `(,expression)
+                  (apply append 
                     (map 
-                      (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
+                      (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
+                      ;interpret first item in order to confirm is it executable or macro
+                      filtered)))))]
           [else (type:environment-result-list-set! env (list expression))]))
       (type:environment-result-list-set! 
         env 
