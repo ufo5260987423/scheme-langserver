@@ -276,7 +276,6 @@
                   (apply append 
                     (map 
                       (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
-                      ;interpret first item in order to confirm is it executable or macro
                       filtered)))))]
           [else (type:environment-result-list-set! env (list expression))]))
       (type:environment-result-list-set! 
