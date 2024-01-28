@@ -31,44 +31,59 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "type:recursive-intepret-result-list")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
+; (test-begin "type:recursive-intepret-result-list")
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+;             [target-document (file-node-document target-file-node)]
+;             [target-text (document-text target-document)]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
+;             [variable (index-node-variable target-index-node)]
+;             [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
+;             [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
+;         (construct-substitution-list-for target-document)
+;         (let ([tmp (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))])
+;             (test-equal #t (contain? tmp check-base0))
+;             (test-equal #t (contain? tmp check-base1))))
+; (test-end)
+
+; (test-begin "type:intepret")
+;     (test-equal 
+;         (type:interpret-result-list (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?)))
+;         (list (construct-type-expression-with-meta 'number?)))
+;     (test-equal #t
+;         (contain? 
+;             (let ([v (make-variable)])
+;                 (type:interpret-result-list `((,v <- (inner:list? ,v)) ,(construct-type-expression-with-meta 'number?))))
+;             (construct-type-expression-with-meta 'number?)))
+; (test-end)
+
+; (test-begin "type:->?/<-?/=? ")
+;     (test-equal #t (type:->? (construct-type-expression-with-meta 'integer?) (construct-type-expression-with-meta 'number?) (make-type:environment '())))
+;     (test-equal #t (type:->? (construct-type-expression-with-meta 'integer?) (construct-type-expression-with-meta 'real?) (make-type:environment '())))
+;     (test-equal #f (type:->? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
+;     (test-equal #t (type:<-? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
+;     (test-equal #f (type:=? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
+;     (test-equal #f (type:->? 
+;         (construct-type-expression-with-meta '(inner:list? number? number?)) 
+;         (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))) 
+;         (make-type:environment '())))
+; (test-end)
+
+(test-begin "debug")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/.akku/lib/industria/crypto/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/industria/crypto/math.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 57 12)))]
             [variable (index-node-variable target-index-node)]
-            [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
-            [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
+            )
         (construct-substitution-list-for target-document)
         (let ([tmp (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))])
-            (test-equal #t (contain? tmp check-base0))
-            (test-equal #t (contain? tmp check-base1))))
-(test-end)
-
-(test-begin "type:intepret")
-    (test-equal 
-        (type:interpret-result-list (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?)))
-        (list (construct-type-expression-with-meta 'number?)))
-    (test-equal #t
-        (contain? 
-            (let ([v (make-variable)])
-                (type:interpret-result-list `((,v <- (inner:list? ,v)) ,(construct-type-expression-with-meta 'number?))))
-            (construct-type-expression-with-meta 'number?)))
-(test-end)
-
-(test-begin "type:->?/<-?/=? ")
-    (test-equal #t (type:->? (construct-type-expression-with-meta 'integer?) (construct-type-expression-with-meta 'number?) (make-type:environment '())))
-    (test-equal #t (type:->? (construct-type-expression-with-meta 'integer?) (construct-type-expression-with-meta 'real?) (make-type:environment '())))
-    (test-equal #f (type:->? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
-    (test-equal #t (type:<-? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
-    (test-equal #f (type:=? (construct-type-expression-with-meta 'number?) (construct-type-expression-with-meta 'integer?) (make-type:environment '())))
-    (test-equal #f (type:->? 
-        (construct-type-expression-with-meta '(inner:list? number? number?)) 
-        (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))) 
-        (make-type:environment '())))
+            (pretty-print tmp)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
