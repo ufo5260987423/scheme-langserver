@@ -33,12 +33,12 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 8 44)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 49 16)))]
             [variable (index-node-variable target-index-node)]
-            [check-base (construct-type-expression-with-meta 'string?)])
+            [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitution-list-for target-document)
         (test-equal #t 
             (contain? 
@@ -80,7 +80,7 @@
                 check-base1)))
 (test-end)
 
-(test-begin "cross clause type access")
+(test-begin "case-lambda:cross clause parameter type access")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
