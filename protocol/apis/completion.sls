@@ -11,7 +11,6 @@
 
     (scheme-langserver protocol alist-access-object)
 
-    (scheme-langserver util natural-order-compare)
     (scheme-langserver util association)
     (scheme-langserver util cartesian-product)
     (scheme-langserver util path) 

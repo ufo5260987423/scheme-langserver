@@ -1,14 +1,13 @@
 (library (scheme-langserver analysis type substitutions rnrs-meta-rules)
   (export rnrs-chez-rules)
-  (import 
-    (chezscheme)
-    (scheme-langserver util natural-order-compare))
+  (import (chezscheme))
 
-(define rnrs-chez-rules (sort 
-  (lambda (target1 target2)
-    (natural-order-compare 
-      (symbol->string (car target1))
-      (symbol->string (car target2))))
+(define rnrs-chez-rules 
+  (sort 
+    (lambda (target1 target2)
+      (string<=? 
+        (symbol->string (car target1))
+        (symbol->string (car target2))))
   '(
 (- (number? <- (inner:list? number? **1)))
 (* (number? <- (inner:list? number? ...)))

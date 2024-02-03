@@ -35,7 +35,7 @@
 
     (scheme-langserver util binary-search)
     (scheme-langserver util contain)
-    (scheme-langserver util natural-order-compare))
+    )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
   (fields
@@ -146,7 +146,7 @@
 (define (sort-identifier-references identifier-references)
   (sort 
     (lambda (target1 target2) 
-      (natural-order-compare 
+      (string<=?
         (symbol->string (identifier-reference-identifier target1))
         (symbol->string (identifier-reference-identifier target2))))
     identifier-references))
@@ -244,7 +244,7 @@
         (binary-search
           (list->vector reference-list)
           (lambda (reference0 reference1)
-            (natural-order-compare 
+            (string<=?
               (symbol->string (identifier-reference-identifier reference0))
               (symbol->string (identifier-reference-identifier reference1))))
           (make-identifier-reference identifier '() '() '() '() '() '() '()))])

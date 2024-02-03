@@ -18,7 +18,6 @@
 
     (scheme-langserver util try)
     (scheme-langserver util cartesian-product)
-    (scheme-langserver util natural-order-compare)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
@@ -77,7 +76,7 @@
   (cartesian-product return-variables '(<-) parameter-variable-products))
 
 (define (substitution-compare item0 item1)
-  (natural-order-compare 
+  (string<=?
     (variable-uuid (car item0))
     (variable-uuid (car item1))))
 
