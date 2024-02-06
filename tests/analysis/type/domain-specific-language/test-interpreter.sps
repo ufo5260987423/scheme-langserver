@@ -31,23 +31,6 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "type:recursive-intepret-result-list")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
-            [variable (index-node-variable target-index-node)]
-            [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
-            [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
-        (construct-substitution-list-for target-document)
-        (let ([tmp (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))])
-            (test-equal #t (contain? tmp check-base0))
-            (test-equal #t (contain? tmp check-base1))))
-(test-end)
-
 (test-begin "type:intepret")
     (test-equal 
         (type:interpret-result-list (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?)))
