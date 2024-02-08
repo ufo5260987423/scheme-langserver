@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # akku install
 # bash .akku/env
 compile-chez-program run.ss
