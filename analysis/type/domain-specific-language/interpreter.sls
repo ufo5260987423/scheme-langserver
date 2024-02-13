@@ -156,7 +156,7 @@
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
           [result '()])
         (if (= max-recursion i)
-          (dedupe (append result target-expression-list))
+          (dedupe-deduped result target-expression-list)
           (let* ([r0 
                 (apply append 
                   (map
@@ -181,13 +181,15 @@
       (cond
         [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
         [(and (list? expression) (inner:contain? expression inner:macro?)) 
-          (dedupe (apply append 
+          (fold-left 
+            dedupe-deduped 
+            '()
             (map 
               (lambda (item) (type:interpret-result-list item env '() max-depth))
               (apply 
                 (private-generate-cartesian-product-procedure)
                 ; cartesian-product
-                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression)))))]
+                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression))))]
         [else (type:interpret-result-list expression env '() max-depth)])]))
 
 (define type:interpret 
