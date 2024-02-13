@@ -155,12 +155,18 @@
           [target-expression-list `(,expression)]
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
           [result '()])
+        ; (pretty-print 'dd)
+        ; (pretty-print (length target-expression-list))
         (if (= max-recursion i)
           (dedupe-deduped result target-expression-list)
           (let* ([r0 
-                (apply append 
+                (fold-left
+                  dedupe-deduped
+                  '()
                   (map
-                    (lambda (e) (type:depature&interpret->result-list e env-iterator max-depth))
+                    (lambda (e) 
+                    ; (pretty-print 'aaa)
+                    (type:depature&interpret->result-list e env-iterator max-depth))
                     target-expression-list))]
               [r1 (filter type:solved? r0)]
               [s0 (type:environment-substitution-list env-iterator)]
