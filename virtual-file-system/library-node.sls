@@ -21,16 +21,26 @@
     (mutable children)
     (mutable file-nodes)))
 
-(define (library-node-name->string target)
-  (if (symbol? target)
-    (symbol->string target)
-    (string-append 
-      (fold-left 
-        (lambda (left right)
-          (string-append left " " (library-node-name->string right)))
-        "("
-        target)
-      ")")))
+(define (library-node-name->string target-library-node)
+  (cond 
+    [(null? target-library-node) ""]
+    [(null? (library-node-parent target-library-node)) ""]
+    [else 
+      (string-append 
+        (library-node-name->string (library-node-parent target-library-node))
+        " "
+        (private-symbol-list->string (library-node-name target-library-node)))]))
+
+(define (private-symbol-list->string target-list)
+  (cond 
+    [(null? target-list) "()"]
+    [(list? target-list) 
+      (fold-left
+        (lambda (l r) (if (equal? "" l) r (string-append l " " r)))
+        ""
+        (map private-symbol-list->string target-list))]
+    [(symbol? target-list) (symbol->string target-list)]
+    [(number? target-list) (number->string target-list)]))
 
 (define (delete-library-node-from-tree current-library-node)
   (library-node-children-set!

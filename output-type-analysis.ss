@@ -23,7 +23,7 @@
 (define (step-library-identifiers current-library-node port)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
     (write-string "library:\t" port)
-    (write-string (library-node-name->string (library-node-name current-library-node)) port)
+    (write-string (string-append "(" (library-node-name->string current-library-node) ")") port)
     (write-string "\n" port)
     (pretty-print (library-node-name current-library-node))
     (if (null? file-nodes)
