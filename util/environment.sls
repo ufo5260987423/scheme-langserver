@@ -24,5 +24,5 @@
 ; (machine-type) =>ta6le t:threaded a6:amd64 le:linux
 
 (define (windows?)
-  (string-suffix? (symbol->string (machine-type)) "nt"))
+  (string-suffix? "nt" (symbol->string (machine-type))))
 )

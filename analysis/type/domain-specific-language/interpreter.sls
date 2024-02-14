@@ -45,6 +45,7 @@
 
 (define PRIVATE-MAX-DEPTH 10)
 (define PRIVATE-MAX-RECURSION 2)
+(define PRIVATE-MAX-RECURSION-SET-SIZE 400)
 (define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
 
 (define (type:interpret->strings target)
@@ -148,25 +149,21 @@
 
 (define type:recursive-interpret-result-list
   (case-lambda 
-    [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION)]
-    [(expression env max-depth max-recursion) 
+    [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION PRIVATE-MAX-RECURSION-SET-SIZE)]
+    [(expression env max-depth max-recursion max-recursion-set-size) 
       ; (debug:pretty-print-substitution (type:environment-substitution-list env))
       (let loop ([i 0]
           [target-expression-list `(,expression)]
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
           [result '()])
-        ; (pretty-print 'dd)
-        ; (pretty-print (length target-expression-list))
-        (if (= max-recursion i)
+        (if (or (<= max-recursion i) (<= max-recursion-set-size (length target-expression-list)))
           (dedupe-deduped result target-expression-list)
           (let* ([r0 
                 (fold-left
                   dedupe-deduped
                   '()
                   (map
-                    (lambda (e) 
-                    ; (pretty-print 'aaa)
-                    (type:depature&interpret->result-list e env-iterator max-depth))
+                    (lambda (e) (type:depature&interpret->result-list e env-iterator max-depth))
                     target-expression-list))]
               [r1 (filter type:solved? r0)]
               [s0 (type:environment-substitution-list env-iterator)]
