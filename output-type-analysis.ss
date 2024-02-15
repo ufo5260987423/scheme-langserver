@@ -22,21 +22,24 @@
 
 (define (step-library-identifiers current-library-node port)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
-    (write-string "library:\t" port)
-    (write-string (string-append "(" (library-node-name->string current-library-node) ")") port)
-    (write-string "\n" port)
-    (pretty-print (library-node-name current-library-node))
     (if (null? file-nodes)
       (map (lambda (c) (step-library-identifiers c port)) (library-node-children current-library-node))
       (let* ([file-node (car file-nodes)]
           [target-document (file-node-document file-node)]
           [index-node-list (document-index-node-list target-document)]
           [identifier-list (apply append (map import-from-external-index-node index-node-list))]
+          [library-name (string-append "(" (library-node-name->string current-library-node) ")")]
           [path (file-node-path file-node)])
+        (pretty-print library-name)
         (pretty-print path)
+        (write-string "library:\t" port)
+        (write-string library-name port)
+        (write-string "\n" port)
+
         (write-string "path:\t\t" port)
         (write-string path port)
         (write-string "\n" port)
+
         (map 
           (lambda (identifier-reference)
             (write-string "identifier:\t" port)
