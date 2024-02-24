@@ -185,14 +185,12 @@
         [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
         [(and (list? expression) (inner:contain? expression inner:macro?)) 
           (fold-left 
-            dedupe-deduped 
+            (lambda (l r) (dedupe-deduped l (type:interpret-result-list r env '() max-depth)))
             '()
-            (map 
-              (lambda (item) (type:interpret-result-list item env '() max-depth))
-              (apply 
-                (private-generate-cartesian-product-procedure)
-                ; cartesian-product
-                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression))))]
+            (apply 
+              (private-generate-cartesian-product-procedure)
+              ; cartesian-product
+              (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression)))]
         [else (type:interpret-result-list expression env '() max-depth)])]))
 
 (define type:interpret 
@@ -222,11 +220,14 @@
                   (apply append 
                     (map 
                       (lambda (for-template) 
-                        (try
-                          (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
-                          ;thie except branch brings a problem that the expression may nest many things into itself 
-                          ;and leads to non-stop result.
-                          (except c [else (list expression)])))
+                        ;avoid nested macros
+                        (if (inner:contain? for-template inner:macro?)
+                          (list expression)
+                          (try
+                            (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
+                            ;thie except branch brings a problem that the expression may nest many things into itself 
+                            ;and leads to non-stop result.
+                            (except c [else (list expression)]))))
                       (apply 
                         (private-generate-cartesian-product-procedure)
                         ; cartesian-product 
@@ -358,8 +359,6 @@
                 `(#t . ,(cdr left))
                 (let* ([filtered-result (map right (cdr left))]
                     [amount (apply * (map length filtered-result))])
-                  ; (pretty-print 'cartesian)
-                  ; (pretty-print amount)
                   (if (> max amount)
                     `(#t . ,(apply cartesian-product filtered-result))
                     `(#f . ,filtered-result)))))
