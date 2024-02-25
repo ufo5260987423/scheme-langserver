@@ -33,12 +33,12 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 49 10)))]
             [variable (index-node-variable target-index-node)]
-            [check-base (construct-type-expression-with-meta 'boolean?)])
+            [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitution-list-for target-document)
         (test-equal #t 
             (contain? 
@@ -56,6 +56,21 @@
         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
         ; (debug:pretty-print-substitution (document-substitution-list target-document))
         ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
+        (test-equal #t 
+            (contain? 
+                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
+(test-end)
+
+(test-begin "debug for index-node.sls:debug:print-expressions")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f #t)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 61 10)))]
+            [variable (index-node-variable target-index-node)]
+            [check-base 'void?])
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))

@@ -30,7 +30,7 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)])
         (construct-substitution-list-for target-document)
         (test-equal #f (null? (document-substitution-list target-document))))
@@ -40,10 +40,10 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 70)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 15 26)))]
             [variable (index-node-variable target-index-node)])
         (construct-substitution-list-for target-document)
         (test-equal 
@@ -57,10 +57,10 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 12 9)))]
             [variable (index-node-variable target-index-node)])
         (construct-substitution-list-for target-document)
         (test-equal (car (car (substitution:walk (document-substitution-list target-document) variable))) variable))
@@ -70,10 +70,10 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 10 25)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 16 11)))]
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta '(boolean? <- (inner:list? real? real? **1)))])
         (construct-substitution-list-for target-document)
@@ -84,15 +84,15 @@
 (test-end)
 
 ; (test-begin "debug:tmp")
-;     (let* ([workspace (init-workspace (current-directory))]
+;     (let* ([workspace (init-workspace (current-directory) '() #f #t #f)]
 ;             [root-file-node (workspace-file-node workspace)]
 ;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/industria/crypto/math.sls"))]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/arew/json/body.scm"))]
 ;             [target-document (file-node-document target-file-node)])
 ;         (pretty-print 'aa0)
 ;         (construct-substitution-list-for target-document)
 ;         (pretty-print 'aa1)
-;         (test-equal #t (debug:substitution-sorted? (document-substitution-list target-document))))
+;         )
 ; (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

@@ -27,6 +27,10 @@
         (map 
           (lambda (child-node) (match-export index-node root-file-node document library-identifiers child-node))
           (index-node-children index-node))]
+      [('define-library (library-identifiers **1) _ **1 ) 
+        (map 
+          (lambda (child-node) (match-export index-node root-file-node document library-identifiers child-node))
+          (index-node-children index-node))]
       [else '()])
     index-node))
 
@@ -72,7 +76,7 @@
                       library-identifiers
                       'pointer
                       references
-                      '()))))
+                      (apply append (map identifier-reference-type-expressions references))))))
               `(,@result ,external-index-node)))
           '()
           (cdr (index-node-children index-node)))]
@@ -93,8 +97,8 @@
                   initialization-index-node 
                   library-identifiers
                   'pointer
-                  '()
-                  '()))
+                  references
+                  (apply append (map identifier-reference-type-expressions references))))
                 references))))]
       [else '()])))
 )

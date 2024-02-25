@@ -9,13 +9,13 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
+    (scheme-langserver util try)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions rules record)
     (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
@@ -40,12 +40,16 @@
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
           [variable (index-node-variable index-node)])
-        (append
-          substitutions
-          (if (null? (index-node-children index-node))
-            (trivial-process document index-node variable expression substitutions #f #t)
-            '())))]
-    [(document index-node variable expression substitutions allow-unquote? unquoted?)
+        (if (null? (index-node-children index-node))
+          (trivial-process document index-node variable expression substitutions #f #f)
+          '()))]
+    [(document index-node variable expression substitutions allow-unquote? quoted?)
+      ; (pretty-print 'trivial)
+      ; (pretty-print variable)
+      ; (debug:print-expression index-node)
+      ; (pretty-print expression)
+      ; (pretty-print allow-unquote?)
+      ; (pretty-print quoted?)
       (cond
         ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,private-char?))]
@@ -61,52 +65,34 @@
         [(complex? expression) (list `(,variable : ,private-complex?))]
         [(number? expression) (list `(,variable : ,private-number?))]
 
-        [(and (symbol? expression) unquoted?)
-          (sort substitution-compare
-            (apply 
-              append 
-              (map 
-                (lambda (identifier-reference) 
-                  (private-process document identifier-reference index-node variable))
-                (find-available-references-for document index-node expression))))]
+        [(and (symbol? expression) (not quoted?))
+          (apply 
+            append 
+            (map 
+              (lambda (identifier-reference) 
+                (private-process document identifier-reference index-node variable))
+              (find-available-references-for document index-node expression)))]
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
-        ;here, must be a list or vector
-        [(and (private-quasiquote? expression) unquoted?)
-          (trivial-process 
-            document 
-            index-node 
-            variable 
-            (cadr expression) 
-            substitutions 
-            #t 
-            #f)]
-        [(private-quote? expression) 
-          (trivial-process 
-            document 
-            index-node 
-            variable 
-            (cadr expression) 
-            substitutions 
-            #f 
-            #f)]
-        [(and (private-unquote? expression) allow-unquote? (not unquoted?))
-          (trivial-process 
-            document 
-            index-node 
-            variable 
-            (cadr expression) 
-            substitutions 
-            #f 
-            #t)]
-        [(and (private-unquote-slicing? expression) (or (not allow-unquote?) unquoted?)) '()]
-
+        [(and (pair? expression) (not (list? expression)))
+          ; (pretty-print 'trivial)
+          ; (pretty-print expression)
+          ; (pretty-print (car expression))
+          ; (pretty-print (cdr expression))
+          (let* ([f (car expression)]
+              [l (cdr expression)]
+              [new-variable-f (make-variable)]
+              [new-variable-l (make-variable)])
+            (append 
+              `((,variable = (inner:pair? new-variable-f new-variable-l)))
+              (trivial-process document index-node new-variable-f f substitutions allow-unquote? quoted?)
+              (trivial-process document index-node new-variable-l l substitutions allow-unquote? quoted?)))]
         [(or (list? expression) (vector? expression))
           (let* ([is-list? (list? expression)]
               [final-result
                 (fold-left 
                   (lambda (ahead-result current-expression)
-                    (if (and (private-unquote-slicing? current-expression) allow-unquote? (not unquoted?))
+                    (if (and (private-unquote-splicing? index-node document current-expression) allow-unquote? quoted?)
                       (let loop ([body (cdr current-expression)]
                           [current-result ahead-result])
                         (if (null? body)
@@ -118,7 +104,7 @@
                               [last `(,@(cadr current-result) ,@r)])
                             (loop (cdr body) `(,first ,last)))))
                       (let* ([v (make-variable)]
-                          [r (trivial-process document index-node v current-expression substitutions allow-unquote? unquoted?)]
+                          [r (trivial-process document index-node v current-expression substitutions allow-unquote? quoted?)]
                           [first `(,@(car ahead-result) ,v)]
                           [last `(,@(cadr ahead-result) ,@r)])
                         `(,first ,last))))
@@ -126,36 +112,8 @@
                   (if is-list? expression (vector->list expression)))]
               [variable-list (car final-result)]
               [extend-substitution-list (cadr final-result)])
-            (sort substitution-compare `(,@extend-substitution-list (,variable = ,variable-list))))]
+            `(,@extend-substitution-list (,variable = ,variable-list)))]
         [else '()])]))
-
-(define (private-unquote-slicing? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quasiquote-slicing (car expression))
-      #f)
-    #f))
-
-(define (private-unquote? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quasiquote (car expression))
-      #f)
-    #f))
-
-(define (private-quote? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quote (car expression))
-      #f)
-    #f))
-
-(define (private-quasiquote? expression)
-  (if (list? expression)
-    (if (= 1 (length expression))
-      (equal? 'quasiquote (car expression))
-      #f)
-    #f))
 
 (define (private-process document identifier-reference index-node variable)
   (sort substitution-compare
@@ -190,6 +148,8 @@
                       [rests (cdr children)]
                       [rest-variables (map index-node-variable rests)]
                       [target-variable (index-node-variable target-index-node)])
+                    ; (pretty-print (document-uri document))
+                    ; (pretty-print `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))
                     `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))]
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
@@ -220,27 +180,46 @@
                 [else '()]))]
           ;import
           [else 
-            ; (pretty-print 'import)
-            ; (print-graph #t)
-            ; (pretty-print (document-uri (identifier-reference-document identifier-reference)))
-            (let ([run 
-                  (lambda ()
-                    (if (null? type-expressions)
-                      (identifier-reference-type-expressions-set! 
-                        identifier-reference 
-                        (dedupe 
-                          (type:interpret-result-list 
-                            (index-node-variable target-index-node)
-                            (make-type:environment (document-substitution-list target-document)))))))])
-              (if (null? (document-mutex target-document))
-                (run)
-                (with-mutex (document-mutex target-document) (run))))
-            (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]))
+            (if (null? type-expressions)
+              (append 
+                (cartesian-product 
+                  `(,variable) 
+                  '(=) 
+                  `(,(index-node-variable (identifier-reference-index-node identifier-reference))))
+                (private-get-reachable (document-substitution-list target-document) variable))
+              (cartesian-product `(,variable) '(:) `(,type-expressions)))]))
       (apply 
         append 
         (map 
           (lambda (parent) (private-process document parent index-node variable))
           (identifier-reference-parents identifier-reference))))))
+
+(define (private-get-reachable substitution-list variable)
+  (let loop (
+      [current-variables `(,variable)]
+      [result '()]
+      [exclude '(,variable)])
+    (let* ([current-result 
+          (map 
+            (lambda (v)
+              (filter 
+                (lambda (s)
+                  (equal? (car s) v))
+                substitution-list))
+            current-variables)]
+        [variables (filter (lambda (v) (not (contain? exclude v))) (private-get-variables current-result))])
+      (if (null? variables)
+        result
+        (loop 
+          variables
+          (append result current-result)
+          (append exclude variables))))))
+
+(define (private-get-variables tree)
+  (cond 
+    [(list? tree) (apply append (map private-get-variables tree))]
+    [(variable? tree) `(,tree)]
+    [else '()]))
 
 (define (generate-symbols-with base-string max)
   (let loop ([result '()])
@@ -254,4 +233,15 @@
       [(= i (vector-length target-vector)) i]
       [(equal? (vector-ref target-vector i) target-index-node) i]
       [else (loop (+ i 1))])))
+
+(define (private-unquote-splicing? index-node document current-expression)
+  (if (pair? current-expression)
+    (if (equal? unquote-splicing? (car current-expression))
+      (try
+        (guard-for document index-node 'unquote-splicing '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
+        #t
+      (except c
+        [else #f]))
+      #f)
+    #f))
 )

@@ -7,7 +7,6 @@
      (only (chezscheme) pretty-print print-graph)
      (ufo-match)
      (scheme-langserver util binary-search)
-     (scheme-langserver util natural-order-compare)
      (scheme-langserver analysis identifier reference)
      (scheme-langserver analysis type substitutions rnrs-meta-rules)
      (scheme-langserver analysis type domain-specific-language variable))
@@ -87,7 +86,7 @@
                 (binary-search
                   (list->vector rnrs-chez-rules)
                   (lambda (target0 target1)
-                    (natural-order-compare 
+                    (string<=? 
                       (symbol->string (car target0))
                       (symbol->string (car target1))))
                   (list (identifier-reference-identifier identifier-reference))))

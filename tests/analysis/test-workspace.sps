@@ -52,14 +52,14 @@
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))])
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/cartesian-product.sls"))])
         (update-file-node-with-tail 
             workspace
             target-file-node 
-            "(library (scheme-langserver util natural-order-compare1)\n    (export natural-order-compare)\n    (import (rnrs) )\n\n(define natural-order-compare \n    (case-lambda \n        [(string-a string-b) (natural-order-compare string-a string-b 0 0)] \n        [(string-a string-b index-a index-b) \n            (let ([length-a (string-length string-a)] \n                    [length-b (string-length string-b)]) \n                (if (or (>= index-a length-a) \n                        (>= index-b length-b)) \n                    (< length-a length-b) \n                    (let ([char-a (string-ref string-a index-a)] \n                            [char-b (string-ref string-b index-b)]) \n                        (if (char=? char-a char-b) \n                            (natural-order-compare string-a string-b (+ 1 index-a) (+ 1 index-b)) \n                            (char<? char-a char-b)))))])) \n)"
+            "(library (scheme-langserver util cartesian-product1)\n  (export cartesian-product)\n  (import (rnrs))\n(define (cartesian-product . lists)\n  (fold-right \n    (lambda (xs ys)\n      (apply append \n        (map (lambda (x)\n          (map (lambda (y)\n            (cons x y))\n            ys))\n        xs)))\n    '(())\n    lists))\n)"
             )
         (refresh-workspace-for workspace target-file-node)
-        (test-equal #f (null? (walk-library '(scheme-langserver util natural-order-compare1) root-library-node))))
+        (test-equal #f (null? (walk-library '(scheme-langserver util cartesian-product1) root-library-node))))
 (test-end)
 
 (test-begin "library-import-process")

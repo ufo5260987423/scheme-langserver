@@ -66,7 +66,6 @@
     [(matrix n m value) (matrix-set! matrix (sqrt (vector-length matrix)) n m value)]
     [(matrix columns-number n m value) (if (and n m) (vector-set! matrix (encode columns-number n m) value))]))
 
-
 (define find-cycle
   (case-lambda 
     [(matrix) (find-cycle matrix (sqrt (vector-length matrix)))]
@@ -94,6 +93,5 @@
               '())))
         (if (find (lambda (t) (= n t)) path)
           (append path `(,n))
-          '())
-        )]))
+          '()))]))
 )

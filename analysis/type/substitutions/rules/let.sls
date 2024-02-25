@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver util try)
+    (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
@@ -36,14 +37,26 @@
               ;((return-variable (parameter-variable ...)) **1)
               [loop-procedure-details (construct-lambdas-with `(,return-variable) parameter-variable-products)])
             (append 
-              substitutions 
+              (apply append 
+                (map 
+                  (lambda (current-index-node)
+                    (private-process-loop 
+                      document 
+                      loop-identifier 
+                      current-index-node 
+                      loop-index-node 
+                      (map index-node-variable key-index-nodes)))
+                  (cdddr children)))
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for loop procedure
               (cartesian-product `(,loop-variable) '(=) loop-procedure-details)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+              (apply append 
+                (map 
+                  (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) 
+                  key-value-index-nodes))))]
         [('let (((? symbol? identifier) value) ...) _ **1) 
           (guard-for document index-node 'let '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([return-index-node (car (reverse children))]
@@ -51,7 +64,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -112,7 +124,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -144,7 +155,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -157,7 +167,6 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
@@ -170,15 +179,14 @@
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
             (append 
-              substitutions 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
               (apply append (map (lambda (key-value-index-node) (private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
-        [else substitutions])
+        [else '()])
       (except c
-        [else substitutions]))))
+        [else '()]))))
 
 (define (private-process-key-value substitutions parent-index-node)
   (let* ([ann (index-node-datum/annotations parent-index-node)]
@@ -190,4 +198,32 @@
           (construct-substitutions-between-index-nodes (car children) (cadr children) '=)
           (construct-substitutions-between-index-nodes (cadr children) (car children) '=))]
       [else '()])))
+
+(define (private-process-loop document loop-identifier current-index-node loop-index-node key-index-node-variables)
+  (fold-left
+    (lambda (left right)
+      (append left (private-process-loop document loop-identifier right loop-index-node key-index-node-variables)))
+    (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
+        [check? (lambda (target) (equal? loop-identifier target))])
+      (match expression
+        [((? check? loop-target) _ **1)
+          (if (and 
+              (contain? 
+                (map 
+                  identifier-reference-index-node 
+                  (find-available-references-for document current-index-node loop-identifier)) 
+                loop-index-node)
+              (= (length key-index-node-variables) (length _)))
+            (let loop ([rest-variables (map index-node-variable (cdr (index-node-children current-index-node)))]
+                [key-variables key-index-node-variables]
+                [new-substitutions '()])
+              (if (null? rest-variables)
+                new-substitutions
+                (loop 
+                  (cdr rest-variables)
+                  (cdr key-variables)
+                  `(,@new-substitutions (,(car key-variables) = ,(car rest-variables))))))
+            '())]
+        [else '()]))
+    (index-node-children current-index-node)))
 )

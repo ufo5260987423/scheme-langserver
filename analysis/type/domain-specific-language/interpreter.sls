@@ -45,6 +45,7 @@
 
 (define PRIVATE-MAX-DEPTH 10)
 (define PRIVATE-MAX-RECURSION 2)
+(define PRIVATE-MAX-RECURSION-SET-SIZE 400)
 (define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
 
 (define (type:interpret->strings target)
@@ -148,17 +149,19 @@
 
 (define type:recursive-interpret-result-list
   (case-lambda 
-    [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION)]
-    [(expression env max-depth max-recursion) 
+    [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION PRIVATE-MAX-RECURSION-SET-SIZE)]
+    [(expression env max-depth max-recursion max-recursion-set-size) 
       ; (debug:pretty-print-substitution (type:environment-substitution-list env))
       (let loop ([i 0]
           [target-expression-list `(,expression)]
           [env-iterator (make-type:environment (type:environment-substitution-list env))]
           [result '()])
-        (if (= max-recursion i)
-          (dedupe (append result target-expression-list))
+        (if (or (<= max-recursion i) (<= max-recursion-set-size (length target-expression-list)))
+          (dedupe-deduped result target-expression-list)
           (let* ([r0 
-                (apply append 
+                (fold-left
+                  dedupe-deduped
+                  '()
                   (map
                     (lambda (e) (type:depature&interpret->result-list e env-iterator max-depth))
                     target-expression-list))]
@@ -181,13 +184,13 @@
       (cond
         [(inner:executable? expression) (type:interpret-result-list expression env '() max-depth)]
         [(and (list? expression) (inner:contain? expression inner:macro?)) 
-          (dedupe (apply append 
-            (map 
-              (lambda (item) (type:interpret-result-list item env '() max-depth))
-              (apply 
-                (private-generate-cartesian-product-procedure)
-                ; cartesian-product
-                (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression)))))]
+          (fold-left 
+            (lambda (l r) (dedupe-deduped l (type:interpret-result-list r env '() max-depth)))
+            '()
+            (apply 
+              (private-generate-cartesian-product-procedure)
+              ; cartesian-product
+              (map (lambda (item) (type:depature&interpret->result-list item env max-depth)) expression)))]
         [else (type:interpret-result-list expression env '() max-depth)])]))
 
 (define type:interpret 
@@ -217,11 +220,14 @@
                   (apply append 
                     (map 
                       (lambda (for-template) 
-                        (try
-                          (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
-                          ;thie except branch brings a problem that the expression may nest many things into itself 
-                          ;and leads to non-stop result.
-                          (except c [else (list expression)])))
+                        ;avoid nested macros
+                        (if (inner:contain? for-template inner:macro?)
+                          (list expression)
+                          (try
+                            (type:interpret-result-list (macro-head-execute-with expression for-template) env new-memory)
+                            ;thie except branch brings a problem that the expression may nest many things into itself 
+                            ;and leads to non-stop result.
+                            (except c [else (list expression)]))))
                       (apply 
                         (private-generate-cartesian-product-procedure)
                         ; cartesian-product 
@@ -265,20 +271,18 @@
           ;If here's no "not", it will leads to error because of its item maybe failed macro indicated
           ;by above "except" branch. The only solution is type:depature&interpret->result-list.
           [(and (list? expression) (not (inner:contain? expression inner:macro?)))
-            (type:environment-result-list-set! 
-              env 
-              (apply append 
-                (map 
-                  (lambda (type) 
-                    (if (equal? type expression)
-                      `(,type)
-                      (type:interpret-result-list type env new-memory)))
-                  ;interpret first item in order to confirm is it executable or macro
-                  (apply 
-                    (private-generate-cartesian-product-procedure)
-                    ; cartesian-product
+            (let ([filtered 
+                  (filter
+                    (lambda (r) (or (inner:macro? r) (inner:lambda? r)))
+                    (type:interpret-result-list (car expression) env new-memory))])
+              (type:environment-result-list-set! 
+                env 
+                (if (null? filtered)
+                  `(,expression)
+                  (apply append 
                     (map 
-                      (lambda (item) (type:interpret-result-list item env new-memory)) expression)))))]
+                      (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
+                      filtered)))))]
           [else (type:environment-result-list-set! env (list expression))]))
       (type:environment-result-list-set! 
         env 
@@ -355,8 +359,6 @@
                 `(#t . ,(cdr left))
                 (let* ([filtered-result (map right (cdr left))]
                     [amount (apply * (map length filtered-result))])
-                  ; (pretty-print 'cartesian)
-                  ; (pretty-print amount)
                   (if (> max amount)
                     `(#t . ,(apply cartesian-product filtered-result))
                     `(#f . ,filtered-result)))))

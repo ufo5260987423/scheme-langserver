@@ -42,7 +42,7 @@
                             (identifier-reference-identifier reference)
                             (identifier-reference-document reference)
                             (identifier-reference-index-node reference)
-                            index-node
+                            (identifier-reference-initialization-index-node reference)
                             library-identifier
                             (identifier-reference-type reference)
                             (identifier-reference-parents reference)
@@ -73,7 +73,7 @@
                             (identifier-reference-identifier reference)
                             (identifier-reference-document reference)
                             (identifier-reference-index-node reference)
-                            index-node
+                            (identifier-reference-initialization-index-node reference)
                             library-identifier
                             (identifier-reference-type reference)
                             (identifier-reference-parents reference)
@@ -104,7 +104,7 @@
                             (identifier-reference-identifier reference)
                             (identifier-reference-document reference)
                             (identifier-reference-index-node reference)
-                            index-node
+                            (identifier-reference-initialization-index-node reference)
                             library-identifier
                             (identifier-reference-type reference)
                             (identifier-reference-parents reference)

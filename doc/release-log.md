@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.1.0: Type inference has been embedded into autocompletion! And it uses a homemade DSL(Domain Specific Language) making type representation and interpreting much easier.  But, I actually do not recommend anyone use this type inference in production because there are many efficiency and soundness problems which I haven't solved. A detailed outline should be referred in documentations.
+
 1.0.13: Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism making operation **much more smooth**.
 
 1.0.12: Add ss/scm-import-rnrs option, so that all files with ss/scm extension defaultly import chezscheme library (instead of rnrs because chez-scheme's rnrs seems don't have import procedure. That really puzzles me.)

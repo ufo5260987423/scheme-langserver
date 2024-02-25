@@ -18,6 +18,7 @@
         [expression (annotation-stripped ann)])
       (match expression
         [('library _ **1 ) (map match-import (index-node-children index-node))]
+        [('define-library _ **1 ) (map match-import (index-node-children index-node))]
         [else (list (match-import index-node))]))))
 
 (define (match-import index-node)
@@ -39,6 +40,8 @@
         [('except (identifier **1) _ ...) identifier]
         [('prefix (identifier **1) _ ...) identifier]
         [('rename (identifier **1) _ ...) identifier]
+        [('for (identifier **1) 'run ...) identifier]
+        [('for (identifier **1) '(meta 0) ...) identifier]
         [(identifier **1) identifier]
         [else '()]))))
 )

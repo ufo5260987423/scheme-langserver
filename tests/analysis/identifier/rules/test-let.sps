@@ -21,10 +21,10 @@
 (test-begin "let-process")
     (let* ( [workspace (init-workspace "./util" '() #f #f #f)]
             [root-file-node (workspace-file-node workspace)]
-            [target-file-node (walk-file root-file-node "./util/natural-order-compare.sls")]
+            [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
             ;; a let node
-            [position (make-position 8 12)]
+            [position (make-position 13 2)]
             [root-index-node (car (document-index-node-list document))]
             [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
             (import-process root-file-node (workspace-library-node workspace) document root-index-node)
@@ -33,7 +33,7 @@
                 (not 
                     (find 
                         (lambda (reference) 
-                            (equal? 'length-a (identifier-reference-identifier reference)))
+                            (equal? 'rows-count (identifier-reference-identifier reference)))
                         (index-node-references-import-in-this-node target-index-node)))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

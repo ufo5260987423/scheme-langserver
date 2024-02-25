@@ -24,6 +24,7 @@
                         (lambda (index-node)
                             (match (annotation-stripped (index-node-datum/annotations index-node))
                                 [('library (name **1) _ ... ) name]
+                                [('define-library (name **1) _ ... ) name]
                                 [else '()]))
                         index-node-list))))))
 
@@ -32,5 +33,6 @@
         '()
         (match (annotation-stripped (index-node-datum/annotations index-node))
             [('library (name **1) _ ... ) name]
+            [('define-library (name **1) _ ... ) name]
             [else (get-nearest-ancestor-library-identifier (index-node-parent index-node))])))
 )

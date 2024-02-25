@@ -12,5 +12,4 @@
     (test-equal #f (contain? '(#t) #f))
 (test-end)
 
-
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

@@ -28,6 +28,11 @@
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (index-node-children index-node))]
+      [('define-library _ **1 ) 
+      ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
+        (map 
+          (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
+          (index-node-children index-node))]
       [else 
       ; this makes sense for ss/scm files
         (try
@@ -174,7 +179,7 @@
                     (identifier-reference-library-identifier reference)
                     'pointer
                     `(,reference)
-                    '())) 
+                    (identifier-reference-type-expressions reference))) 
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
           (if (null? grand-parent-index-node)
@@ -218,7 +223,7 @@
                         (identifier-reference-library-identifier reference)
                         'pointer
                         `(,reference)
-                        '())) 
+                        (identifier-reference-type-expressions reference))) 
                     current-references)])
 
               (index-node-references-import-in-this-node-set! 
@@ -283,7 +288,7 @@
                         (identifier-reference-library-identifier reference)
                         'pointer
                         `(,reference)
-                        '())) 
+                        (identifier-reference-type-expressions reference)))
                     current-references)])
 
               (index-node-references-import-in-this-node-set! 
@@ -328,6 +333,22 @@
                   (lambda (reference) 
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
+      [('for (library-identifier **1) import-level) 
+        (if (or
+            (equal? 'run import-level)
+            (equal? '(meta 0) import-level)
+            ; (equal? 'expand import-level)
+            ; (equal? '(meta 1) import-level)
+            )
+          (let ([tmp (filter identifier-reference? (import-references root-library-node library-identifier))])
+            (if (null? grand-parent-index-node)
+              (document-reference-list-set! 
+                document
+                (sort-identifier-references (append (document-reference-list document) tmp)))
+              (index-node-references-import-in-this-node-set! 
+                grand-parent-index-node 
+                (sort-identifier-references
+                  (append (index-node-references-import-in-this-node grand-parent-index-node) tmp))))))]
       [(library-identifier **1) 
         (let ([tmp (filter identifier-reference? (import-references root-library-node library-identifier))])
           (if (null? grand-parent-index-node)
@@ -352,6 +373,7 @@
             (lambda (index-node)
               (match (annotation-stripped (index-node-datum/annotations index-node))
                 (['library (identifier **1) _ ... ] (equal? identifier library-identifier))
+                (['define-library (identifier **1) _ ... ] (equal? identifier library-identifier))
                 (else #f)))
             candidate-index-node-list))))))
 
@@ -360,6 +382,10 @@
       [expression (annotation-stripped ann)])
     (match expression 
       [('library _ **1 ) 
+        (apply append (map 
+          (lambda (child-node) (match-export child-node))
+          (cddr (index-node-children root-index-node))))]
+      [('define-library _ **1 ) 
         (apply append (map 
           (lambda (child-node) (match-export child-node))
           (cddr (index-node-children root-index-node))))]

@@ -7,16 +7,44 @@
     add-to-substitutions
     remove-from-substitutions
     debug:pretty-print-substitution
-    substitution->string)
+    substitution->string
+    
+    unquote-splicing?
+    unquote?
+    quote?
+    quasiquote?)
   (import 
     (chezscheme)
 
+    (scheme-langserver util try)
     (scheme-langserver util cartesian-product)
-    (scheme-langserver util natural-order-compare)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver virtual-file-system index-node))
+
+(define (unquote-splicing? index-node document)
+  (private index-node document 'unquote-splicing))
+
+(define (unquote? index-node document)
+  (private index-node document 'unquote))
+
+(define (quote? index-node document)
+  (private index-node document 'quote))
+
+(define (quasiquote? index-node document)
+  (private index-node document 'quasiquote))
+
+(define (private index-node document target)
+  (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
+    (if (pair? expression)
+      (if (equal? target (car expression))
+        (try
+          (guard-for document index-node target '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          #t
+          (except c [else #f]))
+        #f)
+      #f)))
 
 (define (debug:pretty-print-substitution substitutions)
   (pretty-print (map 
@@ -48,7 +76,7 @@
   (cartesian-product return-variables '(<-) parameter-variable-products))
 
 (define (substitution-compare item0 item1)
-  (natural-order-compare 
+  (string<=?
     (variable-uuid (car item0))
     (variable-uuid (car item1))))
 

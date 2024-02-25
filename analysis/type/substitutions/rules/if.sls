@@ -23,19 +23,15 @@
           (guard-for document index-node 'if '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let ([condition-index-node (cadr children)]
               [return-index-node (car (reverse children))])
-            (append
-              substitutions 
-              `((,(index-node-variable condition-index-node) = something?))
-              (construct-substitutions-between-index-nodes index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes return-index-node index-node '=)))]
+            `((,(index-node-variable condition-index-node) = something?))
+            (construct-substitutions-between-index-nodes index-node return-index-node '=)
+            (construct-substitutions-between-index-nodes return-index-node index-node '=))]
         [('if _  clause0 clause1) 
           (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let (
-              [condition-index-node (cadr children)]
+          (let ([condition-index-node (cadr children)]
               [return-index-node0 (cadr (reverse children))]
               [return-index-node1 (car (reverse children))])
             (append
-              substitutions 
               `((,(index-node-variable condition-index-node) = something?))
               (construct-substitutions-between-index-nodes index-node return-index-node0 '=)
               (construct-substitutions-between-index-nodes index-node return-index-node1 '=)
@@ -43,14 +39,12 @@
               (construct-substitutions-between-index-nodes return-index-node1 index-node '=)))]
         [('cond clause **1)
           (guard-for document index-node 'cond '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (append
-            substitutions
-            (apply 
-              append 
-              (map 
-                (lambda (clause-index-node)
-                  (private-clause-process substitutions index-node clause-index-node))
-                (cdr children))))]
+          (apply 
+            append 
+            (map 
+              (lambda (clause-index-node)
+                (private-clause-process substitutions index-node clause-index-node))
+              (cdr children)))]
         [('case (? symbol? expression) clause **1)
           (guard-for document index-node 'case '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([clauses (cddr children)]
@@ -58,7 +52,7 @@
               [previous (map car clauses-children)]
               [latters (map cadr clauses-children)]
               [expression-variable (index-node-variable (cadr children))])
-            (append substitutions
+            (append 
               (apply append 
                 (map 
                   (lambda (local-expression)
@@ -71,11 +65,13 @@
               [clauses-children (map index-node-children clauses)]
               [previous (map car clauses-children)]
               [latters (map cadr clauses-children)])
-            (append substitutions
-              (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters))))]
-        [else substitutions])
+            (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters)))]
+        [('unless clause expression **1)
+          (guard-for document index-node 'unless '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (construct-substitutions-between-index-nodes index-node (car (reverse children)) '=)]
+        [else '()])
       (except c
-        [else substitutions]))))
+        [else '()]))))
 
 (define (private-clause-process substitutions root-index-node clause-index-node)
   (let* ([ann (index-node-datum/annotations clause-index-node)]
