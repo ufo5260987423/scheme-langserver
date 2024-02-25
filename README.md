@@ -1,28 +1,28 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
->NOTE: This language server is mainly for scheme code with .scm, .ss, .sls and .sld extensions. And packages should be imported with Akku for now. And there're many many problems for type inference, I'm just fixing them, please be patient. Thank you.
+>NOTE: There're many many bugs in scheme-langserver, and parts of them may be lead from the high-level functions like identifier catching in incomplete code and type inference. I'm just fixing and appealing help from the community. Please be patient.
 
 Implementing support like autocomplete, goto definition, or documentation on hover is a significant effort for programming. However, comparing to other language like java, python, javascript and c, language server protocol implementation for lisp language are just made in a vacuum. [Geiser](https://gitlab.com/emacs-geiser), [racket langserver](https://github.com/jeapostrophe/racket-langserver) and [swish-lint](https://github.com/becls/swish-lint) etc., their works are all based on `repl`(Read-Eval-Print Loop) or keyword tokenizer instead of programming. For example, if a programmer was coding on an unaccomplished project, in which the codes were not fully runnable, [Geiser](https://gitlab.com/emacs-geiser) or any others would only complete top-level binding identifiers listed by `environment-symbols` procedure (for [Chez](https://cisco.github.io/ChezScheme/)). Which means for local bindings and unaccomplished codes, though making effort for programming is supposed of the importance mostly, [Geiser](https://gitlab.com/emacs-geiser) and its counterparts help nothing. Familiar cases occur with goto definition and many other functionalities.
 
-A primary cause is, for scheme and other lisp dialects, their abundant data sets and flexible control structures raise program analysis a big challenge. Especially the dynamic type system and macro, it seems like that scheme is mainly used for genius and meta/macro programming. But I say, no! Scheme can do many interesting things if a better programming environment was provided. And now I'll work on this.
+A primary cause is, for scheme and other lisp dialects, their abundant data sets and flexible control structures raise program analysis a big challenge. Especially the dynamic type system and macro, it seems like that scheme is mainly used for genius and meta/macro programming. But I say no. Scheme can make many interesting things if a better programming environment is provided. And now I'll work on this.
 
 This package is a language server protocol implementation helping scheme programming. It provides completion, definition and type inference. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme. 
 
-This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5. 
+This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5. A detailed test on version 10.0.0 will be done after upgrading my laptop with nixOS.
 
 I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can click [this patreon page](https://www.patreon.com/PoorProgrammer/membership) or [爱发电](https://afdian.net/a/ufo5260987423) to donate monthly, or just donate 10 USD just once time with the following paypal link. 
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 ## Recent Status
-I'll keep fixing bugs, profiling the code, and collecting information for my giant book(in Chinese, but if foreigners are interested in it, an English version will be considered.) on this homemade DSL and background mechanism. This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
+I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system (in Chinese, but if foreigners are interested in it, an English version will be considered.). This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
-I'm now visiting [Coimbra University](https://www.google.com.hk/maps/place/University+of+Coimbra/@40.2151996,-8.4224772,13z/data=!4m6!3m5!1s0xd22f909b72d402f:0x2c4969e6ec176a72!8m2!3d40.2076394!4d-8.4260932!16zL20vMDM1NjV5?entry=ttu), would anyone want to visit me?(Please make me an appointment)
+I'm now visiting [Coimbra University](https://www.google.com.hk/maps/place/University+of+Coimbra/@40.2151996,-8.4224772,13z/data=!4m6!3m5!1s0xd22f909b72d402f:0x2c4969e6ec176a72!8m2!3d40.2076394!4d-8.4260932!16zL20vMDM1NjV5?entry=ttu), would anyone visit me? 
 
 ### Release 
-1.1.0: Type inference has been embedded into autocompletion! And it uses a homemade DSL(Domain Specific Language) making type representation and interpreting much easier.  But, I actually do not recommend anyone use this type inference in production because there are many efficiency and soundness problems which I haven't solved. A detailed outline should be referred in [documentation](#detailed-document).
+1.1.1: Scheme-langserver now releases type information used in corresponding libraries! As previous 1.1.0 version, I don't recommend anyone use such information in production because of soundness problem. A detailed outline should be referred in [documentation](#detailed-document).
 
-More details refer to [this file](./doc/release-log.md).
+Previous release refer to [this file](./doc/release-log.md).
 ## Setup
 ### Building
 #### Pre-require
@@ -173,6 +173,7 @@ send-message
 17. Code eval.
 18. Code diagnostic.
 19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
+20. Extract expression/statements into a procedure()
 
 ## TODO:Contributing 
 
