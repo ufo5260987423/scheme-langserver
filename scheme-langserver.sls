@@ -15,6 +15,7 @@
     (scheme-langserver protocol analysis request-queue)
 
     (scheme-langserver protocol apis references)
+    (scheme-langserver protocol apis formatting)
     (scheme-langserver protocol apis document-highlight)
     (scheme-langserver protocol apis completion)
     (scheme-langserver protocol apis hover)
@@ -125,6 +126,14 @@
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
                 (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/formatting"
+          (try
+            (send-message server-instance (success-response id (formatting workspace params)))
+            (except c
+              [else 
+                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+                (do-log-timestamp server-instance)
+                (send-message server-instance (fail-response id unknown-error-code method))]))]
 
         ["$/cancelRequest" 
           (try
@@ -136,8 +145,6 @@
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
-          ; ["textDocument/formatting"
-          ;  (text-document/formatting! id params)]
           ; ["textDocument/rangeFormatting"
           ;  (text-document/range-formatting! id params)]
           ; ["textDocument/onTypeFormatting"
@@ -194,8 +201,8 @@
               ; 'documentHighlightProvider #t
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
-              ; 'documentFormattingProvider #t
-              'documentRangeFormattingProvider #f
+              'documentFormattingProvider #t
+              ; 'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
               ; 'foldingRangeProvider #t
