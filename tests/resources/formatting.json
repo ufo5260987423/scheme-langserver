@@ -1,0 +1,10 @@
+{
+    "id": "10",
+    "method": "textDocument/formatting",
+    "params": {
+        "textDocument" : {
+            "uri" : "file://~a/util/io.sls"
+        }
+    },
+    "jsonrpc": "2.0"
+}

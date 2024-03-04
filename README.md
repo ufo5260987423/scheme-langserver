@@ -17,20 +17,20 @@ I do this open source work just in my spare time and I can contribute many splen
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 ## Recent Status
-I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system (in Chinese, but if foreigners are interested in it, an English version will be considered.). This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
+I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 I'm now visiting [Coimbra University](https://www.google.com.hk/maps/place/University+of+Coimbra/@40.2151996,-8.4224772,13z/data=!4m6!3m5!1s0xd22f909b72d402f:0x2c4969e6ec176a72!8m2!3d40.2076394!4d-8.4260932!16zL20vMDM1NjV5?entry=ttu), would anyone visit me? 
 
 ### Release 
-1.1.1: Scheme-langserver now releases type information used in corresponding libraries! As previous 1.1.0 version, I don't recommend anyone use such information in production because of soundness problem. A detailed outline should be referred in [documentation](#detailed-document).
+1.1.1: Scheme-langserver now releases type information used in corresponding libraries! Its soundness is still not guaranteed! A detailed outline should be referred in [documentation](#detailed-document).
 
-Previous release refer to [this file](./doc/release-log.md).
+Previous releases please refer to [this file](./doc/release-log.md).
 ## Setup
 ### Building
 #### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
-If you wanted to enable scheme-langserver's muti-thread feature, it would require [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. I've test multi-thread feature for Linux, and according to [this page](https://github.com/cisco/ChezScheme/blob/main/BUILDING), it will also excutable for Windows.
+Scheme-langserver's muti-threaded feature requires [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. For Chez Scheme version after 10.0.0, there're some differents now.
 2. [Akku](https://akkuscm.org/)；
 3. [chez-exe](https://github.com/gwatt/chez-exe)；
 >NOTE
@@ -46,9 +46,9 @@ compile-chez-program run.ss
 ./run path-to-logfile
 ```
 #### TODO: for Windows
-The `run` file is also executable for windows WSL environment, and I'm waiting for [Chez Scheme 10](https://github.com/cisco/ChezScheme/wiki/Announcements). As their announcement, they will merge the racket implemented [Chez Scheme](https://cisco.github.io/ChezScheme/) into main branch. And in [this page](https://github.com/racket/ChezScheme/blob/master/BUILDING) it seems that the racket implementation has solved the multi-thread problem.
+The `run` file is also executable in Windows WSL environment. 
 
-Further building is going to be done after Chez scheme 10 released. Because, there're many issues about building scheme-langsever on Windows: first, for Chez scheme, its library loading mechanism is *nix-liked, which means for [srfi](https://srfi.schemers.org/), whose library path is like `srfi/:1/lists.sls`, can't be handled on Windows7; Second, many instruments are based on *nix, like [Akku](https://akkuscm.org/), it depends on [Guile](https://www.gnu.org/software/guile/), which only has linux-based releases. Third, Chez now doesn't have portable bytecode (pb) mode, which is mainly useful for bootstrapping a build on any platform.
+As for native on Windows, scheme-langserver requires [AKKU](https://akkuscm.org/) to be native on Windows first now. An essential barrier is the [srfi](https://srfi.schemers.org/), whose library path can't be handled in Windows7. Further discussion is on [tihs page](https://gitlab.com/akkuscm/akku/-/issues/70).
 
 ### Installation for [LunarVim(1.3)](https://www.lunarvim.org/)
 I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
