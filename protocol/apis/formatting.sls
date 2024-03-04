@@ -29,9 +29,11 @@
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
       [text (document-text document)]
+      [range (make-range (make-position 0 0) (int+text->position (string-length text) text))]
       [target
         (call-with-string-output-port
           (lambda (output-port)
-            (pretty-print (read (open-string-input-port text)) output-port)))])
-    (vector target)))
+            (pretty-print (read (open-string-input-port text)) output-port)))]
+      [text-edit (make-text-edit range target)])
+    (vector (text-edit->alist-with-newText text-edit))))
 )
