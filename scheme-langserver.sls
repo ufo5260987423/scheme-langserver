@@ -126,14 +126,15 @@
                 (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
                 (do-log-timestamp server-instance)
                 (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/formatting"
-          (try
-            (send-message server-instance (success-response id (formatting workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ;TODO: pretty-format with comments
+        ; ["textDocument/formatting"
+        ;   (try
+        ;     (send-message server-instance (success-response id (formatting workspace params)))
+        ;     (except c
+        ;       [else 
+        ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+        ;         (do-log-timestamp server-instance)
+        ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
 
         ["$/cancelRequest" 
           (try
@@ -201,7 +202,7 @@
               ; 'documentHighlightProvider #t
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
-              'documentFormattingProvider #t
+              ; 'documentFormattingProvider #t
               ; 'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
