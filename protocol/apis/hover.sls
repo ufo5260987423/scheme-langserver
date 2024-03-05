@@ -31,10 +31,12 @@
     (refresh-workspace-for workspace file-node)
     (let* ([index-node-list (document-index-node-list document)]
         [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
-        [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) )]
-        [available-reference (find-available-references-for document target-index-node prefix)])
-      (make-alist 'content (list->vector 
-        (dedupe (map identifier-reference->hover available-reference)))))))
+        [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) '())])
+      (if (null? prefix)
+        '()
+        (make-alist 
+          'content 
+          (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference)
