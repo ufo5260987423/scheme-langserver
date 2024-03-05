@@ -39,9 +39,7 @@
         (let* ([input-port (open-bytevector-input-port (string->utf8 (apply string-append result)))]
                 [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
                 [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-                ; special for ss/scm enabled
-                ; [server-instance (init-server input-port output-port log-port #f #t)]
-                [server-instance (init-server input-port output-port log-port #f)])
+                [server-instance (init-server input-port output-port log-port #f #f #f)])
             (test-equal #f (server-shutdown? server-instance)))
         ))
 (test-end)
