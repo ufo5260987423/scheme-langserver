@@ -70,34 +70,34 @@
        "2313fdd9bd3024d6776ad4c1abd22f8386838e46cdfa3163bec7871223483920")))
  ((name "laesare")
    (location
-     (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.1_repack.tar.xz"))
+     (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.2_repack.tar.xz"))
    (content
      (sha256
-       "dffb043bfdbe3bcd42ad0475a61338eec4fd1b1e68bcce17c30d6e6605f2d632")))
+       "b0cc8ccc940995e7bfd01cc30191c55561f8142195749bad945bde73bfa2a18c")))
  ((name "struct-pack")
    (location
      (url "https://archive.akkuscm.org/archive/pkg/s/struct-pack_1.1.1_repack.tar.xz"))
    (content
      (sha256
        "42d34a4d7052bdda1bddec0dfddd8f1e576bd0a51b483215a4ca3a8ed7b56d09")))
- ((name "ufo-coroutines")
+ ((name "ufo-thread-pool")
    (location
-     (url "https://archive.akkuscm.org/archive/pkg/u/ufo-coroutines_1.0.3_repack.tar.xz"))
+     (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.3_repack.tar.xz"))
    (content
      (sha256
-       "16b8aa3a449ba4cc91bd435ad0a97be9776c9dca24323b31f7f64e1f68c4b342")))
- ((name "uuid")
-   (location
-     (url "https://archive.akkuscm.org/archive/pkg/u/uuid_1.0.0-beta.0_repack.tar.xz"))
-   (content
-     (sha256
-       "03a058e7522933c1f7475cd20ab0515016bfbbd8c406d3c7302946b20664431d")))
+       "566460f3ea2ba48dec08c1dbdad925177ca2fe94bbe5208c653c63bdea7cdb44")))
  ((name "ufo-threaded-function")
    (location
      (url "https://archive.akkuscm.org/archive/pkg/u/ufo-threaded-function_1.0.2_repack.tar.xz"))
    (content
      (sha256
        "64614e094a04ed26fcff845691c73d5b1680fd2b0207a4aa49eb19b30ef3b8cb")))
+ ((name "uuid")
+   (location
+     (url "https://archive.akkuscm.org/archive/pkg/u/uuid_1.0.0-beta.0_repack.tar.xz"))
+   (content
+     (sha256
+       "03a058e7522933c1f7475cd20ab0515016bfbbd8c406d3c7302946b20664431d")))
  ((name (chibi pathname))
    (location
      (url "http://snow-fort.org/s/gmail.com/alexshinn/chibi/pathname/0.9.0/chibi-pathname-0.9.0.tgz"))
@@ -110,12 +110,6 @@
    (content
      (sha256
        "3200ebeb66a1b030ba244ee048c1ed7c6a256d6f091129a362ef1af53de16383")))
- ((name "ufo-thread-pool")
-   (location
-     (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.1_repack.tar.xz"))
-   (content
-     (sha256
-       "7fc0659b2de265e505ba30b7aa1a1563c6f86ae8590f57571b2de5e214ced66a")))
  ((name "arew-json")
    (location
      (url "https://archive.akkuscm.org/archive/pkg/a/arew-json_1.0.0-alpha.0_repack.tar.xz"))
