@@ -88,10 +88,10 @@
        "566460f3ea2ba48dec08c1dbdad925177ca2fe94bbe5208c653c63bdea7cdb44")))
  ((name "ufo-threaded-function")
    (location
-     (url "https://archive.akkuscm.org/archive/pkg/u/ufo-threaded-function_1.0.2_repack.tar.xz"))
+     (url "https://archive.akkuscm.org/archive/pkg/u/ufo-threaded-function_1.0.4_repack.tar.xz"))
    (content
      (sha256
-       "64614e094a04ed26fcff845691c73d5b1680fd2b0207a4aa49eb19b30ef3b8cb")))
+       "87e1406850888c52debefd64d75bcf825ea215772eb11a831f895cce1fe1541c")))
  ((name "uuid")
    (location
      (url "https://archive.akkuscm.org/archive/pkg/u/uuid_1.0.0-beta.0_repack.tar.xz"))
