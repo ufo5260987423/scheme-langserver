@@ -11,7 +11,6 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
 
-    (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis dependency rules library-import)
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
