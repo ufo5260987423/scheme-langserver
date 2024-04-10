@@ -11,12 +11,13 @@
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
 ; parameter 
-(define (lambda-process root-file-node document index-node)
+(define (lambda-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (try

@@ -56,16 +56,16 @@
 ;不能用声明变量宏展开的方式，那样不能接入多个规则
 (define step 
   (case-lambda 
-    [(root-file-node current-document)
+    [(root-file-node root-library-node current-document)
       (fold-left
         (lambda (previous-available-identifiers current-index-node)
-          (step root-file-node current-document current-index-node (establish-available-rules-from previous-available-identifiers) previous-available-identifiers)
+          (step root-file-node root-library-node current-document current-index-node (establish-available-rules-from previous-available-identifiers) previous-available-identifiers)
           (document-reference-list current-document))
         ;available-rules available-identifier-references
         (find-meta '(chezscheme))
         (document-index-node-list current-document))
       (document-reference-list current-document)]
-    [(root-file-node current-document current-index-node available-rules available-identifiers)
+    [(root-file-node root-library-node current-document current-index-node available-rules available-identifiers)
       (cond 
         [(quote? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node available-identifiers)]
@@ -74,19 +74,25 @@
           (index-node-excluded-references-set! current-index-node available-identifiers)
           (map 
             (lambda (i)
-              (step root-file-node current-document i available-rules available-identifiers #t))
+              (step root-file-node root-library-node current-document i available-rules available-identifiers #t))
             (index-node-children current-index-node))]
         ; [(quaisisyntax? current-index-node current-document)]
         [(not (null? (index-node-children current-index-node))) 
+
           (let* ([children (index-node-children current-index-node)]
-              [head (car children)])
+              [head (car children)]
+              [head-expression (annotation-stripped (index-node-datum/annotations head))])
             (map 
-              (lambda (f) ((car (cdr f)) root-file-node current-document current-index-node))
-              (filter (lambda (rule) (equal? head (car rule))) available-rules))
+              (lambda (f) 
+                ((car (cdr f)) root-file-node root-library-node current-document current-index-node))
+              (filter 
+                (lambda (rule) (equal? head-expression (identifier-reference-identifier (car rule)))) 
+                available-rules))
             (fold-left 
               (lambda (l r)
                 (step 
                   root-file-node 
+                  root-library-node 
                   current-document 
                   r 
                   (if (equal? l available-identifiers)
@@ -100,7 +106,7 @@
               (filter (lambda (rule) (equal? head (car rule))) available-rules)))]
         [else '()])
         (private-extend available-identifiers current-index-node)]
-      [(root-file-node current-document current-index-node available-rules available-identifiers quoted?)
+      [(root-file-node root-library-node current-document current-index-node available-rules available-identifiers quoted?)
         (if (or 
             (unquote? current-index-node current-document)
             (unsyntax? current-index-node current-document)
@@ -110,7 +116,7 @@
             (index-node-references-import-in-this-node-set! current-index-node available-identifiers))
           (map 
             (lambda (i)
-              (step root-file-node current-document i available-rules available-identifiers #t))
+              (step root-file-node root-library-node current-document i available-rules available-identifiers #t))
             (index-node-children current-index-node)))
         (private-extend available-identifiers current-index-node)]))
 
@@ -135,7 +141,7 @@
 
 (define (private-add-rule origin target-rule)
   (merge private-compare origin 
-    `((,(cdr target-rule) ,(car target-rule)))))
+    `((,(cdr target-rule) . ,(car target-rule)))))
 
 (define (private-remove-rule origin target-identifier-reference)
   (filter 

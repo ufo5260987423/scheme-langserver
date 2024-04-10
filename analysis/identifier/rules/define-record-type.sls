@@ -12,12 +12,13 @@
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
 ; getter setter constructor predicator syntax
-(define (define-record-type-process root-file-node document index-node)
+(define (define-record-type-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [target-parent-index-node (index-node-parent index-node)])

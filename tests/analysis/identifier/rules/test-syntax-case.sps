@@ -18,6 +18,7 @@
 
 (test-begin "syntax-case-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
+            [root-library-node '()]
             [target-file-node (walk-file root-file-node "./util/try.sls")]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
@@ -26,7 +27,7 @@
             [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
             [target-position (make-position 108 17)]
             [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
-            (syntax-case-process root-file-node document ready-index-node)
+            (syntax-case-process root-file-node root-library-node document ready-index-node)
             (test-equal #f
                 (not 
                     (find 

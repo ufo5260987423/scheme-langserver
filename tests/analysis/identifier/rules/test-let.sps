@@ -20,13 +20,14 @@
 
 (test-begin "let-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
+            [root-library-node '()]
             [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
             ;; a let node
             [position (make-position 13 2)]
             [root-index-node (car (document-index-node-list document))]
             [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
-            (let-process root-file-node document target-index-node)
+            (let-process root-file-node root-library-node document target-index-node)
             (test-equal #f
                 (not 
                     (find 

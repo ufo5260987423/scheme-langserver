@@ -10,12 +10,13 @@
     (scheme-langserver analysis identifier rules let)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
 ; syntax-variable 
-(define (let-syntax-process root-file-node document index-node)
+(define (let-syntax-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (try

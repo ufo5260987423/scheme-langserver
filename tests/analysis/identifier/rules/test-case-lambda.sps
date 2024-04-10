@@ -20,6 +20,7 @@
 
 (test-begin "case-lambda-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
+            [root-library-node '()]
             [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
@@ -27,7 +28,7 @@
             [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
             [target-position (make-position 59 4)]
             [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
-            (case-lambda-process root-file-node document ready-index-node)
+            (case-lambda-process root-file-node root-library-node document ready-index-node)
             (test-equal #f
                 (not 
                     (find 

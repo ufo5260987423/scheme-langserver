@@ -128,9 +128,7 @@
               batch)
             (loop (cdr paths)))))]))
 
-(define private-init-references 
-  (case-lambda 
-    [(root-file-node root-library-node target-path ss/scm-import-rnrs? type-inference?)
+(define (private-init-references root-file-node root-library-node target-path ss/scm-import-rnrs? type-inference?)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
@@ -141,7 +139,8 @@
           (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
             (sort-identifier-references (find-meta '(chezscheme)))
             '()))
-        (private-init-references root-file-node root-library-node document index-node-list)
+        (step root-file-node root-library-node document)
+        (process-library-identifier-excluded-references document)
         ; (pretty-print 'test1)
         (if type-inference?
           (try
@@ -165,21 +164,7 @@
                 (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
                 '()])))
         ; (pretty-print (length (document-substitution-list document)))
-        (document-refreshable?-set! document #f))]
-    [(root-file-node root-library-node document target-index-nodes)
-      (map 
-        (lambda (index-node)
-          (clear-references-for index-node)
-          ; (pretty-print 'bbb)
-          ; (pretty-print 'ccc)
-          (step root-file-node document)
-          (process-library-identifier-excluded-references document)
-          ; (pretty-print 'ddd)
-          ; (document-reference-list-set! 
-          ;   document 
-          ;   (append (document-reference-list document) (index-node-references-export-to-other-node index-node)))
-        )
-        target-index-nodes)]))
+        (document-refreshable?-set! document #f)))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]

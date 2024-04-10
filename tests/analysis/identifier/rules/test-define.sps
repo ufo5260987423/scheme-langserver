@@ -16,10 +16,11 @@
 
 (test-begin "define-process")
     (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
+            [root-library-node '()]
             [target-file-node (walk-file root-file-node "./util/io.sls")]
             [document (file-node-document target-file-node)]
             [index-node (car (document-index-node-list document))])
-            (map (lambda (node) (define-process root-file-node document node)) (index-node-children index-node))
+            (map (lambda (node) (define-process root-file-node root-library-node document node)) (index-node-children index-node))
             (test-equal #t
                 (not (null? 
                     (find 
