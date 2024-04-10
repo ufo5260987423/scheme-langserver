@@ -19,8 +19,7 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('do ((var init+update ... ) **1) _ ... ) 
-          (guard-for document index-node 'do '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        [(_ ((var init+update ... ) **1) fuzzy ... ) 
           (let* ([children (index-node-children index-node)]
             [var-index-node (cadr children)])
             (map (lambda (i) (private-process document i index-node var-index-node)) (index-node-children var-index-node)))]

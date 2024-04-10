@@ -1,7 +1,6 @@
 (library (scheme-langserver analysis identifier rules define-record-type)
   (export 
-    define-record-type-process
-    generative?)
+    define-record-type-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -16,23 +15,6 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (generative? name-index-node)
-  (let* ([parent (index-node-parent name-index-node)])
-    (cond 
-      [(match (annotation-stripped (index-node-datum/annotations parent))
-          [('define-record-type _ **1) #t]
-          [else #f])
-        (match (annotation-stripped (index-node-datum/annotations parent))
-          [('define-record-type _ **1 ('nongenerative dummy ...) dummy1 ...)  #f]
-          [else #t])]
-      [(match (annotation-stripped (index-node-datum/annotations (index-node-parent parent)))
-          [('define-record-type _ **1) #t]
-          [else #f])
-        (match (annotation-stripped (index-node-datum/annotations (index-node-parent parent)))
-          [('define-record-type _ **1 ('nongenerative dummy ...) dummy1 ...)  #f]
-          [else #t])]
-      [else #f])))
-
 ; reference-identifier-type include 
 ; getter setter constructor predicator syntax
 (define (define-record-type-process root-file-node document index-node)
@@ -41,15 +23,12 @@
       [target-parent-index-node (index-node-parent index-node)])
     (try
       (match expression
-        [('define-record-type name-list) 
-          (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+        [(_ name-list) 
           (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())]
-        [('define-record-type (? symbol? name) (dummy ...) ... ) 
-          (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+        [(_ (? symbol? name) (dummy ...) ... ) 
           (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
           (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name) ]
-        [('define-record-type ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
-          (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+        [(_ ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
           (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
           (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name)]
         [else '()])
@@ -83,11 +62,6 @@
                         (lambda (index-node-tmp)
                           (process-fields-list initialization-index-node document target-parent-index-node index-node-tmp name binding-index-node))
                         (cddr parent-children-index-node))]
-                    ; [('define-record-type name-list dummy0 **1 ('fields _ **1) dummy1 ...)
-                    ;   (map 
-                    ;     (lambda (index-node-tmp)
-                    ;       (process-fields-list document target-parent-index-node index-node-tmp name binding-index-node))
-                    ;     (cddr parent-children-index-node))]
                     [else 
                       (map 
                         (lambda (index-node-tmp)
@@ -115,7 +89,7 @@
                     document
                     get-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'getter
                     '()
                     '())]
@@ -125,7 +99,7 @@
                     document
                     set-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'setter
                     '()
                     '())])
@@ -157,7 +131,7 @@
                     document
                     get-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'getter
                     '()
                     '())]
@@ -167,7 +141,7 @@
                     document
                     set-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'setter
                     '()
                     '())])
@@ -198,7 +172,7 @@
                     document
                     get-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'getter
                     '()
                     '())]
@@ -208,7 +182,7 @@
                     document
                     set-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'setter
                     '()
                     '())])
@@ -239,7 +213,7 @@
                     document
                     get-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'getter
                     '()
                     '())])
@@ -261,7 +235,7 @@
                     document
                     get-index-node
                     initialization-index-node
-                    (get-nearest-ancestor-library-identifier index-node)
+                    '()
                     'getter
                     '()
                     '())])
@@ -290,7 +264,7 @@
                 document
                 name-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier name-index-node)
+                '()
                 'syntax
                 '()
                 '())]
@@ -300,7 +274,7 @@
                 document
                 constructor-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'constructor
                 '()
                 '())]
@@ -310,7 +284,7 @@
                 document
                 predicator-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'predicator
                 predicator-parents
                 '())])
@@ -347,7 +321,7 @@
                 document
                 name-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier name-index-node)
+                '()
                 'syntax
                 '()
                 '())]
@@ -357,7 +331,7 @@
                 document
                 constructor-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'constructor
                 '()
                 '())]
@@ -367,7 +341,7 @@
                 document
                 predicator-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'predicator
                 predicator-parents
                 '())])
@@ -404,7 +378,7 @@
                 document
                 name-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'syntax
                 '()
                 '())]
@@ -414,7 +388,7 @@
                 document
                 constructor-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'constructor
                 '()
                 '())]
@@ -424,7 +398,7 @@
                 document
                 predicator-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'predicator
                 predicator-parents
                 '())])
@@ -461,7 +435,7 @@
                 document
                 name-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'syntax
                 '()
                 '())]
@@ -471,7 +445,7 @@
                 document
                 constructor-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'constructor
                 '()
                 '())]
@@ -481,7 +455,7 @@
                 document
                 predicator-index-node
                 initialization-index-node
-                (get-nearest-ancestor-library-identifier index-node)
+                '()
                 'predicator
                 predicator-parents
                 '())])

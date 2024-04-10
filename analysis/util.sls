@@ -1,5 +1,6 @@
 (library (scheme-langserver analysis util)
   (export 
+    do-nothing
     get-library-identifiers-list 
     get-nearest-ancestor-library-identifier)
   (import 
@@ -13,6 +14,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system library-node))
+
+(define (do-nothing . fuzzy) (void))
 
 (define (get-library-identifiers-list file-node)
     (let ([document (file-node-document file-node)])

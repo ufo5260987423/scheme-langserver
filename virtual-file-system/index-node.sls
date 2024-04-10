@@ -28,6 +28,16 @@
     index-node-excluded-references
     index-node-excluded-references-set!
 
+    unquote-splicing?
+    unquote?
+    quote?
+    quasiquote?
+
+    unsyntax-splicing?
+    unsyntax?
+    syntax?
+    quasisyntax?
+
     find-leaves 
 
     init-index-node
@@ -58,6 +68,35 @@
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
         (new parent start end datum/annotations (make-variable) children references-export-to-other-node references-import-in-this-node excluded-references)))))
+
+(define (unquote-splicing? index-node document)
+  (private index-node document 'unquote-splicing))
+
+(define (unquote? index-node document)
+  (private index-node document 'unquote))
+
+(define (quote? index-node document)
+  (private index-node document 'quote))
+
+(define (quasiquote? index-node document)
+  (private index-node document 'quasiquote))
+
+(define (syntax? index-node document)
+  (private index-node document 'syntax))
+
+(define (quasisyntax? index-node document)
+  (private index-node document 'quasisyntax))
+
+(define (unsyntax? index-node document)
+  (private index-node document 'unsyntax))
+
+(define (unsyntax-splicing? index-node document)
+  (private index-node document 'unsyntax-splicing))
+
+(define (private index-node document target)
+  (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
+    (if (pair? expression)
+        (equal? target (car expression)))))
 
 (define (debug:print-expression index-node)
   (pretty-print (annotation-stripped (index-node-datum/annotations index-node))))

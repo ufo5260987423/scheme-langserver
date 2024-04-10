@@ -1,5 +1,6 @@
 (library (scheme-langserver analysis identifier rules library-import)
   (export 
+    library-import-process
     import-process
     import-references
     import-from-external-index-node
@@ -19,27 +20,39 @@
     (scheme-langserver virtual-file-system file-node))
 
 ; pointer 
-(define (import-process root-file-node root-library-node document index-node)
+(define (library-import-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [('library _ **1 ) 
+      [(_ fuzzy **1 ) 
       ; this should not use 'guard', because it follows the library mechanism
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (index-node-children index-node))]
-      [('define-library _ **1 ) 
-      ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
-        (map 
-          (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
-          (index-node-children index-node))]
+      ; [('define-library _ **1 ) 
+      ; ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
+      ;   (map 
+      ;     (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
+      ;     (index-node-children index-node))]
       [else 
       ; this makes sense for ss/scm files
-        (try
-          (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (match-import index-node root-file-node root-library-node document index-node)
-          (except c [else '()]))])
+      ; (try
+      ;   (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+      ;   (match-import index-node root-file-node root-library-node document index-node)
+      ;   (except c [else '()]))
+        '()])
     index-node))
+
+(define (import-process root-file-node root-library-node document index-node)
+  (filter-empty-list 
+    (let* ([ann (index-node-datum/annotations index-node)]
+        [expression (annotation-stripped ann)])
+      (match expression
+        [(_ dummy **1 ) 
+          (map 
+            (lambda (child-node) (match-clause index-node root-file-node root-library-node document child-node)) 
+            (cdr (index-node-children index-node)))]
+        [else '()]))))
 
 (define process-library-identifier-excluded-references 
   (case-lambda 

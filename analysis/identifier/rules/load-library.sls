@@ -1,5 +1,5 @@
-(library (scheme-langserver analysis identifier rules load)
-  (export load-process)
+(library (scheme-langserver analysis identifier rules load-library)
+  (export load-library-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -15,7 +15,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ;;todo more test
-(define (load-process root-file-node document index-node)
+(define (load-library-process root-file-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [library-identifier (get-nearest-ancestor-library-identifier index-node)]

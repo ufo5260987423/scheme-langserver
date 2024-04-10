@@ -40,6 +40,7 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions generator)
 
+    (scheme-langserver analysis abstract-interpreter)
     (scheme-langserver analysis util)
     (scheme-langserver analysis tokenizer)
     
@@ -47,15 +48,7 @@
     (scheme-langserver analysis dependency shrinker)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules define-record-type)
-    (scheme-langserver analysis identifier rules do)
-    (scheme-langserver analysis identifier rules library-define)
-    (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
-    (scheme-langserver analysis identifier rules lambda)
-    (scheme-langserver analysis identifier rules syntax)
-    (scheme-langserver analysis identifier rules let)
-    (scheme-langserver analysis identifier rules load)
 
     (scheme-langserver analysis package-manager akku)
 
@@ -178,10 +171,8 @@
         (lambda (index-node)
           (clear-references-for index-node)
           ; (pretty-print 'bbb)
-          (import-process root-file-node root-library-node document index-node)
           ; (pretty-print 'ccc)
-          (walk&process root-file-node document index-node)
-          (export-process root-file-node document index-node)
+          (step root-file-node document)
           (process-library-identifier-excluded-references document)
           ; (pretty-print 'ddd)
           ; (document-reference-list-set! 
@@ -253,27 +244,6 @@
         [refreshable-batches (shrink-paths linkage refreshable-path)])
       (init-references workspace-instance refreshable-batches))))
 
-;; rules must be run as ordered
-(define (walk&process root-file-node document index-node)
-  (find 
-    (lambda (func)
-      (not (null? (func root-file-node document index-node))))
-    (list 
-      ;;1
-      define-process
-      define-record-type-process
-      ;;2
-      let-process
-      do-process
-      lambda-process
-      syntax-process
-      load-process))
-  (if (not (library-identifier? document index-node))
-    (map 
-      (lambda (child-index-node) 
-        (walk&process root-file-node document child-index-node)) 
-      (index-node-children index-node))
-    '()))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)

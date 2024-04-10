@@ -19,15 +19,13 @@
 
 
 (test-begin "let-process")
-    (let* ( [workspace (init-workspace "./util" '() #f #f #f)]
-            [root-file-node (workspace-file-node workspace)]
+    (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
             [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
             ;; a let node
             [position (make-position 13 2)]
             [root-index-node (car (document-index-node-list document))]
             [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
-            (import-process root-file-node (workspace-library-node workspace) document root-index-node)
             (let-process root-file-node document target-index-node)
             (test-equal #f
                 (not 
