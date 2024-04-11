@@ -1,10 +1,11 @@
-
 (library (scheme-langserver analysis abstract-interpreter)
   (export step)
   (import 
     (chezscheme) 
 
     (scheme-langserver util contain)
+    (scheme-langserver util dedupe)
+    (scheme-langserver util binary-search)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier meta)
@@ -53,16 +54,15 @@
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system library-node))
 
-;不能用声明变量宏展开的方式，那样不能接入多个规则
 (define step 
   (case-lambda 
     [(root-file-node root-library-node current-document)
       (fold-left
-        (lambda (previous-available-identifiers current-index-node)
-          (step root-file-node root-library-node current-document current-index-node (establish-available-rules-from previous-available-identifiers) previous-available-identifiers)
-          (document-reference-list current-document))
-        ;available-rules available-identifier-references
-        (find-meta '(chezscheme))
+        (lambda (l current-index-node)
+          (step root-file-node root-library-node current-document current-index-node 
+            (update-available-rules initial-available-rules (document-reference-list current-document)) 
+            (document-reference-list current-document)))
+        '() 
         (document-index-node-list current-document))
       (document-reference-list current-document)]
     [(root-file-node root-library-node current-document current-index-node available-rules available-identifiers)
@@ -78,34 +78,29 @@
             (index-node-children current-index-node))]
         ; [(quaisisyntax? current-index-node current-document)]
         [(not (null? (index-node-children current-index-node))) 
-
           (let* ([children (index-node-children current-index-node)]
               [head (car children)]
-              [head-expression (annotation-stripped (index-node-datum/annotations head))])
-            (map 
-              (lambda (f) 
-                ((car (cdr f)) root-file-node root-library-node current-document current-index-node))
-              (filter 
-                (lambda (rule) (equal? head-expression (identifier-reference-identifier (car rule)))) 
-                available-rules))
-            (fold-left 
-              (lambda (l r)
-                (step 
-                  root-file-node 
-                  root-library-node 
-                  current-document 
-                  r 
-                  (if (equal? l available-identifiers)
-                    available-rules
-                    (establish-available-rules-from l))
-                  l))
-              (private-extend available-identifiers current-index-node)
+              [head-expression (annotation-stripped (index-node-datum/annotations head))]
+              [pre-current-available-identifiers
+                (if (null? (index-node-parent current-index-node))
+                  available-identifiers
+                  (private-extend available-identifiers (index-node-parent current-index-node)))]
+              [current-available-identifiers (private-extend pre-current-available-identifiers current-index-node)]
+              [current-available-rules (update-available-rules available-rules current-available-identifiers)]
+              [target-rules 
+                (filter 
+                  (lambda (rule) (equal? head-expression (identifier-reference-identifier (car rule)))) 
+                  current-available-rules)])
+            (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
+            (fold-left
+              (lambda (l child-index-node)
+                (step root-file-node root-library-node current-document child-index-node current-available-rules current-available-identifiers))
+              '()
               children)
-            (map 
-              (lambda (f) ((cdr (cdr f)) root-file-node current-document current-index-node))
-              (filter (lambda (rule) (equal? head (car rule))) available-rules)))]
-        [else '()])
-        (private-extend available-identifiers current-index-node)]
+            (map (lambda (f) 
+              (if (not (null? (cdr (cdr f))))
+                ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) target-rules))]
+        [else '()])]
       [(root-file-node root-library-node current-document current-index-node available-rules available-identifiers quoted?)
         (if (or 
             (unquote? current-index-node current-document)
@@ -113,31 +108,33 @@
             (unquote-splicing? current-index-node current-document)
             (unsyntax-splicing? current-index-node current-document))
           (begin
-            (index-node-references-import-in-this-node-set! current-index-node available-identifiers))
+            (index-node-references-import-in-this-node-set! current-index-node available-identifiers)
+            (map 
+              (lambda (i)
+                (step root-file-node root-library-node current-document i available-rules available-identifiers))
+              (index-node-children current-index-node)))
           (map 
             (lambda (i)
               (step root-file-node root-library-node current-document i available-rules available-identifiers #t))
-            (index-node-children current-index-node)))
-        (private-extend available-identifiers current-index-node)]))
+            (index-node-children current-index-node)))]))
 
 (define (private-extend origin index-node)
-  (sort
-    (lambda (a b) (apply string<=? (map symbol->string (map identifier-reference-identifier (list a b)))))
-    (filter 
-      (lambda (identifier)
-        (not (contain? (index-node-excluded-references index-node) identifier)))
-      (if (null? (index-node-parent index-node))
-        origin
-        (append origin (index-node-references-import-in-this-node (index-node-parent index-node)))))))
-  
+  (let* ([import (index-node-references-import-in-this-node index-node)]
+      [import-identifiers (map identifier-reference-identifier import)]
+      [exclude (index-node-excluded-references index-node)])
+    (if (and (null? import) (null? exclude))
+      origin
+      (filter 
+        (lambda (i)
+          (not (contain? exclude i)))
+        (append 
+          (filter 
+            (lambda (i) (not (contain? import-identifiers (identifier-reference-identifier i))))
+            origin)
+          import)))))
+ 
 (define (private-compare item0 item1)
-  (apply string<=? 
-    (map 
-      symbol->string 
-      (map 
-        identifier-reference-identifier
-        (map car 
-          (list item0 item1))))))
+  (sort-identifier-references (map car (list item0 item1))))
 
 (define (private-add-rule origin target-rule)
   (merge private-compare origin 
@@ -148,6 +145,12 @@
     (lambda (rule)
       (not (equal? (car origin) target-identifier-reference)))
     origin))
+
+(define (update-available-rules origin identifier-list)
+  (let* ([filtered-origin-rules (filter (lambda (r) (contain? identifier-list (car r))) origin)]
+      [filtered-origin-identifiers (map car filtered-origin-rules)]
+      [filtered-new (filter (lambda (i) (not (contain? filtered-origin-identifiers i))) identifier-list)])
+    (merge private-compare filtered-origin-rules (establish-available-rules-from filtered-new))))
 
 (define (establish-available-rules-from identifier-list)
   (fold-left 

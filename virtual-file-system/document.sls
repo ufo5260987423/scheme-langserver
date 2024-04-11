@@ -12,9 +12,7 @@
     document-substitution-list
     document-substitution-list-set!
     document-refreshable?
-    document-refreshable?-set!
-
-    is-ss/scm?)
+    document-refreshable?-set!)
   (import (rnrs)
     (only (srfi :13 strings) string-prefix? string-suffix?))
 
@@ -31,11 +29,4 @@
     (lambda (new)
       (lambda (uri text index-node-list reference-list)
         (new uri text index-node-list reference-list '() #t)))))
-
-(define (is-ss/scm? document)
-  (fold-left 
-    (lambda (prev suffix)
-      (or prev (string-suffix? suffix (document-uri document))))
-    #f
-    '(".scm" ".ss")))
 )

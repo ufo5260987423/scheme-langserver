@@ -34,13 +34,7 @@
       ;   (map 
       ;     (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
       ;     (index-node-children index-node))]
-      [else 
-      ; this makes sense for ss/scm files
-      ; (try
-      ;   (guard-for document index-node 'import '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-      ;   (match-import index-node root-file-node root-library-node document index-node)
-      ;   (except c [else '()]))
-        '()])
+      [else '()])
     index-node))
 
 (define (import-process root-file-node root-library-node document index-node)

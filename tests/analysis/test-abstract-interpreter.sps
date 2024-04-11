@@ -19,6 +19,7 @@
     (scheme-langserver analysis tokenizer)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier rules library-import))
 
 (test-begin "library-import-process")
@@ -27,6 +28,7 @@
             [root-library-node (init-library-node root-file-node)]
             ; [target-file-node (walk-file root-file-node (string-append (current-directory) "/run.ss"))]
             [document (file-node-document target-file-node)])
+        (document-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
         (step root-file-node root-library-node document)
         (test-equal 
             'write-lines

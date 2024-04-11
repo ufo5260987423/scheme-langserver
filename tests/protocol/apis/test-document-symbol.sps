@@ -49,7 +49,7 @@
         [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
         ; [output-port (standard-output-port)]
         [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-        [server-instance (init-server input-port output-port log-port #f #f #f)])
+        [server-instance (init-server input-port output-port log-port #f #f)])
         (test-equal #f (server-shutdown? server-instance))
     )
 (test-end)

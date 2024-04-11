@@ -14,7 +14,6 @@
     server-thread-pool
     server-input-port
     server-output-port
-    server-ss/scm-import-rnrs?
     server-type-inference?
     ;close
     server-condition
@@ -34,7 +33,6 @@
     ;;for output-port
     (immutable mutex)
     (immutable request-queue)
-    (immutable ss/scm-import-rnrs?)
     (immutable type-inference?)
     (mutable workspace)
     (mutable shutdown?)
@@ -42,7 +40,7 @@
     (mutable work-done-progress?))
   (protocol
     (lambda (new)
-      (lambda (input-port output-port log-port thread-pool request-queue workspace ss/scm-import-rnrs? type-inference?)
+      (lambda (input-port output-port log-port thread-pool request-queue workspace type-inference?)
         (new 
           input-port 
           output-port 
@@ -50,7 +48,6 @@
           thread-pool
           (if (null? thread-pool) '() (make-mutex))
           request-queue
-          ss/scm-import-rnrs?
           type-inference?
           workspace
           #f
