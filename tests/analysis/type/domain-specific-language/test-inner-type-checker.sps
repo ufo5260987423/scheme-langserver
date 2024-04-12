@@ -5,7 +5,6 @@
 #!r6rs
 
 (import 
-    ; (rnrs (6)) 
     (chezscheme) 
     (srfi :64 testing) 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
@@ -32,14 +31,14 @@
     (test-equal #t (inner:executable? `((,(make-variable) <- (inner:list? )) something?)))
     (test-equal #t
         (contain?
-            (type:interpret-result-list (construct-type-expression-with-meta '((with (a b c) (inner:list? a b c)) number? number? number?)))
+            (type:interpret-result-list (construct-type-expression-with-meta '((with-type (a b c) (inner:list? a b c)) number? number? number?)))
             (construct-type-expression-with-meta '(inner:list? number? number? number?))))
     ; car list?
     (test-equal #t
         (contain? 
             (type:interpret-result-list 
                 (construct-type-expression-with-meta 
-                    '((with 
+                    '((with-type 
                         ((a b c **1)) 
                         (with-equal? inner:list? a b))
                         (inner:list? fixnum? number?))))
@@ -49,7 +48,7 @@
         (contain?
             (type:interpret-result-list
                 (construct-type-expression-with-meta 
-                    '((with 
+                    '((with-type 
                         ((a b c **1 )) 
                         (with-equal? inner:list? a (with-append (inner:list?) c)))
                         (inner:list? fixnum? number? fixnum?))))

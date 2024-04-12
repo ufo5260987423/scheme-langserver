@@ -116,12 +116,6 @@
   (merge private-rule-compare? origin 
     `((,(cdr target-rule) . ,(car target-rule)))))
 
-(define (private-remove-rule origin target-identifier-reference)
-  (filter 
-    (lambda (rule)
-      (not (equal? (car origin) target-identifier-reference)))
-    origin))
-
 (define (establish-available-rules-from identifier-list current-document current-index-node)
   (fold-left 
     (lambda (rules identifier)

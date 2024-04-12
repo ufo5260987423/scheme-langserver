@@ -300,13 +300,13 @@
 
 (define (macro-head-execute-with expression interpreted-inputs)
   (match expression
-    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
-      (execute-macro `((with ,denotions ,body) ,@interpreted-inputs))]
+    [(('with-type ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
+      (execute-macro `((with-type ,denotions ,body) ,@interpreted-inputs))]
     [else (raise 'macro-not-match:macro-head-execute-with)]))
 
 (define (execute-macro expression)
   (match expression
-    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
+    [(('with-type ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
       (if (candy:matchable? denotions inputs)
         (execute-macro (private-with body (candy:match-left denotions inputs)))
         expression)]
