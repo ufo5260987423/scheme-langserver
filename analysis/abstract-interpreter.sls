@@ -81,7 +81,7 @@
               [head-expression (annotation-stripped (index-node-datum/annotations head))])
             (if (symbol? head-expression)
               (let* ([current-available-identifiers (find-available-references-for current-document current-index-node head-expression)]
-                  [target-rules (establish-available-rules-from current-available-identifiers)])
+                  [target-rules (establish-available-rules-from current-available-identifiers current-document current-index-node)])
                 (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
                 (fold-left
                   (lambda (l child-index-node)
@@ -122,7 +122,7 @@
       (not (equal? (car origin) target-identifier-reference)))
     origin))
 
-(define (establish-available-rules-from identifier-list)
+(define (establish-available-rules-from identifier-list current-document current-index-node)
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]
@@ -140,7 +140,7 @@
             [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
             [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
             [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
-            [(equal? r '(case-lambda) ) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
+            [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
             [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
 
             [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
@@ -160,7 +160,27 @@
             [(equal? r '(with-syntax)) (private-add-rule rules `((,with-syntax-process) . ,identifier))]
 
             [(equal? r '(library)) (private-add-rule rules `((,library-import-process . ,export-process) . ,identifier))]
-            ; [(equal? r '(import)) (private-add-rule rules `((,import-process) . ,identifier))]
+            [(equal? r '(import)) 
+              (let ([special 
+                    (lambda (root-file-node root-library-node document index-node)
+                      (if (null? (index-node-parent index-node))
+                        (import-process root-file-node root-library-node document index-node)
+                        (let* ([t (car (index-node-children (index-node-parent index-node)))]
+                            [t-e (annotation-stripped (index-node-datum/annotations t))]
+                            [a (find-available-references-for current-document t t-e)])
+                          (if (null? (index-node-parent t))
+                            (if (equal? t-e 'library) 
+                              (do-nothing root-file-node root-library-node document index-node)
+                              (import-process root-file-node root-library-node document index-node))
+                            (if 
+                              (find 
+                                (lambda (ss)
+                                  (and (equal? (identifier-reference-identifier ss) 'library)
+                                    (contain? '((chezscheme) (rnrs) (rnrs (6)) (scheme) (rnrs base)) (identifier-reference-library-identifier ss)))) 
+                                (apply append (map root-ancestor (find-available-references-for current-document (index-node-parent t) t-e))))
+                              (do-nothing root-file-node root-library-node document index-node)
+                              (import-process root-file-node root-library-node document index-node))))))])
+                (private-add-rule rules `((,special) . ,identifier)))]
 
             [(equal? r '(load)) (private-add-rule rules `((,load-process) . ,identifier))]
             [(equal? r '(load-program)) (private-add-rule rules `((,load-program-process) . ,identifier))]
@@ -181,16 +201,4 @@
             (equal? 'syntax-parameter (identifier-reference-type identifier))
             (equal? 'procedure (identifier-reference-type identifier)))))
       identifier-list)))
-
-(define initial-available-rules 
-  (let ([l '(define define-syntax define-record-type do 
-      case-lambda lambda 
-      let let* let-values let*-values let-syntax letrec letrec* letrec-syntax fluid-let fluid-let* fluid-let-syntax
-      syntax-case syntax-rules identifier-syntax with-syntax 
-      library load load-program load-library import)])
-    (establish-available-rules-from
-      (filter 
-        (lambda (i)
-          (contain? l (identifier-reference-identifier i)))
-        (find-meta '(chezscheme))))))
 )

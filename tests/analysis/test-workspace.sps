@@ -5,7 +5,7 @@
 #!r6rs
 
 (import 
-    (rnrs (6)) 
+    (chezscheme) 
     (srfi :64 testing) 
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
