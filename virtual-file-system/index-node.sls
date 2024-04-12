@@ -96,7 +96,8 @@
 (define (private index-node document target)
   (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
     (if (pair? expression)
-        (equal? target (car expression)))))
+        (equal? target (car expression))
+        #f)))
 
 (define (debug:print-expression index-node)
   (pretty-print (annotation-stripped (index-node-datum/annotations index-node))))

@@ -160,7 +160,7 @@
             [(equal? r '(with-syntax)) (private-add-rule rules `((,with-syntax-process) . ,identifier))]
 
             [(equal? r '(library)) (private-add-rule rules `((,library-import-process . ,export-process) . ,identifier))]
-            [(equal? r '(import)) (private-add-rule rules `((,import-process) . ,identifier))]
+            ; [(equal? r '(import)) (private-add-rule rules `((,import-process) . ,identifier))]
 
             [(equal? r '(load)) (private-add-rule rules `((,load-process) . ,identifier))]
             [(equal? r '(load-program)) (private-add-rule rules `((,load-program-process) . ,identifier))]
