@@ -17,6 +17,8 @@
     identifier-reference-index-node
     identifier-reference-initialization-index-node
 
+    identifier-compare?
+
     transform
 
     root-ancestor
@@ -144,13 +146,13 @@
       (equal? 'inner:vector? expression) 
       (identifier-reference? expression))))
 
+(define (identifier-compare? target1 target2)
+  (string<=?
+    (symbol->string (identifier-reference-identifier target1))
+    (symbol->string (identifier-reference-identifier target2))))
+
 (define (sort-identifier-references identifier-references)
-  (sort 
-    (lambda (target1 target2) 
-      (string<=?
-        (symbol->string (identifier-reference-identifier target1))
-        (symbol->string (identifier-reference-identifier target2))))
-    identifier-references))
+  (sort identifier-compare? identifier-references))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])

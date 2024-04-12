@@ -129,8 +129,8 @@
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         ; (pretty-print 'test0)
-        ; (pretty-print target-path)
-        (document-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
+        (pretty-print target-path)
+        (document-reference-list-set! document (find-meta '(chezscheme)))
         (step root-file-node root-library-node document)
         (process-library-identifier-excluded-references document)
         ; (pretty-print 'test1)
