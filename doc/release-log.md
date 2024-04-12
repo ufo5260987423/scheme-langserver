@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.1.1: Scheme-langserver now releases type information used in corresponding libraries! Its soundness is still not guaranteed! 
+
 1.1.0: Type inference has been embedded into autocompletion! And it uses a homemade DSL(Domain Specific Language) making type representation and interpreting much easier.  But, I actually do not recommend anyone use this type inference in production because there are many efficiency and soundness problems which I haven't solved. A detailed outline should be referred in documentations.
 
 1.0.13: Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism making operation **much more smooth**.

@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis identifier rules lambda)
-  (export lambda-process)
+  (export 
+    lambda-process
+    parameter-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -9,51 +11,31 @@
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
 ; parameter 
-(define (lambda-process root-file-node document index-node)
+(define (lambda-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (try
       (match expression
         [('lambda (identifier **1) _ ... ) 
-          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
             (if (not (null? rest))
               (let* ([identifier-index-node (car rest)]
                   [identifier-index-node-parent (index-node-parent identifier-index-node)])
-                (private-process index-node identifier-index-node index-node '() document)
+                (parameter-process index-node identifier-index-node index-node '() document)
                 (loop (cdr rest)))))]
         [('lambda (? symbol? identifier) _ ... ) 
-          (guard-for document index-node 'lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (private-process index-node (cadr (index-node-children index-node)) index-node '() document)]
-        [('case-lambda (dummy0 ...) dummy1 ... ) 
-          (guard-for document index-node 'case-lambda '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          (let loop ([rest (cdr (index-node-children index-node))])
-            (if (not (null? rest))
-              (let* ([identifier-index-node-grand-parent (car rest)]
-                  [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
-                (match grand-parent-expression 
-                  ; Because case-lambda has many clauses, and some maybe don't contain any parameters
-                  [(() body ...) (loop (cdr rest))]
-                  [((param-identifier **1) body ...)
-                    (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))])
-                      (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children identifier-index-node-parent)])
-                        (if (null? param-identifier-index-node-list)
-                          (loop (cdr rest))
-                          (param-loop 
-                            (append exclude (private-process index-node (car param-identifier-index-node-list) identifier-index-node-grand-parent exclude document)) 
-                            (cdr param-identifier-index-node-list)))))]
-                  [else '()]
-                ))))]
+          (parameter-process index-node (cadr (index-node-children index-node)) index-node '() document)]
         [else '()])
       (except c
         [else '()]))))
 
-(define (private-process initialization-index-node index-node lambda-node exclude document )
+(define (parameter-process initialization-index-node index-node lambda-node exclude document )
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (if (symbol? expression)

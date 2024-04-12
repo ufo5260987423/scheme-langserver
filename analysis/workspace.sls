@@ -16,7 +16,6 @@
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
-    workspace-ss/scm-import-rnrs?
     workspace-type-inference?
 
     update-file-node-with-tail
@@ -40,6 +39,7 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions generator)
 
+    (scheme-langserver analysis abstract-interpreter)
     (scheme-langserver analysis util)
     (scheme-langserver analysis tokenizer)
     
@@ -47,15 +47,7 @@
     (scheme-langserver analysis dependency shrinker)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules define-record-type)
-    (scheme-langserver analysis identifier rules do)
-    (scheme-langserver analysis identifier rules library-define)
-    (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
-    (scheme-langserver analysis identifier rules lambda)
-    (scheme-langserver analysis identifier rules syntax)
-    (scheme-langserver analysis identifier rules let)
-    (scheme-langserver analysis identifier rules load)
 
     (scheme-langserver analysis package-manager akku)
 
@@ -72,7 +64,6 @@
     (immutable facet)
     ;only for identifer catching and type inference
     (immutable threaded?)
-    (immutable ss/scm-import-rnrs?)
     (immutable type-inference?)))
 
 (define (refresh-workspace workspace-instance)
@@ -90,11 +81,10 @@
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku #f #f #f)]
-    [(path threaded?) (init-workspace path 'akku threaded? #f #f)]
-    [(path threaded? ss/scm-import-rnrs?) (init-workspace path 'akku threaded? ss/scm-import-rnrs? #f)]
-    [(path threaded? ss/scm-import-rnrs? type-inference?) (init-workspace path 'akku threaded? ss/scm-import-rnrs? type-inference?)]
-    [(path identifier threaded? ss/scm-import-rnrs? type-inference?) 
+    [(path) (init-workspace path 'akku #f #f)]
+    [(path threaded?) (init-workspace path 'akku threaded? #f)]
+    [(path threaded? type-inference?) (init-workspace path 'akku threaded? type-inference?)]
+    [(path identifier threaded? type-inference?) 
       (let* ([root-file-node 
             (init-virtual-file-system path '() 
               (cond
@@ -106,9 +96,9 @@
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
     ; (pretty-print 'aaa)
-        (init-references root-file-node root-library-node threaded? batches ss/scm-import-rnrs? type-inference?)
+        (init-references root-file-node root-library-node threaded? batches type-inference?)
     ; (pretty-print 'eee)
-        (make-workspace root-file-node root-library-node file-linkage identifier threaded? ss/scm-import-rnrs? type-inference?))]))
+        (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -123,40 +113,30 @@
         (workspace-library-node workspace-instance)
         (workspace-threaded? workspace-instance)
         target-paths
-        (workspace-ss/scm-import-rnrs? workspace-instance)
         (workspace-type-inference? workspace-instance))]
-    [(root-file-node root-library-node threaded? target-paths ss/scm-import-rnrs? type-inference?)
+    [(root-file-node root-library-node threaded? target-paths type-inference?)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
             ((if threaded? threaded-map map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node path ss/scm-import-rnrs? type-inference?))
+                (private-init-references root-file-node root-library-node path type-inference?))
               batch)
             (loop (cdr paths)))))]))
 
-(define private-init-references 
-  (case-lambda 
-    [(root-file-node root-library-node target-path ss/scm-import-rnrs? type-inference?)
+(define (private-init-references root-file-node root-library-node target-path type-inference?)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         ; (pretty-print 'test0)
         ; (pretty-print target-path)
-        (document-reference-list-set! 
-          document 
-          (if (and (equal? #t ss/scm-import-rnrs?) (is-ss/scm? document))
-            (sort-identifier-references (find-meta '(chezscheme)))
-            '()))
-        (private-init-references root-file-node root-library-node document index-node-list)
+        (document-reference-list-set! document (find-meta '(chezscheme)))
+        (step root-file-node root-library-node document)
+        (process-library-identifier-excluded-references document)
         ; (pretty-print 'test1)
         (if type-inference?
-          (try
-            (if (is-ss/scm? document)
-              (if (equal? #t ss/scm-import-rnrs?) 
-                (construct-substitution-list-for document)
-                '())
-              (construct-substitution-list-for document))
+          (try 
+            (construct-substitution-list-for document)
             (except c 
               [(symbol? c) 
                 (pretty-print target-path)
@@ -171,24 +151,7 @@
                 (pretty-print 'workspace-error)
                 (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
                 '()])))
-        ; (pretty-print (length (document-substitution-list document)))
-        (document-refreshable?-set! document #f))]
-    [(root-file-node root-library-node document target-index-nodes)
-      (map 
-        (lambda (index-node)
-          (clear-references-for index-node)
-          ; (pretty-print 'bbb)
-          (import-process root-file-node root-library-node document index-node)
-          ; (pretty-print 'ccc)
-          (walk&process root-file-node document index-node)
-          (export-process root-file-node document index-node)
-          (process-library-identifier-excluded-references document)
-          ; (pretty-print 'ddd)
-          ; (document-reference-list-set! 
-          ;   document 
-          ;   (append (document-reference-list document) (index-node-references-export-to-other-node index-node)))
-        )
-        target-index-nodes)]))
+        (document-refreshable?-set! document #f)))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]
@@ -253,27 +216,6 @@
         [refreshable-batches (shrink-paths linkage refreshable-path)])
       (init-references workspace-instance refreshable-batches))))
 
-;; rules must be run as ordered
-(define (walk&process root-file-node document index-node)
-  (find 
-    (lambda (func)
-      (not (null? (func root-file-node document index-node))))
-    (list 
-      ;;1
-      define-process
-      define-record-type-process
-      ;;2
-      let-process
-      do-process
-      lambda-process
-      syntax-process
-      load-process))
-  (if (not (library-identifier? document index-node))
-    (map 
-      (lambda (child-index-node) 
-        (walk&process root-file-node document child-index-node)) 
-      (index-node-children index-node))
-    '()))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)

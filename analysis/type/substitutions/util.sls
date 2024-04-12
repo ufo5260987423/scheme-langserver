@@ -7,12 +7,7 @@
     add-to-substitutions
     remove-from-substitutions
     debug:pretty-print-substitution
-    substitution->string
-    
-    unquote-splicing?
-    unquote?
-    quote?
-    quasiquote?)
+    substitution->string)
   (import 
     (chezscheme)
 
@@ -22,29 +17,6 @@
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver virtual-file-system index-node))
-
-(define (unquote-splicing? index-node document)
-  (private index-node document 'unquote-splicing))
-
-(define (unquote? index-node document)
-  (private index-node document 'unquote))
-
-(define (quote? index-node document)
-  (private index-node document 'quote))
-
-(define (quasiquote? index-node document)
-  (private index-node document 'quasiquote))
-
-(define (private index-node document target)
-  (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
-    (if (pair? expression)
-      (if (equal? target (car expression))
-        (try
-          (guard-for document index-node target '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-          #t
-          (except c [else #f]))
-        #f)
-      #f)))
 
 (define (debug:pretty-print-substitution substitutions)
   (pretty-print (map 

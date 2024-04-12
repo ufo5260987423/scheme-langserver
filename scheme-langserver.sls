@@ -213,13 +213,13 @@
 
     (if (null? (server-mutex server-instance))
       (begin 
-        (server-workspace-set! server-instance (init-workspace root-path #f (server-ss/scm-import-rnrs? server-instance) (server-type-inference? server-instance)))
+        (server-workspace-set! server-instance (init-workspace root-path #f (server-type-inference? server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
         (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
           (begin 
-            (server-workspace-set! server-instance (init-workspace root-path #t (server-ss/scm-import-rnrs? server-instance) (server-type-inference? server-instance)))
+            (server-workspace-set! server-instance (init-workspace root-path #t (server-type-inference? server-instance)))
             (server-work-done-progress?-set! server-instance workDoneProgress?)
             (success-response id (make-alist 'capabilities server-capabilities)))
           (fail-response id server-error-start "server has been initialized"))))))
@@ -232,7 +232,6 @@
             (standard-output-port) 
             '() 
             #f
-            #f
             #f)]
         [(log-path) 
           (init-server 
@@ -244,13 +243,10 @@
               'block 
               (make-transcoder (utf-8-codec))) 
             #f
-            #f
             #f)]
         [(log-path enable-multi-thread?) 
-          (init-server log-path enable-multi-thread? #f #f)]
-        [(log-path enable-multi-thread? ss/scm-import-rnrs?) 
-          (init-server log-path enable-multi-thread? ss/scm-import-rnrs? #f)]
-        [(log-path enable-multi-thread? ss/scm-import-rnrs? type-inference?) 
+          (init-server log-path enable-multi-thread? #f)]
+        [(log-path enable-multi-thread? type-inference?) 
           (init-server 
             (standard-input-port) 
             (standard-output-port) 
@@ -260,15 +256,14 @@
               'block 
               (make-transcoder (utf-8-codec))) 
             (equal? enable-multi-thread? "enable")
-            (equal? ss/scm-import-rnrs? "enable")
             (equal? type-inference? "enable"))]
         [(input-port output-port log-port enable-multi-thread?) 
-          (init-server input-port output-port log-port enable-multi-thread? #f #f)]
-        [(input-port output-port log-port enable-multi-thread? ss/scm-import-rnrs? type-inference?) 
+          (init-server input-port output-port log-port enable-multi-thread? #f)]
+        [(input-port output-port log-port enable-multi-thread? type-inference?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() ss/scm-import-rnrs? type-inference?)])
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 

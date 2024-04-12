@@ -9,18 +9,18 @@
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
 ; variable 
-(define (do-process root-file-node document index-node)
+(define (do-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [('do ((var init+update ... ) **1) _ ... ) 
-          (guard-for document index-node 'do '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        [(_ ((var init+update ... ) **1) fuzzy ... ) 
           (let* ([children (index-node-children index-node)]
             [var-index-node (cadr children)])
             (map (lambda (i) (private-process document i index-node var-index-node)) (index-node-children var-index-node)))]

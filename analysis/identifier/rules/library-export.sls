@@ -8,6 +8,7 @@
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
@@ -19,18 +20,18 @@
 ; like (let ([A a])...) and A is a variable recalled in the fowlling body
 ; but pointers manipulate the result of previous s-expression
 ; like (rename (a A)) and A is a pointer recalled outsize this body 
-(define (export-process root-file-node document index-node)
+(define (export-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [('library (library-identifiers **1) _ **1 ) 
+      [(_ (library-identifiers **1) fuzzy **1 ) 
         (map 
           (lambda (child-node) (match-export index-node root-file-node document library-identifiers child-node))
           (index-node-children index-node))]
-      [('define-library (library-identifiers **1) _ **1 ) 
-        (map 
-          (lambda (child-node) (match-export index-node root-file-node document library-identifiers child-node))
-          (index-node-children index-node))]
+      ; [('define-library (library-identifiers **1) _ **1 ) 
+      ;   (map 
+      ;     (lambda (child-node) (match-export index-node root-file-node document library-identifiers child-node))
+      ;     (index-node-children index-node))]
       [else '()])
     index-node))
 

@@ -17,7 +17,11 @@
     identifier-reference-index-node
     identifier-reference-initialization-index-node
 
+    identifier-compare?
+
     transform
+
+    root-ancestor
     
     sort-identifier-references
     pure-identifier-reference-misture?
@@ -34,8 +38,7 @@
     (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver util binary-search)
-    (scheme-langserver util contain)
-    )
+    (scheme-langserver util contain))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
   (fields
@@ -143,13 +146,13 @@
       (equal? 'inner:vector? expression) 
       (identifier-reference? expression))))
 
+(define (identifier-compare? target1 target2)
+  (string<=?
+    (symbol->string (identifier-reference-identifier target1))
+    (symbol->string (identifier-reference-identifier target2))))
+
 (define (sort-identifier-references identifier-references)
-  (sort 
-    (lambda (target1 target2) 
-      (string<=?
-        (symbol->string (identifier-reference-identifier target1))
-        (symbol->string (identifier-reference-identifier target2))))
-    identifier-references))
+  (sort identifier-compare? identifier-references))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])
@@ -256,6 +259,11 @@
               (equal? ex-reference reference))
             exclude)))
         prev)))
+
+(define (root-ancestor identifier-reference)
+  (if (null? (identifier-reference-parents identifier-reference))
+    `(,identifier-reference)
+    (apply append (map root-ancestor (identifier-reference-parents identifier-reference)))))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]

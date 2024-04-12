@@ -9,9 +9,9 @@
             (cond
                 [(= start end) (private-collect vector-instance order-compare target start)]
                 [(and 
-                        (< start end)
-                        (order-compare (vector-ref vector-instance start) target)
-                        (order-compare target (vector-ref vector-instance end)))
+                    (< start end)
+                    (order-compare (vector-ref vector-instance start) target)
+                    (order-compare target (vector-ref vector-instance end)))
                     (let* ([pre-mid (floor (/ (+ start end) 2))]
                             [mid (if (flonum? pre-mid) (flonum->fixnum pre-mid) pre-mid)]
                             [previous (binary-search vector-instance order-compare target start mid)])

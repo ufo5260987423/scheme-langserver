@@ -30,7 +30,7 @@
     (scheme-langserver protocol alist-access-object))
 
 (test-begin "define for type inference")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
@@ -43,13 +43,13 @@
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/contain.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 12)))]
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitution-list-for target-document)
@@ -62,13 +62,13 @@
 (test-end)
 
 (test-begin "debug for index-node.sls:debug:print-expressions")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f #t)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #t)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 61 10)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 101 10)))]
             [variable (index-node-variable target-index-node)]
             [check-base 'void?])
         (test-equal #t 
@@ -78,7 +78,7 @@
 
 ; a better cutting is needed
 ; (test-begin "cartesian-products may slow down the inference because combination blows up")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f #f)]
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
 ;             [root-file-node (workspace-file-node workspace)]
 ;             [root-library-node (workspace-library-node workspace)]
 ;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/binary-search.sls"))]

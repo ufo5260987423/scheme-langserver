@@ -57,7 +57,7 @@
 
 (test-begin "output-identifier-types for index-node")
     (let* ([target-path (current-directory)] 
-            [workspace (init-workspace target-path #f #t #t)]
+            [workspace (init-workspace target-path #f #t)]
             [root-library-node (workspace-library-node workspace)]
             ; [target-library-identifier '(scheme-langserver analysis workspace)]
             [target-library-identifier '(scheme-langserver analysis type domain-specific-language interpreter)]

@@ -2,6 +2,21 @@
 
 Procedures and variable bindings are the fundamental building blocks of Scheme programs. In fact, most part of functionalities including auto-completion, goto definition, document symbol etc., all dependent on them. In this document, I'll describe what scheme-langserver do in analysis/identifier/rules directory. Following forms are from [the summary from csug 9.5](https://cisco.github.io/ChezScheme/csug9.5/summary.html#./summary:h0). These form should be caught by define-record-type.sls, lambda.sls, let.sls and so one. 
 
+### Abstract Interpreter
+Scheme-langserver's whole identifier catching mechanism is basically fully framed with [abstract interpreter](https://en.wikipedia.org/wiki/Abstract_interpretation). The most essential code located in [this file](../../analysis/abstract-interpreter.sls) now has initially exhibited my design in version 1.2.0. Its main purpose is to allow self-defined macros to introduce new library or identifiers in code, which is rare in main stream programming languages and deeply attract most scheme language programmers. 
+
+An example is from the macro in [try.sls](../../util/try.sls). It allows catching exceptions like in Java without any introduction of keywords:
+```scheme
+(try
+    ...
+    (except current-exception 
+        [condition do]
+        ...
+        [else ...]))
+```
+
+As you may see, `current-exception` is claimed as an identifier, and is bound with any exception. This identifier maybe used in rest body of `except`, and we all suppose scheme-langserver can help. And this feature will be implemented soon.
+
 ### Identifier binding forms in r6rs standard 
 In practice, these forms would produce [identifier-reference](../../analysis/identifier/reference.sls) and attach them to [index-nodes](../../virtual-file-system/index-node.sls). Specifically, one form would produce one unique identifier and attach it to `index-node-export-to-other-node`, `index-node-import-in-this-node`, and `index-node-excluded-references`. 
 
