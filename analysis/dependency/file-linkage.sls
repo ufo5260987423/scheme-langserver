@@ -118,17 +118,25 @@
       [visited-ids (make-vector node-count)]
       [matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)])
-    (let loop ([from-id 0] [path '()])
-      (if (< (length path) node-count)
-        (if (not (zero? (vector-ref visited-ids from-id)))
-          (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path)
+    (let loop ([from-id 0] 
+        [path '()]
+        [last-path-length 0])
+      (cond 
+        [(or (= (length path) node-count) 
+          (and (= node-count from-id)
+            (= last-path-length (length path))))
+          (map (lambda (id) (hashtable-ref id->path-map id #f)) path)]
+        [(= node-count from-id)
+          (loop 0 path (length path))]
+        [(not (zero? (vector-ref visited-ids from-id)))
+          (loop (+ 1 from-id) path last-path-length)]
+        [else 
           (let ([to-ids (matrix-from matrix from-id)])
             (if (= (length to-ids) (apply + (map (lambda (to-id) (vector-ref visited-ids to-id)) to-ids)))
               (begin
                 (vector-set! visited-ids from-id 1)
-                (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) (append path `(,from-id))))
-              (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path))))
-        (map (lambda (id) (hashtable-ref id->path-map id #f)) path)))))
+                (loop (+ from-id 1) (append path `(,from-id)) last-path-length))
+              (loop (+ from-id 1) path last-path-length)))]))))
 
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]
@@ -225,15 +233,15 @@
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
     (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
-            [path (file-node-path file-node)]
-            [imported-libraries 
-              (dedupe (apply append 
-                (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
-                  (document-index-node-list (file-node-document file-node)))))]
-            [loaded-files 
-              (dedupe (apply append 
-                (map (lambda (index-node) (load-process root-library-node (file-node-document file-node) index-node))
-                  (document-index-node-list (file-node-document file-node)))))])
+          [path (file-node-path file-node)]
+          [imported-libraries 
+            (dedupe (apply append 
+              (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
+                (document-index-node-list (file-node-document file-node)))))]
+          [loaded-files 
+            (dedupe (apply append 
+              (map (lambda (index-node) (load-process root-library-node (file-node-document file-node) index-node))
+                (document-index-node-list (file-node-document file-node)))))])
 
         (map (lambda (imported-library-path) 
                 (if (not (null? imported-library-path))
