@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier rules library-import)
   (export 
     library-import-process
+    involk-library-process
     import-process
     import-references
     import-from-external-index-node
@@ -36,6 +37,24 @@
       ;     (index-node-children index-node))]
       [else '()])
     index-node))
+
+(define (involk-library-process root-file-node root-library-node document index-node)
+  (filter-empty-list 
+    (let* ([ann (index-node-datum/annotations index-node)]
+        [expression (annotation-stripped ann)]
+        [parent-index-node (index-node-parent index-node)])
+      (match expression
+        [(_ (library-identifier **1)) 
+          (let ([tmp (filter identifier-reference? (import-references root-library-node library-identifier))])
+            (if (null? parent-index-node)
+              (document-reference-list-set! 
+                document
+                (sort-identifier-references (append (document-reference-list document) tmp)))
+              (index-node-references-import-in-this-node-set! 
+                parent-index-node 
+                (sort-identifier-references
+                  (append (index-node-references-import-in-this-node parent-index-node) tmp)))))]
+        [else '()]))))
 
 (define (import-process root-file-node root-library-node document index-node)
   (filter-empty-list 
