@@ -39,9 +39,12 @@
         (filter 
           (lambda (r)
             (not (null? (identifier-reference-document r))))
-          (if (null? prefix)
-            (find-available-references-for document target-index-node)
-            (find-available-references-for document target-index-node prefix)))))))
+          (apply append 
+            (map 
+              root-ancestor
+              (if (null? prefix)
+                (find-available-references-for document target-index-node)
+                (find-available-references-for document target-index-node prefix)))))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)
