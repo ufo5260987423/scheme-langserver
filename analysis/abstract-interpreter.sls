@@ -154,7 +154,7 @@
             [(equal? r '(with-syntax)) (private-add-rule rules `((,with-syntax-process) . ,identifier))]
 
             [(equal? r '(library)) (private-add-rule rules `((,library-import-process . ,export-process) . ,identifier))]
-            [(equal? r '(involk-library)) (private-add-rule rules `((,involk-library-process) . ,identifier))]
+            [(equal? r '(invoke-library)) (private-add-rule rules `((,invoke-library-process) . ,identifier))]
             [(equal? r '(import)) 
               (let ([special 
                     (lambda (root-file-node root-library-node document index-node)
