@@ -159,7 +159,7 @@
       [target-document (file-node-document target-file-node)]
       [root-library-node (workspace-library-node workspace-instance)]
 
-      [old-library-identifiers-list (get-library-identifiers-list target-file-node)]
+      [old-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))]
       [old-library-node-list 
         (filter (lambda (item) (not (null? item)))
           (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
@@ -175,7 +175,7 @@
     (document-text-set! target-document text)
     (document-index-node-list-set! target-document new-index-nodes)
 
-    (let ([new-library-identifiers-list (get-library-identifiers-list target-file-node)])
+    (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])
       (if (not (equal? new-library-identifiers-list old-library-identifiers-list))
         (begin 
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
@@ -209,7 +209,7 @@
     (let* ([linkage (workspace-file-linkage workspace-instance)]
         [root-file-node (workspace-file-node workspace-instance)]
         [root-library-node (workspace-library-node workspace-instance)]
-        [library-identifiers-list (get-library-identifiers-list target-file-node)]
+        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))]
         [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
         [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
         [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
@@ -261,7 +261,7 @@
           (file-node-children file-node))
         (map 
           (lambda (library-identifiers) (generate-library-node library-identifiers root-library-node file-node))
-          (get-library-identifiers-list file-node)))
+          (get-library-identifiers-list (file-node-document file-node))))
       root-library-node]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
