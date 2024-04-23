@@ -217,6 +217,14 @@ bash test.sh
 >NOTE
 It's hard to do test with threaded environment. So, current tests focus on single thread.
 
+## Use Scheme-langserver for Other Purpose
+### Script-Fu in GIMP
+Script-Fu is based on an interpreted language called Scheme, and works by using functions that interact with GIMP's internal functions. Taking [this page](https://dalelane.co.uk/blog/?p=628)'s script as an example, you can apply scheme-langserver with script file with "SCM" extension.
+
+### Others
+
+Well, I'm also interested in [OMN (Opusmodus Notation)](https://opusmodus.com/) and AutoLisp. But I still have many things to do.
+
 ## Code Count
 ```bash
 find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
