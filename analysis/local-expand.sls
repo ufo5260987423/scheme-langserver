@@ -3,6 +3,7 @@
     local-expand)
   (import 
     (chezscheme) 
+    (ufo-match)
     
     (scheme-langserver virtual-file-system document)
 
@@ -33,7 +34,9 @@
     (eval `(,@to-load ,@to-import ,target))))
 
 (define (primitive? target)
-  (if (pair? target)
-    (equal? '$primitive (car target))
-    #f))
+  (match target
+    [('$primitive _) #t]
+    [('$primitive 2 _) #t]
+    [('$primitive 3 _) #t]
+    [else #f]))
 )
