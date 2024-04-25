@@ -32,11 +32,4 @@
       [to-import (map (lambda (l) `(import ,l)) imported-libraries)]
       [target `(expand ',to-eval)])
     (eval `(,@to-load ,@to-import ,target))))
-
-(define (primitive? target)
-  (match target
-    [('$primitive _) #t]
-    [('$primitive 2 _) #t]
-    [('$primitive 3 _) #t]
-    [else #f]))
 )

@@ -9,6 +9,7 @@
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier meta)
+    (scheme-langserver analysis identifier primitive-variable)
 
     (scheme-langserver analysis identifier reference)
 
@@ -38,7 +39,6 @@
     (scheme-langserver analysis identifier rules fluid-let-syntax)
 
     (scheme-langserver analysis identifier rules body)
-
 
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
@@ -78,19 +78,28 @@
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
               [head (car children)]
-              [head-expression (annotation-stripped (index-node-datum/annotations head))])
-            (if (symbol? head-expression)
-              (let* ([current-available-identifiers (find-available-references-for current-document current-index-node head-expression)]
-                  [target-rules (establish-available-rules-from current-available-identifiers current-document current-index-node)])
-                (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
-                (fold-left
-                  (lambda (l child-index-node)
-                    (step root-file-node root-library-node current-document child-index-node))
-                  '()
-                  children)
-                (map (lambda (f) 
-                  (if (not (null? (cdr (cdr f))))
-                    ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) target-rules))))]
+              [head-expression (annotation-stripped (index-node-datum/annotations head))]
+              [target-rules
+                (cond 
+                  [(symbol? head-expression)
+                    (establish-available-rules-from 
+                      (find-available-references-for current-document current-index-node head-expression)
+                      current-document 
+                      current-index-node)]
+                  [(primitive? head-expression)
+                    (list (get-primitive-rule-from head-expression))]
+                  [else '()])])
+            (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
+            (fold-left
+              (lambda (l child-index-node)
+                (step root-file-node root-library-node current-document child-index-node))
+              '()
+              children)
+            (map 
+              (lambda (f) 
+                (if (not (null? (cdr (cdr f))))
+                  ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
+              target-rules))]
         [else '()])]
       [(root-file-node root-library-node current-document current-index-node available-identifiers)
         (if (or 
@@ -115,6 +124,11 @@
 (define (private-add-rule origin target-rule)
   (merge private-rule-compare? origin 
     `((,(cdr target-rule) . ,(car target-rule)))))
+
+(define (get-primitive-rule-from primitive-expression)
+  (cond 
+    [(equal? (primitive-content primitive-expression) '$invoke-library) `(,primitive-expression . (,invoke-library-process))]
+    [else '()]))
 
 (define (establish-available-rules-from identifier-list current-document current-index-node)
   (fold-left 
@@ -161,20 +175,21 @@
                       (if (null? (index-node-parent index-node))
                         (import-process root-file-node root-library-node document index-node)
                         (let* ([t (car (index-node-children (index-node-parent index-node)))]
-                            [t-e (annotation-stripped (index-node-datum/annotations t))]
-                            [a (find-available-references-for current-document t t-e)])
-                          (if (null? (index-node-parent t))
-                            (if (equal? t-e 'library) 
-                              (do-nothing root-file-node root-library-node document index-node)
-                              (import-process root-file-node root-library-node document index-node))
-                            (if 
-                              (find 
-                                (lambda (ss)
-                                  (and (equal? (identifier-reference-identifier ss) 'library)
-                                    (contain? '((chezscheme) (rnrs) (rnrs (6)) (scheme) (rnrs base)) (identifier-reference-library-identifier ss)))) 
-                                (apply append (map root-ancestor (find-available-references-for current-document (index-node-parent t) t-e))))
-                              (do-nothing root-file-node root-library-node document index-node)
-                              (import-process root-file-node root-library-node document index-node))))))])
+                            [t-e (annotation-stripped (index-node-datum/annotations t))])
+                          (cond 
+                            [(not (symbol? t-e))
+                              (import-process root-file-node root-library-node document index-node)]
+                            [(and (null? (index-node-parent t)) (equal? t-e 'library)) 
+                              (do-nothing root-file-node root-library-node document index-node)]
+                            [(null? (index-node-parent t)) 
+                              (import-process root-file-node root-library-node document index-node)]
+                            [(find 
+                              (lambda (ss)
+                                (and (equal? (identifier-reference-identifier ss) 'library)
+                                  (contain? '((chezscheme) (rnrs) (rnrs (6)) (scheme) (rnrs base)) (identifier-reference-library-identifier ss)))) 
+                              (apply append (map root-ancestor (find-available-references-for current-document (index-node-parent t) t-e))))
+                              (do-nothing root-file-node root-library-node document index-node)]
+                            [else (import-process root-file-node root-library-node document index-node)]))))])
                 (private-add-rule rules `((,special) . ,identifier)))]
 
             [(equal? r '(load)) (private-add-rule rules `((,load-process) . ,identifier))]

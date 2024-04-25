@@ -25,11 +25,10 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [(_ fuzzy **1 ) 
-      ; this should not use 'guard', because it follows the library mechanism
+      [(_ fuzzy import-things **1) 
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
-          (index-node-children index-node))]
+          (cddr (index-node-children index-node)))]
       ; [('define-library _ **1 ) 
       ; ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
       ;   (map 
