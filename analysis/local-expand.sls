@@ -31,6 +31,5 @@
             (document-index-node-list document))))]
       [to-import (map (lambda (l) `(import ,l)) imported-libraries)]
       [target `(expand ',to-eval)])
-    ; (pretty-print to-load)
-    (eval `(,@to-load ,@to-import ,target) (scheme-environment))))
+    (eval `(,@to-load ,@to-import ,target))))
 )
