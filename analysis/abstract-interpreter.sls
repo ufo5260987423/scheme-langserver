@@ -59,14 +59,14 @@
 
 (define step 
   (case-lambda 
-    [(root-file-node root-library-node current-document)
+    [(root-file-node root-library-node file-linkage current-document)
       (fold-left
         (lambda (l current-index-node)
-          (step root-file-node root-library-node current-document current-index-node))
+          (step root-file-node root-library-node file-linkage current-document current-index-node))
         '() 
         (document-index-node-list current-document))
       (document-reference-list current-document)]
-    [(root-file-node root-library-node current-document current-index-node)
+    [(root-file-node root-library-node file-linkage current-document current-index-node)
       (cond 
         [(quote? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))]
@@ -76,7 +76,7 @@
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))
           (map 
             (lambda (i)
-              (step root-file-node root-library-node current-document i (index-node-excluded-references current-index-node)))
+              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node)))
             (index-node-children current-index-node))]
         ; [(quaisisyntax? current-index-node current-document)]
         [(not (null? (index-node-children current-index-node))) 
@@ -88,14 +88,13 @@
                   [(symbol? head-expression)
                     (establish-available-rules-from 
                       (find-available-references-for current-document current-index-node head-expression)
-                      current-document)]
-                  [(primitive? head-expression)
-                    (list (get-primitive-rule-from head-expression))]
+                      current-document
+                      )]
                   [else '()])])
             (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
             (fold-left
               (lambda (l child-index-node)
-                (step root-file-node root-library-node current-document child-index-node))
+                (step root-file-node root-library-node file-linkage current-document child-index-node))
               '()
               children)
             (map 
@@ -104,7 +103,7 @@
                   ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
               target-rules))]
         [else '()])]
-      [(root-file-node root-library-node current-document current-index-node available-identifiers)
+      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers)
         (if (or 
             (unquote? current-index-node current-document)
             (unsyntax? current-index-node current-document)
@@ -114,11 +113,11 @@
             (index-node-references-import-in-this-node-set! current-index-node available-identifiers)
             (map 
               (lambda (i)
-                (step root-file-node root-library-node current-document i))
+                (step root-file-node root-library-node file-linkage current-document i))
               (index-node-children current-index-node)))
           (map
             (lambda (i)
-              (step root-file-node root-library-node current-document i available-identifiers))
+              (step root-file-node root-library-node file-linkage current-document i available-identifiers))
             (index-node-children current-index-node)))]))
 
 (define (private-rule-compare? item0 item1)

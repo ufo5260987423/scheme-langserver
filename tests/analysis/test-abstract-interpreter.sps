@@ -23,13 +23,14 @@
     (scheme-langserver analysis identifier rules library-import))
 
 (test-begin "library-import-process")
-    (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
-            [target-file-node (walk-file root-file-node "./util/io.sls")]
+    (let* ( [workspace (init-workspace (string-append (current-directory) "/util") #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/io.sls"))]
             [root-library-node (init-library-node root-file-node)]
-            ; [target-file-node (walk-file root-file-node (string-append (current-directory) "/run.ss"))]
+            [file-linkage (workspace-file-linkage workspace)]
             [document (file-node-document target-file-node)])
         (document-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
-        (step root-file-node root-library-node document)
+        (step root-file-node root-library-node file-linkage document)
         (test-equal 
             'write-lines
             (find 

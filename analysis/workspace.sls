@@ -96,7 +96,7 @@
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
     ; (pretty-print 'aaa)
-        (init-references root-file-node root-library-node threaded? batches type-inference?)
+        (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
     ; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
@@ -111,27 +111,28 @@
       (init-references 
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
+        (workspace-file-linkage workspace-instance)
         (workspace-threaded? workspace-instance)
         target-paths
         (workspace-type-inference? workspace-instance))]
-    [(root-file-node root-library-node threaded? target-paths type-inference?)
+    [(root-file-node root-library-node file-linkage threaded? target-paths type-inference?)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
             ((if threaded? threaded-map map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node path type-inference?))
+                (private-init-references root-file-node root-library-node file-linkage path type-inference?))
               batch)
             (loop (cdr paths)))))]))
 
-(define (private-init-references root-file-node root-library-node target-path type-inference?)
+(define (private-init-references root-file-node root-library-node file-linkage target-path type-inference?)
       (let* ([current-file-node (walk-file root-file-node target-path)]
           [document (file-node-document current-file-node)]
           [index-node-list (document-index-node-list document)])
         ; (pretty-print 'test0)
         ; (pretty-print target-path)
         (document-reference-list-set! document (find-meta '(chezscheme)))
-        (step root-file-node root-library-node document)
+        (step root-file-node root-library-node file-linkage document)
         (process-library-identifier-excluded-references document)
         ; (pretty-print 'test1)
         (if type-inference?
