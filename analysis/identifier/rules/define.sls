@@ -94,7 +94,7 @@
                   (cadr (index-node-children index-node))
                   index-node
                   '()
-                  'syntax-variable
+                  'variable
                   '()
                   '())])
             (index-node-references-export-to-other-node-set! 

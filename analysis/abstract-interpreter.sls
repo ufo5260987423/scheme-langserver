@@ -16,6 +16,8 @@
     (scheme-langserver analysis identifier rules define)
     (scheme-langserver analysis identifier rules define-syntax)
     (scheme-langserver analysis identifier rules define-record-type)
+    (scheme-langserver analysis identifier rules define-top-level-value)
+    (scheme-langserver analysis identifier rules define-top-level-syntax)
 
     (scheme-langserver analysis identifier rules do)
 
@@ -150,6 +152,13 @@
             [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
             [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
             [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
+
+            [(equal? r '(set!)) (private-add-rule rules `((,define-top-level-value-process) . ,identifier))]
+            [(equal? r '(set-top-level-value!)) (private-add-rule rules `((,define-top-level-value-process) . ,identifier))]
+            [(equal? r '(define-top-level-value)) (private-add-rule rules `((,define-top-level-value-process) . ,identifier))]
+
+            [(equal? r '(set-top-level-syntax!)) (private-add-rule rules `((,define-top-level-syntax-process) . ,identifier))]
+            [(equal? r '(define-top-level-syntax)) (private-add-rule rules `((,define-top-level-syntax-process) . ,identifier))]
 
             [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
             [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
