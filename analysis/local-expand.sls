@@ -29,7 +29,7 @@
         (dedupe (apply append 
           (map (lambda (index-node) (library-import-process index-node))
             (document-index-node-list document))))]
-      [to-import (map (lambda (l) `(invoke-library ,l)) imported-libraries)]
+      [to-import (map (lambda (l) `(import ,l)) imported-libraries)]
       [target `(expand ',to-eval)])
     (eval `(,@to-load ,@to-import ,target))
     ))
