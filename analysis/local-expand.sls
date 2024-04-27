@@ -29,7 +29,16 @@
         (dedupe (apply append 
           (map (lambda (index-node) (library-import-process index-node))
             (document-index-node-list document))))]
-      [to-import (map (lambda (l) `(import ,l)) imported-libraries)]
+      [to-import (map (lambda (l) `(invoke-library ,l)) imported-libraries)]
       [target `(expand ',to-eval)])
-    (eval `(,@to-load ,@to-import ,target))))
+    (eval `(,@to-load ,@to-import ,target))
+    ))
+
+(define (private-simplify-gensyms expression)
+  (cond 
+    [(gensym? expression) (string->symbol (symbol->string expression))]
+    [(list? expression) (map private-simplify-gensyms expression)]
+    [(vector? expression) (vector-map private-simplify-gensyms expression)]
+    [(pair? expression) (cons (private-simplify-gensyms (car expression)) (private-simplify-gensyms (cdr expression)))]
+    [else expression]))
 )
