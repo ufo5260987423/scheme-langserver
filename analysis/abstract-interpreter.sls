@@ -4,12 +4,15 @@
     (chezscheme) 
 
     (scheme-langserver util try)
+    (scheme-langserver util path)
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
     (scheme-langserver util binary-search)
 
     (scheme-langserver analysis util)
+    (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis local-expand)
+
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier primitive-variable)
 
@@ -62,11 +65,11 @@
     [(root-file-node root-library-node file-linkage current-document)
       (fold-left
         (lambda (l current-index-node)
-          (step root-file-node root-library-node file-linkage current-document current-index-node))
+          (step root-file-node root-library-node file-linkage current-document current-index-node #t))
         '() 
         (document-index-node-list current-document))
       (document-reference-list current-document)]
-    [(root-file-node root-library-node file-linkage current-document current-index-node)
+    [(root-file-node root-library-node file-linkage current-document current-index-node allow-extend-macro?)
       (cond 
         [(quote? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))]
@@ -76,7 +79,7 @@
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))
           (map 
             (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node)))
+              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro?))
             (index-node-children current-index-node))]
         ; [(quaisisyntax? current-index-node current-document)]
         [(not (null? (index-node-children current-index-node))) 
@@ -87,14 +90,15 @@
                 (cond 
                   [(symbol? head-expression)
                     (establish-available-rules-from 
+                      file-linkage
                       (find-available-references-for current-document current-index-node head-expression)
                       current-document
-                      )]
+                      #t)]
                   [else '()])])
             (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
             (fold-left
               (lambda (l child-index-node)
-                (step root-file-node root-library-node file-linkage current-document child-index-node))
+                (step root-file-node root-library-node file-linkage current-document child-index-node allow-extend-macro?))
               '()
               children)
             (map 
@@ -103,7 +107,7 @@
                   ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
               target-rules))]
         [else '()])]
-      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers)
+      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers allow-extend-macro?)
         (if (or 
             (unquote? current-index-node current-document)
             (unsyntax? current-index-node current-document)
@@ -113,11 +117,11 @@
             (index-node-references-import-in-this-node-set! current-index-node available-identifiers)
             (map 
               (lambda (i)
-                (step root-file-node root-library-node file-linkage current-document i))
+                (step root-file-node root-library-node file-linkage current-document i allow-extend-macro?))
               (index-node-children current-index-node)))
           (map
             (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i available-identifiers))
+              (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro?))
             (index-node-children current-index-node)))]))
 
 (define (private-rule-compare? item0 item1)
@@ -132,7 +136,7 @@
     [(equal? (primitive-content primitive-expression) '$invoke-library) `(,primitive-expression . (,invoke-library-process))]
     [else '()]))
 
-(define (establish-available-rules-from identifier-list current-document)
+(define (establish-available-rules-from file-linkage identifier-list current-document allow-extend-macro?)
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]
@@ -209,15 +213,21 @@
 
             [else rules])
           (cond 
+            [(not allow-extend-macro?) rules]
             [(or 
               (contain? (map identifier-reference-type top) 'syntax)
               (contain? (map identifier-reference-type top) 'syntax-variable))
-              ; (try
-              ;   (let ([expand-result ])
-              ;   )
-
-              ;   (except c [else rules]))
-              ; (private-add-rule rules `((,load-library-process) . ,identifier))
+              ; (private-add-rule 
+              ;   rules 
+              ;   `((,(lambda (root-file-node root-library-node document index-node)
+              ;     (try 
+              ;       (let* ([to-eval (annotation-stripped (index-node-datum/annotations index-node))]
+              ;           [tmp-result (local-expand to-eval document root-library-node file-linkage)]
+              ;           [annotation-list (map (lambda (e) (source-file->annotations e (uri->path (document-uri document)))) tmp-result)])
+              ;         (map (lambda (a) (index-node-parent-set! a index-node)) annotation-list)
+              ;         (step root-file-node root-library-node file-linkage document index-node #f))
+              ;       (except c [else '()]))
+              ;     )) . ,identifier))
               rules
               ]
             [else rules])
