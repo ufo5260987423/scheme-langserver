@@ -31,8 +31,7 @@
             (document-index-node-list document))))]
       [to-import (map (lambda (l) `(import ,l)) imported-libraries)]
       [target `(expand ',to-eval)])
-    (eval `(,@to-load ,@to-import ,target))
-    ))
+    (private-simplify-gensyms (eval `(,@to-load ,@to-import ,target)))))
 
 (define (private-simplify-gensyms expression)
   (cond 
