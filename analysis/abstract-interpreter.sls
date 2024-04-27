@@ -3,11 +3,13 @@
   (import 
     (chezscheme) 
 
+    (scheme-langserver util try)
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
     (scheme-langserver util binary-search)
 
     (scheme-langserver analysis util)
+    (scheme-langserver analysis local-expand)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier primitive-variable)
 
@@ -86,8 +88,7 @@
                   [(symbol? head-expression)
                     (establish-available-rules-from 
                       (find-available-references-for current-document current-index-node head-expression)
-                      current-document 
-                      current-index-node)]
+                      current-document)]
                   [(primitive? head-expression)
                     (list (get-primitive-rule-from head-expression))]
                   [else '()])])
@@ -132,7 +133,7 @@
     [(equal? (primitive-content primitive-expression) '$invoke-library) `(,primitive-expression . (,invoke-library-process))]
     [else '()]))
 
-(define (establish-available-rules-from identifier-list current-document current-index-node)
+(define (establish-available-rules-from identifier-list current-document)
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]
@@ -208,8 +209,19 @@
             [(equal? r '(body)) (private-add-rule rules `((,do-nothing ,body-process) . ,identifier))]
 
             [else rules])
-          ;todo: generate rule from syntax-variable
-          rules
+          (cond 
+            [(or 
+              (contain? (map identifier-reference-type top) 'syntax)
+              (contain? (map identifier-reference-type top) 'syntax-variable))
+              ; (try
+              ;   (let ([expand-result ])
+              ;   )
+
+              ;   (except c [else rules]))
+              ; (private-add-rule rules `((,load-library-process) . ,identifier))
+              rules
+              ]
+            [else rules])
         )))
     '()
     (filter 
