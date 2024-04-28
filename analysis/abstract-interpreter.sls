@@ -55,6 +55,8 @@
     (scheme-langserver analysis identifier rules with-syntax)
     (scheme-langserver analysis identifier rules identifier-syntax)
 
+    (scheme-langserver analysis identifier rules srfi include-resolve)
+
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
@@ -209,11 +211,15 @@
             [(equal? r '(load-program)) (private-add-rule rules `((,load-program-process) . ,identifier))]
             [(equal? r '(load-library)) (private-add-rule rules `((,load-library-process) . ,identifier))]
 
-            [(equal? r '(body)) (private-add-rule rules `((,do-nothing ,body-process) . ,identifier))]
+            [(equal? r '(body)) (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
 
             [else rules])
           (cond 
             [(not allow-extend-macro?) rules]
+            [(and (equal? is '((srfi :23 error tricks))) (equal? r '(SRFI-23-error->R6RS)))
+                (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
+            [(and (equal? is '((srfi private include))) (equal? r '(include/resolve)))
+                (private-add-rule rules `((,include-resolve-process) . ,identifier))]
             [(or 
               (contain? (map identifier-reference-type top) 'syntax)
               (contain? (map identifier-reference-type top) 'syntax-variable))
