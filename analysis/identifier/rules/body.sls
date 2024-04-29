@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver util try)
+    (scheme-langserver util dedupe)
 
     (scheme-langserver analysis identifier reference)
 
@@ -22,10 +23,11 @@
         [(_ fuzzy ... ) 
           (let* ([parent (index-node-parent index-node)]
               [children (index-node-children index-node)]
-              [target (map index-node-references-import-in-this-node children)])
+              [pre-target (map index-node-references-import-in-this-node children)]
+              [target `(,@pre-target ,(index-node-references-import-in-this-node index-node))])
             (if (null? parent)
-              (document-reference-list-set! document (apply append (document-reference-list document) target))
-              (index-node-references-import-in-this-node-set! parent (apply append (index-node-references-import-in-this-node parent) target))))]
+              (document-reference-list-set! document (dedupe (apply append (document-reference-list document) target)))
+              (index-node-references-import-in-this-node-set! parent (dedupe (apply append (index-node-references-import-in-this-node parent) target)))))]
         [else '()])
       (except c
         [else '()]))))

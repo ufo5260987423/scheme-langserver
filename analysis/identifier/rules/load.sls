@@ -4,6 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
+    (scheme-langserver util dedupe)
     (scheme-langserver util path)
     (scheme-langserver util try)
 
@@ -16,6 +17,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ;;todo more test
+; todo: library process
 (define (load-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
@@ -50,10 +52,11 @@
                         (document-reference-list document)))])
                 (index-node-references-import-in-this-node-set! 
                   parent-index-node
-                  (sort-identifier-references
-                    (append 
-                      (index-node-references-import-in-this-node parent-index-node)
-                      references))))))]
+                  (ordered-dedupe 
+                    (sort-identifier-references
+                      (append 
+                        (index-node-references-import-in-this-node parent-index-node)
+                        references)))))))]
         [else '()])
       (except c
         [else '()]))))

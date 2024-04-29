@@ -139,11 +139,7 @@
           (try 
             (construct-substitution-list-for document)
             (except c 
-              [(symbol? c) 
-                (pretty-print target-path)
-                (pretty-print 'workspace-error)
-                (pretty-print c)]
-              [(string? c) 
+              [(or (string? c) (symbol? c))
                 (pretty-print target-path)
                 (pretty-print 'workspace-error)
                 (pretty-print c)]

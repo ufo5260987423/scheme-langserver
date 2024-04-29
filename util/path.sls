@@ -9,7 +9,7 @@
       (chezscheme)
       (only (chibi pathname) path-strip-directory)
       (scheme-langserver util environment) 
-      (only (srfi :13 strings) string-prefix? string-suffix? string-drop))
+      (only (srfi :13 strings) string-prefix? string-suffix? string-drop string-drop-right))
 
 (define (path->uri path)
   (string-append
@@ -41,5 +41,7 @@
   (path->name (uri->path uri)))
 
 (define (path->name path)
-  (path-strip-directory path))
+  (if (string-suffix? "/" path )
+    (path-strip-directory (string-drop-right path 1))
+    (path-strip-directory path)))
 )

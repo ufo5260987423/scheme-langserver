@@ -52,9 +52,11 @@
       (equal? #f (find (lambda (suffix) (string-suffix? suffix path))
       '( ".sps" ".sls" ".scm" ".ss"))))))
 
-(define (search-end-with node path-list)
+(define (search-end-with node suffix)
   (cond 
-    [(equal? (file-node-name node) (car (reverse path-list))) node]
-    [(file-node-folder? node) (map (lambda (n) (search-end-with n path-list)) (file-node-children node))]
+    [(file-node-folder? node) 
+      (apply append (map (lambda (n) (search-end-with n suffix)) (file-node-children node)))]
+    [(string-suffix? suffix (file-node-path node)) 
+      `(,node)]
     [else '()]))
 )
