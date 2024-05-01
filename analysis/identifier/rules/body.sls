@@ -25,6 +25,7 @@
               [pre-target (map index-node-references-import-in-this-node children)]
               [target `(,@pre-target ,(index-node-references-import-in-this-node index-node))])
             (debug:print-expression index-node)
+            (pretty-print (length (apply append target)))
             (append-references-into-ordered-references-for document parent (apply append target)))]
         [else '()])
       (except c
