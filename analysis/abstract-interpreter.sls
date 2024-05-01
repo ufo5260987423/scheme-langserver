@@ -77,14 +77,14 @@
       (cond 
         [(quote? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))]
-        [(syntax? current-index-node current-document) 
-          (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))]
         [(quasiquote? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))
           (map 
             (lambda (i)
               (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro?))
             (index-node-children current-index-node))]
+        ; [(syntax? current-index-node current-document) 
+          ; (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))]
         ; [(quaisisyntax? current-index-node current-document)]
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
