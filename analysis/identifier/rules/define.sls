@@ -75,6 +75,59 @@
                           `(,dummy-reference)))]
                     [else '()])))
               dummies))]
+        [(_ ((? symbol? identifier) . dummy0) dummy1 ... )
+          (let* ([omg-index-node (cadr (index-node-children index-node))]
+              [reference (make-identifier-reference 
+                  identifier 
+                  document 
+                  omg-index-node
+                  index-node
+                  '()
+                  'procedure
+                  '()
+                  '())])
+            (index-node-references-export-to-other-node-set! 
+              (identifier-reference-index-node reference)
+              (append 
+                (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                `(,reference)))
+            (append-references-into-ordered-references-for document (index-node-parent index-node)  `(,reference))
+            (let loop ([rest dummy0])
+              (cond 
+                [(pair? rest) 
+                  (let ([reference (make-identifier-reference 
+                      (car rest)
+                      document 
+                      omg-index-node
+                      index-node
+                      '()
+                      'parameter
+                      '()
+                      '())])
+                    (index-node-references-export-to-other-node-set! 
+                      (identifier-reference-index-node reference)
+                      (append 
+                        (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                        `(,reference)))
+                    (append-references-into-ordered-references-for document index-node `(,reference)))
+                  (loop (cdr rest))]
+                [(not (null? rest)) 
+                  (let ([reference (make-identifier-reference 
+                      rest
+                      document 
+                      omg-index-node
+                      index-node
+                      '()
+                      'parameter
+                      '()
+                      '())])
+                    (index-node-references-export-to-other-node-set! 
+                      (identifier-reference-index-node reference)
+                      (append 
+                        (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                        `(,reference)))
+                    (append-references-into-ordered-references-for document index-node `(,reference)))]
+                [else '()])))]
         [(_ (? symbol? identifier) dummy ... ) 
           (let ([reference (make-identifier-reference 
                   (car* identifier)

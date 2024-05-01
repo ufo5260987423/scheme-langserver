@@ -27,21 +27,11 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/srfi/:13/strings.chezscheme.sls"))]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))])
-        ; (pretty-print (map identifier-reference-identifier (index-node-references-import-in-this-node root-index-node)))
-        (pretty-print 
+        (test-equal #f
+            (not 
                 (find 
                     (lambda (reference) 
                         (equal? 'string-suffix? (identifier-reference-identifier reference)))
-                    (index-node-references-import-in-this-node root-index-node))
-        )
-        (test-equal #t #t)
-        ; (test-equal #f
-        ;     (not 
-        ;         (find 
-        ;             (lambda (reference) 
-        ;                 (equal? 'string-suffix? (identifier-reference-identifier reference)))
-        ;             (index-node-references-import-in-this-node root-index-node))
-        ;             ))
-                    )
+                    (index-node-references-import-in-this-node root-index-node)))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

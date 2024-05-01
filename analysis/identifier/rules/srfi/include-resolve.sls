@@ -29,9 +29,6 @@
               (lambda (target-file-node)
                 (let ([target-document (file-node-document target-file-node)])
                   (if (document-refreshable? target-document) (step-without-document target-document))
-                  ; (pretty-print (document-refreshable? target-document))
-                  ; (pretty-print (document-uri target-document))
-                  ; (pretty-print (length (document-ordered-reference-list target-document)))
                   (append-references-into-ordered-references-for 
                     document 
                     parent-index-node 
