@@ -9,6 +9,7 @@
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier meta)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system library-node)
@@ -28,7 +29,10 @@
             (map 
               (lambda (target-file-node)
                 (let ([target-document (file-node-document target-file-node)])
-                  (if (document-refreshable? target-document) (step-without-document target-document))
+                  (if (document-refreshable? target-document) 
+                    (begin 
+                      (document-ordered-reference-list-set! document (find-meta '(chezscheme)))
+                      (step-without-document target-document)))
                   (append-references-into-ordered-references-for 
                     document 
                     parent-index-node 

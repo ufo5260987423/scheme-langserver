@@ -126,29 +126,29 @@
             (loop (cdr paths)))))]))
 
 (define (private-init-references root-file-node root-library-node file-linkage target-path type-inference?)
-      (let* ([current-file-node (walk-file root-file-node target-path)]
-          [document (file-node-document current-file-node)]
-          [index-node-list (document-index-node-list document)])
-        ; (pretty-print 'test0)
-        ; (pretty-print target-path)
-        (document-ordered-reference-list-set! document (find-meta '(chezscheme)))
-        (step root-file-node root-library-node file-linkage document)
-        (process-library-identifier-excluded-references document)
-        ; (pretty-print 'test1)
-        (if type-inference?
-          (try 
-            (construct-substitution-list-for document)
-            (except c 
-              [(or (string? c) (symbol? c))
-                (pretty-print target-path)
-                (pretty-print 'workspace-error)
-                (pretty-print c)]
-              [else 
-                (pretty-print target-path)
-                (pretty-print 'workspace-error)
-                (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                '()])))
-        (document-refreshable?-set! document #f)))
+  (let* ([current-file-node (walk-file root-file-node target-path)]
+      [document (file-node-document current-file-node)]
+      [index-node-list (document-index-node-list document)])
+  ; (pretty-print 'test0)
+  ; (pretty-print target-path)
+    (document-ordered-reference-list-set! document (find-meta '(chezscheme)))
+    (step root-file-node root-library-node file-linkage document)
+    (process-library-identifier-excluded-references document)
+    ; (pretty-print 'test1)
+    (if type-inference?
+      (try 
+        (construct-substitution-list-for document)
+        (except c 
+          [(or (string? c) (symbol? c))
+            (pretty-print target-path)
+            (pretty-print 'workspace-error)
+            (pretty-print c)]
+          [else 
+            (pretty-print target-path)
+            (pretty-print 'workspace-error)
+            (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
+            '()])))
+    (document-refreshable?-set! document #f)))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]
