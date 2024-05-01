@@ -28,12 +28,12 @@
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))])
         ; (pretty-print (map identifier-reference-identifier (index-node-references-import-in-this-node root-index-node)))
-        ; (pretty-print 
-        ;         (find 
-        ;             (lambda (reference) 
-        ;                 (equal? 'string-suffix? (identifier-reference-identifier reference)))
-        ;             (index-node-references-import-in-this-node root-index-node))
-        ; )
+        (pretty-print 
+                (find 
+                    (lambda (reference) 
+                        (equal? 'string-suffix? (identifier-reference-identifier reference)))
+                    (index-node-references-import-in-this-node root-index-node))
+        )
         (test-equal #t #t)
         ; (test-equal #f
         ;     (not 

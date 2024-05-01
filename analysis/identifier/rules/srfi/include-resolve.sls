@@ -4,7 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util dedupe)
     (scheme-langserver util path)
     (scheme-langserver util try)
 
@@ -17,7 +16,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ;;todo more test
-(define (include-resolve-process root-file-node root-library-node document index-node)
+(define (include-resolve-process root-file-node root-library-node document index-node step-without-document)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [parent-index-node (index-node-parent index-node)]
@@ -28,15 +27,15 @@
           (let ([suffix (fold-left (lambda (l r) (string-append r "/" l)) file-name (reverse lib-path))])
             (map 
               (lambda (target-file-node)
-                (let* ([target-document (file-node-document target-file-node)]
-                    [references (document-reference-list document)])
-                  (index-node-references-import-in-this-node-set! 
-                    parent-index-node
-                    (ordered-dedupe 
-                      (sort-identifier-references
-                        (append 
-                          (index-node-references-import-in-this-node parent-index-node)
-                          references))))))
+                (let ([target-document (file-node-document target-file-node)])
+                  (if (document-refreshable? target-document) (step-without-document target-document))
+                  ; (pretty-print (document-refreshable? target-document))
+                  ; (pretty-print (document-uri target-document))
+                  ; (pretty-print (length (document-ordered-reference-list target-document)))
+                  (append-references-into-ordered-references-for 
+                    document 
+                    parent-index-node 
+                    (document-ordered-reference-list target-document))))
               (search-end-with root-file-node suffix)))]
         [else '()])
       (except c

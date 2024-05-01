@@ -7,8 +7,8 @@
     document-text-set!
     document-index-node-list
     document-index-node-list-set!
-    document-reference-list
-    document-reference-list-set!
+    document-ordered-reference-list
+    document-ordered-reference-list-set!
     document-substitution-list
     document-substitution-list-set!
     document-refreshable?
@@ -22,7 +22,7 @@
     ;now it is only used for type-inference in analysis/type/substitutions/trivial.sls
     (mutable text)
     (mutable index-node-list)
-    (mutable reference-list)
+    (mutable ordered-reference-list)
     (mutable substitution-list)
     (mutable refreshable?))
   (protocol

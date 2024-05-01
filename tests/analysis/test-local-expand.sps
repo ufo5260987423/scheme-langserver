@@ -32,8 +32,7 @@
             [include/resolve (car (find-available-references-for document target-index-node 'include/resolve))]
             [to-eval (annotation-stripped (index-node-datum/annotations (index-node-parent target-index-node)))])
         ; (pretty-print (local-expand to-eval document workspace))
-        ; (test-equal #f (null? (local-expand to-eval document root-file-node (workspace-file-linkage workspace))))
-        (test-equal #f #f))
+        (test-equal #f (null? (local-expand to-eval document root-file-node (workspace-file-linkage workspace)))))
 (test-end)
 
 (test-begin "local-expand")

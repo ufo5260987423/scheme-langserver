@@ -29,7 +29,7 @@
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (workspace-file-linkage workspace)]
             [document (file-node-document target-file-node)])
-        (document-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
+        (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
         (step root-file-node root-library-node file-linkage document)
         (test-equal 
             'write-lines

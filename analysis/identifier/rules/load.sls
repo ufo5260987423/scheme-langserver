@@ -34,10 +34,10 @@
                   [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
                   [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
             (if (not (null? target-file-node))
-              (let* ([document (file-node-document target-file-node)]
+              (let* ([target-document (file-node-document target-file-node)]
                   [references 
                     (if (null? library-identifier)
-                      (document-reference-list document)
+                      (document-ordered-reference-list target-document)
                       (map 
                         (lambda (reference) 
                           (make-identifier-reference
@@ -49,14 +49,8 @@
                             (identifier-reference-type reference)
                             (identifier-reference-parents reference)
                             (identifier-reference-type-expressions reference)))
-                        (document-reference-list document)))])
-                (index-node-references-import-in-this-node-set! 
-                  parent-index-node
-                  (ordered-dedupe 
-                    (sort-identifier-references
-                      (append 
-                        (index-node-references-import-in-this-node parent-index-node)
-                        references)))))))]
+                        (document-ordered-reference-list target-document)))])
+                (append-references-into-ordered-references-for document parent-index-node references))))]
         [else '()])
       (except c
         [else '()]))))

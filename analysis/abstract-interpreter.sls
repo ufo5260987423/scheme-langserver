@@ -13,6 +13,8 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis local-expand)
 
+    (scheme-langserver analysis dependency file-linkage)
+
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier primitive-variable)
 
@@ -70,7 +72,7 @@
           (step root-file-node root-library-node file-linkage current-document current-index-node #t))
         '() 
         (document-index-node-list current-document))
-      (document-reference-list current-document)]
+      (document-ordered-reference-list current-document)]
     [(root-file-node root-library-node file-linkage current-document current-index-node allow-extend-macro?)
       (cond 
         [(quote? current-index-node current-document) 
@@ -217,9 +219,15 @@
           (cond 
             [(not allow-extend-macro?) rules]
             [(and (equal? is '((srfi :23 error tricks))) (equal? r '(SRFI-23-error->R6RS)))
-                (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
+              (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
             [(and (equal? is '((srfi private include))) (equal? r '(include/resolve)))
-                (private-add-rule rules `((,include-resolve-process) . ,identifier))]
+              (let ([target-lambda 
+                  (lambda (root-file-node root-library-node document index-node)
+                    (include-resolve-process root-file-node root-library-node document index-node 
+                      (lambda (current-document) 
+                        (file-linkage-set! file-linkage (uri->path (document-uri document)) (uri->path (document-uri current-document)))
+                        (step root-file-node root-library-node file-linkage current-document))))])
+                (private-add-rule rules `((,target-lambda) . ,identifier)))]
             [(or 
               (contain? (map identifier-reference-type top) 'syntax)
               (contain? (map identifier-reference-type top) 'syntax-variable))

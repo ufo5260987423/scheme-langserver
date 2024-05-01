@@ -36,11 +36,11 @@
               (append 
                 (index-node-references-export-to-other-node (identifier-reference-index-node reference))
                 `(,reference)))
-            (document-reference-list-set!
+            (document-ordered-reference-list-set!
               document
               (sort-identifier-references
                 (append 
-                  (document-reference-list document)
+                  (document-ordered-reference-list document)
                   `(,reference)))))]
         [else '()])
       (except c

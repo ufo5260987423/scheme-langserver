@@ -37,19 +37,7 @@
               (append 
                 (index-node-references-export-to-other-node (identifier-reference-index-node reference))
                 `(,reference)))
-            (if (null? (index-node-parent index-node))
-              (document-reference-list-set!
-                document
-                (sort-identifier-references
-                  (append 
-                    (document-reference-list document)
-                    `(,reference))))
-              (index-node-references-import-in-this-node-set! 
-                (index-node-parent index-node) 
-                (sort-identifier-references
-                  (append 
-                    (index-node-references-import-in-this-node (index-node-parent index-node))
-                    `(,reference))))))]
+            (append-references-into-ordered-references-for document (index-node-parent index-node)  `(,reference)))]
         [(_ ((? symbol? identifier) dummy0 ... ) dummy1 ... ) 
           (let* ([omg-index-node (cadr (index-node-children index-node))]
               [key-index-nodes (index-node-children omg-index-node)]
@@ -68,19 +56,7 @@
               (append 
                 (index-node-references-export-to-other-node (identifier-reference-index-node reference))
                 `(,reference)))
-            (if (null? (index-node-parent index-node))
-              (document-reference-list-set!
-                document
-                (sort-identifier-references
-                  (append 
-                    (document-reference-list document)
-                    `(,reference))))
-              (index-node-references-import-in-this-node-set! 
-                (index-node-parent index-node) 
-                (sort-identifier-references
-                  (append 
-                    (index-node-references-import-in-this-node (index-node-parent index-node))
-                    `(,reference)))))
+            (append-references-into-ordered-references-for document (index-node-parent index-node)  `(,reference))
             (map 
               (lambda (dummy-index-node)
                 (let* ([dummy-ann (index-node-datum/annotations dummy-index-node)]

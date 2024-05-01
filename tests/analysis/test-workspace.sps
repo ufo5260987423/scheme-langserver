@@ -72,7 +72,7 @@
             'init-server
             (find 
                 (lambda (identifier) (equal? identifier 'init-server))
-                (map identifier-reference-identifier (document-reference-list document)))))
+                (map identifier-reference-identifier (document-ordered-reference-list document)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

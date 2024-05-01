@@ -5,7 +5,6 @@
     (ufo-match)
 
     (scheme-langserver util try)
-    (scheme-langserver util dedupe)
 
     (scheme-langserver analysis identifier reference)
 
@@ -25,9 +24,8 @@
               [children (index-node-children index-node)]
               [pre-target (map index-node-references-import-in-this-node children)]
               [target `(,@pre-target ,(index-node-references-import-in-this-node index-node))])
-            (if (null? parent)
-              (document-reference-list-set! document (dedupe (apply append (document-reference-list document) target)))
-              (index-node-references-import-in-this-node-set! parent (dedupe (apply append (index-node-references-import-in-this-node parent) target)))))]
+            (debug:print-expression index-node)
+            (append-references-into-ordered-references-for document parent (apply append target)))]
         [else '()])
       (except c
         [else '()]))))
