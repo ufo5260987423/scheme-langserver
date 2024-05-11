@@ -10,8 +10,6 @@
     (scheme-langserver util binary-search)
 
     (scheme-langserver analysis util)
-    (scheme-langserver analysis tokenizer)
-    (scheme-langserver analysis local-expand)
 
     (scheme-langserver analysis dependency file-linkage)
 
@@ -54,6 +52,7 @@
 
     (scheme-langserver analysis identifier rules syntax-case)
     (scheme-langserver analysis identifier rules syntax-rules)
+    (scheme-langserver analysis identifier rules self-defined-syntax)
     (scheme-langserver analysis identifier rules with-syntax)
     (scheme-langserver analysis identifier rules identifier-syntax)
 
@@ -234,13 +233,10 @@
               ; (private-add-rule 
               ;   rules 
               ;   `((,(lambda (root-file-node root-library-node document index-node)
-              ;     (try 
-              ;       (let* ([to-eval (annotation-stripped (index-node-datum/annotations index-node))]
-              ;           [tmp-result (local-expand to-eval document root-library-node file-linkage)]
-              ;           [annotation-list (map (lambda (e) (source-file->annotations e (uri->path (document-uri document)))) tmp-result)])
-              ;         (map (lambda (a) (index-node-parent-set! a index-node)) annotation-list)
-              ;         (step root-file-node root-library-node file-linkage document index-node #f))
-              ;       (except c [else '()]))
+              ;       (self-defined-syntax-process 
+              ;         root-file-node root-library-node document index-node file-linkage
+              ;         (lambda (generated-index-node)
+              ;           (step root-file-node root-library-node file-linkage document generated-index-node #f)))
               ;     )) . ,identifier))
               rules
               ]

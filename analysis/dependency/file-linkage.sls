@@ -142,14 +142,16 @@
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
       [id->path-map (file-linkage-id->path-map linkage)])
-    (let loop ([n 0][m 0][middle 0][result '()])
-      (if (< n rows-count)
-        (if (< m rows-count)
-          (loop n (+ 1 m) (+ middle (matrix-take matrix n m)) result)
-          (loop (+ 1 n) 0 0 (append result (if (zero? middle) `(,n) '()))))
-        (map 
-          (lambda (id) (hashtable-ref id->path-map id #f))
-          result)))))
+    (map 
+      (lambda (id) (hashtable-ref id->path-map id #f))
+      (let loop ([n 0][m 0][middle 0])
+        (if (< n rows-count)
+          (if (< m rows-count)
+            (loop n (+ 1 m) (+ middle (matrix-take matrix n m)))
+            (if (zero? middle) 
+              `(,n . ,(loop (+ 1 n) 0 0)) 
+              (loop (+ 1 n) 0 0)))
+          '())))))
 
 (define (linkage-matrix-from-recursive matrix from-id)
   (let loop ([result `(,from-id)] [iterator `(,from-id)])
@@ -183,14 +185,12 @@
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
       [row-id (hashtable-ref (file-linkage-path->id-map linkage) from-path #f)])
-    (let loop ([column-id 0][result '()])
+    (let loop ([column-id 0])
       (if (< column-id rows-count)
-        (loop 
-          (+ 1 column-id)
-          (if (zero? (matrix-take matrix row-id column-id))
-            result
-            (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f)))))
-        result))))
+        (if (zero? (matrix-take matrix row-id column-id))
+          (loop (+ 1 column-id))
+          `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f) . ,(loop (+ 1 column-id))))
+        '()))))
 
 ; to-path
 ; column-id
@@ -198,14 +198,12 @@
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
       [column-id (hashtable-ref (file-linkage-path->id-map linkage) to-path #f)])
-    (let loop ([row-id 0][result '()])
+    (let loop ([row-id 0])
       (if (< row-id rows-count)
-        (loop 
-          (+ 1 row-id)
-          (if (zero? (matrix-take matrix row-id column-id))
-            result
-            (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f)))))
-        result))))
+        (if (zero? (matrix-take matrix row-id column-id))
+          (loop (+ 1 row-id))
+          `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f) .  ,(loop (+ 1 row-id))))
+        '()))))
 
 (define (file-linkage-take linkage from to)
   (matrix-take 

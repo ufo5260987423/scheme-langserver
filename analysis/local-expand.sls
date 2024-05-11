@@ -32,7 +32,7 @@
 
 (define (private-simplify-gensyms expression)
   (cond 
-    [(gensym? expression) (string->symbol (symbol->string expression))]
+    [(gensym? expression)  (string->symbol (string-append (gensym->unique-string expression) "-" (symbol->string expression)))]
     [(list? expression) (map private-simplify-gensyms expression)]
     [(vector? expression) (vector-map private-simplify-gensyms expression)]
     [(pair? expression) (cons (private-simplify-gensyms (car expression)) (private-simplify-gensyms (cdr expression)))]

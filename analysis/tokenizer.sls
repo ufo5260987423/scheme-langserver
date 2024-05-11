@@ -11,20 +11,21 @@
     ([path] (source-file->annotations (read-string path) path))
     ([source path] (source-file->annotations source path (consume-sps-auxiliary source)))
     ([source path start-position]
-    (let ([port (open-string-input-port source)]
-        [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
-      (set-port-position! port start-position)
-      (let loop ([position start-position][result '()])
-        (try
-          (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
-            (if (= position (port-position port))
-              (filter annotation? result)
-              (loop (port-position port) (append result `(,ann)))))
-          (except e
-            [else 
-              (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
-              (pretty-print path)
-              '()])))))))
+      (let ([port (open-string-input-port source)]
+          [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+        (set-port-position! port start-position)
+        (filter annotation? 
+          (let loop ([position start-position])
+            (try
+              (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
+                (if (= position (port-position port))
+                  '()
+                  `(,ann . ,(loop (port-position port)))))
+              (except e
+                [else 
+                  (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
+                  (pretty-print path)
+                  '()]))))))))
 ;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
 ; consume
 ; #!/usr/bin/env scheme-script

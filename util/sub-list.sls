@@ -1,35 +1,30 @@
 (library (scheme-langserver util sub-list)
-    (export 
-        list-ahead-of
-        list-after
+  (export 
+    list-ahead-of
+    list-after
 
-        find-intersection)
-    (import 
-        (rnrs)
-        (scheme-langserver util contain))
+    find-intersection)
+  (import 
+    (rnrs)
+    (scheme-langserver util contain))
 
 (define (find-intersection list0 list1 equal-predicator)
-    (let loop ([loop-body list0] [result '()])
-        (if (null? loop-body)
-            result
-            (loop (cdr loop-body) 
-                (if (contain? list1 (car loop-body) equal-predicator)
-                    (append result (list (car loop-body)))
-                    result)))))
+  (fold-left 
+    (lambda (l r)
+      (if (contain? list1 r equal-predicator)
+        (append l `(,r))
+        l))
+    '()
+    list0))
 
 (define (list-ahead-of list-instance item)
-    (let loop ([loop-body list-instance] [result '()])
-        (if (null? loop-body)
-            result
-            (if (equal? item (car loop-body))
-                result
-                (loop (cdr loop-body) (append result `(,(car loop-body))))))))
+  (let loop ([loop-body list-instance])
+    (if (null? loop-body)
+      '()
+      (if (equal? item (car loop-body))
+        '()
+          `(,(car loop-body) .  ,(loop (cdr loop-body)))))))
 
 (define (list-after list-instance item)
-    (let loop ([loop-body list-instance] [flag #f] [result '()])
-        (if (null? loop-body)
-            result
-            (if flag
-                (loop (cdr loop-body) flag (append result `(,(car loop-body))))
-                (loop (cdr loop-body) (equal? item (car loop-body)) result)))))
+  (reverse (list-ahead-of  (reverse list-instance) item)))
 )
