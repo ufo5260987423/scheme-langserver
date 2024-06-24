@@ -11,16 +11,17 @@
   (scheme-langserver util io) )
 
 (define (process result batch)
-  `(,@result 
-    ,(string-append 
-      "Content-Length: "
-      (number->string (bytevector-length (string->utf8 s)))
-      "\r\n\r\n" 
+  (let ([s 
       (fold-left 
           (lambda (h t)
               (string-append h "\n" t ))
           (car batch)
-          (cdr batch)))))
+          (cdr batch))])
+    `(,@result 
+      ,(string-append 
+        "Content-Length: "
+        (number->string (bytevector-length (string->utf8 s)))
+        "\r\n\r\n" s))))
 
 (test-begin "log-debug")
 (let loop ([lines (read-lines "~/ready-for-analyse.log")]

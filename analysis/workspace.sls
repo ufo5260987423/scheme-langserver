@@ -70,7 +70,7 @@
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
       [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
       [root-library-node (init-library-node root-file-node)]
-      [file-linkage (init-file-linkage root-library-node)]
+      [file-linkage (init-file-linkage root-file-node root-library-node)]
       [paths (get-init-reference-path file-linkage)]
       [batches (shrink-paths file-linkage paths)])
     (init-references workspace-instance batches)
@@ -92,7 +92,7 @@
                 [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
                 [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
           [root-library-node (init-library-node root-file-node)]
-          [file-linkage (init-file-linkage root-library-node)]
+          [file-linkage (init-file-linkage root-file-node root-library-node)]
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
     ; (pretty-print 'aaa)
@@ -131,7 +131,6 @@
       [index-node-list (document-index-node-list document)])
   ; (pretty-print 'test0)
   ; (pretty-print target-path)
-    (document-ordered-reference-list-set! document (find-meta '(chezscheme)))
     (step root-file-node root-library-node file-linkage document)
     (process-library-identifier-excluded-references document)
     ; (pretty-print 'test1)
@@ -194,7 +193,7 @@
               (if (walk-library library-identifiers root-library-node)
                 (generate-library-node library-identifiers root-library-node target-file-node)))
             new-library-identifiers-list)
-          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-library-node))
+          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node))
 ;;For new dependency
           (map (lambda (document) (document-refreshable?-set! document #t))
             (map (lambda (path) (file-node-document (walk-file root-file-node path))) 
@@ -246,7 +245,7 @@
       uri 
       (read-string path) 
       (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-      '())))
+      (find-meta '(chezscheme)))))
 
 (define init-library-node
   (case-lambda 

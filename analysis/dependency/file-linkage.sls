@@ -41,12 +41,12 @@
     (mutable id->path-map)
     (mutable matrix)))
 
-(define (init-file-linkage root-library-node)
+(define (init-file-linkage root-file-node root-library-node)
   (let ([id->path-map (make-eq-hashtable)]
         [path->id-map (make-hashtable string-hash equal?)])
     (init-maps root-library-node id->path-map path->id-map)
     (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
-      (init-matrix root-library-node root-library-node path->id-map matrix)
+      (init-matrix root-library-node root-file-node root-library-node path->id-map matrix)
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -227,7 +227,7 @@
           (lambda (id) (walk-library id root-library-node))
           (library-import-process index-node))))))
 
-(define (init-matrix current-library-node root-library-node path->id-map matrix)
+(define (init-matrix current-library-node root-file-node root-library-node path->id-map matrix)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
     (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
@@ -238,7 +238,7 @@
                 (document-index-node-list (file-node-document file-node)))))]
           [loaded-files 
             (dedupe (apply append 
-              (map (lambda (index-node) (load-process root-library-node (file-node-document file-node) index-node))
+              (map (lambda (index-node) (load-process root-file-node (file-node-document file-node) index-node))
                 (document-index-node-list (file-node-document file-node)))))])
 
         (map (lambda (imported-library-path) 
@@ -256,6 +256,6 @@
         
         (loop (cdr file-nodes)))))
   (map  (lambda (node) 
-          (init-matrix node root-library-node path->id-map matrix)) 
+          (init-matrix node root-file-node root-library-node path->id-map matrix)) 
     (library-node-children current-library-node)))
 )
