@@ -202,7 +202,7 @@
               ; 'documentHighlightProvider #t
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
-              ; 'documentFormattingProvider #t
+              'documentFormattingProvider #f
               ; 'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
