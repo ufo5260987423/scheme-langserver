@@ -37,6 +37,61 @@
                           (param-loop 
                             (append exclude (parameter-process index-node (car param-identifier-index-node-list) identifier-index-node-grand-parent exclude document)) 
                             (cdr param-identifier-index-node-list)))))]
+                  [((identifier . rest) fuzzy ... ) 
+                    (let* ([omg-index-node (car (index-node-children identifier-index-node-grand-parent))]
+                        [reference (make-identifier-reference 
+                            identifier 
+                            document 
+                            omg-index-node
+                            index-node
+                            '()
+                            'parameter
+                            '()
+                            '())])
+                      (index-node-references-export-to-other-node-set! 
+                        (identifier-reference-index-node reference)
+                        (append 
+                          (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                          `(,reference)))
+                      (append-references-into-ordered-references-for document index-node `(,reference))
+                      (let loop ([rest rest])
+                        (cond 
+                          [(pair? rest) 
+                            (let ([reference (make-identifier-reference 
+                                (car rest)
+                                document 
+                                omg-index-node
+                                index-node
+                                '()
+                                'parameter
+                                '()
+                                '())])
+                              (index-node-references-export-to-other-node-set! 
+                                (identifier-reference-index-node reference)
+                                (append 
+                                  (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                                  `(,reference)))
+                              (append-references-into-ordered-references-for document index-node `(,reference)))
+                            (loop (cdr rest))]
+                          [(not (null? rest)) 
+                            (let ([reference (make-identifier-reference 
+                                rest
+                                document 
+                                omg-index-node
+                                index-node
+                                '()
+                                'parameter
+                                '()
+                                '())])
+                              (index-node-references-export-to-other-node-set! 
+                                (identifier-reference-index-node reference)
+                                (append 
+                                  (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                                  `(,reference)))
+                              (append-references-into-ordered-references-for document index-node `(,reference)))]
+                          [else '()])))
+                          ]
+
                   [else '()]
                 ))))]
         [else '()])

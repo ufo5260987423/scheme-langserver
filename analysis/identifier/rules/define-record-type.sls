@@ -108,19 +108,15 @@
                 get-index-node
                 (sort-identifier-references 
                   (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
+              (append-references-into-ordered-references-for 
+                document
                 target-parent-index-node
-                (sort-identifier-references 
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,get-identifier-reference))))
+                `(,get-identifier-reference ,set-identifier-reference))
 
               (index-node-references-export-to-other-node-set!
                 set-index-node
                 (sort-identifier-references 
-                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,set-identifier-reference)))))]
+                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))))]
           [('mutable (? symbol? name) (? symbol? name-get))
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
@@ -150,18 +146,14 @@
                 get-index-node
                 (sort-identifier-references
                   (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
+              (append-references-into-ordered-references-for 
+                document
                 target-parent-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,get-identifier-reference))))
+                `(,get-identifier-reference ,set-identifier-reference))
 
               (index-node-references-export-to-other-node-set!
                 set-index-node
-                (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (sort-identifier-references 
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,set-identifier-reference)))))]
+                (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))]
           [('mutable (? symbol? name))
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
@@ -191,19 +183,15 @@
                 get-index-node
                 (sort-identifier-references
                   (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
+              (append-references-into-ordered-references-for 
+                document
                 target-parent-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,get-identifier-reference))))
+                `(,get-identifier-reference ,set-identifier-reference))
 
               (index-node-references-export-to-other-node-set!
                 set-index-node
                 (sort-identifier-references
-                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
-                target-parent-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,set-identifier-reference)))))]
+                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))))]
           [('immutable (? symbol? name) (? symbol? name-get))
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
@@ -222,10 +210,10 @@
                 get-index-node
                 (sort-identifier-references
                   (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
+              (append-references-into-ordered-references-for 
+                document
                 target-parent-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,get-identifier-reference)))))]
+                `(,get-identifier-reference)))]
           [('immutable (? symbol? name))
             (let* ([current-children (cdr (index-node-children current-index-node))]
                 [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
@@ -292,25 +280,18 @@
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
+        (append-references-into-ordered-references-for 
+          document
           target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
           (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,constructor-identifier-reference))))
           
         (index-node-references-export-to-other-node-set!
           predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references 
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,predicator-identifier-reference)))))]
+          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
       [((? symbol? name))
         (let* ([children (index-node-children index-node)]
             [name-index-node (car children)]
@@ -349,25 +330,18 @@
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
+        (append-references-into-ordered-references-for 
+          document
           target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
           (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,constructor-identifier-reference))))
           
         (index-node-references-export-to-other-node-set!
           predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,predicator-identifier-reference)))))]
+          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
       [((? symbol? name) (? symbol? constructor))
         (let* ([children (index-node-children index-node)]
             [name-index-node (car children)]
@@ -406,25 +380,18 @@
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
+        (append-references-into-ordered-references-for 
+          document
           target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
           (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,constructor-identifier-reference))))
 
         (index-node-references-export-to-other-node-set!
           predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,predicator-identifier-reference)))))]
+          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
       [((? symbol? name) (? symbol? constructor) (? symbol? predicator))
         (let* ([children (index-node-children index-node)]
             [name-index-node (car children)]
@@ -463,24 +430,17 @@
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
+        (append-references-into-ordered-references-for 
+          document
           target-parent-index-node
-          (append (index-node-references-import-in-this-node target-parent-index-node) `(,name-identifier-reference)))
+          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
           
         (index-node-references-export-to-other-node-set!
           constructor-index-node
           (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,constructor-identifier-reference))))
           
         (index-node-references-export-to-other-node-set!
           predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference)))
-        (index-node-references-import-in-this-node-set!
-          target-parent-index-node
-          (sort-identifier-references
-            (append (index-node-references-import-in-this-node target-parent-index-node) `(,predicator-identifier-reference)))))]
+          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
       [else '()])))
 )

@@ -14,6 +14,7 @@
     make-index-node
     index-node?
     index-node-parent
+    index-node-parent-set!
     index-node-start
     index-node-end
     index-node-datum/annotations
@@ -54,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node
   (fields
-    (immutable parent)
+    (mutable parent)
     (immutable start)
     (immutable end)
     (immutable datum/annotations)

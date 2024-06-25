@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.2.0 It has never occurred to me the next medium version comes so fast. But it is still essential to claim that I just re-construct the identifier catching mechanism with abstract interpreter, which will allow processing identifier claims in self-defined macros. A detailed outline should be referred in [documentation](#detailed-document).
+
 1.1.1: Scheme-langserver now releases type information used in corresponding libraries! Its soundness is still not guaranteed! 
 
 1.1.0: Type inference has been embedded into autocompletion! And it uses a homemade DSL(Domain Specific Language) making type representation and interpreting much easier.  But, I actually do not recommend anyone use this type inference in production because there are many efficiency and soundness problems which I haven't solved. A detailed outline should be referred in documentations.

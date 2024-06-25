@@ -41,12 +41,12 @@
     (mutable id->path-map)
     (mutable matrix)))
 
-(define (init-file-linkage root-library-node)
+(define (init-file-linkage root-file-node root-library-node)
   (let ([id->path-map (make-eq-hashtable)]
         [path->id-map (make-hashtable string-hash equal?)])
     (init-maps root-library-node id->path-map path->id-map)
     (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
-      (init-matrix root-library-node root-library-node path->id-map matrix)
+      (init-matrix root-library-node root-file-node root-library-node path->id-map matrix)
       (make-file-linkage path->id-map id->path-map matrix))))
 
 (define (init-maps current-library-node id->path-map path->id-map)
@@ -118,30 +118,40 @@
       [visited-ids (make-vector node-count)]
       [matrix (file-linkage-matrix linkage)]
       [id->path-map (file-linkage-id->path-map linkage)])
-    (let loop ([from-id 0] [path '()])
-      (if (< (length path) node-count)
-        (if (not (zero? (vector-ref visited-ids from-id)))
-          (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path)
+    (let loop ([from-id 0] 
+        [path '()]
+        [last-path-length 0])
+      (cond 
+        [(or (= (length path) node-count) 
+          (and (= node-count from-id)
+            (= last-path-length (length path))))
+          (map (lambda (id) (hashtable-ref id->path-map id #f)) path)]
+        [(= node-count from-id)
+          (loop 0 path (length path))]
+        [(not (zero? (vector-ref visited-ids from-id)))
+          (loop (+ 1 from-id) path last-path-length)]
+        [else 
           (let ([to-ids (matrix-from matrix from-id)])
             (if (= (length to-ids) (apply + (map (lambda (to-id) (vector-ref visited-ids to-id)) to-ids)))
               (begin
                 (vector-set! visited-ids from-id 1)
-                (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) (append path `(,from-id))))
-              (loop (if (< (+ from-id 1) node-count) (+ 1 from-id) 0) path))))
-        (map (lambda (id) (hashtable-ref id->path-map id #f)) path)))))
+                (loop (+ from-id 1) (append path `(,from-id)) last-path-length))
+              (loop (+ from-id 1) path last-path-length)))]))))
 
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
       [id->path-map (file-linkage-id->path-map linkage)])
-    (let loop ([n 0][m 0][middle 0][result '()])
-      (if (< n rows-count)
-        (if (< m rows-count)
-          (loop n (+ 1 m) (+ middle (matrix-take matrix n m)) result)
-          (loop (+ 1 n) 0 0 (append result (if (zero? middle) `(,n) '()))))
-        (map 
-          (lambda (id) (hashtable-ref id->path-map id #f))
-          result)))))
+    (map 
+      (lambda (id) (hashtable-ref id->path-map id #f))
+      (let loop ([n 0][m 0][middle 0])
+        (if (< n rows-count)
+          (if (< m rows-count)
+            (loop n (+ 1 m) (+ middle (matrix-take matrix n m)))
+            (if (zero? middle) 
+              `(,n . ,(loop (+ 1 n) 0 0)) 
+              (loop (+ 1 n) 0 0)))
+          '())))))
 
 (define (linkage-matrix-from-recursive matrix from-id)
   (let loop ([result `(,from-id)] [iterator `(,from-id)])
@@ -175,14 +185,12 @@
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
       [row-id (hashtable-ref (file-linkage-path->id-map linkage) from-path #f)])
-    (let loop ([column-id 0][result '()])
+    (let loop ([column-id 0])
       (if (< column-id rows-count)
-        (loop 
-          (+ 1 column-id)
-          (if (zero? (matrix-take matrix row-id column-id))
-            result
-            (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f)))))
-        result))))
+        (if (zero? (matrix-take matrix row-id column-id))
+          (loop (+ 1 column-id))
+          `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f) . ,(loop (+ 1 column-id))))
+        '()))))
 
 ; to-path
 ; column-id
@@ -190,14 +198,12 @@
   (let* ([matrix (file-linkage-matrix linkage)]
       [rows-count (sqrt (vector-length matrix))]
       [column-id (hashtable-ref (file-linkage-path->id-map linkage) to-path #f)])
-    (let loop ([row-id 0][result '()])
+    (let loop ([row-id 0])
       (if (< row-id rows-count)
-        (loop 
-          (+ 1 row-id)
-          (if (zero? (matrix-take matrix row-id column-id))
-            result
-            (append result `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f)))))
-        result))))
+        (if (zero? (matrix-take matrix row-id column-id))
+          (loop (+ 1 row-id))
+          `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f) .  ,(loop (+ 1 row-id))))
+        '()))))
 
 (define (file-linkage-take linkage from to)
   (matrix-take 
@@ -221,19 +227,19 @@
           (lambda (id) (walk-library id root-library-node))
           (library-import-process index-node))))))
 
-(define (init-matrix current-library-node root-library-node path->id-map matrix)
+(define (init-matrix current-library-node root-file-node root-library-node path->id-map matrix)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
     (if (pair? file-nodes)
       (let* ([file-node (car file-nodes)]
-            [path (file-node-path file-node)]
-            [imported-libraries 
-              (dedupe (apply append 
-                (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
-                  (document-index-node-list (file-node-document file-node)))))]
-            [loaded-files 
-              (dedupe (apply append 
-                (map (lambda (index-node) (load-process root-library-node (file-node-document file-node) index-node))
-                  (document-index-node-list (file-node-document file-node)))))])
+          [path (file-node-path file-node)]
+          [imported-libraries 
+            (dedupe (apply append 
+              (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
+                (document-index-node-list (file-node-document file-node)))))]
+          [loaded-files 
+            (dedupe (apply append 
+              (map (lambda (index-node) (load-process root-file-node (file-node-document file-node) index-node))
+                (document-index-node-list (file-node-document file-node)))))])
 
         (map (lambda (imported-library-path) 
                 (if (not (null? imported-library-path))
@@ -250,6 +256,6 @@
         
         (loop (cdr file-nodes)))))
   (map  (lambda (node) 
-          (init-matrix node root-library-node path->id-map matrix)) 
+          (init-matrix node root-file-node root-library-node path->id-map matrix)) 
     (library-node-children current-library-node)))
 )

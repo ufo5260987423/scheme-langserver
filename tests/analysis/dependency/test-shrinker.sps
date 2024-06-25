@@ -17,7 +17,7 @@
 (test-begin "test shrink-paths")
     (let* ([root-file-node (init-virtual-file-system (current-directory) '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))]
             [root-library-node (init-library-node root-file-node)]
-            [file-linkage (init-file-linkage root-library-node)]
+            [file-linkage (init-file-linkage root-file-node root-library-node)]
             [paths (get-init-reference-path file-linkage)])
         (test-equal #f (zero? (length (shrink-paths file-linkage paths)))))
 (test-end)

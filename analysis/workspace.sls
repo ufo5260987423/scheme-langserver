@@ -70,7 +70,7 @@
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
       [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
       [root-library-node (init-library-node root-file-node)]
-      [file-linkage (init-file-linkage root-library-node)]
+      [file-linkage (init-file-linkage root-file-node root-library-node)]
       [paths (get-init-reference-path file-linkage)]
       [batches (shrink-paths file-linkage paths)])
     (init-references workspace-instance batches)
@@ -92,11 +92,11 @@
                 [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
                 [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
           [root-library-node (init-library-node root-file-node)]
-          [file-linkage (init-file-linkage root-library-node)]
+          [file-linkage (init-file-linkage root-file-node root-library-node)]
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
     ; (pretty-print 'aaa)
-        (init-references root-file-node root-library-node threaded? batches type-inference?)
+        (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
     ; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
@@ -111,47 +111,43 @@
       (init-references 
         (workspace-file-node workspace-instance)
         (workspace-library-node workspace-instance)
+        (workspace-file-linkage workspace-instance)
         (workspace-threaded? workspace-instance)
         target-paths
         (workspace-type-inference? workspace-instance))]
-    [(root-file-node root-library-node threaded? target-paths type-inference?)
+    [(root-file-node root-library-node file-linkage threaded? target-paths type-inference?)
       (let loop ([paths target-paths])
         (if (not (null? paths))
           (let ([batch (car paths)])
             ((if threaded? threaded-map map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node path type-inference?))
+                (private-init-references root-file-node root-library-node file-linkage path type-inference?))
               batch)
             (loop (cdr paths)))))]))
 
-(define (private-init-references root-file-node root-library-node target-path type-inference?)
-      (let* ([current-file-node (walk-file root-file-node target-path)]
-          [document (file-node-document current-file-node)]
-          [index-node-list (document-index-node-list document)])
-        ; (pretty-print 'test0)
-        ; (pretty-print target-path)
-        (document-reference-list-set! document (find-meta '(chezscheme)))
-        (step root-file-node root-library-node document)
-        (process-library-identifier-excluded-references document)
-        ; (pretty-print 'test1)
-        (if type-inference?
-          (try 
-            (construct-substitution-list-for document)
-            (except c 
-              [(symbol? c) 
-                (pretty-print target-path)
-                (pretty-print 'workspace-error)
-                (pretty-print c)]
-              [(string? c) 
-                (pretty-print target-path)
-                (pretty-print 'workspace-error)
-                (pretty-print c)]
-              [else 
-                (pretty-print target-path)
-                (pretty-print 'workspace-error)
-                (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                '()])))
-        (document-refreshable?-set! document #f)))
+(define (private-init-references root-file-node root-library-node file-linkage target-path type-inference?)
+  (let* ([current-file-node (walk-file root-file-node target-path)]
+      [document (file-node-document current-file-node)]
+      [index-node-list (document-index-node-list document)])
+  ; (pretty-print 'test0)
+  ; (pretty-print target-path)
+    (step root-file-node root-library-node file-linkage document)
+    (process-library-identifier-excluded-references document)
+    ; (pretty-print 'test1)
+    (if type-inference?
+      (try 
+        (construct-substitution-list-for document)
+        (except c 
+          [(or (string? c) (symbol? c))
+            (pretty-print target-path)
+            (pretty-print 'workspace-error)
+            (pretty-print c)]
+          [else 
+            (pretty-print target-path)
+            (pretty-print 'workspace-error)
+            (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
+            '()])))
+    (document-refreshable?-set! document #f)))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]
@@ -159,7 +155,7 @@
       [target-document (file-node-document target-file-node)]
       [root-library-node (workspace-library-node workspace-instance)]
 
-      [old-library-identifiers-list (get-library-identifiers-list target-file-node)]
+      [old-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))]
       [old-library-node-list 
         (filter (lambda (item) (not (null? item)))
           (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
@@ -175,7 +171,7 @@
     (document-text-set! target-document text)
     (document-index-node-list-set! target-document new-index-nodes)
 
-    (let ([new-library-identifiers-list (get-library-identifiers-list target-file-node)])
+    (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])
       (if (not (equal? new-library-identifiers-list old-library-identifiers-list))
         (begin 
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
@@ -197,7 +193,7 @@
               (if (walk-library library-identifiers root-library-node)
                 (generate-library-node library-identifiers root-library-node target-file-node)))
             new-library-identifiers-list)
-          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-library-node))
+          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node))
 ;;For new dependency
           (map (lambda (document) (document-refreshable?-set! document #t))
             (map (lambda (path) (file-node-document (walk-file root-file-node path))) 
@@ -209,7 +205,7 @@
     (let* ([linkage (workspace-file-linkage workspace-instance)]
         [root-file-node (workspace-file-node workspace-instance)]
         [root-library-node (workspace-library-node workspace-instance)]
-        [library-identifiers-list (get-library-identifiers-list target-file-node)]
+        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))]
         [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
         [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
         [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
@@ -249,7 +245,7 @@
       uri 
       (read-string path) 
       (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-      '())))
+      (find-meta '(chezscheme)))))
 
 (define init-library-node
   (case-lambda 
@@ -261,7 +257,7 @@
           (file-node-children file-node))
         (map 
           (lambda (library-identifiers) (generate-library-node library-identifiers root-library-node file-node))
-          (get-library-identifiers-list file-node)))
+          (get-library-identifiers-list (file-node-document file-node))))
       root-library-node]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

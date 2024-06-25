@@ -43,6 +43,11 @@ In practice, these forms would produce [identifier-reference](../../analysis/ide
 | define-top-level-syntax | (define-top-level-syntax symbol obj env)                           |
 | define-top-level-value  | (define-top-level-value symbol obj)                                |
 | define-top-level-value  | (define-top-level-value symbol obj env)                            |
+| top-level-value-set!    | (top-leve-value-set! symbol obj)                                   |
+| top-level-value-set!    | (top-leve-value-set! symbol obj env)                               |
+| top-level-syntax-set!   | (top-leve-syntax-set! symbol obj)                                  |
+| top-level-syntax-set!   | (top-leve-syntax-set! symbol obj env)                              |
+| set!                    | (set! symbol obj env)                                              |
 | fluid-let               | (fluid-let ((var expr) ...) body1 body2 ...)                       |
 | fluid-let-syntax        | (fluid-let-syntax ((keyword expr) ...) form1 form2 ...)            |
 | identifier-syntax       | (identifier-syntax tmpl)                                           |
@@ -63,8 +68,8 @@ In practice, these forms would produce [identifier-reference](../../analysis/ide
 | with-syntax             | (with-syntax ((pattern expr) ...) body1 body2 ...)                 |
 
 NOTE: 
-1.  `define-top-level-syntax`, `define-top-level-value` would bind identifiers to environment instead of library. Detailed catching rule would be programmed when I'm ready. 
-2.  `define-record` is only available to Chez Scheme, so I haven't been writing corresponding rules. A direct problem is whether `define-record` binding can make `define-record-type` binding as its parent.
+1. `define-top-level-syntax`, `define-top-level-value`,`top-level-value-set!`,`top-level-syntax-set!`,`set!` bind top-level identifiers within a sequential process. And I just claim their availability within document scope.
+2. I don't implement `environment` mechanism, because it's actually a dynamic scope.
 
 ### Identifier binding export/import/load in r6rs standard 
 Based on library framework, `export` and `import` would transfer identifier-references across libraries files. Specially, `load` will bind identifiers dynamically, I just try my best to analysis corresponding static code and roughly attach references to caller files.

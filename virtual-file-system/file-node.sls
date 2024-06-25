@@ -13,7 +13,9 @@
     file-node-document
 
     walk-file
-    folder-or-scheme-file?)
+    folder-or-scheme-file?
+    search-end-with 
+    scheme-file?)
   (import (chezscheme)
     (only (srfi :13 strings) string-prefix? string-suffix?))
 
@@ -41,8 +43,20 @@
       '())))
 
 (define (folder-or-scheme-file? path)
-  (if (file-directory? path) 
-    #t
-    (find (lambda (suffix) (string-suffix? suffix path))
-      '( ".sps" ".sls" ".scm" ".ss"))))
+  (or (file-directory? path) (scheme-file? path)))
+
+(define (scheme-file? path)
+  (and 
+    (not (file-directory? path))
+    (not 
+      (equal? #f (find (lambda (suffix) (string-suffix? suffix path))
+      '( ".sps" ".sls" ".scm" ".ss"))))))
+
+(define (search-end-with node suffix)
+  (cond 
+    [(file-node-folder? node) 
+      (apply append (map (lambda (n) (search-end-with n suffix)) (file-node-children node)))]
+    [(string-suffix? suffix (file-node-path node)) 
+      `(,node)]
+    [else '()]))
 )

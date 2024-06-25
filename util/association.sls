@@ -27,8 +27,8 @@
             #f)))
 
 (define (make-alist . args)
-    (let loop ([result '()] [index 0])
+    (let loop ([index 0])
         (if (< index (- (length args) 2))
-            (loop (append result (list (cons (list-ref args index) (list-ref args (+ 1 index))))) (+ 2 index))
-            (append result (list (cons (list-ref args index) (list-ref args (+ 1 index))))))))
+            `(,(cons (list-ref args index) (list-ref args (+ 1 index))) . ,(loop (+ 2 index)))
+            (list (cons (list-ref args index) (list-ref args (+ 1 index)))))))
 )

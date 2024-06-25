@@ -17,10 +17,12 @@ I do this open source work just in my spare time and I can contribute many splen
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 ## Recent Status
-I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 or 2 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
+Recently I just submitted applications to some open source funds. 
+
+I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ### Release 
-1.2.0 It has never occurred to me the next medium version comes so fast. But it is still essential to claim that I just re-construct the identifier catching mechanism with abstract interpreter, which will allow processing identifier claims in self-defined macros. A detailed outline should be referred in [documentation](#detailed-document).
+1.2.1 I just fixed some bugs processing SS/SCM codes. 
 
 Previous releases please refer to [this file](./doc/release-log.md).
 ## Setup
@@ -216,6 +218,14 @@ bash test.sh
 ```
 >NOTE
 It's hard to do test with threaded environment. So, current tests focus on single thread.
+
+## Use Scheme-langserver for Other Purpose
+### Script-Fu in GIMP
+Script-Fu is based on an interpreted language called Scheme, and works by using functions that interact with GIMP's internal functions. Taking [this page](https://dalelane.co.uk/blog/?p=628)'s script as an example, you can apply scheme-langserver with script file with "SCM" extension.
+
+### Others
+
+Well, I'm also interested in [OMN (Opusmodus Notation)](https://opusmodus.com/) and AutoLisp. But I still have many things to do.
 
 ## Code Count
 ```bash
