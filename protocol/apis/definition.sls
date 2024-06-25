@@ -42,7 +42,7 @@
           (apply append 
             (map 
               root-ancestor
-              (if (null? prefix)
+              (if (or (not (symbol? prefix)) (null? prefix))
                 (find-available-references-for document target-index-node)
                 (find-available-references-for document target-index-node prefix)))))))))
 

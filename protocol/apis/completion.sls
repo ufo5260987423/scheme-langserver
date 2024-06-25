@@ -42,7 +42,10 @@
             ""))]
       [whole-list
         (filter 
-          (lambda (candidate-reference) (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))) 
+          (lambda (candidate-reference) 
+            (if (symbol? prefix)
+              (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference)))
+              #f)) 
           (find-available-references-for document target-index-node))]
       [type-inference? (workspace-type-inference? workspace)])
     ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
