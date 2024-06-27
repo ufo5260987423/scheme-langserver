@@ -22,7 +22,7 @@ Recently I just submitted applications to some open source funds.
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ### Release 
-1.2.1 I just fixed some bugs processing SS/SCM codes. 
+1.2.2 I just fixed some bugs processing my own other projects. 
 
 Previous releases please refer to [this file](./doc/release-log.md).
 ## Setup

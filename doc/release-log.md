@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.2.1 I just fixed some bugs processing SS/SCM codes. 
+
 1.2.0 It has never occurred to me the next medium version comes so fast. But it is still essential to claim that I just re-construct the identifier catching mechanism with abstract interpreter, which will allow processing identifier claims in self-defined macros. A detailed outline should be referred in [documentation](#detailed-document).
 
 1.1.1: Scheme-langserver now releases type information used in corresponding libraries! Its soundness is still not guaranteed! 
