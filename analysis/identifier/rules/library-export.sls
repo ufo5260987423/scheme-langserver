@@ -49,7 +49,7 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [('rename (internal-names external-names) **1) 
+      [('rename ((? symbol? internal-names) (? symbol? external-names)) **1) 
         (fold-left
           (lambda (result current-item)
             (let* ([current-children (index-node-children current-item)]
@@ -81,7 +81,7 @@
               `(,@result ,external-index-node)))
           '()
           (cdr (index-node-children index-node)))]
-      [identifier
+      [(? symbol? identifier)
         (let* ([references (find-available-references-for document index-node identifier)]
             [reference-count (length references)])
           (index-node-references-export-to-other-node-set! 
