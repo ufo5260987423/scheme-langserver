@@ -133,7 +133,7 @@
                   (lambda (reference) 
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
-      [('except (library-identifier **1) identifier **1) 
+      [('except (library-identifier **1) (? symbol? identifier) **1) 
         (let ([tmp 
               (filter
                 (lambda (reference) 
@@ -177,7 +177,7 @@
                   (lambda (reference) 
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
-      [('prefix (library-identifier **1) prefix-id)
+      [('prefix (library-identifier **1) (? symbol? prefix-id))
         (let* ([imported-references (import-references root-library-node library-identifier)]
             [prefixed-references 
               (map 
@@ -194,7 +194,7 @@
                 imported-references)])
           ;;todo: add something to export-to-other-node for current-index-node?
           (append-references-into-ordered-references-for document grand-parent-index-node prefixed-references))]
-      [('rename (library-identifier **1) (external-name internal-name) **1 ) 
+      [('rename (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -250,7 +250,7 @@
                   (lambda (reference) 
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
-      [('alias (library-identifier **1) (external-name internal-name) **1 ) 
+      [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -375,7 +375,7 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [('rename (internal-names external-names) **1) 
+      [('rename ((? symbol? internal-names) (? symbol? external-names)) **1) 
         (let loop ([exportion-nodes (cdr (index-node-children index-node))]
             [result '()])
           (if (null? exportion-nodes)
@@ -383,6 +383,6 @@
             (loop 
               (cdr exportion-nodes)
               (append result (index-node-references-export-to-other-node (cadr (index-node-children (car exportion-nodes))))))))]
-      [identifier (index-node-references-export-to-other-node index-node)]
+      [(? symbol? identifier) (index-node-references-export-to-other-node index-node)]
       [else '()])))
 )
