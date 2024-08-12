@@ -8,21 +8,21 @@ Implementing support like autocomplete, goto definition, or documentation on hov
 
 A primary cause is, for scheme and other lisp dialects, their abundant data sets and flexible control structures raise program analysis a big challenge. Especially the dynamic type system and macro, it seems like that scheme is mainly used for genius and meta/macro programming. But I say no. Scheme can make many interesting things if a better programming environment is provided. And now I'll work on this.
 
-This package is a language server protocol implementation helping scheme programming. It provides completion, definition and type inference. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme. 
+This package is a language server protocol implementation helping scheme programming. It provides completion, definition and type inference. These functionalities are established on static code analysis with [r6rs standard](http://www.r6rs.org/) and some obvious rules for unaccomplished codes. This package itself and related libraries are published or going to be published with [Akku](https://akkuscm.org/), which is a package manager for Scheme.
 
 This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5. A detailed test on version 10.0.0 will be done after upgrading my laptop OS to a newer version.
 
-I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can click [this patreon page](https://www.patreon.com/PoorProgrammer/membership) or [爱发电](https://afdian.net/a/ufo5260987423) to donate monthly, or just donate 10 USD just once time with the following paypal link. 
+I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can click [this patreon page](https://www.patreon.com/PoorProgrammer/membership) or [爱发电](https://afdian.net/a/ufo5260987423) to donate monthly, or just donate 10 USD just once time with the following paypal link.
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
 ## Recent Status
-Recently I just submitted applications to some open source funds. 
+Recently I just submitted applications to some open source funds.
 
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
-### Release 
-1.2.2 I just fixed some bugs processing my own other projects. 
+### Release
+1.2.2 I just fixed some bugs processing my own other projects.
 
 Previous releases please refer to [this file](./doc/release-log.md).
 ## Setup
@@ -45,13 +45,26 @@ bash .akku/env
 compile-chez-program run.ss
 ./run path-to-logfile
 ```
+
+#### For NixOS
+##### Build
+```bash
+nix develop -c akku install
+nix build
+./result/bin/scheme-langserver path-to-logfile
+```
+##### Run
+```bash
+nix run
+```
+
 #### TODO: for Windows
-The `run` file is also executable in Windows WSL environment. 
+The `run` file is also executable in Windows WSL environment.
 
 As for native on Windows, scheme-langserver requires [AKKU](https://akkuscm.org/) to be native on Windows first now. An essential barrier is the [srfi](https://srfi.schemers.org/), whose library path can't be handled in Windows7. Further discussion is on [tihs page](https://gitlab.com/akkuscm/akku/-/issues/70).
 
 ### Installation for [LunarVim(1.3)](https://www.lunarvim.org/)
-I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
+I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/).
 
 But now, above configuration haven't been tested. So, manual installation is still needed: for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), after manually building from above step [Building](#building), an executable file `run` would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
@@ -118,7 +131,7 @@ Scheme-langserver has facilitated many higher level functions, but they shouldn'
 local util = require 'lspconfig.util'
 local bin_name = '{path-to-run}'
 
---the first 'enable' is for multi-thread mechanism. 
+--the first 'enable' is for multi-thread mechanism.
 local cmd = { bin_name ,'{path-to-log}','enable'}
 -- the second 'enable' is for type inference.
 -- local cmd = { bin_name ,'{path-to-log}','disable', 'enable'}
@@ -154,11 +167,11 @@ https://github.com/ufo5260987423/scheme-langserver
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
-8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
+8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding.
 9. Cross-platform parallel indexing.
 10. Self-made source code annotator to be compatible with .sps files.
 11. Peephole optimization for API requests.
-12. Type inference with a homemade DSL interpreter(I'm very proud of it!). And now it has been embedded into the auto-completion. As the following figure indicated, the "length-b" and "length-a" having "integer?" type are in the front of those recommended options because they can match the parameter type requiring from "<=". 
+12. Type inference with a homemade DSL interpreter(I'm very proud of it!). And now it has been embedded into the auto-completion. As the following figure indicated, the "length-b" and "length-a" having "integer?" type are in the front of those recommended options because they can match the parameter type requiring from "<=".
 ![Autocompletion with type inference](./doc/figure/auto-completion-with-type-inference.png "Autocompletion with type inference")
 A test in can prove this result, just run `scheme --script tests/protocol/apis/test-completion.sps` and the log file `scheme-langserver.log` would contain results like this:
 ```bash
@@ -169,7 +182,7 @@ send-message
 13. Abstract interpreter for identifier catching among different file extensions like scm, ss, sps, sls and sld.
 
 ### TODOs
-14. Renaming. 
+14. Renaming.
 15. Fully compatible with [r6rs standard](http://www.r6rs.org/).
 16. Macro expanding.
 17. Code eval.
@@ -177,7 +190,7 @@ send-message
 19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
 20. Extract expression/statements into a procedure()
 
-## TODO:Contributing 
+## TODO:Contributing
 
 ## Debug
 
@@ -206,7 +219,7 @@ https://github.com/ufo5260987423/scheme-langserver
   },
 }
 ```
-### Recurring with Log 
+### Recurring with Log
 With above [output log](#output-log), you may use `tests/log-debug.sps` recurring bugs:
 1. Rename `{path-to-log}`(usually `~/scheme-langserver.log`) as `~/ready-for-analyse.log`;
 2. run `scheme --script tests/log-debug.sps`. If you want to re-produce the multi-thread environment, it would also be available to run `scheme --script tests/log-debug.sps`.
