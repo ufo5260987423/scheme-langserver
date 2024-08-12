@@ -1,0 +1,1 @@
+../../../../../../analysis/identifier/rules/define-record-type.sls

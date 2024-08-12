@@ -1,0 +1,1 @@
+../../../../../analysis/dependency/shrinker.sls

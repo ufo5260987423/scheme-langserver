@@ -1,0 +1,10 @@
+#!/usr/bin/env scheme-script
+;; Copied by Akku from ".akku/src/arew-json/bin/arew-json" !#
+#!r6rs
+;; -*- mode: scheme -*-
+(import (chezscheme))
+(import (arew json))
+
+
+(write (json-read))
+(flush-output-port (current-output-port))
