@@ -25,7 +25,6 @@ jobs:
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss
                      mv run build/run || exit 1
-                     echo Build Success
                      '
 
       - name: Release
