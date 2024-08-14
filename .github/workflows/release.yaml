@@ -1,0 +1,26 @@
+name: Release # stub from https://github.com/softprops/action-gh-release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare release assets
+        run: |
+          cd .. \
+          && tar czf "Source code.zip" scheme-langserver \
+          && cd scheme-langserver
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          repo: konst-aa/scheme-langserver
+          files: |
+            "Source code.zip"
