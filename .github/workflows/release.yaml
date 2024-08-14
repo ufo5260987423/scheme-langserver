@@ -1,4 +1,5 @@
-name: Release # stub from https://github.com/softprops/action-gh-release
+# stub from https://github.com/softprops/action-gh-release
+name: Release 
 on:
   push:
     tags:
@@ -23,7 +24,7 @@ jobs:
             $(docker build -q .) \
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss
-                     mv run buil/run || exit 1
+                     mv run build/run || exit 1
                      echo Build Success
                      '
 
