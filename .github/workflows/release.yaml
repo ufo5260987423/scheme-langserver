@@ -12,15 +12,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare release assets
+      - name: Build image
+        run: docker build .
+
+      - name: Compile
         run: |
-          cd .. \
-          && tar czf "Source code.zip" scheme-langserver \
-          && cd scheme-langserver
+          mkdir build \
+          && docker run \
+            -v ./build:/root/scheme-langserver/build/ \
+            $(docker build -q .) \
+            bash -c 'source .akku/bin/activate
+                     compile-chez-program run.ss
+                     mv run buil/run || exit 1
+                     echo Build Success
+                     '
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           repo: konst-aa/scheme-langserver
-          files: |
-            "Source code.zip"
+          files: run
+
