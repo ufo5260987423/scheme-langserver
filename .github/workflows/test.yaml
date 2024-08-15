@@ -5,10 +5,16 @@ on:
     branches: main
 
 jobs:
-   build-and-deploy:
+   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build and test
-      run: docker run $(docker build -q .)
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build image
+      run: docker build .
+
+    - name: Test
+      run: docker run $(docker build -q .) ./test.sh
+

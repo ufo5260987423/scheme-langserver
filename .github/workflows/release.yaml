@@ -1,0 +1,35 @@
+# stub from https://github.com/softprops/action-gh-release
+name: Release 
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build .
+
+      - name: Compile
+        run: |
+          mkdir build \
+          && docker run \
+            -v ./build:/root/scheme-langserver/build/ \
+            $(docker build -q .) \
+            bash -c 'source .akku/bin/activate
+                     compile-chez-program run.ss
+                     mv run build/run || exit 1
+                     '
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          repo: konst-aa/scheme-langserver
+          files: build/run
+
