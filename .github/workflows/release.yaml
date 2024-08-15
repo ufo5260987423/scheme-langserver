@@ -30,6 +30,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          repo: konst-aa/scheme-langserver
+          repo: ufo5260987423/scheme-langserver
           files: build/run
 
