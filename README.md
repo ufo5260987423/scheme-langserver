@@ -26,7 +26,9 @@ I'll keep fixing bugs, profiling the code, and collecting information for my gia
 
 Previous releases please refer to [this file](./doc/release-log.md).
 ## Setup
+
 ### Building
+
 #### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
@@ -45,6 +47,12 @@ bash .akku/env
 compile-chez-program run.ss
 ./run path-to-logfile
 ```
+
+#### Installation for Nixos
+You may search scheme-langserver [here](https://search.nixos.org/packages?channel=unstable&show=akkuPackages.scheme-langserver&from=0&size=50&sort=relevance&type=packages&query=akkuPackages.scheme-langserver). And after installation, the executable target file is `scheme-langserver`, unlike the `{path-to}/run` in other configurations.
+
+And, if you want to manually installing scheme-langserver on Nixos, before you follow [above steps](#for-linux)， you need to install chez-exe follow [my own solution](https://github.com/ufo5260987423/chez-exe), which hasn't been accepted by origin owner.
+
 #### TODO: for Windows
 The `run` file is also executable in Windows WSL environment. 
 
