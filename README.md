@@ -32,7 +32,7 @@ Previous releases please refer to [this file](./doc/release-log.md).
 #### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
 >NOTE
-Scheme-langserver's muti-threaded feature requires [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. For Chez Scheme version after 10.0.0, there're some differents now.
+Scheme-langserver's muti-threaded feature requires [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. For Chez Scheme version after 10.0.0, there're some differences now.
 2. [Akku](https://akkuscm.org/)；
 3. [chez-exe](https://github.com/gwatt/chez-exe)；
 >NOTE
