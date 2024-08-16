@@ -27,7 +27,7 @@ I'll keep fixing bugs, profiling the code, and collecting information for my gia
 Previous releases please refer to [this file](./doc/release-log.md).
 ## Setup
 
-### Building
+### Building&Running
 
 #### Pre-require
 1. [Chez Scheme](https://cisco.github.io/ChezScheme/);
@@ -35,10 +35,11 @@ Previous releases please refer to [this file](./doc/release-log.md).
 Scheme-langserver's muti-threaded feature requires [Chez Scheme](https://cisco.github.io/ChezScheme/) to have been compiled with the --threads option. For Chez Scheme version after 10.0.0, there're some differences now.
 2. [Akku](https://akkuscm.org/)；
 3. [chez-exe](https://github.com/gwatt/chez-exe)；
->NOTE
+
+>NOTE:
 For Chez Scheme's old version (before 10.0.0), [chez-exe](https://github.com/gwatt/chez-exe) requires boot files and kernel files of [Chez Scheme](https://cisco.github.io/ChezScheme/). So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath /path-to-ChezScheme/{machine-type}/boot/{machine-type}`;
 
->NOTE
+>NOTE:
 For Chez Scheme 10.0.0, you may need [my own chez-exe](https://github.com/ufo5260987423/chez-exe). The differences you may refer to [this pull request](https://github.com/gwatt/chez-exe/pull/20). And the compile command is altered as `scheme --script gen-config.ss --bootpath /path-to-ChezScheme/lib/csv${version}/{machine-type}`
 
 #### For Linux
