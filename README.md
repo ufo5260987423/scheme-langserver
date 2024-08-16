@@ -51,7 +51,7 @@ compile-chez-program run.ss
 #### For Nixos
 You may search scheme-langserver [here](https://search.nixos.org/packages?channel=unstable&show=akkuPackages.scheme-langserver&from=0&size=50&sort=relevance&type=packages&query=akkuPackages.scheme-langserver), it will directly install. And after installation, the executable target file is `scheme-langserver`, unlike the `{path-to}/run` in other configurations.
 
-And, if you want to manually compile scheme-langserver on Nixos, before you follow [above steps](#for-linux)， you need to install chez-exe follow [my own solution](https://github.com/ufo5260987423/chez-exe), which hasn't been accepted by origin owner.
+And, if you want to manually compile scheme-langserver on Nixos, before you follow [above steps](#for-linux)， you need to install chez-exe follow [my own solution](https://github.com/gwatt/chez-exe/pull/20), which hasn't been accepted by origin owner.
 
 #### TODO: for Windows
 The `run` file is also executable in Windows WSL environment. 
