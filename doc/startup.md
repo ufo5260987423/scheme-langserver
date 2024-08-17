@@ -12,6 +12,8 @@ If you're using latest Nixos or relative operating systems, their default Chez S
 
 If you're using Windows, you may do same process in WSL. And please note that, we've not fully testd our work with Chez Scheme's windows version.
 
+>NOTE: I don't recommend install with apt or yum or any others, because we can not confirm they fully provide all we need. 
+
 ### [AKKU](https://akkuscm.org/)
 
 Akku is a language package manager for Scheme. It grabs hold of code and shakes it vigorously until it behaves properly. By default, akku is based on [guile](https://www.gnu.org/software/guile/), if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
