@@ -17,7 +17,7 @@ I do this open source work just in my spare time and I can contribute many splen
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/paypalme/ufo5260987423/10)
 
-## Compilation & Configuration is [HERE](./doc/startup.md)
+## Compilation , Intallation & Configuration is [HERE](./doc/startup.md)
 
 ## Recent Status
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
