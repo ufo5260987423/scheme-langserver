@@ -14,6 +14,15 @@ If you're using Windows, you may do same process in WSL. And please note that, w
 
 >NOTE: I don't recommend install with apt or yum or any others, because we can not confirm they fully provide all we need. 
 
+To install Chez Scheme 10.0.0 (only a reference):
+```bash
+wget https://github.com/cisco/ChezScheme/releases/download/v10.0.0/csv10.0.0.tar.gz
+tar -xf csv10.0.0.tar.gz && cd csv10.0.0
+# Install dependencies: `libncurses5-dev`
+./configure --threads --kernelobj --disable-x11
+make && sudo make install
+```
+
 ### [AKKU](https://akkuscm.org/)
 
 Akku is a language package manager for Scheme. It grabs hold of code and shakes it vigorously until it behaves properly. By default, akku is based on [guile](https://www.gnu.org/software/guile/), if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
@@ -57,6 +66,9 @@ More details you may refer [this page](https://github.com/gwatt/chez-exe/pull/20
 In addition, for Windows, you can not install chez-exe without WSL.
 
 ## Build & Compile Executable File in Linux
+
+We assume that you have already install the above requirements.
+
 The following will produce an executable binary file `run`:
 ```bash
 git clone https://github.com/ufo5260987423/scheme-langserver
@@ -65,6 +77,34 @@ akku install
 bash .akku/env
 compile-chez-program run.ss
 ```
+
+### For WSL
+
+In WSL, please install the original `compile-chez-program` for an unknown exception.
+
+```bash
+git clone https://github.com/ufo5260987423/scheme-langserver
+cd scheme-langserver
+~/local/bin/akku install
+bash .akku/env
+compile-chez-program run.ss
+```
+
+If `compile-chez-program` fails with such a message:
+```text
+compiling run.ss with output to run.so
+/usr/sbin/ld: cannot find /usr/local/lib/petite-chez.a: No such file or directory
+collect2: error: ld returned 1 exit status
+run
+```
+Please try to look for `petite-chez.a` and copy it to the `/usr/local/lib` directory.
+
+For another message:
+```text
+cc: fatal error: no input files
+compilation terminated.
+```
+Please check that you install the original one :(
 
 ### For Nixos
 You may directly search scheme-langserver [here](https://search.nixos.org/packages?channel=unstable&show=akkuPackages.scheme-langserver&from=0&size=50&sort=relevance&type=packages&query=akkuPackages.scheme-langserver), it will directly install an executable binary file. And this file is softly linked in bash $PATH as `scheme-langserver`.
