@@ -1,20 +1,13 @@
 ## Pre-require
 
+If you are using latest Nixos, you may skip this process.
+
+If you are using Windows, you may do following process in WSL.
+
 ### [Chez Scheme](https://cisco.github.io/ChezScheme/);
 
-Chez Scheme is both a programming language and an implementation of that language, with supporting tools and documentation. And it is scheme-langserver's base and target.
+Chez Scheme is both a programming language and an implementation of that language, with supporting tools and documentation. And it is scheme-langserver's base and target. You may install as following:
 
-A main barrier is that Chez Scheme recently (in 2024) released 10.0.0 version, which has changed a lot building process comparing with previous versions. You may find detailed building documentation [here](https://github.com/cisco/ChezScheme/blob/main/BUILDING).
-
-Scheme-langserver's muti-threaded feature requires Chez Scheme enables --threads option. And it's basically default configuration for Chez Scheme now.
-
-If you're using latest Nixos or relative operating systems, their default Chez Scheme version is 10.0.0.
-
-If you're using Windows, you may do same process in WSL. And please note that, we've not fully testd our work with Chez Scheme's windows version.
-
->NOTE: I don't recommend install with apt or yum or any others, because we can not confirm they fully provide all we need. 
-
-To install Chez Scheme 10.0.0 (only a reference):
 ```bash
 wget https://github.com/cisco/ChezScheme/releases/download/v10.0.0/csv10.0.0.tar.gz
 tar -xf csv10.0.0.tar.gz && cd csv10.0.0
@@ -23,51 +16,25 @@ tar -xf csv10.0.0.tar.gz && cd csv10.0.0
 make && sudo make install
 ```
 
+I don't recommend install with apt or yum or any others, because we can not confirm what version and configuration provided by them and Chez Scheme 10.0.0 is much different from previous on Build & Compile process. For example, comparing with previous version, Chez Scheme 10.0.0 makes --threads a default option, which is necessary for scheme-langserver's muti-threaded feature. 
+
 ### [AKKU](https://akkuscm.org/)
 
 Akku is a language package manager for Scheme. It grabs hold of code and shakes it vigorously until it behaves properly. By default, akku is based on [guile](https://www.gnu.org/software/guile/), if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
 
-If you're using latest Nixos or relative operating systems, you may directly use AKKU with nix package manager.
+### [chez-exe](https://github.com/gwatt/chez-exe)
 
-As for native on Windows, scheme-langserver requires [AKKU](https://akkuscm.org/) to be native on Windows first now. An essential barrier is the [srfi](https://srfi.schemers.org/), whose library path can't be handled in Windows7. Further discussion is on [tihs page](https://gitlab.com/akkuscm/akku/-/issues/70).
-
-### [chez-exe](https://github.com/gwatt/chez-exe)；
-
-The goal of this project is to produce standalone executables that are a complete ChezScheme system and contain a scheme program. This works by embedding the ChezScheme bootfiles and a scheme program into the executable. However, as we mentioned [above](#chez-scheme), Chez Scheme 10.0.0 has changed a lot, and default configuration don't work now.
+The goal of this project is to produce standalone executables that are a complete Chez Scheme system and contain a scheme program. This works by embedding Chez Scheme bootfiles and a scheme program into the executable. However, as we mentioned [above](#chez-scheme), Chez Scheme 10.0.0 has changed a lot, and default configuration don't work now.
 
 For Chez Scheme's old version (before 10.0.0), chez-exe requires boot files and kernel files. So, the compile command maybe like follows:`scheme --script gen-config.ss --bootpath {path-to-ChezScheme}/{machine-type}/boot/{machine-type}`;
 
 For Chez Scheme 10.0.0, you may need [my own chez-exe](https://github.com/ufo5260987423/chez-exe). The differences you may refer to [this pull request](https://github.com/gwatt/chez-exe/pull/20). And the compile command is altered to `scheme --script gen-config.ss --bootpath {path-to-ChezScheme}/lib/csv${version}/{machine-type}`
 
-If you're using latest Nixos or relative operating systems, you may directly use chez-exe with my own package as following:
-```nix
-{
-  inputs = {
-    #before merge
-    chez-exe.url = "github:ufo5260987423/chez-exe";
-    #after merge
-    #chez-exe.url = "github:gwatt/chez-exe";
-  };
-  outputs = {
-    modules = [
-       ({
-         nixpkgs.overlays = [
-            (final : prev : {chez-exe = inputs.chez-exe.packages."{prev.system}"};)
-           ];
-       })
-   ...
-   ]
-  };
-}
-```
+## Build & Compile Executable File 
 
-More details you may refer [this page](https://github.com/gwatt/chez-exe/pull/20).
+### For Linux
 
-In addition, for Windows, you can not install chez-exe without WSL.
-
-## Build & Compile Executable File in Linux
-
-We assume that you have already install the above requirements.
+We assume that you have already installed the above requirements.
 
 The following will produce an executable binary file `run`:
 ```bash
@@ -80,33 +47,27 @@ compile-chez-program run.ss
 
 ### For WSL
 
-In WSL, please install the original `compile-chez-program` for an unknown exception.
+In WSL, although it's kind of another Linux, `compile-chez-program` might fail with such a message:
 
-```bash
-git clone https://github.com/ufo5260987423/scheme-langserver
-cd scheme-langserver
-~/local/bin/akku install
-bash .akku/env
-compile-chez-program run.ss
-```
-
-If `compile-chez-program` fails with such a message:
 ```text
 compiling run.ss with output to run.so
 /usr/sbin/ld: cannot find /usr/local/lib/petite-chez.a: No such file or directory
 collect2: error: ld returned 1 exit status
 run
 ```
+
 Please try to look for `petite-chez.a` and copy it to the `/usr/local/lib` directory.
 
-For another message:
+For another exception:
 ```text
 cc: fatal error: no input files
 compilation terminated.
 ```
-Please check that you install the original one :(
+
+Please check if you installed the original one :(
 
 ### For Nixos
+
 You may directly search scheme-langserver [here](https://search.nixos.org/packages?channel=unstable&show=akkuPackages.scheme-langserver&from=0&size=50&sort=relevance&type=packages&query=akkuPackages.scheme-langserver), it will directly install an executable binary file. And this file is softly linked in bash $PATH as `scheme-langserver`.
 
 ## Configuration for Editors
@@ -186,3 +147,4 @@ language-servers = [ {path-to-run}]
 
 
 ### TODO: [VScode](https://code.visualstudio.com/)
+VScode plugin is on its way.
