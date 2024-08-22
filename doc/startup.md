@@ -14,11 +14,12 @@ If you're using Windows, you may do same process in WSL. And please note that, w
 
 >NOTE: I don't recommend install with apt or yum or any others, because we can not confirm they fully provide all we need. 
 
-To install Chez Scheme 10.0.0:
+To install Chez Scheme 10.0.0 (only a reference):
 ```bash
 wget https://github.com/cisco/ChezScheme/releases/download/v10.0.0/csv10.0.0.tar.gz
 tar -xf csv10.0.0.tar.gz && cd csv10.0.0
-./configure --threads --kernelobj
+# Install dependencies: `libncurses5-dev`
+./configure --threads --kernelobj --disable-x11
 make && sudo make install
 ```
 
