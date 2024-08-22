@@ -71,36 +71,36 @@ You may directly search scheme-langserver [here](https://search.nixos.org/packag
 
 ## Configuration for Editors
 
-### [LunarVim(1.3)](https://www.lunarvim.org/)
+### [LunarVim(1.4)](https://www.lunarvim.org/)
+Personally, I use [LunarVim(1.4)](https://www.lunarvim.org/) as an out-of-box IDE layer. So, you may configure `~/.config/lvim/config.lua` and add following codes like:
 
-I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). In that case, you can get this implementation automatically with [LunarVim](https://www.lunarvim.org/). 
-
-But now, above configuration haven't been tested. So, manual installation is still needed: for installed plugin [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/), after manually building from above step [Building](#building), an executable file `run` would be available at `{path-to-run}`. Then, create file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
 ```lua
-local util = require 'lspconfig.util'
-local bin_name = '{path-to-run}'
-local cmd = { bin_name }
+vim.api.nvim_create_autocmd("BufRead", {
+  pattern = {"*.sld", "*.sls"},
+  command = "setfiletype scheme",
+})
 
-return {
-  default_config = {
-    cmd = cmd,
-    filetypes = { 'scheme' },
-    root_dir = util.find_git_ancestor,
-    single_file_support = true,
-  },
-  docs = {
-    description = [[
-https://github.com/ufo5260987423/scheme-langserver
-`scheme-langserver`, a language server protocol implementation for scheme
-]]   ,
-  },
-}
-```
+vim.api.nvim_create_autocmd("BufNewFile", {
+  pattern = {"*.sld", "*.sls"},
+  command = "setfiletype scheme",
+})
 
-Then configure your `~/.config/lvim/config.lua` and add following codes like:
-```lua
-vim.cmd [[ au BufRead,BufNewFile *.sld set filetype=scheme ]]
-vim.cmd [[ au BufRead,BufNewFile *.sls set filetype=scheme ]]
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'scheme',
+  callback = function(args)
+    vim.lsp.start({
+      name = 'scheme-langserver',
+      cmd = {'{path-to-run}',
+        '~/scheme-langserver.log',
+        --enable multi-thread
+        'enable',
+        --disable type inference, because it's on very early stage.
+        'diable',
+      },
+      root_dir = vim.fs.root(args.buf, {'.gitignore','AKKU.manifest'}),
+    })
+  end
+})
 
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('UserLspConfig', {}),
@@ -118,10 +118,6 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end,
 })
 
--- local capabilities = vim.lsp.protocol.make_client_capabilities()
--- capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-local lspconfig = require('lspconfig')
-lspconfig.scheme_langserver.setup {}
 lvim.builtin.cmp.enabled()
 lvim.builtin.cmp.sources = {
   { name = 'nvim_lsp' },
@@ -129,38 +125,7 @@ lvim.builtin.cmp.sources = {
   { name = 'buffer' },
 }
 ```
->NOTE: detailed configuration for `lvim.builtin.cmp.sources` and `LspAttach` can refer [this page](https://github.com/LunarVim/LunarVim/blob/b1c72541549d042487510ad3e676de7af046d410/lua/lvim/core/cmp.lua#L133) and [this page](https://github.com/neovim/nvim-lspconfig).
-
-### Enable multi-thread or type-inference
->NOTE: for previous versions, they have a configuration for SCM/SS identifier catching. But in recent versions I implement abstract interpreter, so that we do not need that configuration.
-
-Scheme-langserver has facilitated many higher level functions, but they shouldn't be fully convinced and tested. If you want to have a try, just step [above instructions](#installation-for-lunarvim) and rewrite file `~/.local/share/lunarvim/site/pack/lazy/opt/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
-
-```lua
-local util = require 'lspconfig.util'
-local bin_name = '{path-to-run}'
-
---the first 'enable' is for multi-thread mechanism. 
-local cmd = { bin_name ,'{path-to-log}','enable'}
--- the second 'enable' is for type inference.
--- local cmd = { bin_name ,'{path-to-log}','disable', 'enable'}
-
-return {
-  default_config = {
-    cmd = cmd,
-    filetypes = { 'scheme' },
-    root_dir = util.find_git_ancestor,
-    single_file_support = true,
-  },
-  docs = {
-    description = [[
-https://github.com/ufo5260987423/scheme-langserver
-`scheme-langserver`, a language server protocol implementation for scheme
-]]   ,
-  },
-}
-```
->NOTE: the type inference is in its very early stage. Even for small code file it may take much more time than your expectation.
+>NOTE: I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). However, there're many corner case and code style work and I finally decided to concentrate on LSP. If anyone want to help, you may raise an issue.
 
 ### Some Other Editors
 
