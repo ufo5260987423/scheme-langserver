@@ -28,7 +28,7 @@ I don't recommend install with apt or yum or any others, because we can not conf
 
 #### [AKKU](https://akkuscm.org/)
 
-Akku is a language package manager for Scheme. It grabs hold of code and shakes it vigorously until it behaves properly. By default, akku is based on [guile](https://www.gnu.org/software/guile/), if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
+Akku is a package manager for Scheme. It grabs hold of code and shakes it vigorously until it behaves properly. By default, akku is based on [guile](https://www.gnu.org/software/guile/), if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
 
 #### [chez-exe](https://github.com/gwatt/chez-exe)
 
