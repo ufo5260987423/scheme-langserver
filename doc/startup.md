@@ -2,7 +2,7 @@
 
 If you are using latest Nixos, you may skip this process.
 
-If you are using Windows, you may do following process in WSL.
+If you are using Windows, you may do followings in WSL.
 
 ### [Chez Scheme](https://cisco.github.io/ChezScheme/);
 
@@ -126,9 +126,9 @@ lvim.builtin.cmp.sources = {
   { name = 'buffer' },
 }
 ```
->NOTE: I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). However, there're many corner case and code style work and I finally decided to concentrate on LSP. If anyone want to help, you may raise an issue.
+>NOTE: I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). However, there're many corner case and code style work and I finally decided to concentrate on LSP. If anyone wants to help, you may raise an issue.
 
-### Some Other Editors
+### Other Editors
 
 If you want [Emacs](https://www.gnu.org/software/emacs/emacs.html) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/39) suggests [eglot](https://github.com/joaotavora/eglot). But I'm not familiar with Emacs, and you may config it yourself.
 
