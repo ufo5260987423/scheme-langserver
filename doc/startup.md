@@ -1,10 +1,18 @@
-## Pre-require
+## Get Executable File 
+
+if you're using x64-based linux operating system, you will be able to directly download latest executable file [here](https://github.com/ufo5260987423/scheme-langserver/releases/latest/download/run).
+
+And then you can ignore [next section](#manually-build--compile) and directly configure scheme-langserver with you editor [here](#configuration-for-editors).
+
+## Manually Build & Compile 
+
+### Pre-require
 
 If you are using latest Nixos, you may skip this process.
 
 If you are using Windows, you may do followings in WSL.
 
-### [Chez Scheme](https://cisco.github.io/ChezScheme/);
+#### [Chez Scheme](https://cisco.github.io/ChezScheme/);
 
 Chez Scheme is both a programming language and an implementation of that language, with supporting tools and documentation. And it is scheme-langserver's base and target. You may install as following:
 
@@ -18,11 +26,11 @@ make && sudo make install
 
 I don't recommend install with apt or yum or any others, because we can not confirm what version and configuration provided by them and Chez Scheme 10.0.0 is much different from previous on Build & Compile process. For example, comparing with previous version, Chez Scheme 10.0.0 makes --threads a default option, which is necessary for scheme-langserver's muti-threaded feature. 
 
-### [AKKU](https://akkuscm.org/)
+#### [AKKU](https://akkuscm.org/)
 
 Akku is a language package manager for Scheme. It grabs hold of code and shakes it vigorously until it behaves properly. By default, akku is based on [guile](https://www.gnu.org/software/guile/), if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
 
-### [chez-exe](https://github.com/gwatt/chez-exe)
+#### [chez-exe](https://github.com/gwatt/chez-exe)
 
 The goal of this project is to produce standalone executables that are a complete Chez Scheme system and contain a scheme program. This works by embedding Chez Scheme bootfiles and a scheme program into the executable. However, as we mentioned [above](#chez-scheme), Chez Scheme 10.0.0 has changed a lot, and default configuration don't work now.
 
@@ -30,9 +38,7 @@ For Chez Scheme's old version (before 10.0.0), chez-exe requires boot files and 
 
 For Chez Scheme 10.0.0, you may need [my own chez-exe](https://github.com/ufo5260987423/chez-exe). The differences you may refer to [this pull request](https://github.com/gwatt/chez-exe/pull/20). And the compile command is altered to `scheme --script gen-config.ss --bootpath {path-to-ChezScheme}/lib/csv${version}/{machine-type}`
 
-## Build & Compile Executable File 
-
-### For Linux
+### Build & Compile for Linux
 
 We assume that you have already installed the above requirements.
 
@@ -45,7 +51,7 @@ bash .akku/env
 compile-chez-program run.ss
 ```
 
-### For WSL
+### Build & Compile for For WSL
 
 In WSL, although it's kind of another Linux, `compile-chez-program` might fail with such a message:
 
@@ -126,6 +132,7 @@ lvim.builtin.cmp.sources = {
   { name = 'buffer' },
 }
 ```
+
 >NOTE: I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). However, there're many corner case and code style work and I finally decided to concentrate on LSP. If anyone wants to help, you may raise an issue.
 
 ### Other Editors
@@ -133,6 +140,7 @@ lvim.builtin.cmp.sources = {
 If you want [Emacs](https://www.gnu.org/software/emacs/emacs.html) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/39) suggests [eglot](https://github.com/joaotavora/eglot). But I'm not familiar with Emacs, and you may config it yourself.
 
 If you want [Helix Editor](https://helix-editor.com/) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/41) may give some configurations. And according to my understand, you may config `language.toml` as following:
+
 ```
 [[language]]
 name = "scheme"
@@ -144,7 +152,6 @@ comment-token = ";"
 indent = { tab-width = 2, unit = " " }
 language-servers = [ {path-to-run}]
 ```
-
 
 ### TODO: [VScode](https://code.visualstudio.com/)
 VScode plugin is on its way.
