@@ -24,7 +24,7 @@ tar -xf csv10.0.0.tar.gz && cd csv10.0.0
 make && sudo make install
 ```
 
-I don't recommend install with apt or yum or any others, because we can not confirm what version and configuration provided by them and Chez Scheme 10.0.0 is much different from previous on Build & Compile process. For example, comparing with previous version, Chez Scheme 10.0.0 makes --threads a default option, which is necessary for scheme-langserver's muti-threaded feature. 
+Chez Scheme 10.0.0 is much different from previous versions on Build & Compile process. For example, it makes --threads a default option, which is required by scheme-langserver's muti-threaded feature, and previus other versions make --threads a self-option. So, if you want to install Chez Scheme with apt/yum or any other depdendency managers, it will be necessary to do some checks, including version, configuration or anything else.
 
 #### [AKKU](https://akkuscm.org/)
 
@@ -33,8 +33,10 @@ Akku is a package manager for Scheme. It grabs hold of code and shakes it vigoro
 ```bash
 wget https://gitlab.com/-/project/6808260/uploads/094ce726ce3c6cf8c14560f1e31aaea0/akku-1.1.0.amd64-linux.tar.xz
 tar -xf akku-1.1.0.amd64-linux.tar.xz && cd akku-1.1.0.amd64-linux
-bash install
+sudo bash install
 ```
+
+>NOTE: Sometime the installation may reports `lack of petite-chez.a` or some other files, which is normally located in Chez Scheme's directory. You may find them and copy to `/usr/local/lib` directory.
 
 Make sure AKKU is added to your $PATH. And if you want Chez Scheme version source to compile it yourself, you may find the target [this page](https://gitlab.com/akkuscm/akku/-/releases).
 
