@@ -4,7 +4,7 @@ if you're using x64-based linux operating system, you can directly download late
 
 ## Configuration for Editors
 
-### [VScode](https://code.visualstudio.com/)+Magic Scheme
+### [VScode](https://code.visualstudio.com/)+[Magic Scheme](https://github.com/ufo5260987423/magic-scheme)
 
 Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the help of [scheme-langserver](https://github.com/ufo5260987423/scheme-langserver), we're proud to say that Magic Scheme is **much better** than many counterparts, which includes even Racket extensions.
 
