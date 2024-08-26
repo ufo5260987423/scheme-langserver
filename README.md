@@ -1,5 +1,8 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
+
+**Now, VSCode can use scheme-langserver!** Please refere [HERE](./doc/startup.md).
+
 >NOTE: There're many many bugs in scheme-langserver. I'm just fixing and appealing help from the community. Please be patient.
 
 >NOTE: you can find the auto generated type information [here](https://ufo5260987423.github.io/scheme-langserver/doc/analysis/type-inference-result). It's now mainly used for next-stage-development (maybe include AKKU) and debugging.

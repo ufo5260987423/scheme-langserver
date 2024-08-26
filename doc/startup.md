@@ -1,8 +1,87 @@
 ## Get Executable File 
 
-if you're using x64-based linux operating system, you will be able to directly download latest executable file [here](https://github.com/ufo5260987423/scheme-langserver/releases/latest/download/run).
+if you're using x64-based linux operating system, you can directly download latest executable file [here](https://github.com/ufo5260987423/scheme-langserver/releases/latest/download/run),  ignore [next section](#manually-build--compile) and configure scheme-langserver with you editor [here](#configuration-for-editors).
 
-And then you can ignore [next section](#manually-build--compile) and directly configure scheme-langserver with you editor [here](#configuration-for-editors).
+## Configuration for Editors
+
+### [VScode](https://code.visualstudio.com/)+Magic Scheme
+
+Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the help of [scheme-langserver](https://github.com/ufo5260987423/scheme-langserver), we're proud to say that Magic Scheme is **much better** than many counterparts, which includes even Racket extensions.
+
+### [LunarVim(1.4)](https://www.lunarvim.org/)
+Personally, I use [LunarVim(1.4)](https://www.lunarvim.org/) as an out-of-box IDE layer. So, you may configure `~/.config/lvim/config.lua` and add following codes like:
+
+```lua
+vim.api.nvim_create_autocmd("BufRead", {
+  pattern = {"*.sld", "*.sls","*.sps"},
+  command = "setfiletype scheme",
+})
+
+vim.api.nvim_create_autocmd("BufNewFile", {
+  pattern = {"*.sld", "*.sls","*.sps"},
+  command = "setfiletype scheme",
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'scheme',
+  callback = function(args)
+    vim.lsp.start({
+      name = 'scheme-langserver',
+      cmd = {'{path-to-run}',
+        '~/scheme-langserver.log',
+        --enable multi-thread
+        'enable',
+        --disable type inference, because it's on very early stage.
+        'diable',
+      },
+      root_dir = vim.fs.root(args.buf, {'.gitignore','AKKU.manifest'}),
+    })
+  end
+})
+
+vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
+  callback = function(ev)
+    -- Enable completion triggered by <c-x><c-o>
+    vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
+
+    -- Buffer local mappings.
+    -- See `:help vim.lsp.*` for documentation on any of the below functions
+    local opts = { buffer = ev.buf }
+    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+  end,
+})
+
+lvim.builtin.cmp.enabled()
+lvim.builtin.cmp.sources = {
+  { name = 'nvim_lsp' },
+  { name = 'luasnip' },
+  { name = 'buffer' },
+}
+```
+
+>NOTE: I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). However, there're many corner case and code style work and I finally decided to concentrate on LSP. If anyone wants to help, you may raise an issue.
+
+### Other Editors
+
+If you want [Emacs](https://www.gnu.org/software/emacs/emacs.html) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/39) suggests [eglot](https://github.com/joaotavora/eglot). But I'm not familiar with Emacs, and you may config it yourself.
+
+If you want [Helix Editor](https://helix-editor.com/) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/41) may give some configurations. And according to my understand, you may config `language.toml` as following:
+
+```
+[[language]]
+name = "scheme"
+scope = "source.scheme"
+injection-regex = "scheme"
+file-types = ["ss", "scm"]
+shebangs = ["scheme", "guile", "chicken"]
+comment-token = ";"
+indent = { tab-width = 2, unit = " " }
+language-servers = [ {path-to-run}]
+```
 
 ## Manually Build & Compile 
 
@@ -85,83 +164,3 @@ Please check if you installed the original one :(
 ### For Nixos
 
 You may directly search scheme-langserver [here](https://search.nixos.org/packages?channel=unstable&show=akkuPackages.scheme-langserver&from=0&size=50&sort=relevance&type=packages&query=akkuPackages.scheme-langserver), it will directly install an executable binary file. And this file is softly linked in bash $PATH as `scheme-langserver`.
-
-## Configuration for Editors
-
-### [LunarVim(1.4)](https://www.lunarvim.org/)
-Personally, I use [LunarVim(1.4)](https://www.lunarvim.org/) as an out-of-box IDE layer. So, you may configure `~/.config/lvim/config.lua` and add following codes like:
-
-```lua
-vim.api.nvim_create_autocmd("BufRead", {
-  pattern = {"*.sld", "*.sls"},
-  command = "setfiletype scheme",
-})
-
-vim.api.nvim_create_autocmd("BufNewFile", {
-  pattern = {"*.sld", "*.sls"},
-  command = "setfiletype scheme",
-})
-
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'scheme',
-  callback = function(args)
-    vim.lsp.start({
-      name = 'scheme-langserver',
-      cmd = {'{path-to-run}',
-        '~/scheme-langserver.log',
-        --enable multi-thread
-        'enable',
-        --disable type inference, because it's on very early stage.
-        'diable',
-      },
-      root_dir = vim.fs.root(args.buf, {'.gitignore','AKKU.manifest'}),
-    })
-  end
-})
-
-vim.api.nvim_create_autocmd('LspAttach', {
-  group = vim.api.nvim_create_augroup('UserLspConfig', {}),
-  callback = function(ev)
-    -- Enable completion triggered by <c-x><c-o>
-    vim.bo[ev.buf].omnifunc = 'v:lua.vim.lsp.omnifunc'
-
-    -- Buffer local mappings.
-    -- See `:help vim.lsp.*` for documentation on any of the below functions
-    local opts = { buffer = ev.buf }
-    vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
-    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-    vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-  end,
-})
-
-lvim.builtin.cmp.enabled()
-lvim.builtin.cmp.sources = {
-  { name = 'nvim_lsp' },
-  { name = 'luasnip' },
-  { name = 'buffer' },
-}
-```
-
->NOTE: I have pull request to [mason.nvim](https://github.com/williamboman/mason.nvim) and [mason-lspconfig.nvim](https://github.com/williamboman/mason-lspconfig.nvim). However, there're many corner case and code style work and I finally decided to concentrate on LSP. If anyone wants to help, you may raise an issue.
-
-### Other Editors
-
-If you want [Emacs](https://www.gnu.org/software/emacs/emacs.html) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/39) suggests [eglot](https://github.com/joaotavora/eglot). But I'm not familiar with Emacs, and you may config it yourself.
-
-If you want [Helix Editor](https://helix-editor.com/) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/41) may give some configurations. And according to my understand, you may config `language.toml` as following:
-
-```
-[[language]]
-name = "scheme"
-scope = "source.scheme"
-injection-regex = "scheme"
-file-types = ["ss", "scm"]
-shebangs = ["scheme", "guile", "chicken"]
-comment-token = ";"
-indent = { tab-width = 2, unit = " " }
-language-servers = [ {path-to-run}]
-```
-
-### TODO: [VScode](https://code.visualstudio.com/)
-VScode plugin is on its way.
