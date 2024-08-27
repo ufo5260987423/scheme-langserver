@@ -1,0 +1,391 @@
+./util/path.sls:      path->uri 
+./util/path.sls:      path->name)
+./util/path.sls:      (only (chibi pathname) path-strip-directory)
+./util/path.sls:(define (private:path->uri-transformation path)
+./util/path.sls:          (private:path->uri-transformation (substring path (+ 1 start-position) (string-length path)))
+./util/path.sls:(define (path->uri path)
+./util/path.sls:    (private:path->uri-transformation
+./util/path.sls:      (if (path-absolute? path)
+./util/path.sls:  (path->name (uri->path uri)))
+./util/path.sls:(define (path->name path)
+./util/path.sls:    (path-strip-directory (string-drop-right path 1))
+./util/path.sls:    (path-strip-directory path)))
+./analysis/package-manager/akku.sls:      [path->library (make-hashtable string-hash equal?)])
+./analysis/package-manager/akku.sls:            (hashtable-set! path->library (string-append root target-path) target-library))) 
+./analysis/package-manager/akku.sls:        [(and (string-prefix? akku-path path) (string-prefix? akku-lib-path path) (hashtable-ref path->library path #f)) 
+./analysis/package-manager/akku.sls:          (not (equal? "-" (hashtable-ref path->library path #f)))]
+./analysis/local-expand.sls:      [get-reference-paths (get-reference-path-from file-linkage path)]
+./analysis/type/substitutions/rnrs-meta-rules.sls:(path-absolute? (boolean? <- (inner:list? string?)))
+./analysis/dependency/file-linkage.sls:    file-linkage-path->id-map
+./analysis/dependency/file-linkage.sls:    file-linkage-id->path-map
+./analysis/dependency/file-linkage.sls:    get-reference-path-to
+./analysis/dependency/file-linkage.sls:    get-reference-path-from
+./analysis/dependency/file-linkage.sls:    (mutable path->id-map)
+./analysis/dependency/file-linkage.sls:    (mutable id->path-map)
+./analysis/dependency/file-linkage.sls:  (let ([id->path-map (make-eq-hashtable)]
+./analysis/dependency/file-linkage.sls:        [path->id-map (make-hashtable string-hash equal?)])
+./analysis/dependency/file-linkage.sls:    (init-maps root-library-node id->path-map path->id-map)
+./analysis/dependency/file-linkage.sls:    (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
+./analysis/dependency/file-linkage.sls:      (init-matrix root-library-node root-file-node root-library-node path->id-map matrix)
+./analysis/dependency/file-linkage.sls:      (make-file-linkage path->id-map id->path-map matrix))))
+./analysis/dependency/file-linkage.sls:(define (init-maps current-library-node id->path-map path->id-map)
+./analysis/dependency/file-linkage.sls:        (hashtable-set! path->id-map (file-node-path (car file-nodes)) (hashtable-size path->id-map))
+./analysis/dependency/file-linkage.sls:        (hashtable-set! id->path-map (hashtable-size id->path-map) (file-node-path (car file-nodes)))
+./analysis/dependency/file-linkage.sls:  (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
+./analysis/dependency/file-linkage.sls:      [path->id-map (file-linkage-path->id-map linkage)]
+./analysis/dependency/file-linkage.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./analysis/dependency/file-linkage.sls:      [id (if (hashtable-ref path->id-map path #f)
+./analysis/dependency/file-linkage.sls:        (hashtable-ref path->id-map path #f)
+./analysis/dependency/file-linkage.sls:            (hashtable-set! path->id-map path old-node-count)
+./analysis/dependency/file-linkage.sls:            (hashtable-set! id->path-map old-node-count path)
+./analysis/dependency/file-linkage.sls:          (lambda(p) (hashtable-ref path->id-map p #f)) 
+./analysis/dependency/file-linkage.sls:          (get-reference-path-from linkage path))]
+./analysis/dependency/file-linkage.sls:          (lambda(p) (hashtable-ref path->id-map p #f)) 
+./analysis/dependency/file-linkage.sls:        (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to))))))
+./analysis/dependency/file-linkage.sls:(define (get-reference-path-to linkage to-path)
+./analysis/dependency/file-linkage.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./analysis/dependency/file-linkage.sls:      [path->id-map (file-linkage-path->id-map linkage)]
+./analysis/dependency/file-linkage.sls:      [to-node-id (hashtable-ref path->id-map to-path #f)])
+./analysis/dependency/file-linkage.sls:      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix to-node-id))
+./analysis/dependency/file-linkage.sls:(define (get-reference-path-from linkage from-path)
+./analysis/dependency/file-linkage.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./analysis/dependency/file-linkage.sls:      [path->id-map (file-linkage-path->id-map linkage)]
+./analysis/dependency/file-linkage.sls:      [from-node-id (hashtable-ref path->id-map from-path #f)])
+./analysis/dependency/file-linkage.sls:      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-from-recursive matrix from-node-id))
+./analysis/dependency/file-linkage.sls:      [id->path-map (file-linkage-id->path-map linkage)])
+./analysis/dependency/file-linkage.sls:        [last-path-length 0])
+./analysis/dependency/file-linkage.sls:            (= last-path-length (length path))))
+./analysis/dependency/file-linkage.sls:          (map (lambda (id) (hashtable-ref id->path-map id #f)) path)]
+./analysis/dependency/file-linkage.sls:          (loop (+ 1 from-id) path last-path-length)]
+./analysis/dependency/file-linkage.sls:                (loop (+ from-id 1) (append path `(,from-id)) last-path-length))
+./analysis/dependency/file-linkage.sls:              (loop (+ from-id 1) path last-path-length)))]))))
+./analysis/dependency/file-linkage.sls:      [id->path-map (file-linkage-id->path-map linkage)])
+./analysis/dependency/file-linkage.sls:      (lambda (id) (hashtable-ref id->path-map id #f))
+./analysis/dependency/file-linkage.sls:      [row-id (hashtable-ref (file-linkage-path->id-map linkage) from-path #f)])
+./analysis/dependency/file-linkage.sls:          `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f) . ,(loop (+ 1 column-id))))
+./analysis/dependency/file-linkage.sls:      [column-id (hashtable-ref (file-linkage-path->id-map linkage) to-path #f)])
+./analysis/dependency/file-linkage.sls:          `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f) .  ,(loop (+ 1 row-id))))
+./analysis/dependency/file-linkage.sls:    (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
+./analysis/dependency/file-linkage.sls:    (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
+./analysis/dependency/file-linkage.sls:    (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
+./analysis/dependency/file-linkage.sls:    (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
+./analysis/dependency/file-linkage.sls:(define (init-matrix current-library-node root-file-node root-library-node path->id-map matrix)
+./analysis/dependency/file-linkage.sls:                    (hashtable-ref path->id-map path #f) 
+./analysis/dependency/file-linkage.sls:                    (hashtable-ref path->id-map imported-library-path #f))))
+./analysis/dependency/file-linkage.sls:                  (hashtable-ref path->id-map path #f) 
+./analysis/dependency/file-linkage.sls:                  (hashtable-ref path->id-map (file-node-path file-node) #f)))
+./analysis/dependency/file-linkage.sls:          (init-matrix node root-file-node root-library-node path->id-map matrix)) 
+./analysis/dependency/shrinker.sls:  (let* ([path->id-map (file-linkage-path->id-map linkage)]
+./analysis/dependency/shrinker.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./analysis/dependency/shrinker.sls:      [ids (map (lambda (current-path) (hashtable-ref path->id-map current-path #f)) paths)]
+./analysis/dependency/shrinker.sls:        (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
+./analysis/dependency/shrinker.sls:      [id->path-map (file-linkage-id->path-map linkage)])
+./analysis/dependency/shrinker.sls:          [current-from-path (hashtable-ref id->path-map current-from #f)])
+./analysis/dependency/shrinker.sls:                      (hashtable-ref id->path-map to #f))) 
+./analysis/dependency/rules/load.sls:                [(path-absolute? path) (walk-file root-file-node path)]
+./analysis/dependency/rules/load.sls:                [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./analysis/dependency/rules/load.sls:                [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./analysis/dependency/rules/load.sls:                [(path-absolute? path) (walk-file root-file-node path)]
+./analysis/dependency/rules/load.sls:                [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./analysis/dependency/rules/load.sls:                [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./analysis/dependency/rules/load.sls:                [(path-absolute? path) (walk-file root-file-node path)]
+./analysis/dependency/rules/load.sls:                [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./analysis/dependency/rules/load.sls:                [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./analysis/workspace.sls:      (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
+./analysis/workspace.sls:              (dedupe (get-reference-path-to (workspace-file-linkage workspace-instance) (file-node-path target-file-node))))))))))
+./analysis/workspace.sls:        [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
+./analysis/workspace.sls:        [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
+./analysis/workspace.sls:    (let* ([name (path->name path)] 
+./analysis/workspace.sls:  (let ([uri (path->uri path)])
+./analysis/identifier/meta.sls:(path-extension	procedure)
+./analysis/identifier/meta.sls:(path-last	procedure)
+./analysis/identifier/meta.sls:(path-rest	procedure)
+./analysis/identifier/meta.sls:(path-root	procedure)
+./analysis/identifier/meta.sls:(path-absolute?	procedure)
+./analysis/identifier/meta.sls:(path-first	procedure)
+./analysis/identifier/meta.sls:(path-parent	procedure)
+./analysis/identifier/meta.sls:(path-absolute?	procedure)
+./analysis/identifier/meta.sls:(path-extension	procedure)
+./analysis/identifier/meta.sls:(path-first	procedure)
+./analysis/identifier/meta.sls:(path-last	procedure)
+./analysis/identifier/meta.sls:(path-parent	procedure)
+./analysis/identifier/meta.sls:(path-rest	procedure)
+./analysis/identifier/meta.sls:(path-root	procedure)
+./analysis/identifier/rules/load.sls:                  [(path-absolute? path) (walk-file root-file-node path)]
+./analysis/identifier/rules/load.sls:                  [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./analysis/identifier/rules/load.sls:                  [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./analysis/identifier/rules/load-library.sls:                  [(path-absolute? path) (walk-file root-file-node path)]
+./analysis/identifier/rules/load-library.sls:                  [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./analysis/identifier/rules/load-library.sls:                  [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./analysis/identifier/rules/load-program.sls:                  [(path-absolute? path) (walk-file root-file-node path)]
+./analysis/identifier/rules/load-program.sls:                  [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./analysis/identifier/rules/load-program.sls:                  [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./protocol/apis/references.sls:          [path-to-list 
+./protocol/apis/references.sls:          [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:      path->uri 
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:      path->name)
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:      (only (chibi pathname) path-strip-directory)
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:(define (private:path->uri-transformation path)
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:          (private:path->uri-transformation (substring path (+ 1 start-position) (string-length path)))
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:(define (path->uri path)
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:    (private:path->uri-transformation
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:      (if (path-absolute? path)
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:  (path->name (uri->path uri)))
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:(define (path->name path)
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:    (path-strip-directory (string-drop-right path 1))
+./.akku/lib/scheme-langserver/util/path.chezscheme.sls:    (path-strip-directory path)))
+./.akku/lib/scheme-langserver/analysis/local-expand.chezscheme.sls:      [get-reference-paths (get-reference-path-from file-linkage path)]
+./.akku/lib/scheme-langserver/analysis/package-manager/akku.chezscheme.sls:      [path->library (make-hashtable string-hash equal?)])
+./.akku/lib/scheme-langserver/analysis/package-manager/akku.chezscheme.sls:            (hashtable-set! path->library (string-append root target-path) target-library))) 
+./.akku/lib/scheme-langserver/analysis/package-manager/akku.chezscheme.sls:        [(and (string-prefix? akku-path path) (string-prefix? akku-lib-path path) (hashtable-ref path->library path #f)) 
+./.akku/lib/scheme-langserver/analysis/package-manager/akku.chezscheme.sls:          (not (equal? "-" (hashtable-ref path->library path #f)))]
+./.akku/lib/scheme-langserver/analysis/type/substitutions/rnrs-meta-rules.chezscheme.sls:(path-absolute? (boolean? <- (inner:list? string?)))
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:  (let* ([path->id-map (file-linkage-path->id-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:      [ids (map (lambda (current-path) (hashtable-ref path->id-map current-path #f)) paths)]
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:        (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)])
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:          [current-from-path (hashtable-ref id->path-map current-from #f)])
+./.akku/lib/scheme-langserver/analysis/dependency/shrinker.chezscheme.sls:                      (hashtable-ref id->path-map to #f))) 
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [(path-absolute? path) (walk-file root-file-node path)]
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [(path-absolute? path) (walk-file root-file-node path)]
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [(path-absolute? path) (walk-file root-file-node path)]
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./.akku/lib/scheme-langserver/analysis/dependency/rules/load.chezscheme.sls:                [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    file-linkage-path->id-map
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    file-linkage-id->path-map
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    get-reference-path-to
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    get-reference-path-from
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (mutable path->id-map)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (mutable id->path-map)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:  (let ([id->path-map (make-eq-hashtable)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:        [path->id-map (make-hashtable string-hash equal?)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (init-maps root-library-node id->path-map path->id-map)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      (init-matrix root-library-node root-file-node root-library-node path->id-map matrix)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      (make-file-linkage path->id-map id->path-map matrix))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:(define (init-maps current-library-node id->path-map path->id-map)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:        (hashtable-set! path->id-map (file-node-path (car file-nodes)) (hashtable-size path->id-map))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:        (hashtable-set! id->path-map (hashtable-size id->path-map) (file-node-path (car file-nodes)))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:  (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [path->id-map (file-linkage-path->id-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [id (if (hashtable-ref path->id-map path #f)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:        (hashtable-ref path->id-map path #f)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:            (hashtable-set! path->id-map path old-node-count)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:            (hashtable-set! id->path-map old-node-count path)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          (lambda(p) (hashtable-ref path->id-map p #f)) 
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          (get-reference-path-from linkage path))]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          (lambda(p) (hashtable-ref path->id-map p #f)) 
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:        (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to))))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:(define (get-reference-path-to linkage to-path)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [path->id-map (file-linkage-path->id-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [to-node-id (hashtable-ref path->id-map to-path #f)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-to-recursive matrix to-node-id))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:(define (get-reference-path-from linkage from-path)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [path->id-map (file-linkage-path->id-map linkage)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [from-node-id (hashtable-ref path->id-map from-path #f)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-from-recursive matrix from-node-id))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:        [last-path-length 0])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:            (= last-path-length (length path))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          (map (lambda (id) (hashtable-ref id->path-map id #f)) path)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          (loop (+ 1 from-id) path last-path-length)]
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:                (loop (+ from-id 1) (append path `(,from-id)) last-path-length))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:              (loop (+ from-id 1) path last-path-length)))]))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [id->path-map (file-linkage-id->path-map linkage)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      (lambda (id) (hashtable-ref id->path-map id #f))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [row-id (hashtable-ref (file-linkage-path->id-map linkage) from-path #f)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          `(,(hashtable-ref (file-linkage-id->path-map linkage) column-id #f) . ,(loop (+ 1 column-id))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:      [column-id (hashtable-ref (file-linkage-path->id-map linkage) to-path #f)])
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          `(,(hashtable-ref (file-linkage-id->path-map linkage) row-id #f) .  ,(loop (+ 1 row-id))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:    (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:(define (init-matrix current-library-node root-file-node root-library-node path->id-map matrix)
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:                    (hashtable-ref path->id-map path #f) 
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:                    (hashtable-ref path->id-map imported-library-path #f))))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:                  (hashtable-ref path->id-map path #f) 
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:                  (hashtable-ref path->id-map (file-node-path file-node) #f)))
+./.akku/lib/scheme-langserver/analysis/dependency/file-linkage.chezscheme.sls:          (init-matrix node root-file-node root-library-node path->id-map matrix)) 
+./.akku/lib/scheme-langserver/analysis/workspace.chezscheme.sls:      (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
+./.akku/lib/scheme-langserver/analysis/workspace.chezscheme.sls:              (dedupe (get-reference-path-to (workspace-file-linkage workspace-instance) (file-node-path target-file-node))))))))))
+./.akku/lib/scheme-langserver/analysis/workspace.chezscheme.sls:        [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
+./.akku/lib/scheme-langserver/analysis/workspace.chezscheme.sls:        [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
+./.akku/lib/scheme-langserver/analysis/workspace.chezscheme.sls:    (let* ([name (path->name path)] 
+./.akku/lib/scheme-langserver/analysis/workspace.chezscheme.sls:  (let ([uri (path->uri path)])
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-extension	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-last	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-rest	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-root	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-absolute?	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-first	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-parent	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-absolute?	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-extension	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-first	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-last	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-parent	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-rest	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/meta.chezscheme.sls:(path-root	procedure)
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load.chezscheme.sls:                  [(path-absolute? path) (walk-file root-file-node path)]
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load.chezscheme.sls:                  [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load.chezscheme.sls:                  [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load-program.chezscheme.sls:                  [(path-absolute? path) (walk-file root-file-node path)]
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load-program.chezscheme.sls:                  [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load-program.chezscheme.sls:                  [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load-library.chezscheme.sls:                  [(path-absolute? path) (walk-file root-file-node path)]
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load-library.chezscheme.sls:                  [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
+./.akku/lib/scheme-langserver/analysis/identifier/rules/load-library.chezscheme.sls:                  [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
+./.akku/lib/scheme-langserver/protocol/apis/references.chezscheme.sls:          [path-to-list 
+./.akku/lib/scheme-langserver/protocol/apis/references.chezscheme.sls:          [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
+./.akku/lib/srfi/private/include/compat.mzscheme.sls:    (only (scheme base) current-library-collection-paths path->string)
+./.akku/lib/srfi/private/include/compat.mzscheme.sls:    (map path->string 
+./.akku/lib/srfi/private/include/compat.larceny.sls:    (primitives current-require-path getenv absolute-path-string?))
+./.akku/lib/srfi/private/include/compat.larceny.sls:             (if (absolute-path-string? crp)
+./.akku/lib/chibi/pathname.sls:  path-strip-directory
+./.akku/lib/chibi/pathname.sls:  path-directory
+./.akku/lib/chibi/pathname.sls:  path-extension
+./.akku/lib/chibi/pathname.sls:  path-strip-extension
+./.akku/lib/chibi/pathname.sls:  path-replace-extension
+./.akku/lib/chibi/pathname.sls:  path-absolute?
+./.akku/lib/chibi/pathname.sls:  path-relative?
+./.akku/lib/chibi/pathname.sls:  path-strip-leading-parents
+./.akku/lib/chibi/pathname.sls:  path-relative-to
+./.akku/lib/chibi/pathname.sls:  path-resolve
+./.akku/lib/chibi/pathname.sls:  path-normalize
+./.akku/lib/chibi/pathname-test.sls:   (test "dirname(3)" "/usr" (path-directory "/usr/lib"))
+./.akku/lib/chibi/pathname-test.sls:   (test "lib" (path-strip-directory "/usr/lib"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/" (path-directory "/usr/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/usr/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-directory "usr"))
+./.akku/lib/chibi/pathname-test.sls:   (test "usr" (path-strip-directory "usr"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/" (path-directory "/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-directory "."))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-strip-directory "."))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-directory ".."))
+./.akku/lib/chibi/pathname-test.sls:   (test ".." (path-strip-directory ".."))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-directory:border" "/" (path-directory "//"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "//"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-directory ""))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory ""))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-directory "../"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "../"))
+./.akku/lib/chibi/pathname-test.sls:   (test ".." (path-directory "../.."))
+./.akku/lib/chibi/pathname-test.sls:   (test ".." (path-strip-directory "../.."))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-directory:extra" "/usr/local" (path-directory "/usr/local/lib"))
+./.akku/lib/chibi/pathname-test.sls:   (test "lib" (path-strip-directory "/usr/local/lib"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/usr" (path-directory "/usr/local/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/usr/local/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "usr" (path-directory "usr/local"))
+./.akku/lib/chibi/pathname-test.sls:   (test "local" (path-strip-directory "usr/local"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/" (path-directory "//usr"))
+./.akku/lib/chibi/pathname-test.sls:   (test "usr" (path-strip-directory "//usr"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/" (path-directory "//usr/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "//usr/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-directory:small" "/a" (path-directory "/a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "b" (path-strip-directory "/a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a" (path-directory "a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "b" (path-strip-directory "a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a" (path-directory "a/b/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "a/b/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c" (path-directory "/a/b/c/d"))
+./.akku/lib/chibi/pathname-test.sls:   (test "d" (path-strip-directory "/a/b/c/d"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c" (path-directory "/a/b/c/d/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/a/b/c/d/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a/b/c" (path-directory "a/b/c/d"))
+./.akku/lib/chibi/pathname-test.sls:   (test "d" (path-strip-directory "a/b/c/d"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b" (path-directory "/a/b/c.d"))
+./.akku/lib/chibi/pathname-test.sls:   (test "c.d" (path-strip-directory "/a/b/c.d"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b" (path-directory "/a/b/c.d/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/a/b/c.d/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c" (path-directory "/a/b/c/."))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-strip-directory "/a/b/c/."))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c" (path-directory "/a/b/c/.."))
+./.akku/lib/chibi/pathname-test.sls:   (test ".." (path-strip-directory "/a/b/c/.."))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/." (path-directory "/a/b/./c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "c" (path-strip-directory "/a/b/./c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/.." (path-directory "/a/b/../c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "c" (path-strip-directory "/a/b/../c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b" (path-directory "/a/b/c//"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/a/b/c//"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b" (path-directory "/a/b//c///"))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-directory "/a/b//c///"))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-extension" "scm" (path-extension "foo.scm"))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo" (path-strip-extension "foo.scm"))
+./.akku/lib/chibi/pathname-test.sls:   (test "c" (path-extension "foo.scm.c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo.scm" (path-strip-extension "foo.scm.c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "scm" (path-extension "/home/me/foo.scm"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/home/me/foo" (path-strip-extension "/home/me/foo.scm"))
+./.akku/lib/chibi/pathname-test.sls:   (test "scm" (path-extension "foo..scm"))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo." (path-strip-extension "foo..scm"))
+./.akku/lib/chibi/pathname-test.sls:   (test "s" (path-extension "foo.s"))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo" (path-strip-extension "foo.s"))
+./.akku/lib/chibi/pathname-test.sls:   (test #f (path-extension "foo."))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo." (path-strip-extension "foo."))
+./.akku/lib/chibi/pathname-test.sls:   (test #f (path-extension "foo.scm."))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo.scm." (path-strip-extension "foo.scm."))
+./.akku/lib/chibi/pathname-test.sls:   (test #f (path-extension "."))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-strip-extension "."))
+./.akku/lib/chibi/pathname-test.sls:   (test #f (path-extension "a."))
+./.akku/lib/chibi/pathname-test.sls:   (test "a." (path-strip-extension "a."))
+./.akku/lib/chibi/pathname-test.sls:   (test #f (path-extension "/."))
+./.akku/lib/chibi/pathname-test.sls:   (test "/." (path-strip-extension "/."))
+./.akku/lib/chibi/pathname-test.sls:   (test #f (path-extension "foo.scm/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo.scm/" (path-strip-extension "foo.scm/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-replace-extension"
+./.akku/lib/chibi/pathname-test.sls:         (path-replace-extension "foo.scm" "c"))
+./.akku/lib/chibi/pathname-test.sls:   (test "foo.c" (path-replace-extension "foo" "c"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "//"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/usr"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/usr/"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/usr/."))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/usr/.."))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/usr/./"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (path-absolute? "/usr/../"))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (not (path-absolute? "")))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (not (path-absolute? ".")))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (not (path-absolute? "usr")))
+./.akku/lib/chibi/pathname-test.sls:   (test-assert (not (path-absolute? "usr/")))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-normalize" "/a/b/c/d/e" (path-normalize "/a/b/c/d/./e"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c/d/e" (path-normalize "/a/b//.///c//d/./e"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c/d/e/" (path-normalize "/a/b//.///c//d/./e/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/c/d/e" (path-normalize "/a/b/../c/d/e"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c/e" (path-normalize "/a/b//.///c//d/../e"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/c/e" (path-normalize "/a/b//..///c//d/../e"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c/d/e/" (path-normalize "/a/b//./../c/d/../../b//c/d/e/f/.."))
+./.akku/lib/chibi/pathname-test.sls:   (test "/a/b/c/" (path-normalize "/a/b/c/."))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-normalize:border" "" (path-normalize ""))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-normalize "."))
+./.akku/lib/chibi/pathname-test.sls:   (test "/" (path-normalize "/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "/" (path-normalize "/."))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-normalize:overflow"
+./.akku/lib/chibi/pathname-test.sls:         (path-normalize "/a/b/c/../../../../.."))
+./.akku/lib/chibi/pathname-test.sls:   (test "../.." (path-normalize "a/b/c/../../../../.."))
+./.akku/lib/chibi/pathname-test.sls:   (test "../../.." (path-normalize "../a/b/c/../../../../.."))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-leading-parents ".."))
+./.akku/lib/chibi/pathname-test.sls:   (test "" (path-strip-leading-parents "../"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a" (path-strip-leading-parents "../a"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a/b" (path-strip-leading-parents "../../a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a/b" (path-strip-leading-parents "../../../a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "a/../b" (path-strip-leading-parents "../../../a/../b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "path-relative-to" "c" (path-relative-to "/a/b/c" "/a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "c" (path-relative-to "/a/b/c" "/a/b/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-relative-to "/a/b/" "/a/b/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-relative-to "/a/b/" "/a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-relative-to "/a/b" "/a/b/"))
+./.akku/lib/chibi/pathname-test.sls:   (test "." (path-relative-to "/a/b" "/a/b"))
+./.akku/lib/chibi/pathname-test.sls:   (test-not (path-relative-to "/d/a/b/c" "/a/b"))
+./.akku/src/chez-srfi/private/include/compat.mzscheme.sls:    (only (scheme base) current-library-collection-paths path->string)
+./.akku/src/chez-srfi/private/include/compat.mzscheme.sls:    (map path->string 
+./.akku/src/chez-srfi/private/include/compat.larceny.sls:    (primitives current-require-path getenv absolute-path-string?))
+./.akku/src/chez-srfi/private/include/compat.larceny.sls:             (if (absolute-path-string? crp)
