@@ -42,9 +42,9 @@
           (apply append 
             (map 
               root-ancestor
-              (if (or (not (symbol? prefix)) (null? prefix))
-                (find-available-references-for document target-index-node)
-                (find-available-references-for document target-index-node prefix)))))))))
+              (if (symbol? prefix) 
+                (find-available-references-for document target-index-node prefix)
+                (find-available-references-for document target-index-node)))))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)

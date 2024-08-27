@@ -41,10 +41,8 @@
           pre-target-index-node)]
       [prefix 
         (if target-index-node 
-          (if (null? (index-node-children target-index-node)) 
-            (if (null? (annotation-stripped (index-node-datum/annotations target-index-node)))
-              ""
-              (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node))))
+          (if (and (null? (index-node-children target-index-node)) (symbol? (index-node-datum/annotations target-index-node)))
+            (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]
       [whole-list
         (filter 
