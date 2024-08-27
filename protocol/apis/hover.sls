@@ -48,10 +48,14 @@
         [text (document-text document)]
         [start-pos (index-node-start index-node)]
         [end-pos (index-node-end index-node)]
+        [siblings 
+          (if (null? (index-node-parent index-node))
+            (document-index-node-list document)
+            (index-node-children (index-node-parent index-node)))]
         [parent-index-node-end-list 
           (filter 
             (lambda (end-pos) (< end-pos start-pos))
-            (sort > (map index-node-end (index-node-children (index-node-parent index-node)))))]
+            (sort > (map index-node-end siblings)))]
         [document-index-node-end-list 
           (filter 
             (lambda (end-pos) (< end-pos start-pos)) 
