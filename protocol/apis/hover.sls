@@ -32,14 +32,14 @@
     (let* ([index-node-list (document-index-node-list document)]
         [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
         [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) '())])
-      (if (null? prefix)
-        '()
+      (if (symbol? prefix)
         (make-alist 
           'content 
-          (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))))))
+          (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))
+        '()))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
-(define (identifier-reference->hover reference)
+(define (identifier-reference->hover reference) 
   (if (null? (identifier-reference-index-node reference))
     (symbol->string (identifier-reference-identifier reference))
     (let* ([not-target-index-node (identifier-reference-index-node reference)]
@@ -48,10 +48,14 @@
         [text (document-text document)]
         [start-pos (index-node-start index-node)]
         [end-pos (index-node-end index-node)]
+        [siblings 
+          (if (null? (index-node-parent index-node))
+            (document-index-node-list document)
+            (index-node-children (index-node-parent index-node)))]
         [parent-index-node-end-list 
           (filter 
             (lambda (end-pos) (< end-pos start-pos))
-            (sort > (map index-node-end (index-node-children (index-node-parent index-node)))))]
+            (sort > (map index-node-end siblings)))]
         [document-index-node-end-list 
           (filter 
             (lambda (end-pos) (< end-pos start-pos)) 
