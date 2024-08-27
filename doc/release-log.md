@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.2.4 Fix: hover api. It failed when processing meta.
+
 1.2.3 Why completion api doesn't work well? I don't know and just fix.
 
 1.2.2 I just fixed some bugs processing my own other projects. 
