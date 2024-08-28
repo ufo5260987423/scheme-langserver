@@ -148,10 +148,36 @@
           [is (map identifier-reference-library-identifier top)])
         (if (or 
             (equal? is '((chezscheme)))
+            (equal? is '((chezscheme csv7)))
+
             (equal? is '((rnrs)))
             (equal? is '((rnrs (6))))
             (equal? is '((rnrs base)))
-            (equal? is '((scheme))))
+            (equal? is '((rnrs conditions)))
+            (equal? is '((rnrs files)))
+            (equal? is '((rnrs syntax-case)))
+            (equal? is '((rnrs exceptions)))
+            (equal? is '((rnrs lists)))
+            (equal? is '((rnrs bytevectors)))
+            (equal? is '((rnrs control)))
+            (equal? is '((rnrs unicode)))
+            (equal? is '((rnrs enums)))
+            (equal? is '((rnrs r5rs)))
+            (equal? is '((rnrs eval)))
+            (equal? is '((rnrs mutable-pairs)))
+            (equal? is '((rnrs mutable-strings)))
+            (equal? is '((rnrs io ports)))
+            (equal? is '((rnrs io simple)))
+            (equal? is '((rnrs arithmetic flonums)))
+            (equal? is '((rnrs arithmetic bitwise)))
+            (equal? is '((rnrs arithmetic fixnums)))
+            (equal? is '((rnrs records syntactic)))
+            (equal? is '((rnrs records procedural)))
+            (equal? is '((rnrs records inspection)))
+
+            (equal? is '((scheme)))
+            (equal? is '((scheme base)))
+            (equal? is '((scheme csv7))))
           (cond 
             [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
             [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
