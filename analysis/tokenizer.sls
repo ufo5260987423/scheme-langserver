@@ -1,14 +1,14 @@
 (library (scheme-langserver analysis tokenizer)
   (export 
     source-file->annotations
-    fault-tolerant-init-index-node)
+    fault-tolerant->init-index-node)
   (import 
     (chezscheme) 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver util io)
     (scheme-langserver util try))
 
-(define (fault-tolerant-init-index-node path)
+(define (fault-tolerant->init-index-node path)
   (let loop ([source (read-string path)] [bias '()])
     (try 
       (map 
@@ -22,12 +22,12 @@
               (equal? (condition-message e) "parenthesized list terminated by bracket") 
               (equal? (condition-message e) "unexpected close parenthesis") 
               (equal? (condition-message e) "unexpected end-of-file reading ~a"))
-            ;todo: fault-tolerant-parser for source
-            (loop ))]
+            (apply loop (private-parse&attach source)))]
         [else 
           (pretty-print path)]))))
 
-(define (private-parse&attach))
+(define (private-parse&attach source)
+)
 
 (define source-file->annotations
   (case-lambda
