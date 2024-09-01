@@ -22,6 +22,16 @@
                   '()
                   `(,ann . ,(loop (port-position port)))))
               (except e
+                ;; [(condition? e)
+                ;;   (if 
+                ;;     (or
+                ;;       (equal? (condition-message e) "bracketed list terminated by parenthesis") 
+                ;;       (equal? (condition-message e) "parenthesized list terminated by bracket") 
+                ;;       (equal? (condition-message e) "unexpected close parenthesis") 
+                ;;       (equal? (condition-message e) "unexpected end-of-file reading ~a"))
+                ;;     ;todo: fault-tolerant-parser for source
+                    
+                ;;   )]
                 [else 
                   (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
                   (pretty-print path)
