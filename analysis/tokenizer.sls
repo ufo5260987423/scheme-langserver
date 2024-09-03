@@ -12,40 +12,42 @@
 ;1st, make a (, ), [ or ] behined or after position
 ;2nd, just replace position with a space
 ;3rd, attach a (, ), [ or ]) or ] at the end of source (abandon, though it won't greatly change other tokens' bias, this may cause more faults)
-;I choose 2nd solution, because it won't change other tokens' bias
+;4th, replace current ) or ] with ] or ).
+;I mainly choose 2nd and 4th solution, because it won't change other tokens' bias
 (define (private:tolerant-parse->patch source)
   (let loop ([port (open-input-string source)])
     (try 
-      (get-datum port)
-      (loop port)
+      (if (eof-object? (get-datum port))
+        source
+        (loop port))
       (except e
-        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected close parenthesis"))
-          (let* ([position (cddar (condition-irritants e))]
-              [head (string-take source (- position 1))]
+        [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected close parenthesis"))
+          (let* ([position (caddar (condition-irritants e))]
+              [head (if (zero? position) "" (string-take source position))]
               [what (vector-ref (list->vector (string->list source)) position)]
               [rest (string-take-right source (- (string-length source) position 1))])
             (private:tolerant-parse->patch (string-append head " " rest)))]
-        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected close bracket"))
-          (let* ([position (cddar (condition-irritants e))]
-              [head (string-take source (- position 1))]
+        [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected close bracket"))
+          (let* ([position (caddar (condition-irritants e))]
+              [head (if (zero? position) "" (string-take source position))]
               [what (vector-ref (list->vector (string->list source)) position)]
               [rest (string-take-right source (- (string-length source) position 1))])
             (private:tolerant-parse->patch (string-append head " " rest)))]
-        [(and (condition? e) (equal? (car (condition-irritants e)) "parenthesized list terminated by bracket"))
-          (let* ([position (- (cddar (condition-irritants e)) 1)]
-              [head (string-take source (- position 1))]
+        [(and (condition? e) (equal? (caar (condition-irritants e)) "parenthesized list terminated by bracket"))
+          (let* ([position (- (caddar (condition-irritants e)) 1)]
+              [head (if (zero? position) "" (string-take source position))]
               [what (vector-ref (list->vector (string->list source)) position)]
               [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head " " rest)))]
-        [(and (condition? e) (equal? (car (condition-irritants e)) "bracketed list terminated by parenthesis"))
-          (let* ([position (- (cddar (condition-irritants e)) 1)]
-              [head (string-take source (- position 1))]
+            (private:tolerant-parse->patch (string-append head ")" rest)))]
+        [(and (condition? e) (equal? (caar (condition-irritants e)) "bracketed list terminated by parenthesis"))
+          (let* ([position (- (caddar (condition-irritants e)) 1)]
+              [head (if (zero? position) "" (string-take source position))]
               [what (vector-ref (list->vector (string->list source)) position)]
               [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head " " rest)))]
-        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected end-of-file reading ~a"))
-          (let* ([position (cddar (condition-irritants e))]
-              [head (string-take source (- position 1))]
+            (private:tolerant-parse->patch (string-append head "]" rest)))]
+        [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected end-of-file reading ~a"))
+          (let* ([position (caddar (condition-irritants e))]
+              [head (if (zero? position) "" (string-take source position))]
               [what (vector-ref (list->vector (string->list source)) position)]
               [rest (string-take-right source (- (string-length source) position 1))])
             (private:tolerant-parse->patch (string-append head " " rest)))]

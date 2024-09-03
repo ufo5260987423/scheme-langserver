@@ -24,4 +24,8 @@
     (test-equal 1 (length (source-file->annotations ".akku/lib/srfi/%3a37/srfi-37-reference.scm")))
 (test-end)
 
+(test-begin "tolerant parse")
+    (test-equal 5 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
