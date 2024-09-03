@@ -121,7 +121,8 @@
           (let ([batch (car paths)])
             ((if threaded? threaded-map map)
               (lambda (path)
-                (private-init-references root-file-node root-library-node file-linkage path type-inference?))
+                (if (string? path)
+                  (private-init-references root-file-node root-library-node file-linkage path type-inference?)))
               batch)
             (loop (cdr paths)))))]))
 

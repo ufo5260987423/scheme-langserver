@@ -1,0 +1,5 @@
+import 
+    (chezscheme) 
+    (scheme-langserver))
+(let ([a (command-line-arguments]))
+    (apply init-server a))

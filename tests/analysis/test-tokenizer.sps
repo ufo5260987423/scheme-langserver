@@ -12,16 +12,20 @@
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis tokenizer))
 
-(test-begin "read-ss-test")
+(test-begin "read ss")
     (test-equal 2 (length (source-file->annotations "./run.ss")))
 (test-end)
 
-(test-begin "read-sps-test")
+(test-begin "read sps")
     (test-equal 6 (length (source-file->annotations "./tests/log-debug.sps")))
 (test-end)
 
-(test-begin "read-scm-test")
+(test-begin "read scm")
     (test-equal 1 (length (source-file->annotations ".akku/lib/srfi/%3a37/srfi-37-reference.scm")))
+(test-end)
+
+(test-begin "tolerant parse")
+    (test-equal 5 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
