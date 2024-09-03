@@ -24,7 +24,6 @@
     (try
       (match expression
         [(_ (literals ...) (a b ...) **1) 
-          (guard-for document index-node 'syntax-rules '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ; https://www.scheme.com/tspl4/syntax.html
         ; Any syntax-rules form can be expressed with syntax-case by making the lambda expression and syntax expressions explicit.
           (let ([rest (cddr (index-node-children index-node))])
