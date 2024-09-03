@@ -1,39 +1,61 @@
 (library (scheme-langserver analysis tokenizer)
   (export 
-    source-file->annotations
-    fault-tolerant->init-index-node)
+    source-file->annotations)
   (import 
     (chezscheme) 
+    (only (srfi :13) string-take string-take-right)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver util io)
     (scheme-langserver util try))
 
-(define (fault-tolerant->init-index-node path)
-  (let loop ([source (read-string path)] [bias '()])
+;I mainly handle miss-matched () and [], and here's serveral options:
+;1st, make a (, ), [ or ] behined or after position
+;2nd, just replace position with a space
+;3rd, attach a (, ), [ or ]) or ] at the end of source (abandon, though it won't greatly change other tokens' bias, this may cause more faults)
+;I choose 2nd solution, because it won't change other tokens' bias
+(define (private:tolerant-parse->patch source)
+  (let loop ([port (open-input-string source)])
     (try 
-      (map 
-        (lambda (item) (init-index-node '() item)) 
-        (source-file->annotations source path))
+      (get-datum port)
+      (loop port)
       (except e
-        [(condition? e)
-          (if 
-            (or
-              (equal? (condition-message e) "bracketed list terminated by parenthesis") 
-              (equal? (condition-message e) "parenthesized list terminated by bracket") 
-              (equal? (condition-message e) "unexpected close parenthesis") 
-              (equal? (condition-message e) "unexpected end-of-file reading ~a"))
-            (apply loop (private-parse&attach source)))]
-        [else 
-          (pretty-print path)]))))
-
-(define (private-parse&attach source)
-)
+        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected close parenthesis"))
+          (let* ([position (cddar (condition-irritants e))]
+              [head (string-take source (- position 1))]
+              [what (vector-ref (list->vector (string->list source)) position)]
+              [rest (string-take-right source (- (string-length source) position 1))])
+            (private:tolerant-parse->patch (string-append head " " rest)))]
+        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected close bracket"))
+          (let* ([position (cddar (condition-irritants e))]
+              [head (string-take source (- position 1))]
+              [what (vector-ref (list->vector (string->list source)) position)]
+              [rest (string-take-right source (- (string-length source) position 1))])
+            (private:tolerant-parse->patch (string-append head " " rest)))]
+        [(and (condition? e) (equal? (car (condition-irritants e)) "parenthesized list terminated by bracket"))
+          (let* ([position (- (cddar (condition-irritants e)) 1)]
+              [head (string-take source (- position 1))]
+              [what (vector-ref (list->vector (string->list source)) position)]
+              [rest (string-take-right source (- (string-length source) position 1))])
+            (private:tolerant-parse->patch (string-append head " " rest)))]
+        [(and (condition? e) (equal? (car (condition-irritants e)) "bracketed list terminated by parenthesis"))
+          (let* ([position (- (cddar (condition-irritants e)) 1)]
+              [head (string-take source (- position 1))]
+              [what (vector-ref (list->vector (string->list source)) position)]
+              [rest (string-take-right source (- (string-length source) position 1))])
+            (private:tolerant-parse->patch (string-append head " " rest)))]
+        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected end-of-file reading ~a"))
+          (let* ([position (cddar (condition-irritants e))]
+              [head (string-take source (- position 1))]
+              [what (vector-ref (list->vector (string->list source)) position)]
+              [rest (string-take-right source (- (string-length source) position 1))])
+            (private:tolerant-parse->patch (string-append head " " rest)))]
+        [else (pretty-print e)]))))
 
 (define source-file->annotations
   (case-lambda
     ([path] (source-file->annotations (read-string path) path))
-    ([source path] (source-file->annotations source path (consume-sps-auxiliary source)))
-    ([source path start-position]
+    ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t))
+    ([source path start-position tolerant?]
       (let ([port (open-string-input-port source)]
           [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
         (set-port-position! port start-position)
@@ -45,8 +67,13 @@
                   '()
                   `(,ann . ,(loop (port-position port)))))
               (except e
-                [else 
+                [(and tolerant? (condition? e))
+                  (source-file->annotations (private:tolerant-parse->patch source) path start-position #f)]
+                [(condition? e) 
                   (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
+                  (pretty-print path)]
+                [else 
+                  (pretty-print e)
                   (pretty-print path)
                   '()]))))))))
 ;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
@@ -64,7 +91,8 @@
         [(eof-object? c) (- (port-position ip) 1)]
         [(eqv? #\newline c) (loop (get-char ip) #f)]
         [(eqv? #\return c) (loop (get-char ip) #f)]
-        [(eqv? c #\;) (loop (get-char ip) #t)]
+        [(eqv? c #\;
+        ) (loop (get-char ip) #t)]
         [(eqv? c #\#) 
           (cond
             [(and (not inline-comment?) (eqv? #\| (lookahead-char ip)))
