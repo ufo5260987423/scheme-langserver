@@ -80,6 +80,8 @@ name = "scheme"
 language-servers = [ "scheme-langserver" ]
 ```
 
+> NOTE: you may config the "command" with the real path to scheme-langserver's executable file `run`.
+
 ## Manually Build & Compile 
 
 ### Pre-require
