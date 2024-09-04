@@ -69,18 +69,15 @@ lvim.builtin.cmp.sources = {
 
 If you want [Emacs](https://www.gnu.org/software/emacs/emacs.html) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/39) suggests [eglot](https://github.com/joaotavora/eglot). But I'm not familiar with Emacs, and you may config it yourself.
 
-If you want [Helix Editor](https://helix-editor.com/) to embed scheme-langserver, [this issue](https://github.com/ufo5260987423/scheme-langserver/issues/41) may give some configurations. And according to my understand, you may config `language.toml` as following:
+If you want [Helix Editor](https://helix-editor.com/) to work with `scheme-langserver`, add the following lines to your `~/.config/helix/language.toml`:
 
 ```
+[language-server]
+scheme-langserver = { command = "scheme-langserver" }
+
 [[language]]
 name = "scheme"
-scope = "source.scheme"
-injection-regex = "scheme"
-file-types = ["ss", "scm"]
-shebangs = ["scheme", "guile", "chicken"]
-comment-token = ";"
-indent = { tab-width = 2, unit = " " }
-language-servers = [ {path-to-run}]
+language-servers = [ "scheme-langserver" ]
 ```
 
 ## Manually Build & Compile 
