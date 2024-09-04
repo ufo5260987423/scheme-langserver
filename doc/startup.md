@@ -8,6 +8,12 @@ if you're using x64-based linux operating system, you can directly download late
 
 Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the help of [scheme-langserver](https://github.com/ufo5260987423/scheme-langserver), we're proud to say that Magic Scheme is **much better** than many counterparts, which includes even Racket extensions.
 
+![Run Scheme Script](./figure/runSchemeScript.png)
+
+![Run Scheme Script](./figure/runSchemeRepl.png)
+
+![Syntax Highlight](./figure/syntax_highlight.png)
+
 ### [LunarVim(1.4)](https://www.lunarvim.org/)
 Personally, I use [LunarVim(1.4)](https://www.lunarvim.org/) as an out-of-box IDE layer. So, you may configure `~/.config/lvim/config.lua` and add following codes like:
 
