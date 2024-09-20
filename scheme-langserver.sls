@@ -28,7 +28,25 @@
     (scheme-langserver util association)
     (scheme-langserver util path))
 
-;; Processes a request. This procedure should always return a response
+(define (private:try-catch server-instance request)
+  (let ([method (request-method request)]
+      [id (request-id request)])
+  (try 
+    (process-request server-instance request)
+    (except c 
+      [(condition? c) 
+        (do-log 
+          (with-output-to-string (lambda () (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))))
+          server-instance)
+        (do-log-timestamp server-instance)
+        (send-message server-instance (fail-response id unknown-error-code method))]
+      [else 
+        (do-log 
+          (with-output-to-string (lambda () (pretty-print c)))
+          server-instance)
+        (do-log-timestamp server-instance) 
+        (send-message server-instance (fail-response id unknown-error-code method))]))))
+
 (define (process-request server-instance request)
   (let* ([method (request-method request)]
         [id (request-id request)]
@@ -43,55 +61,13 @@
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" '()] 
 
-        ["textDocument/didOpen" 
-          (try
-            (did-open workspace params)
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/didClose" 
-          (try
-            (did-close workspace params)
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/didChange" 
-          (try
-            (did-change workspace params)
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/didOpen" (did-open workspace params)]
+        ["textDocument/didClose" (did-close workspace params)]
+        ["textDocument/didChange" (did-change workspace params)]
 
-        ["textDocument/hover" 
-          (try
-            (send-message server-instance (success-response id (hover workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/completion" 
-          (try
-            (send-message server-instance (success-response id (completion workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/references" 
-          (try
-            (send-message server-instance (success-response id (find-references workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
+        ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
+        ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
         ; ["textDocument/documentHighlight" 
         ;   (try
         ;     (send-message server-instance (success-response id (find-highlight workspace params)))
@@ -102,30 +78,9 @@
         ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
           ; ["textDocument/signatureHelp"
           ;  (text-document/signatureHelp id params)]
-        ["textDocument/definition" 
-          (try
-            (send-message server-instance (success-response id (definition workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/documentSymbol" 
-          (try
-            (send-message server-instance (success-response id (document-symbol workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
-        ["textDocument/diagnostic" 
-          (try
-            (send-message server-instance (success-response id (diagnostic workspace params)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
+        ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
+        ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
         ;TODO: pretty-format with comments
         ; ["textDocument/formatting"
         ;   (try
@@ -136,14 +91,7 @@
         ;         (do-log-timestamp server-instance)
         ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
 
-        ["$/cancelRequest" 
-          (try
-            (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))
-            (except c
-              [else 
-                (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                (do-log-timestamp server-instance)
-                (send-message server-instance (fail-response id unknown-error-code method))]))]
+        ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/rangeFormatting"
@@ -269,14 +217,14 @@
                 (thread-pool-add-job thread-pool 
                   (lambda () 
                     (let loop ()
-                      (process-request server-instance (request-queue-pop request-queue))
+                      (private:try-catch server-instance (request-queue-pop request-queue))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
                 (if (not (null? request-message))
                   (if (not (or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))))
                     (begin
                       (if (null? thread-pool)
-                        (process-request server-instance request-message)
+                        (private:try-catch server-instance request-message)
                         (request-queue-push request-queue request-message))
                       (loop (read-message server-instance))))))
               (except c 

@@ -256,14 +256,14 @@
             [(or 
               (contain? (map identifier-reference-type top) 'syntax)
               (contain? (map identifier-reference-type top) 'syntax-variable))
-              ; (private-add-rule 
-              ;   rules 
-              ;   `((,(lambda (root-file-node root-library-node document index-node)
-              ;       (self-defined-syntax-process 
-              ;         root-file-node root-library-node document index-node file-linkage
-              ;         (lambda (generated-index-node)
-              ;           (step root-file-node root-library-node file-linkage document generated-index-node #f)))
-              ;     )) . ,identifier))
+              ;; (private-add-rule 
+              ;;   rules 
+              ;;   `((,(lambda (root-file-node root-library-node document index-node)
+              ;;       (self-defined-syntax-process 
+              ;;         root-file-node root-library-node document index-node file-linkage
+              ;;         (lambda (generated-index-node)
+              ;;           (step root-file-node root-library-node file-linkage document generated-index-node #f)))
+              ;;     )) . ,identifier))
               rules
               ]
             [else rules])

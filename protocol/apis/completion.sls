@@ -34,13 +34,14 @@
       [index-node-list (document-index-node-list document)]
       [pre-target-index-node (pick-index-node-from index-node-list bias)]
       [target-index-node 
-        (if pre-target-index-node
+        (if (null? pre-target-index-node)
+          pre-target-index-node
           (if (null? (index-node-children pre-target-index-node))
             pre-target-index-node
-            (pick-index-node-from index-node-list (- bias 1)))
-          pre-target-index-node)]
+            (pick-index-node-from index-node-list (- bias 1))))]
       [prefix 
-        (if target-index-node 
+        (if (null? target-index-node)
+          ""
           (if (and (null? (index-node-children target-index-node)) (symbol? (index-node-datum/annotations target-index-node)))
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]

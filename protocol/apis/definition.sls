@@ -30,7 +30,8 @@
       [index-node-list (document-index-node-list document)]
       [target-index-node (pick-index-node-from index-node-list (text+position->int text position))]
       [prefix 
-        (if target-index-node 
+        (if (null? target-index-node)
+          '()
           (if (null? (index-node-children target-index-node)) 
             (annotation-stripped (index-node-datum/annotations target-index-node)) 
             '()))])
@@ -42,9 +43,10 @@
           (apply append 
             (map 
               root-ancestor
-              (if (symbol? prefix) 
-                (find-available-references-for document target-index-node prefix)
-                (find-available-references-for document target-index-node)))))))))
+              (cond 
+                [(null? target-index-node) '()]
+                [(symbol? prefix) (find-available-references-for document target-index-node prefix)]
+                [else (find-available-references-for document target-index-node)]))))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)
