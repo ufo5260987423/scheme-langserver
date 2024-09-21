@@ -80,7 +80,7 @@
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))
           (map 
             (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro?))
+              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro? 'quasiquoted))
             (index-node-children current-index-node))]
         [(syntax? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node 
@@ -90,7 +90,7 @@
             (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
             (map 
               (lambda (i)
-                (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro?))
+                (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro? 'quasisyntaxed))
               (index-node-children current-index-node)))]
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
@@ -117,12 +117,10 @@
                   ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
               target-rules))]
         [else '()])]
-      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers allow-extend-macro?)
-        (if (or 
-            (unquote? current-index-node current-document)
-            (unsyntax? current-index-node current-document)
-            (unquote-splicing? current-index-node current-document)
-            (unsyntax-splicing? current-index-node current-document))
+      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers allow-extend-macro? quasi-quoted-syntaxed)
+        (if (case quasi-quoted-syntaxed
+            ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
+            ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))])
           (begin
             (index-node-references-import-in-this-node-set! current-index-node available-identifiers)
             (map 
@@ -131,7 +129,7 @@
               (index-node-children current-index-node)))
           (map
             (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro?))
+              (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro? quasi-quoted-syntaxed))
             (index-node-children current-index-node)))]))
 
 (define (private-rule-compare? item0 item1)
