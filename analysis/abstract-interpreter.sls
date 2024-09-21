@@ -85,13 +85,13 @@
         [(syntax? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node 
             (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) (find-available-references-for current-document current-index-node)))]
-        [(quasiquote? current-index-node current-document)
-          (index-node-excluded-references-set! current-index-node 
-            (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) (find-available-references-for current-document current-index-node)))
-          (map 
-            (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro?))
-            (index-node-children current-index-node))]
+        [(quasisyntax? current-index-node current-document)
+          (let ([available-identifiers (find-available-references-for current-document current-index-node)])
+            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
+            (map 
+              (lambda (i)
+                (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro?))
+              (index-node-children current-index-node)))]
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
               [head (car children)]
