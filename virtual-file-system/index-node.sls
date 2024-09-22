@@ -128,16 +128,20 @@
         [annotation-list (annotation-expression datum/annotation)])
     (index-node-children-set! 
       node 
-      (if (list? annotation-list)
-        (filter 
-          (lambda (item) (not (null? item)))
+      (cond 
+        [(list? annotation-list) 
           (map 
-            (lambda(e) 
-              (if (annotation? e)
-                (init-index-node node e)
-                '()))
-            annotation-list))
-        '()))
+            (lambda (e) (init-index-node node e))
+            (filter annotation? annotation-list))]
+        [(pair? annotation-list)
+          (map 
+            (lambda (e) (init-index-node node e))
+            (filter annotation? `(,(car annotation-list) ,(cdr annotation-list))))]
+        [(vector? annotation-list)
+          (map 
+            (lambda (e) (init-index-node node e))
+            (filter annotation? (vector->list annotation-list)))]
+        [else '()]))
     node))
 
 (define (is-leaf? index-node)

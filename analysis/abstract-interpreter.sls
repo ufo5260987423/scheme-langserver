@@ -122,6 +122,9 @@
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
             ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))])
           (begin
+            ;; (debug:print-expression current-index-node)
+            ;; (pretty-print (null? (index-node-children current-index-node)))
+            ;; (debug:print-expression (index-node-parent current-index-node))
             (index-node-references-import-in-this-node-set! current-index-node (sort-identifier-references available-identifiers))
             (map 
               (lambda (i)
