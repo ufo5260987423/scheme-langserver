@@ -33,12 +33,7 @@
                   (append 
                     (index-node-excluded-references identifier-parent-index-node)
                     reference-list))
-                (index-node-references-import-in-this-node-set! 
-                  identifier-parent-index-node
-                  (sort-identifier-references
-                    (append 
-                      (index-node-references-import-in-this-node identifier-parent-index-node)
-                      include)))
+                (append-references-into-ordered-references-for document identifier-parent-index-node include)
                 (loop (append include reference-list) (cdr rest)))))]
         [else '()])
       (except c

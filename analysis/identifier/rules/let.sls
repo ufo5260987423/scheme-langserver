@@ -68,12 +68,7 @@
         (index-node-references-export-to-other-node index-node)
           `(,reference)))
 
-    (index-node-references-import-in-this-node-set! 
-      let-node
-      (sort-identifier-references
-        (append 
-          (index-node-references-import-in-this-node let-node)
-            `(,reference))))
+    (append-references-into-ordered-references-for document let-node `(,reference))
 
     (index-node-excluded-references-set! 
       (index-node-parent index-node)

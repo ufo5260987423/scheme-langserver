@@ -60,12 +60,7 @@
               (index-node-references-export-to-other-node template-index-node)
               `(,reference)))
 
-          (index-node-references-import-in-this-node-set! 
-            index-node
-            (sort-identifier-references
-              (append 
-                (index-node-references-import-in-this-node index-node)
-                `(,reference))))
+          (append-references-into-ordered-references-for document index-node `(,reference))
           reference))
       symbols)))
 

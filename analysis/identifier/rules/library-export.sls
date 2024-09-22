@@ -4,7 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    ; (scheme-langserver util try)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
@@ -60,10 +59,7 @@
                     document
                     internal-index-node 
                     (annotation-stripped (index-node-datum/annotations internal-index-node)))])
-              (index-node-references-import-in-this-node-set! 
-                external-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node external-index-node) references)))
+              (append-references-into-ordered-references-for document external-index-node references)
 
               (index-node-references-export-to-other-node-set! 
                 external-index-node

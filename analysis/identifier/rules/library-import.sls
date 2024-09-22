@@ -117,12 +117,7 @@
                       (equal? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
 
-              (index-node-references-import-in-this-node-set! 
-                current-index-node
-                (sort-identifier-references
-                  (append 
-                    (index-node-references-import-in-this-node current-index-node)
-                    current-references)))
+              (append-references-into-ordered-references-for document current-index-node current-references)
 
               (append-references-into-ordered-references-for document grand-parent-index-node current-references)
 
@@ -143,10 +138,7 @@
             (document-ordered-reference-list-set! 
               document
               (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
-            (index-node-references-import-in-this-node-set! 
-              grand-parent-index-node 
-              (sort-identifier-references
-                (append (index-node-references-import-in-this-node grand-parent-index-node) tmp)))))
+            (append-references-into-ordered-references-for document grand-parent-index-node tmp)))
 
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
@@ -164,12 +156,7 @@
                       (equal? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
 
-              (index-node-references-import-in-this-node-set! 
-                current-index-node
-                (sort-identifier-references
-                  (append 
-                    (index-node-references-import-in-this-node current-index-node)
-                    current-references)))
+              (append-references-into-ordered-references-for document current-index-node current-references)
               (loop 
                 (cdr importion-index-node) 
                 (cdr identifiers) 
@@ -228,13 +215,7 @@
                         (identifier-reference-type-expressions reference))) 
                     current-references)])
 
-              (index-node-references-import-in-this-node-set! 
-                current-internal-node
-                (sort-identifier-references
-                  (append 
-                    (index-node-references-import-in-this-node current-internal-node)
-                    current-references)))
-
+              (append-references-into-ordered-references-for document current-internal-node current-references)
               (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
 
               (index-node-references-export-to-other-node-set! 
@@ -284,13 +265,7 @@
                         (identifier-reference-type-expressions reference)))
                     current-references)])
 
-              (index-node-references-import-in-this-node-set! 
-                current-internal-node
-                (sort-identifier-references
-                  (append 
-                    (index-node-references-import-in-this-node current-internal-node)
-                    current-references)))
-
+              (append-references-into-ordered-references-for document current-internal-node current-references)
               (append-references-into-ordered-references-for document grand-parent-index-node current-references)
               (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
 
@@ -319,10 +294,7 @@
               (document-ordered-reference-list-set! 
                 document
                 (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
-              (index-node-references-import-in-this-node-set! 
-                grand-parent-index-node 
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node grand-parent-index-node) tmp))))))]
+              (append-references-into-ordered-references-for document grand-parent-index-node tmp))))]
       [(library-identifier **1) 
         (append-references-into-ordered-references-for 
           document 
