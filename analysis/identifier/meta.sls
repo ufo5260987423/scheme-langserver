@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier meta)
   (export 
      construct-type-expression-with-meta
+     meta-library?
      find-meta)
   (import 
      (rnrs)
@@ -12,6 +13,9 @@
      (scheme-langserver analysis type domain-specific-language variable))
 
 (define initialized? #f)
+
+(define (meta-library? list-instance)
+  (not (null? (find-meta list-instance))))
 
 (define (find-meta list-instance)
   (if (not initialized?)
