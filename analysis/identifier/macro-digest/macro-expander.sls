@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier macro-expander)
+(library (scheme-langserver analysis identifier macro-digest macro-expander)
   (export expand:step-by-step)
   (import 
     (chezscheme)
