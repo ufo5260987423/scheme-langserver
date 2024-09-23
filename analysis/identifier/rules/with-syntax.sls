@@ -31,7 +31,7 @@
             (map 
               (lambda (current-syntax-parameter-index-node)
                 (let* ([expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]
-                    [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-variable '() '())])
+                    [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-parameter '() '())])
                   (append-references-into-ordered-references-for document index-node `(, identifier-reference))
                   (index-node-excluded-references-set! syntax-parameter-_s 
                     (append 
