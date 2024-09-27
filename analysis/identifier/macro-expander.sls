@@ -36,16 +36,21 @@
     (match expression
       [(syntax-rules-head (keywords ...) clauses **1) 
         (if (root-meta-check callee-document first-child 'syntax-rules)
-          (syntax->datum (eval `(syntax-case ',callee-expression ,keywords clauses)))
+          (syntax->datum (eval `(syntax-case ',callee-expression ,keywords ,@(map private:rule-clause->case-clause clauses))))
           '())]
       [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
         (if (and 
             (equal? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
             (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
-          (syntax->datum (eval `(_ ... (syntax-case ,like-parameter ,keywords ,clauses))))
+          (syntax->datum (eval `(_ ... (syntax-case ,like-parameter ,keywords ,@clauses))))
           '())]
       [else '()])))
+
+(define (private:rule-clause->case-clause clause)
+  (match clause
+    [(template body) `(,template #',body)]
+    [else '()]))
 
 (define (private:unwrap identifier-reference)
   (let* ([initial (identifier-reference-initialization-index-node identifier-reference)]
@@ -55,7 +60,7 @@
       [first-child-expression (annotation-stripped (index-node-datum/annotations first-child))]
       [document (identifier-reference-document identifier-reference)]
       [first-child-identifiers (find-available-references-for document initial first-child-expression)]
-      [first-child-top-identifiers (map root-ancestor first-child-identifiers)])
+      [first-child-top-identifiers (apply append (map root-ancestor first-child-identifiers))])
     (map 
       (lambda (first-child-identifier)
         (case (identifier-reference-identifier first-child-identifier)

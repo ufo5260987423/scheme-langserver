@@ -20,7 +20,7 @@
 (define (root-meta-check document index-node target-expression)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [identifiers (find-available-references-for document index-node (annotation-stripped (index-node-datum/annotations index-node)))]
-      [root-identifiers (map root-ancestor identifiers)])
+      [root-identifiers (apply append (map root-ancestor identifiers))])
     (find (lambda (i) (or (meta-library? (identifier-reference-library-identifier i)) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
 
 (define (meta-library? list-instance)
