@@ -22,27 +22,27 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (expand:step-by-step identifier-reference callee-index-node document)
+(define (expand:step-by-step identifier-reference callee-index-node callee-document)
   (map 
     (lambda (target-index-node)
-      (private:dispatch target-index-node callee-index-node document))
+      (private:dispatch target-index-node callee-index-node callee-document))
     (private:unwrap identifier-reference)))
 
-(define (private:dispatch index-node callee-index-node document)
+(define (private:dispatch index-node callee-index-node callee-document)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [children (index-node-children index-node)]
       [first-child (car children)]
       [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))])
     (match expression
       [(syntax-rules-head (keywords ...) clauses **1) 
-        (if (root-meta-check document first-child 'syntax-rules)
+        (if (root-meta-check callee-document first-child 'syntax-rules)
           (syntax->datum (eval `(syntax-case ',callee-expression ,keywords clauses)))
           '())]
       [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
         (if (and 
             (equal? parameter like-parameter)
-            (root-meta-check document first-child 'lambda)
-            (root-meta-check document (car (index-node-children (car (reverse children)))) 'syntax-case))
+            (root-meta-check callee-document first-child 'lambda)
+            (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
           (syntax->datum (eval `(_ ... (syntax-case ,like-parameter ,keywords ,clauses))))
           '())]
       [else '()])))
