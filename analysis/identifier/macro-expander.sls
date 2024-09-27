@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier macro-digest macro-expander)
+(library (scheme-langserver analysis identifier macro-expander)
   (export expand:step-by-step)
   (import 
     (chezscheme)
@@ -36,22 +36,16 @@
     (match expression
       [(syntax-rules-head (keywords ...) clauses **1) 
         (if (root-meta-check document first-child 'syntax-rules)
-          '()
-        )
-      ]
+          (syntax->datum (eval `(syntax-case ',callee-expression ,keywords clauses)))
+          '())]
       [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
         (if (and 
             (equal? parameter like-parameter)
             (root-meta-check document first-child 'lambda)
             (root-meta-check document (car (index-node-children (car (reverse children)))) 'syntax-case))
-          '()
-          )
-      ]
+          (syntax->datum (eval `(_ ... (syntax-case ,like-parameter ,keywords ,clauses))))
+          '())]
       [else '()])))
-
-(define (process:clause keywords clause-index-node)
-  '()
-)
 
 (define (private:unwrap identifier-reference)
   (let* ([initial (identifier-reference-initialization-index-node identifier-reference)]
@@ -68,8 +62,4 @@
           ['define-syntax (caddr initial-children)]
           ['let-syntax (cadr (index-node-parent (identifier-reference-index-node identifier-reference)))]))
       (filter (lambda (identifier) (meta-library? (identifier-reference-library-identifier identifier))) first-child-top-identifiers))))
-
-(define (callee->digested-list callee-index-node)
-  '()
-)
 )
