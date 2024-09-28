@@ -18,7 +18,7 @@
     (scheme-langserver analysis identifier macro-expander)
     (scheme-langserver analysis workspace))
 
-(test-begin "expand:step-by-step")
+(test-begin "expand:step-by-step & generate-pair:template+callee")
     (let* ([workspace-instance (init-workspace (current-directory))]
             [root-file-node (workspace-file-node workspace-instance)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/dependency/rules/library-import.sls"))]
@@ -34,6 +34,23 @@
                     (('for (identifier **1) 'run ...) identifier)
                     (('for (identifier **1) '(meta 0) ...) identifier)
                     ((identifier **1) identifier) (else '()))))
-            (expand:step-by-step (car (find-available-references-for document target-index-node 'match)) target-index-node document)))
+            (expand:step-by-step (car (find-available-references-for document target-index-node 'match)) target-index-node document))
+        (test-equal
+            '((match . match)
+                (atom . expression)
+                (pat ('only (identifier **1) _ ...)
+                    ('except (identifier **1) _ ...)
+                    ('prefix (identifier **1) _ ...)
+                    ('rename (identifier **1) _ ...)
+                    ('for (identifier **1) 'run ...)
+                    ('for (identifier **1) '(meta 0) ...) (identifier **1) else)
+                (body identifier identifier identifier identifier identifier identifier identifier '()))
+            (map 
+                (lambda (p)
+                    `(,(car p) .
+                    ,(if (index-node? (cdr p))
+                        (annotation-stripped (index-node-datum/annotations (cdr p)))
+                        (map (lambda (px) (annotation-stripped (index-node-datum/annotations px))) (cdr p)))))
+                (generate-pair:template+callee (car (find-available-references-for document target-index-node 'match)) target-index-node document))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

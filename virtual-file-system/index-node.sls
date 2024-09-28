@@ -8,6 +8,7 @@
     pick-index-node-parent-of
     pick-index-node-with-mapper 
     pick-index-node-cover-mapper
+    pick-index-node-has-content-without-recursion
 
     get-root-ancestor
 
@@ -171,6 +172,9 @@
   (index-node-references-export-to-other-node-set! index-node '())
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
+
+(define (pick-index-node-has-content-without-recursion target-index-node-list content-expression)
+  (filter (lambda (x) (equal? content-expression (annotation-stripped (index-node-datum/annotations x)))) target-index-node-list))
 
 (define (pick-index-node-cover-mapper target-index-node-list mapper-vector)
   (let ([start (index-node-start (car target-index-node-list))]
