@@ -25,13 +25,18 @@
     (scheme-langserver virtual-file-system file-node))
 
 (define (self-defined-syntax-process identifier-reference callee-index-node callee-document stepper)
-  (let* ([expanded-expression (expand:step-by-step identifier-reference callee-index-node callee-document)]
-      [virtual-index-node-list 
-        (private:init-virtual-index-node-list expanded-expression (index-node-parent (identifier-reference-initialization-index-node identifier-reference)) callee-document)]
-      [stepped-virtual-index-node-list (map stepper virtual-index-node-list)]
-      [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
-      [callee-symbol-index-node-list (private:get-symbol-index-node-children callee-index-node)]
-      [virtual-symbol-index-node-list (apply append (map private:get-symbol-index-node-children stepped-virtual-index-node-list))])
+  (let* ([identifier+expanded-expression (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)]
+      [expanded-expression (cdr identifier+expanded-expression)]
+      [top-identifier-reference (car identifier+expanded-expression)]
+      [top-index-node (index-node-parent (identifier-reference-initialization-index-node top-identifier-reference))]
+      [top-document (identifier-reference-document top-identifier-reference)]
+      [virtual-index-node-list (private:init-virtual-index-node-list expanded-expression top-index-node top-document)]
+
+      ;; [stepped-virtual-index-node-list (map stepper virtual-index-node-list)]
+      ;; [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
+      ;; [callee-symbol-index-node-list (private:get-symbol-index-node-children callee-index-node)]
+      ;; [virtual-symbol-index-node-list (apply append (map private:get-symbol-index-node-children stepped-virtual-index-node-list))]
+      )
     ;; (map 
     ;;   (lambda (callee-symbol-index-node)
     ;;     (map 

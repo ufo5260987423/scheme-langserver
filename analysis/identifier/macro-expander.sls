@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier macro-expander)
   (export 
     expand:step-by-step
+    expand:step-by-step-identifier-reference
     generate-pair:template+callee)
   (import 
     (chezscheme)
@@ -24,11 +25,16 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (expand:step-by-step identifier-reference callee-index-node callee-document)
+(define (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)
   (map 
-    (lambda (target-index-node)
-      (private:dispatch target-index-node callee-index-node callee-document))
+    (lambda (p)
+      (let* ([target-index-node (cdr p)]
+          [identifier-reference (car p)])
+        `(,identifier-reference . ,(private:dispatch (cdr p) callee-index-node callee-document))))
     (private:unwrap identifier-reference)))
+
+(define (expand:step-by-step identifier-reference callee-index-node callee-document)
+  (map cdr (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)))
 
 (define (generate-pair:template+callee identifier-reference callee-index-node callee-document)
   (fold-left 
@@ -45,8 +51,8 @@
     '()
     (apply append 
       (map 
-        (lambda (target-index-node)
-          (private:dispatch-for-pair target-index-node callee-index-node callee-document))
+        (lambda (p)
+          (private:dispatch-for-pair (cdr p) callee-index-node callee-document))
         (private:unwrap identifier-reference)))))
 
 (define (private:dispatch-for-pair index-node callee-index-node callee-document)
@@ -145,7 +151,7 @@
     (map 
       (lambda (first-child-identifier)
         (case (identifier-reference-identifier first-child-identifier)
-          ['define-syntax (caddr initial-children)]
-          ['let-syntax (cadr (index-node-parent (identifier-reference-index-node identifier-reference)))]))
+          ['define-syntax `(,first-child-identifier . ,(caddr initial-children))]
+          ['let-syntax `(,first-child-identifier . ,(cadr (index-node-parent (identifier-reference-index-node identifier-reference))))]))
       (filter (lambda (identifier) (meta-library? (identifier-reference-library-identifier identifier))) first-child-top-identifiers))))
 )

@@ -236,8 +236,8 @@
               ;;   `((,(lambda (root-file-node root-library-node document index-node)
               ;;       (self-defined-syntax-process 
               ;;         root-file-node root-library-node document index-node file-linkage
-              ;;         (lambda (generated-index-node)
-              ;;           (step root-file-node root-library-node file-linkage document generated-index-node #f)))
+              ;;         (lambda (specific-document generated-index-node specific-allow-extend-macro?)
+              ;;           (step root-file-node root-library-node file-linkage specific-document generated-index-node specific-allow-extend-macro?)))
               ;;     )) . ,identifier))
               rules
               ]
