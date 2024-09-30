@@ -31,8 +31,7 @@
       [top-index-node (index-node-parent (identifier-reference-initialization-index-node top-identifier-reference))]
       [top-document (identifier-reference-document top-identifier-reference)]
       [virtual-index-node-list (private:init-virtual-index-node-list expanded-expression top-index-node top-document)]
-
-      ;; [stepped-virtual-index-node-list (map stepper virtual-index-node-list)]
+      ;; [stepped-virtual-index-node-list (map (lambda (i) (stepper top-document generated-index-node specific-allow-extend-macro?)) virtual-index-node-list)]
       ;; [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
       ;; [callee-symbol-index-node-list (private:get-symbol-index-node-children callee-index-node)]
       ;; [virtual-symbol-index-node-list (apply append (map private:get-symbol-index-node-children stepped-virtual-index-node-list))]
