@@ -19,7 +19,7 @@
     document+bias->position-list
     text->line-length-vector)
   (import 
-    (rnrs)
+    (chezscheme)
     (scheme-langserver util text))
 
 (define-record-type document 
@@ -45,7 +45,7 @@
         `(,(- current-line 1) ,(- current-bias 1))]
       [(< bias (+ current-bias (vector-ref (document-line-length-vector document) current-line)))
         `(,current-line ,(- bias current-bias))]
-      [else (loop (+ 1 current-line) (+ 1 current-bias (vector-ref (document-line-length-vector document) current-line)))])))
+      [else (loop (+ 1 current-line) (+ current-bias (vector-ref (document-line-length-vector document) current-line)))])))
 
 (define (document+position->bias document line offset)
   (let loop ([current-line 0]
