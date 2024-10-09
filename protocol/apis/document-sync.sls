@@ -47,8 +47,8 @@
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
                   [temp-text (text-edit-text target)]
-                  [start (text+position->int text (range-start range))]
-                  [end (text+position->int text (range-end range))])
+                  [start (text+position->int text (position-line (range-start range)) (position-character (range-start range)))]
+                  [end (text+position->int text (position-line (range-end range)) (position-character (range-end range)))])
                 (loop 
                   (cdr content-changes) 
 ;;The actual content changes. The content changes describe single state
