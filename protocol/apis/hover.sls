@@ -31,7 +31,12 @@
     (refresh-workspace-for workspace file-node)
     (let* ([index-node-list (document-index-node-list document)]
         [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
-        [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) '())])
+        [prefix 
+          (if (index-node? target-index-node)  
+            (if (null? (index-node-children target-index-node)) 
+              (annotation-stripped (index-node-datum/annotations target-index-node)) 
+              '())
+            '())])
       (if (symbol? prefix)
         (make-alist 
           'content 
