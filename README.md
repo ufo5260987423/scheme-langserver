@@ -58,7 +58,7 @@ send-message
 ### TODOs
 14. Renaming. 
 15. Fully compatible with [r6rs standard](http://www.r6rs.org/).
-16. Macro expanding.
+16. Step-by-step macro expander: well, I actually have implemented one and I wanted to make it a key step catching identifier binding in self-defined macros. Now, I find this catching is much harder than I thought, and the expander I don't know where it could work.
 17. Code eval.
 18. Code diagnostic.
 19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
