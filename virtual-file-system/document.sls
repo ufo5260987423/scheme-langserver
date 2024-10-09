@@ -51,7 +51,7 @@
   (let loop ([current-line 0]
       [current-bias 0])
     (cond 
-      [(= (vector-length (document-line-length-vector document)) current-line)]
+      [(= (vector-length (document-line-length-vector document)) current-line) (- current-bias 1)]
       [(< current-line line) (loop (+ 1 current-line) (+ 1 current-bias (vector-ref (document-line-length-vector document) current-line)))]
       [(and (= current-line line) (<= offset (vector-ref (document-line-length-vector document) current-line))) (+ current-bias offset)]
       [else (raise 'position-out-of-range)])))
@@ -62,6 +62,6 @@
       (let loop ([s 0])
         (if (< s l)
           (let ([e (get-line-end-position text s)])
-            `(,(- e s) ,@(loop (+ e 1)))
-            '()))))))
+            `(,(- e s) ,@(loop (+ e 1))))
+            '())))))
 )

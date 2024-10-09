@@ -28,7 +28,7 @@
       [text (document-text document)]
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
-      [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
+      [target-index-node (pick-index-node-from index-node-list (document+position->bias document line character))]
       [prefix 
         (if (null? target-index-node)
           '()
