@@ -15,6 +15,7 @@
 
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
+    (scheme-langserver util text)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -36,7 +37,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 49 16)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 49 16))]
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitution-list-for target-document)
@@ -53,7 +54,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 10)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 4 10))]
             [variable (index-node-variable target-index-node)]
             [check-base0 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string? integer? integer?)))]
             [check-base1 (construct-type-expression-with-meta '(boolean? <- (inner:list? string? string?)))])
@@ -87,7 +88,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 14)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 14))]
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'string? )])
         (construct-substitution-list-for target-document)

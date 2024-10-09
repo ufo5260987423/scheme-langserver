@@ -17,6 +17,7 @@
 
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
+    (scheme-langserver util text)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -61,7 +62,7 @@
 ;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/industria/crypto/math.sls"))]
 ;             [target-document (file-node-document target-file-node)]
 ;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 57 12)))]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 57 12))]
 ;             [variable (index-node-variable target-index-node)]
 ;             )
 ;         (construct-substitution-list-for target-document)

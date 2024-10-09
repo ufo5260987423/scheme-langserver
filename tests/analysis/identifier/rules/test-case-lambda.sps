@@ -12,6 +12,7 @@
     (scheme-langserver analysis identifier rules case-lambda)
     (scheme-langserver analysis package-manager akku)
 
+    (scheme-langserver util text)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -24,10 +25,8 @@
             [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
-            [ready-position (make-position 58 2)]
-            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
-            [target-position (make-position 59 4)]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
+            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 58 2))]
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 59 4))])
             (case-lambda-process root-file-node root-library-node document ready-index-node)
             (test-equal #f
                 (not 

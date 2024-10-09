@@ -7,6 +7,8 @@
 (import 
     (chezscheme)
     (srfi :64 testing) 
+    (scheme-langserver util text)
+
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -23,7 +25,7 @@
             [root-file-node (workspace-file-node workspace-instance)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/dependency/rules/library-import.sls"))]
             [document (file-node-document target-file-node)]
-            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) (make-position 37 6)))])
+            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 37 6))])
         (test-equal 
             '((let ([v expression])
                 (match-next v (expression (set! expression))

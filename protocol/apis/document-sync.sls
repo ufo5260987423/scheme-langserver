@@ -14,6 +14,7 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util try) 
+    (scheme-langserver util text) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)

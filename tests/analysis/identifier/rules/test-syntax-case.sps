@@ -12,6 +12,7 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis abstract-interpreter)
 
+    (scheme-langserver util text)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -25,10 +26,8 @@
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
             ; a syntax-case node
-            [ready-position (make-position 106 15)]
-            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) ready-position))]
-            [target-position (make-position 108 17)]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) target-position))])
+            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 106 15))]
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 108 17))])
             (syntax-case-process root-file-node root-library-node document ready-index-node)
             (test-equal #f
                 (not 
@@ -45,8 +44,7 @@
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (workspace-file-linkage workspace)]
             [document (file-node-document target-file-node)]
-            [loop-position (make-position 114 75)]
-            [loop-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) loop-position))])
+            [loop-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 114 75))])
         (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
         (step root-file-node root-library-node file-linkage document)
         (test-equal '(loop) (map identifier-reference-identifier (find-available-references-for document loop-index-node 'loop))))

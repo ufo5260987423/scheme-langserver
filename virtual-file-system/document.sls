@@ -18,8 +18,9 @@
     document+position->bias 
     document+bias->position-list
     text->line-length-vector)
-  (import (rnrs)
-    (only (srfi :13 strings) string-index))
+  (import 
+    (rnrs)
+    (scheme-langserver util text))
 
 (define-record-type document 
   (fields 
@@ -63,13 +64,4 @@
           (let ([e (get-line-end-position text s)])
             `(,(- e s) ,@(loop (+ e 1)))
             '()))))))
-
-(define (get-line-end-position text start-position)
-  (let ([NL (string-index text #\newline start-position)]
-      [RE (string-index text #\return start-position)])
-    (cond
-      [(and NL RE) (if (= 1 (abs (- NL RE))) (max NL RE) (min NL RE))]
-      [NL NL]
-      [RE RE]
-      [else (string-length text)])))
 )
