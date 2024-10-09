@@ -41,17 +41,18 @@
   (let loop ([current-line 0]
       [current-bias 0])
     (cond 
-      [(= (vector-length (document-line-length-vector document)) current-line)
-        `(,(- current-line 1) ,(- current-bias 1))]
-      [(< bias (+ current-bias (vector-ref (document-line-length-vector document) current-line)))
+      [(= (vector-length (document-line-length-vector document)) current-line) (raise 'position-out-of-range)]
+      [(< (+ current-bias (vector-ref (document-line-length-vector document) current-line)) bias)
+        (loop (+ 1 current-line) (+ 1 current-bias (vector-ref (document-line-length-vector document) current-line)))]
+      [(<= bias (+ current-bias (vector-ref (document-line-length-vector document) current-line)))
         `(,current-line ,(- bias current-bias))]
-      [else (loop (+ 1 current-line) (+ 1 current-bias (vector-ref (document-line-length-vector document) current-line)))])))
+      [else (raise 'position-out-of-range)])))
 
 (define (document+position->bias document line offset)
   (let loop ([current-line 0]
       [current-bias 0])
     (cond 
-      [(= (vector-length (document-line-length-vector document)) current-line) (- current-bias 1)]
+      [(= (vector-length (document-line-length-vector document)) current-line) (raise 'position-out-of-range)]
       [(< current-line line) (loop (+ 1 current-line) (+ 1 current-bias (vector-ref (document-line-length-vector document) current-line)))]
       [(and (= current-line line) (<= offset (vector-ref (document-line-length-vector document) current-line))) (+ current-bias offset)]
       [else (raise 'position-out-of-range)])))
