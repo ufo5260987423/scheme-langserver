@@ -29,7 +29,9 @@
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
       [text (document-text document)]
-      [range (make-range (make-position 0 0) (int+text->position (string-length text) text))]
+      [range 
+        (make-range (make-position 0 0) 
+          (apply make-position (document+bias->position-list document (string-length text))))]
       [target
         (call-with-string-output-port
           (lambda (output-port)

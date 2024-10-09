@@ -33,7 +33,7 @@
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
       [text (document-text document)]
-      [bias (text+position->int text position)]
+      [bias (document+position->bias document (position-line position) (position-character position))]
       [target-index-node (pick-index-node-from index-node-list bias)]
       [prefix 
         (if target-index-node 

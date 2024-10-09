@@ -44,8 +44,8 @@
       [text (document-text document)]
       [index-node (identifier-reference-index-node identifier)]
       [name (symbol->string (identifier-reference-identifier identifier))]
-      [start-position (int+text->position (index-node-start index-node) text)]
-      [end-position (int+text->position (index-node-end index-node) text)]
+      [start-position (apply make-position (document+bias->position-list document (index-node-start index-node)))]
+      [end-position (apply make-position (document+bias->position-list document (index-node-end index-node)))]
       [range (make-range start-position end-position)])
     (make-document-symbol 
       name

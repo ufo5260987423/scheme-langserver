@@ -293,8 +293,8 @@
             `(,(make-location
               (document-uri document) 
               (make-range
-                (int+text->position (index-node-start index-node) (document-text document))
-                (int+text->position (index-node-end index-node) (document-text document)))))
+                (apply make-position (document+bias->position-list document (index-node-start index-node)))
+                (apply make-position (document+bias->position-list document (index-node-end index-node))))))
             '()))]
       [else 
         (if (null? children)

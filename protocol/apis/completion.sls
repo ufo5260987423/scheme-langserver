@@ -29,7 +29,7 @@
       [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
       [document (file-node-document file-node)]
       [text (document-text document)]
-      [bias (text+position->int text position)]
+      [bias (document+position->bias document (position-line position) (position-character position))]
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
       [pre-target-index-node (pick-index-node-from index-node-list bias)]

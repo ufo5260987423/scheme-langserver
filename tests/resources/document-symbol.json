@@ -3,7 +3,7 @@
     "method": "textDocument/documentSymbol",
     "params": {
         "textDocument" : {
-            "uri" : "file://~a/util/natural-order-compare.sls"
+            "uri" : "file://~a/.akku/lib/srfi/%253a13/srfi-13.scm"
         }
     },
     "jsonrpc": "2.0"

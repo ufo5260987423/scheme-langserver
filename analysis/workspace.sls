@@ -170,6 +170,7 @@
       (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
 
     (document-text-set! target-document text)
+    (document-line-length-vector-set! target-document (text->line-length-vector text))
     (document-index-node-list-set! target-document new-index-nodes)
 
     (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])

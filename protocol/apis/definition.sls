@@ -28,7 +28,7 @@
       [text (document-text document)]
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
-      [target-index-node (pick-index-node-from index-node-list (text+position->int text position))]
+      [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
       [prefix 
         (if (null? target-index-node)
           '()
@@ -54,6 +54,6 @@
     (make-location 
       (document-uri (identifier-reference-document reference))
       (make-range 
-        (int+text->position (index-node-start (identifier-reference-index-node reference)) (document-text (identifier-reference-document reference)))
-        (int+text->position (index-node-end (identifier-reference-index-node reference)) (document-text (identifier-reference-document reference)))))))
+        (apply make-position (document+bias->position-list (identifier-reference-document reference) (index-node-start (identifier-reference-index-node reference))))
+        (apply make-position (document+bias->position-list (identifier-reference-document reference) (index-node-end (identifier-reference-index-node reference))))))))
 )
