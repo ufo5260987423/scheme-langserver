@@ -77,7 +77,7 @@
     (path-strip-directory (string-drop-right path 1))
     (path-strip-directory path)))
 
-;;  "/" | "?" | ";" | "="
+;; "%"| "/" | "?" | ";" | "="
 (define (private:char->hex-string char)
   (case char
     (#\% "25")

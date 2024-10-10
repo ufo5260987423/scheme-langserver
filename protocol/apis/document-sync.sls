@@ -26,8 +26,13 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization
 (define (did-open workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      [path (uri->path (text-document-uri text-document))])
-    (if (null? (walk-file (workspace-file-node workspace) path))
+      [uri (text-document-uri text-document)]
+      [path (uri->path uri)])
+    (if 
+      (and 
+        (null? (walk-file (workspace-file-node workspace) path))
+        ;for many LSP clients, they wrongly produce uri without processing escape character
+        (null? (walk-file (workspace-file-node workspace) (substring uri 7 (string-length uri)))))
       ;TODO:well, can be optimized
       (refresh-workspace workspace))))
 
