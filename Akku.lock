@@ -92,11 +92,6 @@
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-match_1.0.0_repack.tar.xz"))
   (content
    (sha256 "3200ebeb66a1b030ba244ee048c1ed7c6a256d6f091129a362ef1af53de16383")))
- ((name "arew-json")
-  (location
-   (url "https://archive.akkuscm.org/archive/pkg/a/arew-json_1.0.0-alpha.0_repack.tar.xz"))
-  (content
-   (sha256 "d7546a44797d6eb3cc2d38a13478224172aead699200cdd4d1d61750096c5823")))
  ((name (slib string-search))
   (location
    (url "http://snow-fort.org/s/peterlane.info/peter/slib/string-search/SLIB-3b5-r7rs/slib-string-search-SLIB-3b5-r7rs.tgz"))
