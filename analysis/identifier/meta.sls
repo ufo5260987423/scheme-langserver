@@ -1,17 +1,30 @@
 (library (scheme-langserver analysis identifier meta)
   (export 
-     construct-type-expression-with-meta
-     find-meta)
+    construct-type-expression-with-meta
+    meta-library?
+    root-meta-check
+    find-meta)
   (import 
-     (rnrs)
-     (only (chezscheme) pretty-print print-graph)
-     (ufo-match)
-     (scheme-langserver util binary-search)
-     (scheme-langserver analysis identifier reference)
-     (scheme-langserver analysis type substitutions rnrs-meta-rules)
-     (scheme-langserver analysis type domain-specific-language variable))
+    (rnrs)
+    (only (chezscheme) annotation-stripped pretty-print print-graph)
+    (ufo-match)
+    (scheme-langserver util binary-search)
+    (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis type substitutions rnrs-meta-rules)
+    (scheme-langserver analysis type domain-specific-language variable)
+
+    (scheme-langserver virtual-file-system index-node))
 
 (define initialized? #f)
+
+(define (root-meta-check document index-node target-expression)
+  (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+      [identifiers (find-available-references-for document index-node (annotation-stripped (index-node-datum/annotations index-node)))]
+      [root-identifiers (apply append (map root-ancestor identifiers))])
+    (find (lambda (i) (or (meta-library? (identifier-reference-library-identifier i)) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
+
+(define (meta-library? list-instance)
+  (not (null? (find-meta list-instance))))
 
 (define (find-meta list-instance)
   (if (not initialized?)

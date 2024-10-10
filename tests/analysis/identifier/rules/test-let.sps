@@ -11,6 +11,7 @@
     (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis package-manager akku)
 
+    (scheme-langserver util text)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -24,9 +25,8 @@
             [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
             ;; a let node
-            [position (make-position 13 2)]
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) position))])
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 13 2))])
             (let-process root-file-node root-library-node document target-index-node)
             (test-equal #f
                 (not 

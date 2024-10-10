@@ -70,7 +70,10 @@
                   `(,ann . ,(loop (port-position port)))))
               (except e
                 [(and tolerant? (condition? e))
-                  (source-file->annotations (private:tolerant-parse->patch source) path start-position #f)]
+                  (let ([after (private:tolerant-parse->patch source) ])
+                    (if (= (string-length after) (string-length source))
+                      (source-file->annotations after path start-position #f)
+                      (raise 'can-not-tolerant)))]
                 [(condition? e) 
                   (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
                   (pretty-print path)]

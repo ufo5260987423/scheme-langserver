@@ -22,16 +22,23 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_hover
 (define (hover workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      [uri (text-document-uri text-document)]
       [position (alist->position (assq-ref params 'position))]
       [line (position-line position)]
       [character (position-character position)]
-      [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
+      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+      [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
       [document (file-node-document file-node)])
     (refresh-workspace-for workspace file-node)
     (let* ([index-node-list (document-index-node-list document)]
-        [target-index-node (pick-index-node-from index-node-list (text+position->int (document-text document) position))]
-        [prefix (if (null? (index-node-children target-index-node)) (annotation-stripped (index-node-datum/annotations target-index-node)) '())])
+        [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
+        [prefix 
+          (if (index-node? target-index-node)  
+            (if (null? (index-node-children target-index-node)) 
+              (annotation-stripped (index-node-datum/annotations target-index-node)) 
+              '())
+            '())])
       (if (symbol? prefix)
         (make-alist 
           'content 

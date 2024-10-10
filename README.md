@@ -25,7 +25,7 @@ I do this open source work just in my spare time and I can contribute many splen
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ## Release 
-1.2.6 Fault tolerant parser
+1.2.7 Fix bugs on uri parsing, do you know LSP default uri may wrongly process escape characters?
 
 Previous releases please refer to [this file](./doc/release-log.md).
 
@@ -58,7 +58,7 @@ send-message
 ### TODOs
 14. Renaming. 
 15. Fully compatible with [r6rs standard](http://www.r6rs.org/).
-16. Macro expanding.
+16. Step-by-step macro expander: well, I actually have implemented one and I wanted to make it a key step catching identifier binding in self-defined macros. Now, I find this catching is much harder than I thought, and the expander I don't know where it could work.
 17. Code eval.
 18. Code diagnostic.
 19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?

@@ -24,11 +24,16 @@
     (try
       (match expression
         [(_ (literals ...) (a b ...) **1) 
-          (guard-for document index-node 'syntax-rules '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         ; https://www.scheme.com/tspl4/syntax.html
         ; Any syntax-rules form can be expressed with syntax-case by making the lambda expression and syntax expressions explicit.
-          (let ([rest (cddr (index-node-children index-node))])
+          (let* ([children (index-node-children index-node)]
+              [rest (cddr children)]
+              [available-identifiers (find-available-references-for document index-node)])
             ;(a b)
+            (map 
+              (lambda (current-child)
+                (index-node-excluded-references-set! current-child available-identifiers))
+              (cdr children))
             (map (lambda (clause-index-node)
               (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
               rest))]

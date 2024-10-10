@@ -7,6 +7,7 @@
 (import 
     (chezscheme) 
     (srfi :64 testing) 
+    (scheme-langserver util text)
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -28,7 +29,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/lib/srfi/:13/strings.chezscheme.sls"))]
             [document (file-node-document target-file-node)]
             [target-text (document-text document)]
-            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int target-text (make-position 69 4)))]
+            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int target-text 69 4))]
             [include/resolve (car (find-available-references-for document target-index-node 'include/resolve))]
             [to-eval (annotation-stripped (index-node-datum/annotations (index-node-parent target-index-node)))])
         ; (pretty-print (local-expand to-eval document workspace))
@@ -42,7 +43,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/body.sls"))]
             [document (file-node-document target-file-node)]
             [target-text (document-text document)]
-            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int target-text (make-position 20 7)))]
+            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int target-text 20 7))]
             [try-identifier (car (find-available-references-for document target-index-node 'try))]
             [to-eval (annotation-stripped (index-node-datum/annotations (index-node-parent target-index-node)))])
         ; (pretty-print (local-expand to-eval document workspace))

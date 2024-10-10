@@ -14,6 +14,7 @@
     (scheme-langserver virtual-file-system library-node)
 
     (scheme-langserver util contain)
+    (scheme-langserver util text)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -36,7 +37,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 49 10)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 49 10))]
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitution-list-for target-document)
@@ -49,7 +50,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/contain.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 6 12)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 12))]
             [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitution-list-for target-document)
@@ -68,7 +69,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 102 10)))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 103 10))]
             [variable (index-node-variable target-index-node)]
             [check-base 'void?])
         (test-equal #t 
@@ -84,7 +85,7 @@
 ;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/binary-search.sls"))]
 ;             [target-document (file-node-document target-file-node)]
 ;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text (make-position 4 12)))]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 4 12))]
 ;             [variable (index-node-variable target-index-node)]
 ;             [check-base (construct-type-expression-with-meta 'boolean?)])
 ;         (construct-substitution-list-for target-document)

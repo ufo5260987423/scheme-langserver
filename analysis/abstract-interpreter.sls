@@ -80,11 +80,18 @@
           (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))
           (map 
             (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro?))
+              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) allow-extend-macro? 'quasiquoted))
             (index-node-children current-index-node))]
-        ; [(syntax? current-index-node current-document) 
-          ; (index-node-excluded-references-set! current-index-node (find-available-references-for current-document current-index-node))]
-        ; [(quaisisyntax? current-index-node current-document)]
+        [(syntax? current-index-node current-document) 
+          (index-node-excluded-references-set! current-index-node 
+            (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) (find-available-references-for current-document current-index-node)))]
+        [(quasisyntax? current-index-node current-document)
+          (let ([available-identifiers (find-available-references-for current-document current-index-node)])
+            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
+            (map 
+              (lambda (i)
+                (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro? 'quasisyntaxed))
+              (index-node-children current-index-node)))]
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
               [head (car children)]
@@ -110,21 +117,22 @@
                   ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
               target-rules))]
         [else '()])]
-      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers allow-extend-macro?)
-        (if (or 
-            (unquote? current-index-node current-document)
-            (unsyntax? current-index-node current-document)
-            (unquote-splicing? current-index-node current-document)
-            (unsyntax-splicing? current-index-node current-document))
+      [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers allow-extend-macro? quasi-quoted-syntaxed)
+        (if (case quasi-quoted-syntaxed
+            ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
+            ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))])
           (begin
-            (index-node-references-import-in-this-node-set! current-index-node available-identifiers)
+            ;; (debug:print-expression current-index-node)
+            ;; (pretty-print (null? (index-node-children current-index-node)))
+            ;; (debug:print-expression (index-node-parent current-index-node))
+            (index-node-references-import-in-this-node-set! current-index-node (sort-identifier-references available-identifiers))
             (map 
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i allow-extend-macro?))
               (index-node-children current-index-node)))
           (map
             (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro?))
+              (step root-file-node root-library-node file-linkage current-document i available-identifiers allow-extend-macro? quasi-quoted-syntaxed))
             (index-node-children current-index-node)))]))
 
 (define (private-rule-compare? item0 item1)
@@ -146,38 +154,7 @@
           [r (map identifier-reference-identifier top)]
           [i (identifier-reference-identifier identifier)]
           [is (map identifier-reference-library-identifier top)])
-        (if (or 
-            (equal? is '((chezscheme)))
-            (equal? is '((chezscheme csv7)))
-
-            (equal? is '((rnrs)))
-            (equal? is '((rnrs (6))))
-            (equal? is '((rnrs base)))
-            (equal? is '((rnrs conditions)))
-            (equal? is '((rnrs files)))
-            (equal? is '((rnrs syntax-case)))
-            (equal? is '((rnrs exceptions)))
-            (equal? is '((rnrs lists)))
-            (equal? is '((rnrs bytevectors)))
-            (equal? is '((rnrs control)))
-            (equal? is '((rnrs unicode)))
-            (equal? is '((rnrs enums)))
-            (equal? is '((rnrs r5rs)))
-            (equal? is '((rnrs eval)))
-            (equal? is '((rnrs mutable-pairs)))
-            (equal? is '((rnrs mutable-strings)))
-            (equal? is '((rnrs io ports)))
-            (equal? is '((rnrs io simple)))
-            (equal? is '((rnrs arithmetic flonums)))
-            (equal? is '((rnrs arithmetic bitwise)))
-            (equal? is '((rnrs arithmetic fixnums)))
-            (equal? is '((rnrs records syntactic)))
-            (equal? is '((rnrs records procedural)))
-            (equal? is '((rnrs records inspection)))
-
-            (equal? is '((scheme)))
-            (equal? is '((scheme base)))
-            (equal? is '((scheme csv7))))
+        (if (find meta-library? is)
           (cond 
             [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
             [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
@@ -253,17 +230,15 @@
                         (file-linkage-set! file-linkage (uri->path (document-uri document)) (uri->path (document-uri current-document)))
                         (step root-file-node root-library-node file-linkage current-document))))])
                 (private-add-rule rules `((,target-lambda) . ,identifier)))]
-            [(or 
-              (contain? (map identifier-reference-type top) 'syntax)
-              (contain? (map identifier-reference-type top) 'syntax-variable))
-              ; (private-add-rule 
-              ;   rules 
-              ;   `((,(lambda (root-file-node root-library-node document index-node)
-              ;       (self-defined-syntax-process 
-              ;         root-file-node root-library-node document index-node file-linkage
-              ;         (lambda (generated-index-node)
-              ;           (step root-file-node root-library-node file-linkage document generated-index-node #f)))
-              ;     )) . ,identifier))
+            [(contain? (map identifier-reference-type top) 'syntax-variable)
+              ;; (private-add-rule 
+              ;;   rules 
+              ;;   `((,(lambda (root-file-node root-library-node document index-node)
+              ;;       (self-defined-syntax-process 
+              ;;         root-file-node root-library-node document index-node file-linkage
+              ;;         (lambda (specific-document generated-index-node specific-allow-extend-macro?)
+              ;;           (step root-file-node root-library-node file-linkage specific-document generated-index-node specific-allow-extend-macro?)))
+              ;;     )) . ,identifier))
               rules
               ]
             [else rules])

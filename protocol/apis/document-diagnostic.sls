@@ -27,8 +27,10 @@
   '()
   ;TODO
   ; (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-  ;     [path (uri->path (text-document-uri text-document))]
-  ;     [file-node (walk-file (workspace-file-node workspace) path)]
+      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
+      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+  ;     [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+  ;     [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
   ;     [document (file-node-document file-node)]
   ;     [text (document-text document)]
   ;     [substitution-list (document-substitution-list document)])
@@ -54,13 +56,13 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
-(define (private-make-diagnostic range-start range-end severity message text)
+(define (private-make-diagnostic document range-start range-end severity message text)
   (make-alist 
     'range 
     (range->alist 
       (make-range 
-        (int+text->position range-start text)
-        (int+text->position range-end text))) 
+        (apply make-position (document+bias->position-list document range-start))
+        (apply make-position (document+bias->position-list document range-end)))) 
     'severity severity 
     'message message))
 )

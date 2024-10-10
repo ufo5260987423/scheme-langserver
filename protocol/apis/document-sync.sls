@@ -14,6 +14,7 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util try) 
+    (scheme-langserver util text) 
     (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
@@ -25,8 +26,20 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization
 (define (did-open workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      [path (uri->path (text-document-uri text-document))])
-    (if (null? (walk-file (workspace-file-node workspace) path))
+      [uri (text-document-uri text-document)]
+      [path (uri->path uri)])
+    (if 
+      (and 
+        (null? (walk-file (workspace-file-node workspace) path))
+        ;for many LSP clients, they wrongly produce uri without processing escape character, and here I refer from 
+        ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+        ;Care should be taken to handle encoding in URIs. For example, some clients (such as VS Code) may encode colons in drive 
+        ;letters while others do not. The URIs below are both valid, but clients and servers should be consistent with the form 
+        ;they use themselves to ensure the other party doesn’t interpret them as distinct URIs. Clients and servers should not 
+        ;assume that each other are encoding the same way (for example a client encoding colons in drive letters cannot assume 
+        ;server responses will have encoded colons). The same applies to casing of drive letters - one party should not assume 
+        ;the other party will return paths with drive letters cased the same as itself.
+        (null? (walk-file (workspace-file-node workspace) (substring uri 7 (string-length uri)))))
       ;TODO:well, can be optimized
       (refresh-workspace workspace))))
 
@@ -46,8 +59,8 @@
               (let* ([target (car content-changes)]
                   [range (text-edit-range target)]
                   [temp-text (text-edit-text target)]
-                  [start (text+position->int text (range-start range))]
-                  [end (text+position->int text (range-end range))])
+                  [start (text+position->int text (position-line (range-start range)) (position-character (range-start range)))]
+                  [end (text+position->int text (position-line (range-end range)) (position-character (range-end range)))])
                 (loop 
                   (cdr content-changes) 
 ;;The actual content changes. The content changes describe single state

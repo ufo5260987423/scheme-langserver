@@ -8,6 +8,7 @@
     pick-index-node-parent-of
     pick-index-node-with-mapper 
     pick-index-node-cover-mapper
+    pick-index-node-has-content-without-recursion
 
     get-root-ancestor
 
@@ -128,16 +129,20 @@
         [annotation-list (annotation-expression datum/annotation)])
     (index-node-children-set! 
       node 
-      (if (list? annotation-list)
-        (filter 
-          (lambda (item) (not (null? item)))
+      (cond 
+        [(list? annotation-list) 
           (map 
-            (lambda(e) 
-              (if (annotation? e)
-                (init-index-node node e)
-                '()))
-            annotation-list))
-        '()))
+            (lambda (e) (init-index-node node e))
+            (filter annotation? annotation-list))]
+        [(pair? annotation-list)
+          (map 
+            (lambda (e) (init-index-node node e))
+            (filter annotation? `(,(car annotation-list) ,(cdr annotation-list))))]
+        [(vector? annotation-list)
+          (map 
+            (lambda (e) (init-index-node node e))
+            (filter annotation? (vector->list annotation-list)))]
+        [else '()]))
     node))
 
 (define (is-leaf? index-node)
@@ -167,6 +172,9 @@
   (index-node-references-export-to-other-node-set! index-node '())
   (index-node-references-import-in-this-node-set! index-node '())
   (map clear-references-for (index-node-children index-node)))
+
+(define (pick-index-node-has-content-without-recursion target-index-node-list content-expression)
+  (filter (lambda (x) (equal? content-expression (annotation-stripped (index-node-datum/annotations x)))) target-index-node-list))
 
 (define (pick-index-node-cover-mapper target-index-node-list mapper-vector)
   (let ([start (index-node-start (car target-index-node-list))]

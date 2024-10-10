@@ -95,9 +95,9 @@
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
-    ; (pretty-print 'aaa)
+    ;; (pretty-print 'aaa)
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-    ; (pretty-print 'eee)
+    ;; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
 ;; head -[linkage]->files
@@ -130,11 +130,11 @@
   (let* ([current-file-node (walk-file root-file-node target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)])
-  ; (pretty-print 'test0)
-  ; (pretty-print target-path)
+    ;; (pretty-print 'test0)
+    ;; (pretty-print target-path)
     (step root-file-node root-library-node file-linkage document)
     (process-library-identifier-excluded-references document)
-    ; (pretty-print 'test1)
+    ;; (pretty-print 'test1)
     (if type-inference?
       (try 
         (construct-substitution-list-for document)
@@ -170,6 +170,7 @@
       (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
 
     (document-text-set! target-document text)
+    (document-line-length-vector-set! target-document (text->line-length-vector text))
     (document-index-node-list-set! target-document new-index-nodes)
 
     (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])

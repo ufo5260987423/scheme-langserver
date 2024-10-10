@@ -26,21 +26,25 @@
 (define (completion workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [position (alist->position (assq-ref params 'position))]
-      [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
+      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+      [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
       [document (file-node-document file-node)]
       [text (document-text document)]
-      [bias (text+position->int text position)]
+      [bias (document+position->bias document (position-line position) (position-character position))]
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
       [pre-target-index-node (pick-index-node-from index-node-list bias)]
       [target-index-node 
-        (if pre-target-index-node
+        (if (null? pre-target-index-node)
+          pre-target-index-node
           (if (null? (index-node-children pre-target-index-node))
             pre-target-index-node
-            (pick-index-node-from index-node-list (- bias 1)))
-          pre-target-index-node)]
+            (pick-index-node-from index-node-list (- bias 1))))]
       [prefix 
-        (if target-index-node 
+        (if (null? target-index-node)
+          ""
           (if (and (null? (index-node-children target-index-node)) (symbol? (index-node-datum/annotations target-index-node)))
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]

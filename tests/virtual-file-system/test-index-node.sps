@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
-;; Copyright (c) 2022 WANG Zheng
+;; Copyright (c) 2022-Now WANG Zheng
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
@@ -8,6 +8,7 @@
     ; (rnrs (6)) 
     (chezscheme) 
     (srfi :64 testing) 
+    (scheme-langserver util text)
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -25,7 +26,7 @@
             [document (file-node-document target-file-node)]
             [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text (make-position 25 12))))])
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 25 12)))])
         (test-equal #f (null? index-node)))
 (test-end)
 

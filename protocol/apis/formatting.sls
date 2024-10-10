@@ -26,10 +26,15 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentRangeFormattingParams
 (define (formatting workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      [file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
+      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+      [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
       [document (file-node-document file-node)]
       [text (document-text document)]
-      [range (make-range (make-position 0 0) (int+text->position (string-length text) text))]
+      [range 
+        (make-range (make-position 0 0) 
+          (apply make-position (document+bias->position-list document (string-length text))))]
       [target
         (call-with-string-output-port
           (lambda (output-port)
