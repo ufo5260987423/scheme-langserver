@@ -4,15 +4,18 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) (scheme-langserver util json))
+(import 
+  (chezscheme)
+  (srfi :64 testing) 
+  (scheme-langserver util json))
 
-(let ([a-list '((b . 2) (a . 1))])
-    (test-begin "read-json")
-        (test-equal a-list (read-json "{\"a\":1,\"b\":2}"))
-    (test-end)
-    (test-begin "generate-json")
-        (test-equal "{\"b\":2,\"a\":1}" (generate-json a-list))
-    (test-end))
+(let ([a-list '((a . 1) (b . 2))])
+  (test-begin "read-json")
+      (test-equal a-list (read-json "{\"a\":1,\"b\":2}"))
+  (test-end)
+  (test-begin "generate-json")
+      (test-equal "{\"a\":1,\"b\":2}" (generate-json a-list))
+  (test-end))
 
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

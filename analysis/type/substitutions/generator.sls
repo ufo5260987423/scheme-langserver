@@ -40,18 +40,18 @@
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [children (index-node-children index-node)]
       [variable (index-node-variable index-node)])
-    ; (pretty-print 'generate)
-    ; (pretty-print expression)
-    ; (pretty-print (document-uri document))
-    ; (pretty-print variable)
+    ;; (pretty-print 'generate)
+    ;; (pretty-print expression)
+    ;; (pretty-print (document-uri document))
+    ;; (pretty-print variable)
     (cond
       [(null? children) 
-        ; (pretty-print 'cao5)
+        ;; (pretty-print 'cao5)
         (append base-substitution-list 
           (trivial-process document index-node variable expression base-substitution-list allow-unquote? quoted?))]
-      ;here, must be a list or vector
+      ;;here, must be a list or vector
       [(and (not quoted?) (quasiquote? index-node document))
-        ; (pretty-print 'cao6)
+        ;; (pretty-print 'cao6)
         (private-construct-substitution-list 
           document 
           (car children) 
@@ -60,7 +60,7 @@
           #t 
           #t)]
       [(and (not quoted?) (quote? index-node document))
-        ; (pretty-print 'cao0)
+        ;; (pretty-print 'cao0)
         (private-construct-substitution-list 
           document 
           (car children) 
@@ -69,7 +69,7 @@
           #f 
           #t)]
       [(not quoted?)
-        ; (pretty-print 'cao1)
+        ;; (pretty-print 'cao1)
         (let ([children-substitution-list
               (fold-left 
                 (lambda (previous-substitutions child-index-node)
@@ -78,9 +78,9 @@
                 children)])
           (fold-left
             (lambda (previous-substitutions proc)
-              ; (pretty-print 'proc)
-              ; (debug:print-expression index-node)
-              ; (pretty-print proc)
+              ;; (pretty-print 'proc)
+              ;; (debug:print-expression index-node)
+              ;; (pretty-print proc)
               (if (= (length previous-substitutions) (length children-substitution-list))
                 (append previous-substitutions (proc document index-node previous-substitutions))
                 previous-substitutions))

@@ -44,12 +44,12 @@
           (trivial-process document index-node variable expression substitutions #f #f)
           '()))]
     [(document index-node variable expression substitutions allow-unquote? quoted?)
-      ; (pretty-print 'trivial)
-      ; (pretty-print variable)
-      ; (debug:print-expression index-node)
-      ; (pretty-print expression)
-      ; (pretty-print allow-unquote?)
-      ; (pretty-print quoted?)
+      ;; (pretty-print 'trivial)
+      ;; (pretty-print variable)
+      ;; (debug:print-expression index-node)
+      ;; (pretty-print expression)
+      ;; (pretty-print allow-unquote?)
+      ;; (pretty-print quoted?)
       (cond
         ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,private-char?))]
