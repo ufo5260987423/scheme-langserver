@@ -31,21 +31,21 @@
 (define (private:try-catch server-instance request)
   (let ([method (request-method request)]
       [id (request-id request)])
-  (try 
-    (process-request server-instance request)
-    (except c 
-      [(condition? c) 
-        (do-log 
-          (with-output-to-string (lambda () (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))))
-          server-instance)
-        (do-log-timestamp server-instance)
-        (send-message server-instance (fail-response id unknown-error-code method))]
-      [else 
-        (do-log 
-          (with-output-to-string (lambda () (pretty-print c)))
-          server-instance)
-        (do-log-timestamp server-instance) 
-        (send-message server-instance (fail-response id unknown-error-code method))]))))
+    (try 
+      (process-request server-instance request)
+      (except c 
+        [(condition? c) 
+          (do-log 
+            (with-output-to-string (lambda () (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))))
+            server-instance)
+          (do-log-timestamp server-instance)
+          (send-message server-instance (fail-response id unknown-error-code method))]
+        [else 
+          (do-log 
+            (with-output-to-string (lambda () (pretty-print c)))
+            server-instance)
+          (do-log-timestamp server-instance) 
+          (send-message server-instance (fail-response id unknown-error-code method))]))))
 
 (define (process-request server-instance request)
   (let* ([method (request-method request)]

@@ -27,8 +27,10 @@
   '()
   ;TODO
   ; (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-  ;     [path (uri->path (text-document-uri text-document))]
-  ;     [file-node (walk-file (workspace-file-node workspace) path)]
+      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
+      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+  ;     [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+  ;     [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (length (text-document-uri text-document)))) '())]
   ;     [document (file-node-document file-node)]
   ;     [text (document-text document)]
   ;     [substitution-list (document-substitution-list document)])
