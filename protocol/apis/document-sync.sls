@@ -31,7 +31,14 @@
     (if 
       (and 
         (null? (walk-file (workspace-file-node workspace) path))
-        ;for many LSP clients, they wrongly produce uri without processing escape character
+        ;for many LSP clients, they wrongly produce uri without processing escape character, and here I refer from 
+        ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+        ;Care should be taken to handle encoding in URIs. For example, some clients (such as VS Code) may encode colons in drive 
+        ;letters while others do not. The URIs below are both valid, but clients and servers should be consistent with the form 
+        ;they use themselves to ensure the other party doesn’t interpret them as distinct URIs. Clients and servers should not 
+        ;assume that each other are encoding the same way (for example a client encoding colons in drive letters cannot assume 
+        ;server responses will have encoded colons). The same applies to casing of drive letters - one party should not assume 
+        ;the other party will return paths with drive letters cased the same as itself.
         (null? (walk-file (workspace-file-node workspace) (substring uri 7 (string-length uri)))))
       ;TODO:well, can be optimized
       (refresh-workspace workspace))))
