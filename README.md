@@ -25,7 +25,7 @@ I do this open source work just in my spare time and I can contribute many splen
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ## Release 
-1.2.6 Fault tolerant parser
+1.2.7 Fix bugs on uri parsing, do you know LSP default uri may wrongly process escape characters?
 
 Previous releases please refer to [this file](./doc/release-log.md).
 

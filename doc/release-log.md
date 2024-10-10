@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.2.6 Fault tolerant parser
+
 1.2.5 Fix: Some protocol api bugs. And now it's basically smooth with Magic Scheme and Vscode.
 
 1.2.4 Fix: hover api. It failed when processing meta.
