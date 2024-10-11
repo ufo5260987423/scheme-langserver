@@ -1,11 +1,7 @@
 (library (scheme-langserver util json)
   (export read-json generate-json)
   (import 
-    (scheme base)
-	  (scheme inexact)
-	  (scheme case-lambda)
-	  (scheme char)
-	  (scheme write)
+    (chezscheme)
     (srfi :145)
 	  (only (srfi :60) arithmetic-shift bitwise-ior))
 
@@ -18,7 +14,7 @@
         (get-output-string port)))
 
 (define (%read-error? x)
-	(read-error? x))
+	(error? x))
 
 (define (valid-number? string)
 	(number? (string->number string)))
@@ -35,12 +31,9 @@
 (define (json-null? obj)
   (eq? obj 'null))
 
-;; (define-record-type json-error
-;;   )
-(define-record-type <json-error>
-  (make-json-error reason)
-  json-error?
-  (reason json-error-reason))
+(define-record-type json-error
+  (fields
+    (mutable reason)))
 
 (define (json-whitespace? char)
   (case char
@@ -750,7 +743,7 @@
                   (write (cdr pair) accumulator))
                 obj)
       (accumulator '(json-structure . object-end)))
-     (else (error "Unexpected error!"))))
+     (else (error 'write "Unexpected error!" `(,obj ,accumulator)))))
 
   (assume (procedure? accumulator)
           "ACCUMULATOR does look like a valid accumulator.")
@@ -761,7 +754,7 @@
   (lambda (char-or-string)
     (cond
      ((char? char-or-string) (write-char char-or-string port))
-     ((string? char-or-string) (write-string char-or-string port))
+     ((string? char-or-string) (put-string port char-or-string))
      (else (raise (make-json-error "Not a char or string"))))))
 
 (define json-write
