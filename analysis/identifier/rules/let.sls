@@ -23,28 +23,25 @@
     (try
       (match expression
         [(_ (? symbol? loop-identifier) (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
-          (let ([loop-reference-list (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)])
-            (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
-              (if (not (null? rest))
-                (let* ([identifier-parent-index-node (car rest)]
-                      [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-                  (index-node-excluded-references-set! 
-                    identifier-parent-index-node
-                    (append 
-                      (index-node-excluded-references identifier-parent-index-node)
-                      (let-parameter-process index-node identifier-index-node index-node loop-reference-list document 'variable)))
-                  (loop (cdr rest))))))]
+          (fold-left 
+            (lambda (exclude-list identifier-parent-index-node)
+              (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                  [extended-exclude-list 
+                    (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
+                (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
+                extended-exclude-list))
+            (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)
+            (index-node-children (caddr (index-node-children index-node))))]
         [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
-          (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
-            (if (not (null? rest))
-              (let* ([identifier-parent-index-node (car rest)]
-                    [identifier-index-node (car (index-node-children identifier-parent-index-node))])
-                (index-node-excluded-references-set! 
-                  identifier-parent-index-node
-                  (append 
-                    (index-node-excluded-references identifier-parent-index-node)
-                    (let-parameter-process index-node identifier-index-node index-node '() document 'variable)))
-                (loop (cdr rest)))))]
+          (fold-left 
+            (lambda (exclude-list identifier-parent-index-node)
+              (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                  [extended-exclude-list 
+                    (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
+                (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
+                extended-exclude-list))
+            '()
+            (index-node-children (cadr (index-node-children index-node))))]
         [else '()])
       (except c
         [else '()]))))
@@ -70,11 +67,11 @@
 
     (append-references-into-ordered-references-for document let-node `(,reference))
 
-    (index-node-excluded-references-set! 
-      (index-node-parent index-node)
-      (append 
-        (index-node-excluded-references index-node)
-        exclude))
+    ; (index-node-excluded-references-set! 
+    ;   (index-node-parent index-node)
+    ;   (append 
+    ;     (index-node-excluded-references (index-node-parent index-node))
+    ;     exclude))
 
     `(,reference)))
 )
