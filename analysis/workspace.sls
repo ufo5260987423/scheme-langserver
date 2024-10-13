@@ -85,6 +85,7 @@
     [(path threaded?) (init-workspace path 'akku threaded? #f)]
     [(path threaded? type-inference?) (init-workspace path 'akku threaded? type-inference?)]
     [(path identifier threaded? type-inference?) 
+    ; (pretty-print 'init)
       (let* ([root-file-node 
             (init-virtual-file-system path '() 
               (cond
@@ -95,9 +96,9 @@
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
-    ;; (pretty-print 'aaa)
+    ; (pretty-print 'aaa)
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-    ;; (pretty-print 'eee)
+    ; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
 ;; head -[linkage]->files
@@ -242,12 +243,19 @@
     '()))
 
 (define (init-document path)
-  (let ([uri (path->uri path)])
-    (make-document 
-      uri 
-      (read-string path) 
-      (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-      (find-meta '(chezscheme)))))
+  (let ([uri (path->uri path)]
+      [s (read-string path)])
+    (if (string? s)
+      (try
+        (make-document 
+          uri 
+          s
+          (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
+          (find-meta '(chezscheme)))
+        (except c
+          [(equal? c 'can-not-tolerant) '()]
+          [else '()]))
+      '())))
 
 (define init-library-node
   (case-lambda 

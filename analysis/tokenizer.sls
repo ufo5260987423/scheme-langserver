@@ -51,7 +51,7 @@
               [what (vector-ref (list->vector (string->list source)) position)]
               [rest (string-take-right source (- (string-length source) position 1))])
             (private:tolerant-parse->patch (string-append head " " rest)))]
-        [else (pretty-print e)]))))
+        [else (raise 'can-not-tolerant)]))))
 
 (define source-file->annotations
   (case-lambda
@@ -70,7 +70,7 @@
                   `(,ann . ,(loop (port-position port)))))
               (except e
                 [(and tolerant? (condition? e))
-                  (let ([after (private:tolerant-parse->patch source) ])
+                  (let ([after (private:tolerant-parse->patch source)])
                     (if (= (string-length after) (string-length source))
                       (source-file->annotations after path start-position #f)
                       (raise 'can-not-tolerant)))]
