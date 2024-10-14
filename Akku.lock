@@ -67,6 +67,11 @@
    (url "https://archive.akkuscm.org/archive/pkg/s/struct-pack_1.1.1_repack.tar.xz"))
   (content
    (sha256 "42d34a4d7052bdda1bddec0dfddd8f1e576bd0a51b483215a4ca3a8ed7b56d09")))
+ ((name "srfi-180")
+  (location
+   (url "https://archive.akkuscm.org/archive/pkg/s/srfi-180_1.0.0-alpha.0_repack.tar.xz"))
+  (content
+   (sha256 "7a4682649ad97ffdca566b9e0736c67c7fcb7b3347887fbcf07ec19c7ff2c233")))
  ((name "ufo-thread-pool")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.3_repack.tar.xz"))
