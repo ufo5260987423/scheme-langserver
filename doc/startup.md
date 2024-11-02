@@ -146,7 +146,7 @@ bash .akku/env
 compile-chez-program run.ss
 ```
 
-### Build & Compile for For WSL
+### Build & Compile for For WSL(Windows Subsystem for Linux)
 
 In WSL, although it's kind of another Linux, `compile-chez-program` might fail with such a message:
 
@@ -165,7 +165,7 @@ cc: fatal error: no input files
 compilation terminated.
 ```
 
-Please check if you installed the original one :(
+Please check if you installed the original chez-exe in the WSL.
 
 ### For Nixos
 
