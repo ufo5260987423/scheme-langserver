@@ -2,7 +2,8 @@
   (export 
     expand:step-by-step
     expand:step-by-step-identifier-reference
-    generate-pair:template+callee)
+    generate-pair:template+callee
+    generate-pair:template+expanded)
   (import 
     (chezscheme)
     (ufo-match)
@@ -36,52 +37,24 @@
 (define (expand:step-by-step identifier-reference callee-index-node callee-document)
   (map cdr (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)))
 
-;; (define (generate-pair:template+expanded expanded-index-node identifier-reference callee-index-node callee-document)
-;;   (fold-left 
-;;     (lambda (left maybe-pair)
-;;       (let* ([head (car maybe-pair)]
-;;           [tail (cdr maybe-pair)]
-;;           [prev-pair (assq head left)])
-;;         (if prev-pair
-;;           (append (filter (lambda (p) (not (eq? head (car p)))) left)
-;;             (if (index-node? (cdr prev-pair))
-;;               `((,head . (,(cdr prev-pair) ,tail)))
-;;               `((,head . (,@(cdr prev-pair) ,tail)))))
-;;           (append left (list maybe-pair)))))
-;;     '()
-;;     (apply append 
-;;       (map 
-;;         (lambda (p)
-;;           (private:dispatch-for-callee-pair (cdr p) callee-index-node callee-document expanded-index-node))
-;;         (private:unwrap identifier-reference)))))
-
-;; (define (private:dispatch-for-expanded-pair index-node callee-index-node callee-document expanded-index-node)
-;;   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
-;;       [children (index-node-children index-node)]
-;;       [first-child (car children)]
-;;       [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
-;;       [callee-index-nodes (index-node-children callee-index-node)])
-;;     (match expression
-;;       [(syntax-rules-head (keywords ...) clauses **1) 
-;;         (if (root-meta-check callee-document first-child 'syntax-rules)
-;;           (let* ([clause-index-nodes (cddr children)]
-;;               [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
-;;               [body-index-node (private:get-specific-body-index-node clause-index-nodes target-template)]
-;;               [template-index-node (car (index-node-children (index-node-parent body-index-node)))])
-;;             (private:template-variable+expanded template template-index-node body-index-node expanded-index-node keywords))
-;;           '())]
-;;       [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
-;;         (if (and 
-;;             (equal? parameter like-parameter)
-;;             (root-meta-check callee-document first-child 'lambda)
-;;             (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
-;;           (let* ([clause-index-nodes (cdddr (index-node-children (car (reverse children))))]
-;;               [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
-;;               [body-index-node (private:get-specific-body-index-node clause-index-nodes target-template)]
-;;               [template-index-node (car (index-node-children (index-node-parent body-index-node)))])
-;;             (private:template-variable+callee template callee-index-nodes callee-expression keywords))
-;;           '())]
-;;       [else '()])))
+(define (generate-pair:template+expanded identifier-reference expanded-index-node callee-document template+callees)
+  (fold-left 
+    (lambda (left maybe-pair)
+      (let* ([head (car maybe-pair)]
+          [tail (cdr maybe-pair)]
+          [prev-pair (assq head left)])
+        (if prev-pair
+          (append (filter (lambda (p) (not (eq? head (car p)))) left)
+            (if (index-node? (cdr prev-pair))
+              `((,head . (,(cdr prev-pair) ,tail)))
+              `((,head . (,@(cdr prev-pair) ,tail)))))
+          (append left (list maybe-pair)))))
+    '()
+    (apply append 
+      (map 
+        (lambda (p)
+          (private:dispatch-for-expanded-pair (cdr p) callee-index-node callee-document expanded-index-node template+callees))
+        (private:unwrap identifier-reference)))))
 
 (define (generate-pair:template+callee identifier-reference callee-index-node callee-document)
   (fold-left 
@@ -108,6 +81,35 @@
         (lambda (p)
           (private:dispatch-for-callee-pair (cdr p) callee-index-node callee-document))
         (private:unwrap identifier-reference)))))
+
+(define (private:dispatch-for-expanded-pair index-node callee-index-node callee-document expanded-index-node template+callees)
+  (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+      [children (index-node-children index-node)]
+      [first-child (car children)]
+      [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
+      [expanded-expression (annotation-stripped (index-node-datum/annotations expanded-index-node))]
+      [callee-index-nodes (index-node-children callee-index-node)])
+    (match expression
+      [(syntax-rules-head (keywords ...) clauses **1) 
+        (if (root-meta-check callee-document first-child 'syntax-rules)
+          (let* ([clause-index-nodes (cddr children)]
+            [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
+            [body-index-node (private:get-specific-body-index-node clause-index-nodes template)]
+            [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
+            (private:template-variable+expanded body-index-node body-expression expanded-index-node template+callees callee-document #f))
+          '())]
+      [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
+        ;I can't guarentee
+        ; (if (and 
+        ;     (equal? parameter like-parameter)
+        ;     (root-meta-check callee-document first-child 'lambda)
+        ;     (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
+        ;   (let* ([template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-body clauses)))])
+        ;     (private:template-variable+expanded template expanded-index-nodes expanded-expression))
+        ;   '())
+        '()
+          ]
+      [else '()])))
 
 (define (private:dispatch-for-callee-pair index-node callee-index-node callee-document)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
@@ -136,6 +138,11 @@
     [(template body ...) `(,template ',template)]
     [else '()]))
 
+(define (private:get-specific-body clause) 
+  (match clause
+    [(template body ...) `(,template ',body)]
+    [else '()]))
+
 (define (private:get-specific-body-index-node clause-index-nodes target-template) 
   (fold-left
     (lambda (stop? clause-index-node)
@@ -149,6 +156,51 @@
         stop?))
     #f
     clause-index-nodes))
+
+(define (private:template-variable+expanded body-index-node body-expression expanded-index-node template+callees document is-...?)
+  (cond 
+    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc body-expression template+callees))
+      `((,body-expression . ,expandex-index-node))]
+    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc `(body-expression ...) template+callees))
+      (let ([v (list->vector (cdr (assoc `(body-expression ...) template+callees)))])
+        (if (> (vector-length v) is-...?)
+          `((,body-expression . ,expandex-index-node))
+          '()))]
+    ; [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...?) (raise 'IdontKnowWhy)]
+    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) (assoc body-expression template+callees))
+      `((,body-expression . ,expandex-index-node))]
+    [(private:syntax-parameter-index-node? body-index-node document body-expression) (raise 'IdontKnowWhy)]
+    [(symbol? body-expression) '()]
+
+    [(and (not (symbol? body-expression)) (index-node? body-index-node)) 
+      (private:template-variable+expanded (index-node-children body-index-node) body-expression (index-node-children expanded-index-node) template+callees document is-...?) ]
+    [(vector? body-expression) 
+      (private:template-variable+expanded body-index-node (vector->list body-expression) expanded-index-node template+callees document is-...?)]
+    [(null? body-expression) '()]
+    [(not (list? body-expression)) (private:template-variable+expanded body-index-node `(,(car body-expression) ,(cdr body-expression)) expanded-index-node template+callees document is-...?)]
+
+    [(>= (length body-index-node) 2)
+      (if (equal? (cadr body-expression) '...)
+        (if is-...?
+          (raise 'IdontKnowWhy)
+          (let loop ([auto-increase 0])
+            (let ([what-i-got
+              (private:template-variable+expanded (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document auto-increase)])
+              (if (null? what-i-got)
+                what-i-got
+                (append what-i-got (loop (+ 1 auto-increase)))))))
+        (append 
+          (private:template-variable+expanded (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document is-...?)
+          (private:template-variable+expanded (cdr body-index-node) (cdr body-expression) (cdr expanded-index-node) template+callees document is-...?)))]
+    [(list? body-expression) (private:template-variable+expanded body-index-node (car body-expression) expanded-index-node template+callees document is-...?)]))
+
+(define (private:syntax-parameter-index-node? index-node document expression)
+  (if (symbol? expression)
+    (not
+      (find 
+        (lambda (x) (not (equal? 'syntax-parameter)))
+        (map identifier-reference-type (find-available-references-for index-node document expression)))))
+    #f)
 
 (define (private:template-variable+callee template callee-index-node callee-expression keywords)
   (cond 
@@ -181,7 +233,8 @@
         (append 
           (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)
           (private:template-variable+callee (cdr template) (cdr callee-index-node) (cdr callee-expression) keywords)))]
-    [(list? template) (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)]))
+    [(list? template) (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)]
+    ))
 
 (define (private:dispatch index-node callee-index-node callee-document)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
