@@ -37,7 +37,7 @@
 (define (expand:step-by-step identifier-reference callee-index-node callee-document)
   (map cdr (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)))
 
-(define (generate-pair:template+expanded identifier-reference expanded-index-node callee-document template+callees)
+(define (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)
   (fold-left 
     (lambda (left maybe-pair)
       (let* ([head (car maybe-pair)]
@@ -160,15 +160,15 @@
 (define (private:template-variable+expanded body-index-node body-expression expanded-index-node template+callees document is-...?)
   (cond 
     [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc body-expression template+callees))
-      `((,body-expression . ,expandex-index-node))]
+      `((,body-expression . ,expanded-index-node))]
     [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc `(body-expression ...) template+callees))
       (let ([v (list->vector (cdr (assoc `(body-expression ...) template+callees)))])
         (if (> (vector-length v) is-...?)
-          `((,body-expression . ,expandex-index-node))
+          `((,body-expression . ,expanded-index-node))
           '()))]
     ; [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...?) (raise 'IdontKnowWhy)]
     [(and (private:syntax-parameter-index-node? body-index-node document body-expression) (assoc body-expression template+callees))
-      `((,body-expression . ,expandex-index-node))]
+      `((,body-expression . ,expanded-index-node))]
     [(private:syntax-parameter-index-node? body-index-node document body-expression) (raise 'IdontKnowWhy)]
     [(symbol? body-expression) '()]
 
@@ -198,7 +198,7 @@
   (if (symbol? expression)
     (not
       (find 
-        (lambda (x) (not (equal? 'syntax-parameter)))
+        (lambda (x) (not (equal? 'syntax-parameter x)))
         (map identifier-reference-type (find-available-references-for index-node document expression)))))
     #f)
 
