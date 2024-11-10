@@ -42,13 +42,20 @@
     (lambda (left maybe-pair)
       (let* ([head (car maybe-pair)]
           [tail (cdr maybe-pair)]
-          [prev-pair (assq head left)])
-        (if prev-pair
-          (append (filter (lambda (p) (not (eq? head (car p)))) left)
-            (if (index-node? (cdr prev-pair))
-              `((,head . (,(cdr prev-pair) ,tail)))
-              `((,head . (,@(cdr prev-pair) ,tail)))))
-          (append left (list maybe-pair)))))
+          [prev-pair (find (lambda (l) (equal? head (car l))) left)]
+          [head... `(,head ...)]
+          [prev-pair... (find (lambda (l) (equal? head... (car l))) left)])
+        (cond 
+          [prev-pair...
+            (append 
+              (filter (lambda (p) (not (equal? head... (car p)))) left)
+              `((,head... . (,@(cdr prev-pair...) ,tail))))]
+          [prev-pair 
+            (append 
+              (filter (lambda (p) (not (equal? head (car p)))) left)
+              `((,head... . (,(cdr prev-pair) ,tail))))]
+          [else (append left (list maybe-pair))])
+        ))
     '()
     (apply append 
       (map 
@@ -73,8 +80,8 @@
             (append 
               (filter (lambda (p) (not (equal? head (car p)))) left)
               `((,head... . (,(cdr prev-pair) ,tail))))]
-          [else (append left (list maybe-pair))]
-        )))
+          [else (append left (list maybe-pair))])
+          ))
     '()
     (apply append 
       (map 

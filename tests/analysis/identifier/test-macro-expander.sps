@@ -68,7 +68,7 @@
             (map (lambda (px) (annotation-stripped (index-node-datum/annotations px))) (cdr p)))))
         template+callees))
 
-    (test-equal '(atom pat body) (map car template+expanded))
+    (test-equal '((atom ...) (pat ...) (body ...)) (map car template+expanded))
   )
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
