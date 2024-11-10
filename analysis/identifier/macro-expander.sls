@@ -102,8 +102,9 @@
           (let* ([clause-index-nodes (cddr children)]
             [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
             [body-index-node (private:get-specific-body-index-node clause-index-nodes template)]
+            [template-index-node (car (index-node-children (index-node-parent body-index-node)))]
             [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
-            (private:template-variable+expanded body-index-node body-expression expanded-index-node template+callees callee-document #f))
+            (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees callee-document #f))
           '())]
       [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
         ;I can't guarentee
@@ -164,29 +165,29 @@
     #f
     clause-index-nodes))
 
-(define (private:template-variable+expanded body-index-node body-expression expanded-index-node template+callees document is-...?)
+(define (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees document is-...?)
   (cond 
     [(equal? body-expression '...) '()]
-    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc body-expression template+callees))
+    [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) is-...? (assoc body-expression template+callees))
       `((,body-expression . ,expanded-index-node))]
-    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc `(,body-expression ...) template+callees))
+    [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) is-...? (assoc `(,body-expression ...) template+callees))
       (let ([v (list->vector (cdr (assoc `(,body-expression ...) template+callees)))])
         (if (> (vector-length v) is-...?)
           `((,body-expression . ,expanded-index-node))
           '()))]
     ; [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...?) (raise 'IdontKnowWhy)]
-    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) (assoc body-expression template+callees))
+    [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) (assoc body-expression template+callees))
       `((,body-expression . ,expanded-index-node))]
-    [(private:syntax-parameter-index-node? body-index-node document body-expression) (raise 'IdontKnowWhy)]
+    [(private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) (raise 'IdontKnowWhy)]
     [(symbol? body-expression) '()]
 
     [(and (not (symbol? body-expression)) (index-node? body-index-node)) 
-      (private:template-variable+expanded (index-node-children body-index-node) body-expression (index-node-children expanded-index-node) template+callees document is-...?) ]
+      (private:template-variable+expanded template-index-node (index-node-children body-index-node) body-expression (index-node-children expanded-index-node) template+callees document is-...?) ]
     [(vector? body-expression) 
-      (private:template-variable+expanded body-index-node (vector->list body-expression) expanded-index-node template+callees document is-...?)]
+      (private:template-variable+expanded template-index-node body-index-node (vector->list body-expression) expanded-index-node template+callees document is-...?)]
     [(null? body-expression) '()]
     [(not (list? body-expression)) 
-      (private:template-variable+expanded body-index-node `(,(car body-expression) ,(cdr body-expression)) expanded-index-node template+callees document is-...?)]
+      (private:template-variable+expanded template-index-node body-index-node `(,(car body-expression) ,(cdr body-expression)) expanded-index-node template+callees document is-...?)]
 
     [(>= (length body-index-node) 2)
       (if (equal? (cadr body-expression) '...)
@@ -194,21 +195,24 @@
           (raise 'IdontKnowWhy)
           (let loop ([auto-increase 0])
             (let ([what-i-got
-              (private:template-variable+expanded (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document auto-increase)])
+              (private:template-variable+expanded template-index-node (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document auto-increase)])
               (if (null? what-i-got)
                 what-i-got
                 (append what-i-got (loop (+ 1 auto-increase)))))))
         (append 
-          (private:template-variable+expanded (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document is-...?)
-          (private:template-variable+expanded (cdr body-index-node) (cdr body-expression) (cdr expanded-index-node) template+callees document is-...?)))]
+          (private:template-variable+expanded template-index-node (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document is-...?)
+          (private:template-variable+expanded template-index-node (cdr body-index-node) (cdr body-expression) (cdr expanded-index-node) template+callees document is-...?)))]
     [(list? body-expression) 
-      (private:template-variable+expanded (car body-index-node ) (car body-expression) (car expanded-index-node) template+callees document is-...?)]))
+      (private:template-variable+expanded template-index-node (car body-index-node ) (car body-expression) (car expanded-index-node) template+callees document is-...?)]))
 
-(define (private:syntax-parameter-index-node? index-node document expression)
+(define (private:syntax-parameter-index-node? template-index-node index-node document expression)
   (if (and (symbol? expression) (index-node? index-node))
     (find 
-      (lambda (x) (equal? 'syntax-parameter x))
-      (map identifier-reference-type (find-available-references-for document index-node expression)))
+      (lambda (x) 
+        (and 
+          (equal? 'syntax-parameter (identifier-reference-type x))
+          (equal? template-index-node (identifier-reference-index-node x))))
+      (find-available-references-for document index-node expression))
     #f))
 
 (define (private:template-variable+callee template callee-index-node callee-expression keywords)
