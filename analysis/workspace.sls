@@ -3,7 +3,6 @@
     init-workspace
     init-virtual-file-system
     init-library-node
-    init-index-node
     init-document
     init-references
 

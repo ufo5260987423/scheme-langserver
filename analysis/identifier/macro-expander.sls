@@ -150,19 +150,20 @@
         (let* ([clause (annotation-stripped (index-node-datum/annotations clause-index-node))]
             [template (car clause)]
             [children (index-node-children clause-index-node)])
-          (case template 
-            [target-template (car (reverse children))]
-            [else stop?]))
+          (if (equal? template target-template)
+            (car (reverse children))
+            stop?))
         stop?))
     #f
     clause-index-nodes))
 
 (define (private:template-variable+expanded body-index-node body-expression expanded-index-node template+callees document is-...?)
   (cond 
+    [(equal? body-expression '...) '()]
     [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc body-expression template+callees))
       `((,body-expression . ,expanded-index-node))]
-    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc `(body-expression ...) template+callees))
-      (let ([v (list->vector (cdr (assoc `(body-expression ...) template+callees)))])
+    [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...? (assoc `(,body-expression ...) template+callees))
+      (let ([v (list->vector (cdr (assoc `(,body-expression ...) template+callees)))])
         (if (> (vector-length v) is-...?)
           `((,body-expression . ,expanded-index-node))
           '()))]
@@ -177,7 +178,8 @@
     [(vector? body-expression) 
       (private:template-variable+expanded body-index-node (vector->list body-expression) expanded-index-node template+callees document is-...?)]
     [(null? body-expression) '()]
-    [(not (list? body-expression)) (private:template-variable+expanded body-index-node `(,(car body-expression) ,(cdr body-expression)) expanded-index-node template+callees document is-...?)]
+    [(not (list? body-expression)) 
+      (private:template-variable+expanded body-index-node `(,(car body-expression) ,(cdr body-expression)) expanded-index-node template+callees document is-...?)]
 
     [(>= (length body-index-node) 2)
       (if (equal? (cadr body-expression) '...)
@@ -192,15 +194,15 @@
         (append 
           (private:template-variable+expanded (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document is-...?)
           (private:template-variable+expanded (cdr body-index-node) (cdr body-expression) (cdr expanded-index-node) template+callees document is-...?)))]
-    [(list? body-expression) (private:template-variable+expanded body-index-node (car body-expression) expanded-index-node template+callees document is-...?)]))
+    [(list? body-expression) 
+      (private:template-variable+expanded (car body-index-node ) (car body-expression) (car expanded-index-node) template+callees document is-...?)]))
 
 (define (private:syntax-parameter-index-node? index-node document expression)
-  (if (symbol? expression)
-    (not
-      (find 
-        (lambda (x) (not (equal? 'syntax-parameter x)))
-        (map identifier-reference-type (find-available-references-for index-node document expression)))))
-    #f)
+  (if (and (symbol? expression) (index-node? index-node))
+    (find 
+      (lambda (x) (equal? 'syntax-parameter x))
+      (map identifier-reference-type (find-available-references-for document index-node expression)))
+    #f))
 
 (define (private:template-variable+callee template callee-index-node callee-expression keywords)
   (cond 
@@ -233,8 +235,7 @@
         (append 
           (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)
           (private:template-variable+callee (cdr template) (cdr callee-index-node) (cdr callee-expression) keywords)))]
-    [(list? template) (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)]
-    ))
+    [(list? template) (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)]))
 
 (define (private:dispatch index-node callee-index-node callee-document)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
