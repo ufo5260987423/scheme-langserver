@@ -69,8 +69,7 @@
         template+callees))
 
     (test-equal 
-      '(
-        ((atom ...) expression expression)
+      '(((atom ...) expression expression)
         (((pat ...) ...) 
           ('only (identifier **1) _ ...)
           ('except (identifier **1) _ ...)
