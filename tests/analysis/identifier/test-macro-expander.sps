@@ -68,7 +68,36 @@
             (map (lambda (px) (annotation-stripped (index-node-datum/annotations px))) (cdr p)))))
         template+callees))
 
-    (test-equal '((atom ...) (pat ...) (body ...)) (map car template+expanded))
+    (test-equal 
+      ; pretty-print 
+      '(
+        ((atom ...) expression expression)
+        ((pat ...) ('only (identifier **1) _ ...)
+          ('except (identifier **1) _ ...)
+          ('prefix (identifier **1) _ ...)
+          ('rename (identifier **1) _ ...)
+          ('for (identifier **1) 'run ...)
+          ('for (identifier **1) '(meta 0) ...) 
+          (identifier **1) 
+          else)
+        ((body ...) identifier identifier identifier identifier
+          identifier identifier identifier '()))
+      (map 
+        (lambda (p)
+          `(,(car p) . 
+            ,(if (find index-node? (cdr p)) 
+              (map 
+                (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
+                (cdr p))
+              (map 
+                (lambda (a) 
+                  (map 
+                    (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
+                    a))
+                (cdr p))
+                )))
+        template+expanded)
+      )
   )
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

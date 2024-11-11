@@ -193,12 +193,15 @@
       (if (equal? (cadr body-expression) '...)
         (if is-...?
           (raise 'IdontKnowWhy)
-          (let loop ([auto-increase 0])
-            (let ([what-i-got
-              (private:template-variable+expanded template-index-node (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document auto-increase)])
-              (if (null? what-i-got)
-                what-i-got
-                (append what-i-got (loop (+ 1 auto-increase)))))))
+          (let loop ([auto-increase 0]
+              [rest-expanded-index-node expanded-index-node])
+            (if (null? rest-expanded-index-node)
+              '()
+              (let ([what-i-got
+                    (private:template-variable+expanded template-index-node (car body-index-node) (car body-expression) (car rest-expanded-index-node) template+callees document auto-increase)])
+                (if (null? what-i-got)
+                  (private:template-variable+expanded template-index-node (cddr body-index-node) (cddr body-expression) rest-expanded-index-node template+callees document #f)
+                  (append what-i-got (loop (+ 1 auto-increase) (cdr rest-expanded-index-node))))))))
         (append 
           (private:template-variable+expanded template-index-node (car body-index-node) (car body-expression) (car expanded-index-node) template+callees document is-...?)
           (private:template-variable+expanded template-index-node (cdr body-index-node) (cdr body-expression) (cdr expanded-index-node) template+callees document is-...?)))]
