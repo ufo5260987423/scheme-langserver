@@ -94,8 +94,7 @@
                   (map 
                     (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
                     a))
-                (cdr p))
-                )))
+                (cdr p)))))
         template+expanded)
       )
   )
