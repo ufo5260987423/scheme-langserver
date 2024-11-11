@@ -59,9 +59,9 @@
                     [after (if pre pre (assoc `(,template ...) template+expandeds))]
                     [target-expandeds (if after (cdr after) '())])
                   (cond 
-                    [(and (index-node? callee) (index-node? target-expandeds)) `((,callee . ,target-expandeds))]
+                    [(and (index-node? callee) (index-node? target-expandeds)) `((,callee ,target-expandeds))]
                     [(and (index-node? callee) (find list? target-expandeds)) `((,callee . ,(apply append target-expandeds)))]
-                    [(index-node? callee) `(,callee . ,target-expandeds)]
+                    [(index-node? callee) `((,callee . ,target-expandeds))]
                     [(find list? target-expandeds) 
                       (fold-left 
                         (lambda (left right)
@@ -80,8 +80,7 @@
                         (lambda (left . rights) `(,@left ,rights))
                         '()
                         callee
-                        target-expandeds)])
-                    target-expandeds))
+                        target-expandeds)])))
               template+callees))))
       (expand:step-by-step identifier-reference callee-index-node callee-document))))
 

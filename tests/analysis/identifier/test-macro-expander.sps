@@ -69,7 +69,6 @@
         template+callees))
 
     (test-equal 
-      ; pretty-print 
       '(
         ((atom ...) expression expression)
         (((pat ...) ...) 
@@ -96,8 +95,29 @@
                     (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
                     a))
                 (cdr p)))))
-        template+expanded)
-      )
+        template+expanded))
+
+    (test-equal
+      '((match) (expression expression expression)
+        (('only (identifier **1) _ ...)
+          ('only (identifier **1) _ ...))
+        (('except (identifier **1) _ ...)
+          ('except (identifier **1) _ ...))
+        (('prefix (identifier **1) _ ...)
+          ('prefix (identifier **1) _ ...))
+        (('rename (identifier **1) _ ...)
+          ('rename (identifier **1) _ ...))
+        (('for (identifier **1) 'run ...)
+          ('for (identifier **1) 'run ...))
+        (('for (identifier **1) '(meta 0) ...)
+          ('for (identifier **1) '(meta 0) ...))
+        ((identifier **1) (identifier **1)) (else else)
+        (identifier identifier) (identifier identifier)
+        (identifier identifier) (identifier identifier)
+        (identifier identifier) (identifier identifier)
+        (identifier identifier) ('() '()))
+      (map (lambda (l) (map (lambda (p) (annotation-stripped (index-node-datum/annotations p))) l))
+        (car (generate-pair:callee+expanded identifier-reference target-index-node document))))
   )
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
