@@ -72,7 +72,8 @@
       ; pretty-print 
       '(
         ((atom ...) expression expression)
-        ((pat ...) ('only (identifier **1) _ ...)
+        (((pat ...) ...) 
+          ('only (identifier **1) _ ...)
           ('except (identifier **1) _ ...)
           ('prefix (identifier **1) _ ...)
           ('rename (identifier **1) _ ...)
@@ -80,7 +81,7 @@
           ('for (identifier **1) '(meta 0) ...) 
           (identifier **1) 
           else)
-        ((body ...) identifier identifier identifier identifier
+        (((body ...) ...) identifier identifier identifier identifier
           identifier identifier identifier '()))
       (map 
         (lambda (p)

@@ -37,6 +37,34 @@
 (define (expand:step-by-step identifier-reference callee-index-node callee-document)
   (map cdr (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)))
 
+; (define (generate-pair:callee+expand identifier-reference callee-index-node callee-document)
+;   (let ([template+callees (generate-pair:template+callee identifier-reference callee-index-node callee-document)])
+;     (map 
+;       (lambda (expanded-expression)
+;         (let* ([expanded-index-node 
+;               (init-index-node 
+;                 (identifier-reference-initialization-index-node identifier-reference) 
+;                 (car 
+;                   (source-file->annotations 
+;                     (with-output-to-string (lambda () (pretty-print expanded-expression)))
+;                     (uri->path (document-uri (identifier-reference-document identifier-reference))))))]
+;             [template+expanded (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)])
+;           (map 
+;             (lambda (template+callee)
+;               (let ([template (car template+callee)]
+;                   [callee (cdr template+callee)]
+;                   [(assoc template )]
+;                   )
+                
+                
+;                 )
+;             )
+;             template+callees)
+;         ))
+;       (expand:step-by-step identifier-reference target-index-node document))
+;   )
+; )
+
 (define (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)
   (fold-left 
     (lambda (left maybe-pair)
@@ -173,7 +201,7 @@
     [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) is-...? (assoc `(,body-expression ...) template+callees))
       (let ([v (list->vector (cdr (assoc `(,body-expression ...) template+callees)))])
         (if (> (vector-length v) is-...?)
-          `((,body-expression . ,expanded-index-node))
+          `(((,body-expression ...) . ,expanded-index-node))
           '()))]
     ; [(and (private:syntax-parameter-index-node? body-index-node document body-expression) is-...?) (raise 'IdontKnowWhy)]
     [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) (assoc body-expression template+callees))
