@@ -144,26 +144,27 @@
       [expanded-expression (annotation-stripped (index-node-datum/annotations expanded-index-node))]
       [callee-index-nodes (index-node-children callee-index-node)])
     (match expression
-      [(syntax-rules-head (keywords ...) clauses **1) 
+      [('syntax-rules (keywords ...) clauses **1) 
         (if (root-meta-check callee-document first-child 'syntax-rules)
           (let* ([clause-index-nodes (cddr children)]
-            [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
-            [body-index-node (private:get-specific-body-index-node clause-index-nodes template)]
-            [template-index-node (car (index-node-children (index-node-parent body-index-node)))]
-            [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
+              [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
+              [body-index-node (private:get-specific-body-index-node clause-index-nodes template)]
+              [template-index-node (car (index-node-children (index-node-parent body-index-node)))]
+              [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
+            (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees callee-document #f))
+            '())]
+      [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
+        (if (and 
+            (equal? parameter like-parameter)
+            (root-meta-check callee-document first-child 'lambda)
+            (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
+          (let* ([clause-index-nodes (cdddr (index-node-children (car (reverse children))))]
+              [template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))]
+              [body-index-node (private:get-specific-body-index-node clause-index-nodes template)]
+              [template-index-node (car (index-node-children (index-node-parent body-index-node)))]
+              [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
             (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees callee-document #f))
           '())]
-      [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
-        ;I can't guarentee
-        ; (if (and 
-        ;     (equal? parameter like-parameter)
-        ;     (root-meta-check callee-document first-child 'lambda)
-        ;     (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
-        ;   (let* ([template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-body clauses)))])
-        ;     (private:template-variable+expanded template expanded-index-nodes expanded-expression))
-        ;   '())
-        '()
-          ]
       [else '()])))
 
 (define (private:dispatch-for-callee-pair index-node callee-index-node callee-document)
@@ -173,12 +174,12 @@
       [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
       [callee-index-nodes (index-node-children callee-index-node)])
     (match expression
-      [(syntax-rules-head (keywords ...) clauses **1) 
+      [('syntax-rules (keywords ...) clauses **1) 
         (if (root-meta-check callee-document first-child 'syntax-rules)
           (let* ([template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))])
             (private:template-variable+callee template callee-index-nodes callee-expression keywords))
           '())]
-      [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
+      [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
             (equal? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
@@ -267,14 +268,16 @@
 
 (define (private:template-variable+callee template callee-index-node callee-expression keywords)
   (cond 
-    [(contain? keywords callee-expression) '()]
     [(symbol? template) `((,template . ,callee-index-node))]
-    [(and (not (symbol? template)) (index-node? callee-index-node)) (private:template-variable+callee template (index-node-children callee-index-node) callee-expression keywords)]
-    [(vector? template) (private:template-variable+callee (vector->list template) (index-node-children callee-index-node) (vector->list callee-expression) keywords)]
+    [(and (not (symbol? template)) (index-node? callee-index-node))
+      (private:template-variable+callee template (index-node-children callee-index-node) callee-expression keywords)]
+    [(vector? template) 
+      (private:template-variable+callee (vector->list template) (index-node-children callee-index-node) (vector->list callee-expression) keywords)]
     [(null? template) '()]
     ;pair
-    [(not (list? template)) (private:template-variable+callee `(,(car template) ,(cdr template)) callee-index-node `(,(car callee-expression) ,(cdr callee-expression)) keywords)]
-    [(and (>= (length callee-index-node) 2))
+    [(not (list? template)) 
+      (private:template-variable+callee `(,(car template) ,(cdr template)) callee-index-node `(,(car callee-expression) ,(cdr callee-expression)) keywords)]
+    [(>= (length template) 2)
       (if (equal? (cadr template) '...)
         (let* ([new-callee-expression (syntax->datum (eval `(syntax-case ',callee-expression ,keywords (,template #'(,(car template) ,(cadr template))))))]
             [size (length new-callee-expression)])
@@ -289,14 +292,15 @@
                     keywords))
                 (list-head callee-index-node size)))
             (private:template-variable+callee 
-              (list-tail template 2)
+              (cddr template)
               (list-tail callee-index-node size)
               (list-tail callee-expression size)
               keywords)))
         (append 
           (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)
           (private:template-variable+callee (cdr template) (cdr callee-index-node) (cdr callee-expression) keywords)))]
-    [(list? template) (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)]))
+      [(list? template)
+        (private:template-variable+callee (car template) (car callee-index-node) (car callee-expression) keywords)]))
 
 (define (private:dispatch index-node callee-index-node callee-document)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
@@ -304,16 +308,16 @@
       [first-child (car children)]
       [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))])
     (match expression
-      [(syntax-rules-head (keywords ...) clauses **1) 
+      [('syntax-rules (keywords ...) clauses **1) 
         (if (root-meta-check callee-document first-child 'syntax-rules)
           (syntax->datum (eval `(syntax-case ',callee-expression ,keywords ,@(map private:rule-clause->case-clause clauses))))
           '())]
-      [(lambda-head ((? symbol? parameter)) _ ... (syntax-case-head like-parameter (keywords ...) clauses))
+      [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
             (equal? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
             (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
-          (syntax->datum (eval `(_ ... (syntax-case ,like-parameter ,keywords ,@clauses))))
+          (syntax->datum (eval `(syntax-case ',callee-expression ,keywords ,@clauses)))
           '())]
       [else '()])))
 
