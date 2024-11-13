@@ -190,34 +190,41 @@
             (map (lambda (px) (annotation-stripped (index-node-datum/annotations px))) (cdr p)))))
         template+callees))
 
-    ; (pretty-print 
-    ;   ; test-equal 
-    ;   ; '(((atom ...) expression expression)
-    ;   ;   (((pat ...) ...) 
-    ;   ;     ('only (identifier **1) _ ...)
-    ;   ;     ('except (identifier **1) _ ...)
-    ;   ;     ('prefix (identifier **1) _ ...)
-    ;   ;     ('rename (identifier **1) _ ...)
-    ;   ;     ('for (identifier **1) 'run ...)
-    ;   ;     ('for (identifier **1) '(meta 0) ...) 
-    ;   ;     (identifier **1) 
-    ;   ;     else)
-    ;   ;   (((body ...) ...) identifier identifier identifier identifier
-    ;   ;     identifier identifier identifier '()))
-    ;   (map 
-    ;     (lambda (p)
-    ;       `(,(car p) . 
-    ;         ,(if (find index-node? (cdr p)) 
-    ;           (map 
-    ;             (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
-    ;             (cdr p))
-    ;           (map 
-    ;             (lambda (a) 
-    ;               (map 
-    ;                 (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
-    ;                 a))
-    ;             (cdr p)))))
-    ;     template+expanded))
+    (test-equal 
+      '((condition . c)
+        (body0
+          match
+          expression
+          ((_ fuzzy ...)
+            (let* ([parent (index-node-parent index-node)]
+                  [children (index-node-children index-node)]
+                  [pre-target (map index-node-references-import-in-this-node
+                                    children)]
+                  [target `(,@pre-target
+                              ,(index-node-references-import-in-this-node
+                                index-node))])
+              (append-references-into-ordered-references-for
+                document
+                parent
+                (apply append target))))
+          (else '())))
+      (map 
+        (lambda (p)
+          `(,(car p) . 
+            ,(cond 
+              [(index-node? (cdr p)) (annotation-stripped (index-node-datum/annotations (cdr p)))]
+              [(find index-node? (cdr p)) 
+                (map 
+                  (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
+                  (cdr p))]
+              [else 
+                (map 
+                  (lambda (a) 
+                    (map 
+                      (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
+                      a))
+                  (cdr p))])))
+        template+expanded))
 
     ; (test-equal
     ;   '((match) (expression expression expression)
