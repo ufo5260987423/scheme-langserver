@@ -24,7 +24,7 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (self-defined-syntax-process identifier-reference callee-index-node callee-document stepper)
+(define (self-defined-syntax-process identifier-reference callee-index-node callee-document old-expanded-index-node stepper)
   (map 
     (lambda (expanded-expression)
       (let* ([identifier-reference (root-ancestor identifier-reference)]
@@ -36,12 +36,20 @@
                   (with-output-to-string (lambda () (pretty-print expanded-expression)))
                   (uri->path (document-uri (identifier-reference-document identifier-reference))))))]
           [callee+expanded-pairs (generate-pair:callee+expanded `(,expanded-index-node) identifier-reference callee-index-node callee-document)]
-          ; []
-          )
-          ;todo:hygenient
+          [expanded+callee-list (private:reverse-pair callee+expanded-pairs)])
+        (stepper (identifier-reference-document identifier-reference) expanded-index-node (append expanded+callee-list old-expanded-index-node))
         '()
       ))
     (expand:step-by-step identifier-reference callee-index-node callee-document)))
+
+(define (private:reverse-pair callee+expanded-pairs)
+  (apply append 
+    (map 
+      (lambda (pair)
+        (map 
+          (lambda (i) `(,i . ,(car i)))
+          (cdr pair)))
+      callee+expanded-pairs)))
 
 (define (private:process-identifier-claiment callee-index-node identifier-reference virtual-symbol-index-node-list)
   '()

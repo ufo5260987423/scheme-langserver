@@ -5,7 +5,6 @@
 #!r6rs
 
 (import 
-    ; (rnrs (6)) 
     (chezscheme) 
     (srfi :64 testing) 
     (scheme-langserver util text)
