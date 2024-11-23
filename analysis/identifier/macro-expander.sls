@@ -42,51 +42,53 @@
   (case-lambda 
     [(identifier-reference callee-index-node callee-document)
       (generate-pair:callee+expanded (expand:step-by-step identifier-reference callee-index-node callee-document) identifier-reference callee-index-node callee-document)]
-    [(expanded-index-node-list identifier-reference callee-index-node callee-document)
+    [(expanded-expression-list identifier-reference callee-index-node callee-document)
       (let ([template+callees (generate-pair:template+callee identifier-reference callee-index-node callee-document)])
         (map 
           (lambda (expanded-expression)
-            (let* ([expanded-index-node 
-                  (init-index-node 
-                    (identifier-reference-initialization-index-node identifier-reference) 
-                    (car 
-                      (source-file->annotations 
-                        (with-output-to-string (lambda () (pretty-print expanded-expression)))
-                        (uri->path (document-uri (identifier-reference-document identifier-reference))))))]
-                [template+expandeds (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)])
-              (apply append 
-                (map 
-                  (lambda (template+callee)
-                    (let* ([template (car template+callee)]
-                        [callee (cdr template+callee)]
-                        [pre (assoc template template+expandeds)]
-                        [after (if pre pre (assoc `(,template ...) template+expandeds))]
-                        [target-expandeds (if after (cdr after) '())])
-                      (cond 
-                        [(and (index-node? callee) (index-node? target-expandeds)) `((,callee ,target-expandeds))]
-                        [(and (index-node? callee) (find list? target-expandeds)) `((,callee . ,(apply append target-expandeds)))]
-                        [(index-node? callee) `((,callee . ,target-expandeds))]
-                        [(find list? target-expandeds) 
-                          (fold-left 
-                            (lambda (left right)
-                              (fold-left 
-                                (lambda (current-left . rights) 
-                                  (if (list? (car rights))
-                                    `(,@current-left ,(append (car rights) (cdr rights)))
-                                    `(,@current-left ,rights)))
-                                '()
-                                left
-                                right))
-                            callee
-                            target-expandeds)]
-                        [else 
-                          (fold-left 
-                            (lambda (left . rights) `(,@left ,rights))
-                            '()
-                            callee
-                            target-expandeds)])))
-                  template+callees))))
-          expanded-index-node-list))]))
+            (generate-pair:callee+expanded template+callees 
+              (init-index-node 
+                (identifier-reference-initialization-index-node identifier-reference) 
+                (car 
+                  (source-file->annotations 
+                    (with-output-to-string (lambda () (pretty-print expanded-expression)))
+                    (uri->path (document-uri (identifier-reference-document identifier-reference))))))
+              identifier-reference callee-index-node callee-document))
+          expanded-expression-list))]
+    [(template+callees expanded-index-node identifier-reference callee-index-node callee-document)
+      (let ([template+expandeds (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)])
+        (apply append 
+          (map 
+            (lambda (template+callee)
+              (let* ([template (car template+callee)]
+                  [callee (cdr template+callee)]
+                  [pre (assoc template template+expandeds)]
+                  [after (if pre pre (assoc `(,template ...) template+expandeds))]
+                  [target-expandeds (if after (cdr after) '())])
+                (cond 
+                  [(and (index-node? callee) (index-node? target-expandeds)) `((,callee ,target-expandeds))]
+                  [(and (index-node? callee) (find list? target-expandeds)) `((,callee . ,(apply append target-expandeds)))]
+                  [(index-node? callee) `((,callee . ,target-expandeds))]
+                  [(find list? target-expandeds) 
+                    (fold-left 
+                      (lambda (left right)
+                        (fold-left 
+                          (lambda (current-left . rights) 
+                            (if (list? (car rights))
+                              `(,@current-left ,(append (car rights) (cdr rights)))
+                              `(,@current-left ,rights)))
+                          '()
+                          left
+                          right))
+                      callee
+                      target-expandeds)]
+                  [else 
+                    (fold-left 
+                      (lambda (left . rights) `(,@left ,rights))
+                      '()
+                      callee
+                      target-expandeds)])))
+            template+callees)))]))
 
 (define (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)
   (fold-left 
