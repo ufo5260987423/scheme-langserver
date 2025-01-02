@@ -21,6 +21,13 @@
         source
         (loop port))
       (except e
+        [(and (condition? e) (equal? (car (condition-irritants e)) "unexpected dot (.)"))
+          (let* ([position (caddr (condition-irritants e))]
+              [head (if (zero? position) "" (string-take source position))]
+              [what (vector-ref (list->vector (string->list source)) position)]
+              [rest (string-take-right source (- (string-length source) position 1))])
+            (pretty-print (string-append head " " rest))
+            (private:tolerant-parse->patch (string-append head " " rest)))]
         [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected close parenthesis"))
           (let* ([position (caddar (condition-irritants e))]
               [head (if (zero? position) "" (string-take source position))]
