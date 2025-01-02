@@ -29,8 +29,9 @@
       [expanded-expression-list (expand:step-by-step top-identifier-reference callee-index-node callee-document)])
     (map 
       (lambda (expanded-expression)
-    (pretty-print 'aa2)
-    (pretty-print expanded-expression)
+    ; (pretty-print 'aa2)
+    ; (pretty-print (document-uri callee-document))
+    ; (pretty-print expanded-expression)
         (let ([pre 
                 (source-file->annotations 
                   (with-output-to-string (lambda () (pretty-print expanded-expression)))
