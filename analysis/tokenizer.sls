@@ -14,6 +14,7 @@
 ;3rd, attach a (, ), [ or ]) or ] at the end of source (abandon, though it won't greatly change other tokens' bias, this may cause more faults)
 ;4th, replace current ) or ] with ] or ).
 ;I mainly choose 2nd and 4th solution, because it won't change other tokens' bias
+;No caso do "unexpected dot", tenho de remover o note para nao alter posicao.
 (define (private:tolerant-parse->patch source)
   (let loop ([port (open-input-string source)])
     (try 
