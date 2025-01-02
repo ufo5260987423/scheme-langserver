@@ -229,7 +229,6 @@
                       (loop (read-message server-instance))))))
               (except c 
                 [else 
-                  (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
+                  (display-condition c log-port)
                   (do-log-timestamp server-instance)])))]))
 )

@@ -24,42 +24,33 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (self-defined-syntax-process identifier-reference callee-index-node callee-document old-expanded-index-node stepper)
-  (map 
-    (lambda (expanded-expression)
-      (let* ([identifier-reference (root-ancestor identifier-reference)]
-          [expanded-index-node 
-            (init-index-node 
-              (identifier-reference-initialization-index-node identifier-reference) 
-              (car 
+(define (self-defined-syntax-process top-identifier-reference callee-index-node callee-document old-expanded+callee-list stepper)
+  (let ([template+callees (generate-pair:template+callee top-identifier-reference callee-index-node callee-document)]
+      [expanded-expression-list (expand:step-by-step top-identifier-reference callee-index-node callee-document)])
+    (map 
+      (lambda (expanded-expression)
+    (pretty-print 'aa2)
+    (pretty-print expanded-expression)
+        (let ([pre 
                 (source-file->annotations 
                   (with-output-to-string (lambda () (pretty-print expanded-expression)))
-                  (uri->path (document-uri (identifier-reference-document identifier-reference))))))]
-          [callee+expanded-pairs (generate-pair:callee+expanded `(,expanded-index-node) identifier-reference callee-index-node callee-document)]
-          [expanded+callee-list (private:reverse-pair callee+expanded-pairs)])
-        (stepper (identifier-reference-document identifier-reference) expanded-index-node (append expanded+callee-list old-expanded-index-node))
-        '()
-      ))
-    (expand:step-by-step identifier-reference callee-index-node callee-document)))
+                  (uri->path (document-uri (identifier-reference-document top-identifier-reference))))])
+          (if (pair? pre)
+            (let* ([expanded-index-node 
+                  (init-index-node 
+                    (identifier-reference-initialization-index-node top-identifier-reference) 
+                    (car pre))]
+                [callee+expanded-pairs (generate-pair:callee+expanded template+callees expanded-index-node top-identifier-reference callee-index-node callee-document)]
+                [expanded+callee-list (private:reverse-pair callee+expanded-pairs)])
+              (stepper (identifier-reference-document top-identifier-reference) expanded-index-node (append expanded+callee-list old-expanded+callee-list))))))
+      expanded-expression-list)))
 
 (define (private:reverse-pair callee+expanded-pairs)
   (apply append 
     (map 
       (lambda (pair)
         (map 
-          (lambda (i) `(,i . ,(car i)))
+          (lambda (i) `(,i . ,(car pair)))
           (cdr pair)))
       callee+expanded-pairs)))
-
-(define (private:process-identifier-claiment callee-index-node identifier-reference virtual-symbol-index-node-list)
-  '()
-)
-
-(define (private:get-symbol-index-node-children target-index-node)
-  (let ([expression (annotation-stripped (index-node-datum/annotations target-index-node))]
-      [children (index-node-children target-index-node)])
-    (cond 
-      [(not (null? children)) (apply append (map private:get-symbol-index-node-children children))]
-      [(symbol? expression) target-index-node]
-      [else '()])))
 )

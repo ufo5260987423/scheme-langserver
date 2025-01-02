@@ -36,7 +36,13 @@
     (private:unwrap identifier-reference)))
 
 (define (expand:step-by-step identifier-reference callee-index-node callee-document)
-  (map cdr (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)))
+  (try 
+    (map cdr (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document))
+    (except c 
+      [(condition? c)
+        (if (not (equal? "invalid syntax" (condition-message c))) (display-condition c))
+        '()]
+    [else '()])))
 
 (define generate-pair:callee+expanded
   (case-lambda 
@@ -66,9 +72,12 @@
                   [after (if pre pre (assoc `(,template ...) template+expandeds))]
                   [target-expandeds (if after (cdr after) '())])
                 (cond 
-                  [(and (index-node? callee) (index-node? target-expandeds)) `((,callee ,target-expandeds))]
-                  [(and (index-node? callee) (find list? target-expandeds)) `((,callee . ,(apply append target-expandeds)))]
-                  [(index-node? callee) `((,callee . ,target-expandeds))]
+                  [(and (index-node? callee) (index-node? target-expandeds)) 
+                  `((,callee ,target-expandeds))]
+                  [(and (index-node? callee) (find list? target-expandeds)) 
+                  `((,callee . ,(apply append target-expandeds)))]
+                  [(index-node? callee) 
+                  `((,callee . ,target-expandeds))]
                   [(find list? target-expandeds) 
                     (fold-left 
                       (lambda (left right)
@@ -83,11 +92,12 @@
                       callee
                       target-expandeds)]
                   [else 
-                    (fold-left 
-                      (lambda (left . rights) `(,@left ,rights))
-                      '()
-                      callee
-                      target-expandeds)])))
+                    (let ([m (min (length callee) (length target-expandeds))])
+                      (fold-left 
+                        (lambda (left . rights) `(,@left ,rights))
+                        '()
+                        (list-head callee m)
+                        (list-head target-expandeds m)))])))
             template+callees)))]))
 
 (define (generate-pair:template+expanded identifier-reference expanded-index-node callee-index-node callee-document template+callees)
@@ -107,7 +117,8 @@
             (append 
               (filter (lambda (p) (not (equal? head (car p)))) left)
               `((,head... . (,(cdr prev-pair) ,tail))))]
-          [else (append left (list maybe-pair))])))
+          [else 
+          (append left (list maybe-pair))])))
     '()
     (apply append 
       (map 
@@ -138,7 +149,13 @@
     (apply append 
       (map 
         (lambda (p)
-          (private:dispatch-for-callee-pair (cdr p) callee-index-node callee-document))
+          (try 
+            (private:dispatch-for-callee-pair (cdr p) callee-index-node callee-document)
+            (except c 
+              [(condition? c)
+                (if (not (equal? "invalid syntax" (condition-message c))) (display-condition c))
+                '()]
+              [else '()])))
         (private:unwrap identifier-reference)))))
 
 (define (private:dispatch-for-expanded-pair index-node callee-index-node callee-document expanded-index-node template+callees)
@@ -157,7 +174,7 @@
               [template-index-node (car (index-node-children (index-node-parent body-index-node)))]
               [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
             (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees callee-document #f))
-            '())]
+          '())]
       [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
             (equal? parameter like-parameter)
@@ -237,10 +254,10 @@
     [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) (assoc body-expression template+callees))
       `((,body-expression . ,expanded-index-node))]
     [(private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) '()]
-    [(symbol? body-expression) '()]
+    [(not (pair? body-expression)) '()]
 
-    [(null? body-expression) '()]
-    [(and (not (symbol? body-expression)) (index-node? body-index-node)) 
+    [(or (null? body-expression) (null? body-index-node) (null? expanded-index-node)) '()]
+    [(and (pair? body-expression) (index-node? body-index-node)) 
       (if (or
           (equal? (car body-expression) 'quasisyntax)
           (equal? (car body-expression) 'syntax)
@@ -292,7 +309,8 @@
       (private:template-variable+callee template (index-node-children callee-index-node) callee-expression keywords)]
     [(vector? template) 
       (private:template-variable+callee (vector->list template) (index-node-children callee-index-node) (vector->list callee-expression) keywords)]
-    [(null? template) '()]
+    ; [(or (null? template) (null? callee-index-node) (null? callee-expression)) '()]
+    [(or (null? template) (null? callee-index-node)) '()]
     ;pair
     [(not (list? template)) 
       (private:template-variable+callee `(,(car template) ,(cdr template)) callee-index-node `(,(car callee-expression) ,(cdr callee-expression)) keywords)]
@@ -358,6 +376,6 @@
       (lambda (first-child-identifier)
         (case (identifier-reference-identifier first-child-identifier)
           ['define-syntax `(,first-child-identifier . ,(caddr initial-children))]
-          ['let-syntax `(,first-child-identifier . ,(cadr (index-node-parent (identifier-reference-index-node identifier-reference))))]))
+          ['let-syntax `(,first-child-identifier . ,(index-node-parent (identifier-reference-index-node identifier-reference)))]))
       (filter (lambda (identifier) (meta-library? (identifier-reference-library-identifier identifier))) first-child-top-identifiers))))
 )

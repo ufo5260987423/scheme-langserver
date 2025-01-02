@@ -63,6 +63,7 @@
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system library-node))
 
+;TODO: in case of self-defined macro's partially evaluation leading endless recursions, add a recursion avoid mechanism. 
 (define step 
   (case-lambda 
     [(root-file-node root-library-node file-linkage current-document)
@@ -232,19 +233,19 @@
                         (step root-file-node root-library-node file-linkage current-document expanded+callee-list))))])
                 (private-add-rule rules `((,target-lambda) . ,identifier)))]
             [(contain? (map identifier-reference-type top) 'syntax-variable)
-              ; (private-add-rule 
-              ;   rules 
-              ;   `((,(lambda (root-file-node root-library-node document index-node)
-              ;       (self-defined-syntax-process 
-              ;         root-file-node root-library-node document index-node file-linkage expanded+callee-list
-              ;         (lambda (specific-document generated-index-node new-expanded+callee-list)
-              ;           (step root-file-node root-library-node file-linkage specific-document generated-index-node new-expanded+callee-list)))
-              ;     )) . ,identifier))
+              ; (fold-left private-add-rule rules
+              ;   (map 
+              ;     (lambda (t)
+              ;       `((,(lambda (root-file-node root-library-node document index-node)
+              ;           (self-defined-syntax-process t index-node document expanded+callee-list 
+              ;             (lambda (specific-document generated-index-node new-expanded+callee-list)
+              ;               (step root-file-node root-library-node file-linkage specific-document generated-index-node new-expanded+callee-list))))) 
+              ;         . ,t))
+              ;     top))
               ;not now to delete
               rules
               ]
-            [else rules])
-        )))
+            [else rules]))))
     '()
     (filter 
       (lambda (identifier) 
