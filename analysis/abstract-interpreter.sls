@@ -56,7 +56,7 @@
     (scheme-langserver analysis identifier rules with-syntax)
     (scheme-langserver analysis identifier rules identifier-syntax)
 
-    (scheme-langserver analysis identifier rules srfi include-resolve)
+    (scheme-langserver analysis identifier self-defined-rules router)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -164,8 +164,7 @@
       (let* ([top (root-ancestor identifier)]
           [r (map identifier-reference-identifier top)]
           [i (identifier-reference-identifier identifier)]
-          [is (map identifier-reference-library-identifier top)]
-          [possible-new-memory `(,@(reverse (cdr (reverse memory))) (,(car (reverse memory)) . ,identifier-list))])
+          [is (map identifier-reference-library-identifier top)])
         (if (find meta-library? is)
           (cond 
             [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
@@ -230,34 +229,10 @@
             [(equal? r '(body)) (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
 
             [else rules])
-          (cond 
-            [(and (equal? is '((srfi :23 error tricks))) (equal? r '(SRFI-23-error->R6RS)))
-              (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
-            [(and (equal? is '((srfi private include))) (equal? r '(include/resolve)))
-              (let ([target-lambda 
-                  (lambda (root-file-node root-library-node document index-node)
-                    (include-resolve-process root-file-node root-library-node document index-node 
-                      (lambda (current-document) 
-                        (file-linkage-set! file-linkage (uri->path (document-uri document)) (uri->path (document-uri current-document)))
-                        (step root-file-node root-library-node file-linkage current-document expanded+callee-list (reverse (cdr (reverse memory)))))))])
-                (private-add-rule rules `((,target-lambda) . ,identifier)))]
-            [(and (contain? (map identifier-reference-type top) 'syntax-variable) (not (contain? memory (car (reverse possible-new-memory))))) 
-              ; (fold-left private-add-rule rules
-              ;   (map 
-              ;     (lambda (t)
-              ;       `((,(lambda (root-file-node root-library-node document index-node)
-              ;           (self-defined-syntax-process t index-node document expanded+callee-list 
-              ;             (lambda (specific-document generated-index-node new-expanded+callee-list)
-              ;               (step root-file-node root-library-node file-linkage specific-document generated-index-node new-expanded+callee-list 
-              ;               ;看起来在处理identifier-list的时候，因为一开始没加,导致了一些问题。可能出在source->annotaiton的过程中，也可能出在step过程中
-              ;                 ; `(,@(reverse (cdr (reverse memory))) (,(car (reverse memory)) . ,identifier-list))
-              ;                 possible-new-memory))))) 
-              ;         . ,t))
-              ;     top))
-              ;not now to delete
-              rules
-              ]
-            [else rules]))))
+          (route&add 
+            rules identifier 
+            file-linkage identifier-list current-document expanded+callee-list memory
+            private-add-rule step))))
     '()
     (filter 
       (lambda (identifier) 
