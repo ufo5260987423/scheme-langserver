@@ -92,7 +92,22 @@ Based on library framework, `export` and `import` would transfer identifier-refe
 | load-shared-object      | (load-shared-object path)            |
 
 ### Identifier binding for self-made macro
-As like [try.sls](../../util/try.sls), they also produce identifiers as expanding macros. A patch will be fixed in the future.
+
+As like [ufo-try](https://github.com/ufo5260987423/ufo-try), they also produce identifiers as expanding macros. An example may help understanding. In following code:
+```lisp
+;;a self-defined try-except macro here is used to handle possible exceptions
+(try 
+  ;;some works
+  todo 
+  ;;to catch exception c
+  (except c 
+  ;; a branch to handle
+    [else c]))
+```
+
+Many programmers want to know the `c` in handling branch is relating to the `c` exception after `except`. It's called "goto-definition" in LSP(Language Server Protocol). However, nested macros usually cause undecidable(if I use this word correctly) time-consuming, because "goto-definition" requiring an abstract interpreter evaluates all expansions and backwarding identifier claiments from expansion to macro callee, which interleaves macro expanding.
+
+An alternative solution is to directly write rules handling requests, as you may see [here](../../analysis/identifier/self-defined-rules/ufo-try). It's registered in [this file](../../analysis/identifier/self-defined-rules/router.sls).
 
 ### Why does identifier catching interleave index fully updating?
 This question is somehow asked maybe they think would speed up auto-complete for long scheme code programming. Their basic idea is that whether the old caught identifiers can be smoothly transformed from old indexed code to newly updated indexed code. Apparently, copy and paste seems to cost less than `match` macro. However, it faced a serious problem that any seemed-locally updating may globally affect whole syntax tree, because code editing is orthogonal with index-nodes tree, and practically, is orthogonal with identifier catching. 
