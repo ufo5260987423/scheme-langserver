@@ -15,7 +15,8 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules body)
 
-    (scheme-langserver analysis identifier self-defined-rules srfi include-resolve))
+    (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
+    (scheme-langserver analysis identifier self-defined-rules ufo-try try))
 
 (define (route&add 
   rules target-identifier
@@ -36,6 +37,8 @@
                   (file-linkage-set! file-linkage (uri->path (document-uri document)) (uri->path (document-uri current-document)))
                   (step root-file-node root-library-node file-linkage current-document expanded+callee-list (reverse (cdr (reverse memory)))))))])
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
+      [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
+        (add-rule-procedure rules `((,try-nothing . ,do-nothing) . ,target-identifier))]
       [(and (contain? (map identifier-reference-type top) 'syntax-variable) (not (contain? memory (car (reverse possible-new-memory))))) 
         ; (fold-left add-rule-procedure rules
         ;   (map 
