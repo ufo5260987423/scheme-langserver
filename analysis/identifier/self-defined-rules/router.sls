@@ -38,7 +38,7 @@
                   (step root-file-node root-library-node file-linkage current-document expanded+callee-list (reverse (cdr (reverse memory)))))))])
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
-        (add-rule-procedure rules `((,try-nothing . ,do-nothing) . ,target-identifier))]
+        (add-rule-procedure rules `((,try-process . ,do-nothing) . ,target-identifier))]
       [(and (contain? (map identifier-reference-type top) 'syntax-variable) (not (contain? memory (car (reverse possible-new-memory))))) 
         ; (fold-left add-rule-procedure rules
         ;   (map 
