@@ -5,7 +5,7 @@
     (ufo-match)
 
     (scheme-langserver util cartesian-product)
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util sub-list)
 
     (scheme-langserver analysis identifier reference)

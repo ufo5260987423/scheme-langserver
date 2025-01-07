@@ -13,7 +13,7 @@
     (chezscheme)
     (scheme-langserver util matrix)
     (scheme-langserver util contain)
-    (scheme-langserver util try))
+    (ufo-try))
 
 (define-record-type segment
   (fields

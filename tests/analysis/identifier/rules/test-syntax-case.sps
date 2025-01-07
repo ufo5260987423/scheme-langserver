@@ -20,15 +20,18 @@
     (scheme-langserver virtual-file-system document))
 
 (test-begin "syntax-case-process")
-    (let* ( [root-file-node (init-virtual-file-system "./util" '() (lambda (fuzzy) #t))]
+    (let* ( [root-file-node (init-virtual-file-system (current-directory) '() (lambda (fuzzy) #t))]
             [root-library-node '()]
-            [target-file-node (walk-file root-file-node "./util/try.sls")]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/src/ufo-try/ufo-try.sls"))]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
             ; a syntax-case node
-            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 106 15))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 108 17))])
+            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 103 14))]
+            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 105 16))])
+            (debug:print-expression ready-index-node)
+            (debug:print-expression target-index-node)
             (syntax-case-process root-file-node root-library-node document ready-index-node)
+            (pretty-print (map identifier-reference-identifier (index-node-references-import-in-this-node target-index-node)))
             (test-equal #f
                 (not 
                     (find 
@@ -38,13 +41,13 @@
 (test-end)
 
 (test-begin "syntax-case-process for quasisyntaxand unsyntax")
-    (let* ( [workspace (init-workspace (string-append (current-directory) "/util") #f #f)]
+    (let* ( [workspace (init-workspace (string-append (current-directory) "/.akku/src/ufo-try/") #f #f)]
             [root-file-node (workspace-file-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/try.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/src/ufo-try/ufo-try.sls"))]
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (workspace-file-linkage workspace)]
             [document (file-node-document target-file-node)]
-            [loop-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 114 75))])
+            [loop-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 112 75))])
         (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
         (step root-file-node root-library-node file-linkage document)
         (test-equal '(loop) (map identifier-reference-identifier (find-available-references-for document loop-index-node 'loop))))

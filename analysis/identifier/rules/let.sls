@@ -6,7 +6,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util try)
+    (ufo-try)
 
     (scheme-langserver analysis identifier reference)
 

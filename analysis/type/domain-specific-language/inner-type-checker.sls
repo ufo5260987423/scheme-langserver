@@ -29,7 +29,7 @@
     (chezscheme)
     (ufo-match)
 
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util contain)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)

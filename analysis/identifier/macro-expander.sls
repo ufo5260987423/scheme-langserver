@@ -9,7 +9,7 @@
     (chezscheme)
     (ufo-match)
 
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util path)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)

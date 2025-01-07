@@ -5,6 +5,7 @@
     (chezscheme) 
     (ufo-thread-pool) 
     (ufo-match) 
+    (ufo-try) 
 
     (scheme-langserver analysis workspace)
 
@@ -24,7 +25,6 @@
     (scheme-langserver protocol apis document-symbol)
     (scheme-langserver protocol apis document-diagnostic)
 
-    (scheme-langserver util try) 
     (scheme-langserver util association)
     (scheme-langserver util path))
 

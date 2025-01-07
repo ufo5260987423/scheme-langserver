@@ -9,7 +9,7 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
-    (scheme-langserver util try)
+    (ufo-try)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)

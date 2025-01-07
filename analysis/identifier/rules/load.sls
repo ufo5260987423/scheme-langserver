@@ -6,7 +6,7 @@
 
     (scheme-langserver util dedupe)
     (scheme-langserver util path)
-    (scheme-langserver util try)
+    (ufo-try)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)

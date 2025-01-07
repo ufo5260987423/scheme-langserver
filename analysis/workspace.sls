@@ -29,7 +29,7 @@
     (only (srfi :13 strings) string-suffix?)
 
     (scheme-langserver util path)
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util io)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)

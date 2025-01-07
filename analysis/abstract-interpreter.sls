@@ -3,7 +3,7 @@
   (import 
     (chezscheme) 
 
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util path)
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
