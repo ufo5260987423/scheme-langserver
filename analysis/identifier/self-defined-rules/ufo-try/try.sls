@@ -16,7 +16,7 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (try-process root-file-node root-library-node document index-node step-without-document)
+(define (try-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [parent-index-node (index-node-parent index-node)]
