@@ -6,7 +6,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver util try)
+    (ufo-try)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)

@@ -11,7 +11,7 @@
   (import 
     (chezscheme)
 
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util cartesian-product)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language variable)

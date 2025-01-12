@@ -5,7 +5,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util path)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
@@ -24,50 +24,34 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
-(define (self-defined-syntax-process identifier-reference callee-index-node callee-document stepper)
-  (let* ([identifier+expanded-expression (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)]
-      [expanded-expression (cdr identifier+expanded-expression)]
-      [top-identifier-reference (car identifier+expanded-expression)]
-      [top-index-node (index-node-parent (identifier-reference-initialization-index-node top-identifier-reference))]
-      [top-document (identifier-reference-document top-identifier-reference)]
-      [virtual-index-node-list (private:init-virtual-index-node-list expanded-expression top-index-node top-document)]
-      ;; [stepped-virtual-index-node-list (map (lambda (i) (stepper top-document generated-index-node specific-allow-extend-macro?)) virtual-index-node-list)]
-      ;; [callee-expression (annotation-stripped (index-node-datum/annotations callee-index-node))]
-      ;; [callee-symbol-index-node-list (private:get-symbol-index-node-children callee-index-node)]
-      ;; [virtual-symbol-index-node-list (apply append (map private:get-symbol-index-node-children stepped-virtual-index-node-list))]
-      )
-    ;; (map 
-    ;;   (lambda (callee-symbol-index-node)
-    ;;     (map 
-    ;;       (lambda (virtual-symbol-index-node)
-    ;;         (map 
-    ;;           (lambda (identifier-reference)
-    ;;             )
-    ;;           (index-node-references-export-to-other-node virtual-symbol-index-node)))
-    ;;       (filter 
-    ;;         (lambda (virtual-symbol-index-node) 
-    ;;           (equal? 
-    ;;             (annotation-stripped (index-node-datum/annotations callee-symbol-index-node))
-    ;;             (annotation-stripped (index-node-datum/annotations virtual-symbol-index-node)))) 
-    ;;           virtual-symbol-index-node-list)))
-    ;;   callee-symbol-index-node-list)
-    '()
-      ))
+(define (self-defined-syntax-process top-identifier-reference callee-index-node callee-document old-expanded+callee-list stepper)
+  (let ([template+callees (generate-pair:template+callee top-identifier-reference callee-index-node callee-document)]
+      [expanded-expression-list (expand:step-by-step top-identifier-reference callee-index-node callee-document)])
+    (map 
+      (lambda (expanded-expression)
+    ; (pretty-print 'aa2)
+    ; (pretty-print (document-uri callee-document))
+    ; (pretty-print expanded-expression)
+        (let ([pre 
+                (source-file->annotations 
+                  (with-output-to-string (lambda () (pretty-print expanded-expression)))
+                  (uri->path (document-uri (identifier-reference-document top-identifier-reference))))])
+          (if (pair? pre)
+            (let* ([expanded-index-node 
+                  (init-index-node 
+                    (identifier-reference-initialization-index-node top-identifier-reference) 
+                    (car pre))]
+                [callee+expanded-pairs (generate-pair:callee+expanded template+callees expanded-index-node top-identifier-reference callee-index-node callee-document)]
+                [expanded+callee-list (private:reverse-pair callee+expanded-pairs)])
+              (stepper (identifier-reference-document top-identifier-reference) expanded-index-node (append expanded+callee-list old-expanded+callee-list))))))
+      expanded-expression-list)))
 
-(define (private:process-identifier-claiment callee-index-node identifier-reference virtual-symbol-index-node-list)
-  '()
-)
-
-(define (private:init-virtual-index-node-list expanded-expression parent-index-node document)
-  (map 
-    (lambda (item) (init-index-node parent-index-node item))
-    (source-file->annotations (with-output-to-string (lambda () (pretty-print expanded-expression))) (uri->path (document-uri document)))))
-
-(define (private:get-symbol-index-node-children target-index-node)
-  (let ([expression (annotation-stripped (index-node-datum/annotations target-index-node))]
-      [children (index-node-children target-index-node)])
-    (cond 
-      [(not (null? children)) (apply append (map private:get-symbol-index-node-children children))]
-      [(symbol? expression) target-index-node]
-      [else '()])))
+(define (private:reverse-pair callee+expanded-pairs)
+  (apply append 
+    (map 
+      (lambda (pair)
+        (map 
+          (lambda (i) `(,i . ,(car pair)))
+          (cdr pair)))
+      callee+expanded-pairs)))
 )

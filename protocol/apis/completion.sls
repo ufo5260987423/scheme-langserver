@@ -45,7 +45,9 @@
       [prefix 
         (if (null? target-index-node)
           ""
-          (if (and (null? (index-node-children target-index-node)) (symbol? (index-node-datum/annotations target-index-node)))
+          (if (and 
+              (null? (index-node-children target-index-node)) 
+              (symbol? (annotation-stripped (index-node-datum/annotations target-index-node))))
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]
       [whole-list
@@ -56,9 +58,10 @@
               (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))) 
           (find-available-references-for document target-index-node))]
       [type-inference? (workspace-type-inference? workspace)])
-    ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
+      ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector (map 
-      identifier-reference->completion-item-alist 
+      (lambda (identifier)
+        (identifier-reference->completion-item-alist identifier prefix))
       (if type-inference?
         (sort-with-type-inferences document target-index-node whole-list)
         (sort-identifier-references whole-list))))))
@@ -123,6 +126,11 @@
       (sort-identifier-references true-list)
       (sort-identifier-references false-list))))
 
-(define (identifier-reference->completion-item-alist reference)
-  (make-alist 'label (symbol->string (identifier-reference-identifier reference))))
+(define (identifier-reference->completion-item-alist reference prefix)
+  (let* ([s (symbol->string (identifier-reference-identifier reference))]
+      [l (string-length prefix)])
+    (make-alist 
+      'label s
+      'insertText (substring s (- l 1) (string-length s))
+      )))
 )

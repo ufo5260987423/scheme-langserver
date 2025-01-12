@@ -1,11 +1,11 @@
-(library (scheme-langserver analysis identifier rules srfi include-resolve)
+(library (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
   (export include-resolve-process)
   (import 
     (chezscheme) 
     (ufo-match)
 
     (scheme-langserver util path)
-    (scheme-langserver util try)
+    (ufo-try)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)

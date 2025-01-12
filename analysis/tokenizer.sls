@@ -6,7 +6,7 @@
     (only (srfi :13) string-take string-take-right)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver util io)
-    (scheme-langserver util try))
+    (ufo-try))
 
 ;I mainly handle miss-matched () and [], and here's serveral options:
 ;1st, make a (, ), [ or ] behined or after position
@@ -14,6 +14,7 @@
 ;3rd, attach a (, ), [ or ]) or ] at the end of source (abandon, though it won't greatly change other tokens' bias, this may cause more faults)
 ;4th, replace current ) or ] with ] or ).
 ;I mainly choose 2nd and 4th solution, because it won't change other tokens' bias
+;No caso do "unexpected dot", tenho de remover o note para nao alter posicao.
 (define (private:tolerant-parse->patch source)
   (let loop ([port (open-input-string source)])
     (try 
@@ -21,37 +22,49 @@
         source
         (loop port))
       (except e
-        [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected close parenthesis"))
-          (let* ([position (caddar (condition-irritants e))]
-              [head (if (zero? position) "" (string-take source position))]
-              [what (vector-ref (list->vector (string->list source)) position)]
-              [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head " " rest)))]
-        [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected close bracket"))
-          (let* ([position (caddar (condition-irritants e))]
-              [head (if (zero? position) "" (string-take source position))]
-              [what (vector-ref (list->vector (string->list source)) position)]
-              [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head " " rest)))]
-        [(and (condition? e) (equal? (caar (condition-irritants e)) "parenthesized list terminated by bracket"))
-          (let* ([position (- (caddar (condition-irritants e)) 1)]
-              [head (if (zero? position) "" (string-take source position))]
-              [what (vector-ref (list->vector (string->list source)) position)]
-              [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head ")" rest)))]
-        [(and (condition? e) (equal? (caar (condition-irritants e)) "bracketed list terminated by parenthesis"))
-          (let* ([position (- (caddar (condition-irritants e)) 1)]
-              [head (if (zero? position) "" (string-take source position))]
-              [what (vector-ref (list->vector (string->list source)) position)]
-              [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head "]" rest)))]
-        [(and (condition? e) (equal? (caar (condition-irritants e)) "unexpected end-of-file reading ~a"))
-          (let* ([position (caddar (condition-irritants e))]
-              [head (if (zero? position) "" (string-take source position))]
-              [what (vector-ref (list->vector (string->list source)) position)]
-              [rest (string-take-right source (- (string-length source) position 1))])
-            (private:tolerant-parse->patch (string-append head " " rest)))]
-        [else (pretty-print e)]))))
+        [(and (condition? e) (string? (car (condition-irritants e)))
+          (case (car (condition-irritants e))
+            [("unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
+              (let* ([position (caddr (condition-irritants e))]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (vector-ref (list->vector (string->list source)) position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head " " rest)))]
+            [("unexpected close parenthesis" "unexpected close bracket" "unexpected end-of-file reading ~a")
+              (let* ([position (caddr (condition-irritants e))]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (vector-ref (list->vector (string->list source)) position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head " " rest)))]
+            [("parenthesized list terminated by bracket" "bracketed list terminated by parenthesis")
+              (let* ([position (- (caddr (condition-irritants e)) 1)]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (vector-ref (list->vector (string->list source)) position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head " " rest)))]
+            [else (raise 'can-not-tolerant0)]))]
+        [(and (condition? e) (string? (caar (condition-irritants e))))
+          (case (caar (condition-irritants e))
+            [("unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
+              (let* ([position (caddar (condition-irritants e))]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (vector-ref (list->vector (string->list source)) position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head " " rest)))]
+            [("unexpected close parenthesis" "unexpected close bracket" "unexpected end-of-file reading ~a")
+              (let* ([position (caddar (condition-irritants e))]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (vector-ref (list->vector (string->list source)) position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head " " rest)))]
+            [("parenthesized list terminated by bracket" "bracketed list terminated by parenthesis")
+              (let* ([position (- (caddar (condition-irritants e)) 1)]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (vector-ref (list->vector (string->list source)) position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head ")" rest)))]
+            [else (raise 'can-not-tolerant1)])]
+        [else (raise 'can-not-tolerant0)]))))
 
 (define source-file->annotations
   (case-lambda
@@ -70,7 +83,7 @@
                   `(,ann . ,(loop (port-position port)))))
               (except e
                 [(and tolerant? (condition? e))
-                  (let ([after (private:tolerant-parse->patch source) ])
+                  (let ([after (private:tolerant-parse->patch source)])
                     (if (= (string-length after) (string-length source))
                       (source-file->annotations after path start-position #f)
                       (raise 'can-not-tolerant)))]

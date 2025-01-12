@@ -242,7 +242,13 @@
               (document-ordered-reference-list document) 
               (find-available-references-for document (index-node-parent current-index-node)))))]
     [(document current-index-node identifier) 
-      (find-available-references-for document current-index-node identifier '())]
+      (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
+          [export-list (index-node-references-export-to-other-node current-index-node)])
+        (if (and 
+            (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) export-list)
+            (equal? expression identifier))
+          '()
+          (find-available-references-for document current-index-node identifier '())))]
     [(document current-index-node identifier exclude)
       (let* ([current-exclude (append exclude (index-node-excluded-references current-index-node))]
           [tmp-result

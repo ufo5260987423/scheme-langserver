@@ -41,7 +41,7 @@
             '())])
       (if (symbol? prefix)
         (make-alist 
-          'content 
+          'contents 
           (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))
         '()))))
 
@@ -49,8 +49,9 @@
 (define (identifier-reference->hover reference) 
   (if (null? (identifier-reference-index-node reference))
     (symbol->string (identifier-reference-identifier reference))
-    (let* ([not-target-index-node (identifier-reference-index-node reference)]
-        [index-node (index-node-parent not-target-index-node)]
+    (let* (
+      ; [not-target-index-node (identifier-reference-initialization-index-node reference)]
+        [index-node (identifier-reference-initialization-index-node reference)]
         [document (identifier-reference-document reference)]
         [text (document-text document)]
         [start-pos (index-node-start index-node)]
@@ -67,11 +68,15 @@
           (filter 
             (lambda (end-pos) (< end-pos start-pos)) 
             (sort > (map index-node-end (document-index-node-list document))))])
-      (string-trim
-        (substring 
-          text 
-          (if (null? parent-index-node-end-list)
-            (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
-            (car parent-index-node-end-list)) 
-          end-pos)))))
+      (make-alist 
+        'language 
+          "scheme")
+        'value 
+          (string-trim
+            (substring 
+              text 
+              (if (null? parent-index-node-end-list)
+                (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
+                (car parent-index-node-end-list)) 
+              end-pos)))))
 )
