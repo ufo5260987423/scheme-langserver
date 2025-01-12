@@ -58,23 +58,12 @@
               (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))) 
           (find-available-references-for document target-index-node))]
       [type-inference? (workspace-type-inference? workspace)])
-    (if (or (null? target-index-node) (equal? "" prefix))
-      '#()
       ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
-      (make-alist 
-        'isIncomplete
-        #f
-        'itemDefaults
-        (make-alist
-          'commitCharacters
-          `#(,prefix)
-            )
-        'items
-        (list->vector (map 
-          identifier-reference->completion-item-alist 
-          (if type-inference?
-            (sort-with-type-inferences document target-index-node whole-list)
-            (sort-identifier-references whole-list))))))))
+    (list->vector (map 
+      identifier-reference->completion-item-alist 
+      (if type-inference?
+        (sort-with-type-inferences document target-index-node whole-list)
+        (sort-identifier-references whole-list))))))
 
 (define (private-generate-position-expression index-node)
   (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))
