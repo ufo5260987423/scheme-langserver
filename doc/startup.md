@@ -11,7 +11,7 @@ Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the h
 - Find references/Goto Definition
 ![Find references/Goto Definition](./figure/find-references-magic.png)
 
-- Auto completion 
+- Auto Completion 
 ![Auto completion](./figure/auto-completion-vscode.png)
 
 - Hover 
