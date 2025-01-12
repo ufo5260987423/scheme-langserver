@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.2.7 Fix bugs on uri parsing, do you know LSP request uri may wrongly process escape characters?
+
 1.2.6 Fault tolerant parser
 
 1.2.5 Fix: Some protocol api bugs. And now it's basically smooth with Magic Scheme and Vscode.
