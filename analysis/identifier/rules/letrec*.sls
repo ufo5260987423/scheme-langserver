@@ -4,7 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util try)
+    (ufo-try)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules let)
@@ -22,14 +22,14 @@
     (try
       (match expression
         [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
-          (let loop ([include '()] 
-                [rest (index-node-children (cadr (index-node-children index-node)))])
-            (if (not (null? rest))
-              (let* ([identifier-parent-index-node (car rest)]
-                    [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [reference-list (let-parameter-process index-node identifier-index-node index-node '() document 'variable)])
-                (append-references-into-ordered-references-for document identifier-parent-index-node include)
-                (loop (append include reference-list) (cdr rest)))))]
+          (fold-left 
+            (lambda (exclude-list identifier-parent-index-node)
+              (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                  [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
+                (index-node-excluded-references-set! identifier-parent-index-node exclude-list)
+                extended-exclude-list))
+            '()
+            (reverse (index-node-children (cadr (index-node-children index-node)))))]
         [else '()])
       (except c
         [else '()]))))

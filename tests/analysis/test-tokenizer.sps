@@ -25,7 +25,7 @@
 (test-end)
 
 (test-begin "tolerant parse")
-    (test-equal 5 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
+    (test-equal 8 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

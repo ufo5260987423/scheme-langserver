@@ -13,7 +13,7 @@
 
     (scheme-langserver util association)
     (scheme-langserver util path) 
-    (scheme-langserver util try) 
+    (ufo-try) 
     (scheme-langserver util text) 
     (scheme-langserver util io)
 

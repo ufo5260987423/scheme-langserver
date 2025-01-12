@@ -67,6 +67,16 @@
    (url "https://archive.akkuscm.org/archive/pkg/s/struct-pack_1.1.1_repack.tar.xz"))
   (content
    (sha256 "42d34a4d7052bdda1bddec0dfddd8f1e576bd0a51b483215a4ca3a8ed7b56d09")))
+ ((name "ufo-try")
+  (location
+   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-try_1.0.0_repack.tar.xz"))
+  (content
+   (sha256 "37bab16e0893f771e5f51c005cbd2d8884bb0c07b163c563325acc2a73957f1c")))
+ ((name "srfi-180")
+  (location
+   (url "https://archive.akkuscm.org/archive/pkg/s/srfi-180_1.0.0-alpha.0_repack.tar.xz"))
+  (content
+   (sha256 "7a4682649ad97ffdca566b9e0736c67c7fcb7b3347887fbcf07ec19c7ff2c233")))
  ((name "ufo-thread-pool")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.3_repack.tar.xz"))
@@ -99,6 +109,6 @@
    (sha256 "b32f539326abebc0ac8169a2dd1085944ce244ae8e29eee9ae79c6a886662d7c")))
  ((name "chez-srfi")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/c/chez-srfi_0.0.0-akku.209.552cd37_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/c/chez-srfi_0.0.0-akku.244.b424440_repack.tar.xz"))
   (content
-   (sha256 "f0f620f24a4765b85d3157b670e319d6cd30240bfc78f812af1f04cf6f8804e6"))))
+   (sha256 "f4968e3d74c30d98297aaff3753b11225de45f99795cc2e3f6233e93f46d7c41"))))

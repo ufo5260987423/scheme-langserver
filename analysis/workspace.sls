@@ -3,7 +3,6 @@
     init-workspace
     init-virtual-file-system
     init-library-node
-    init-index-node
     init-document
     init-references
 
@@ -30,7 +29,7 @@
     (only (srfi :13 strings) string-suffix?)
 
     (scheme-langserver util path)
-    (scheme-langserver util try)
+    (ufo-try)
     (scheme-langserver util io)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
@@ -85,6 +84,7 @@
     [(path threaded?) (init-workspace path 'akku threaded? #f)]
     [(path threaded? type-inference?) (init-workspace path 'akku threaded? type-inference?)]
     [(path identifier threaded? type-inference?) 
+    ; (pretty-print 'init)
       (let* ([root-file-node 
             (init-virtual-file-system path '() 
               (cond
@@ -95,9 +95,9 @@
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [paths (get-init-reference-path file-linkage)]
           [batches (shrink-paths file-linkage paths)])
-    ;; (pretty-print 'aaa)
+    ; (pretty-print 'aaa)
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-    ;; (pretty-print 'eee)
+    ; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
 ;; head -[linkage]->files
@@ -130,8 +130,8 @@
   (let* ([current-file-node (walk-file root-file-node target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)])
-    ;; (pretty-print 'test0)
-    ;; (pretty-print target-path)
+    ; (pretty-print 'test0)
+    ; (pretty-print target-path)
     (step root-file-node root-library-node file-linkage document)
     (process-library-identifier-excluded-references document)
     ;; (pretty-print 'test1)
@@ -242,12 +242,19 @@
     '()))
 
 (define (init-document path)
-  (let ([uri (path->uri path)])
-    (make-document 
-      uri 
-      (read-string path) 
-      (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-      (find-meta '(chezscheme)))))
+  (let ([uri (path->uri path)]
+      [s (read-string path)])
+    (if (string? s)
+      (try
+        (make-document 
+          uri 
+          s
+          (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
+          (find-meta '(chezscheme)))
+        (except c
+          [(equal? c 'can-not-tolerant) '()]
+          [else '()]))
+      '())))
 
 (define init-library-node
   (case-lambda 

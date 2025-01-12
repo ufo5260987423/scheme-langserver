@@ -5,6 +5,7 @@
     (chezscheme) 
     (ufo-thread-pool) 
     (ufo-match) 
+    (ufo-try) 
 
     (scheme-langserver analysis workspace)
 
@@ -24,7 +25,6 @@
     (scheme-langserver protocol apis document-symbol)
     (scheme-langserver protocol apis document-diagnostic)
 
-    (scheme-langserver util try) 
     (scheme-langserver util association)
     (scheme-langserver util path))
 
@@ -229,7 +229,6 @@
                       (loop (read-message server-instance))))))
               (except c 
                 [else 
-                  (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-                  (do-log (string-append "error: " (eval `(format ,(condition-message c) ,@(condition-irritants c)))) server-instance)
+                  (display-condition c log-port)
                   (do-log-timestamp server-instance)])))]))
 )
