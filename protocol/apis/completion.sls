@@ -60,7 +60,8 @@
       [type-inference? (workspace-type-inference? workspace)])
       ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector (map 
-      identifier-reference->completion-item-alist 
+      (lambda (identifier)
+        (identifier-reference->completion-item-alist identifier prefix))
       (if type-inference?
         (sort-with-type-inferences document target-index-node whole-list)
         (sort-identifier-references whole-list))))))
@@ -125,6 +126,11 @@
       (sort-identifier-references true-list)
       (sort-identifier-references false-list))))
 
-(define (identifier-reference->completion-item-alist reference)
-  (make-alist 'label (symbol->string (identifier-reference-identifier reference))))
+(define (identifier-reference->completion-item-alist reference prefix)
+  (let* ([s (symbol->string (identifier-reference-identifier reference))]
+      [l (string-length prefix)])
+    (make-alist 
+      'label s
+      'insertText (substring s (- l 1) (string-length s))
+      )))
 )
