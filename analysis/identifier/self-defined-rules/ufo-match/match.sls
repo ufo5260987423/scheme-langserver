@@ -27,8 +27,11 @@
           (let* ([children (index-node-children index-node)]
               [rest-children-index-nodes (cdr children)])
             (map 
-              (lambda (i) (private:pattern+scope document (car (index-node-children i)) i (car (index-node-children i))))
-              (map index-node-children rest-children-index-nodes)))]
+              (lambda (i) 
+                (let ([c (index-node-children i)])
+                  (if (not (null? c))
+                    (private:pattern+scope document (car c) i (car c)))))
+              rest-children-index-nodes))]
         [else '()])
       (except c
         [else '()]))))
@@ -75,6 +78,6 @@
 
 (define (private:check? s)
   (case s 
-    [(... *** **1 =.. = & set! and or not _) #t]
+    [(... *** **1 =.. = & set! and or not _ else) #t]
     [else #f]))
 )
