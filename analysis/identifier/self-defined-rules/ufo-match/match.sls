@@ -38,28 +38,14 @@
       [children (index-node-children pattern-index-node)])
     (match expression 
       ['() '()]
-      ['_ '()]
 
-      ['? '()]
-      ['and '()]
-      ['or '()]
-      ['not '()]
-
-      ['**1 '()]
-      ['*** '()]
-      ['... '()]
-      ['=.. '()]
-
-      ['= '()]
-      ['& '()]
-      ['set! '()]
-
+      [(? private:check? s) '()]
       [(? symbol? s)
         (let* ([r (make-identifier-reference s document pattern-index-node pattern-index-node '() 'variable '() '())])
           (append-references-into-ordered-references-for document scope-index-node `(,r))
           (index-node-excluded-references-set! pattern-index-node 
             (append (index-node-excluded-references exclude-index-node) `(,r))))]
-      [('set! (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
+      ; [('set! (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
       [('? something (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
       [('= something (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
       [('and (? symbol? s) **1) 
@@ -74,7 +60,7 @@
         (map 
           (lambda (i) (private:pattern+scope document i scope-index-node exclude-index-node))
           (cdr children))]
-      [('& something (_ (? symbol? s)) **1) 
+      [('& something ((? symbol? fuzzy) (? symbol? s)) **1) 
         (map 
           (lambda (i) (private:pattern+scope document i scope-index-node exclude-index-node))
           (map cadr 
@@ -86,4 +72,9 @@
         (map 
           (lambda (i) (private:pattern+scope document i scope-index-node exclude-index-node))
           children)])))
+
+(define (private:check? s)
+  (case s 
+    [(... *** **1 =.. = & set! and or not _) #t]
+    [else #f]))
 )

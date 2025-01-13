@@ -149,7 +149,7 @@ git clone https://github.com/ufo5260987423/scheme-langserver
 cd scheme-langserver
 akku install
 bash .akku/env
-compile-chez-program run.ss
+compile-chez-program run.ss -ldl -lm -luuid -ltinfo
 ```
 
 ### Build & Compile for For WSL(Windows Subsystem for Linux)

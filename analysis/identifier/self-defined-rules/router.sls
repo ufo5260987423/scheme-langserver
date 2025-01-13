@@ -16,6 +16,7 @@
     (scheme-langserver analysis identifier rules body)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
+    (scheme-langserver analysis identifier self-defined-rules ufo-match match)
     (scheme-langserver analysis identifier self-defined-rules ufo-try try))
 
 (define (route&add 
@@ -39,6 +40,8 @@
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process . ,do-nothing) . ,target-identifier))]
+      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+        (add-rule-procedure rules `((,match-process . ,do-nothing) . ,target-identifier))]
       [(and (contain? (map identifier-reference-type top) 'syntax-variable) (not (contain? memory (car (reverse possible-new-memory))))) 
         ; (fold-left add-rule-procedure rules
         ;   (map 
