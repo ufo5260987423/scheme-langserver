@@ -19,8 +19,7 @@
       [children (index-node-children index-node)])
     (try
       (match expression
-        [('define ((? symbol? identifiers) (? symbol? parameters) ... ) tail) 
-          (guard-for document index-node 'define '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        [(_ ((? symbol? identifiers) (? symbol? parameters) ... ) tail) 
           (let* ([identifier-index-node (car (index-node-children (cadr (index-node-children index-node))))]
               [identifier-variable (index-node-variable identifier-index-node)]
 
@@ -31,8 +30,7 @@
               [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)]
               [lambda-details (construct-lambdas-with (list return-variable) parameter-variable-products)])
             (cartesian-product `(,identifier-variable) '(=) lambda-details))]
-        [('define (? symbol? identifiers) tail) 
-          (guard-for document index-node 'define '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        [(_ (? symbol? identifiers) tail) 
           (let* ([identifier-index-node (cadr (index-node-children index-node))]
               [tail-index-node (car (reverse (index-node-children index-node)))])
             (append 

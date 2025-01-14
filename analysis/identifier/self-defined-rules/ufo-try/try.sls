@@ -3,8 +3,6 @@
   (import 
     (chezscheme) 
     (ufo-match)
-
-    (scheme-langserver util path)
     (ufo-try)
 
     (scheme-langserver analysis util)
@@ -18,9 +16,7 @@
 
 (define (try-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [parent-index-node (index-node-parent index-node)]
-      [current-absolute-path (uri->path (document-uri document))])
+      [expression (annotation-stripped ann)])
     (try
       (match expression
         [(_ something ... ('except (? symbol? c) branch **1))

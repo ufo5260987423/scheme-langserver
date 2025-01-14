@@ -20,8 +20,7 @@
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
     (match expression
-      [('define-record-type dummy0 dummy1 ...) 
-        (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+      [(_ dummy0 dummy1 ...) 
         (let ([collection (private-collect-identifiers index-node)])
           (if (null? collection)
             '()
