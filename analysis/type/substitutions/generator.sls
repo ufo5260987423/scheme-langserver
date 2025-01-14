@@ -41,7 +41,7 @@
         substitution-compare
         (fold-left 
           (lambda (prev current)
-            (append prev (step document current '() '())))
+            (append prev (step document current prev '())))
           '()
           (document-index-node-list document))))))
 
@@ -49,6 +49,8 @@
 (define step 
   (case-lambda 
     [(current-document current-index-node substitution-list expanded+callee-list)
+      (pretty-print 'step0)
+      (debug:print-expression current-index-node)
       (cond 
         [(quote? current-index-node current-document) 
           (append substitution-list (trivial-process current-document current-index-node substitution-list))]
@@ -91,7 +93,7 @@
                   substitution-list
                   target-rules)
               children))]
-        [else '()])]
+        [else substitution-list])]
       [(current-document current-index-node available-identifiers substitution-list quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
@@ -141,7 +143,7 @@
             [(equal? r '(body)) (private-add-rule rules `((,body-process) . ,identifier))]
 
             [else rules])
-          (route&add rules identifier private-add-rule step))))
+          (route&add rules identifier private-add-rule))))
     '()
     (filter 
       (lambda (identifier) 
