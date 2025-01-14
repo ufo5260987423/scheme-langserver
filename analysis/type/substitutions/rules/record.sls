@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis type substitutions rules record)
-  (export record-process)
+  (export define-record-type-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -15,7 +15,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (record-process document index-node substitutions)
+(define (define-record-type-process document index-node substitutions)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])

@@ -175,7 +175,7 @@
                             ,head-variable)))))]
                 [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
                   (if (null? (identifier-reference-type-expressions identifier-reference))
-                    (record-process document (identifier-reference-initialization-index-node identifier-reference) '()))
+                    (define-record-type-process document (identifier-reference-initialization-index-node identifier-reference) '()))
                   (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
                 [else '()]))]
           ;import

@@ -7,12 +7,10 @@
 
     (scheme-langserver analysis util)
 
-    (scheme-langserver analysis dependency file-linkage)
-
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules body)
 
-    (scheme-langserver analysis type substitutions self-defined-rules ufo-match match)
+    (scheme-langserver analysis type substitutions rules case)
+
     (scheme-langserver analysis type substitutions self-defined-rules ufo-try try))
 
 (define (route&add rules target-identifier add-rule-procedure)
@@ -23,6 +21,6 @@
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-        (add-rule-procedure rules `((,match-process) . ,target-identifier))]
+        (add-rule-procedure rules `((,case-process) . ,target-identifier))]
       [else rules])))
 )

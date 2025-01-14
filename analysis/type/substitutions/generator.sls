@@ -10,7 +10,6 @@
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
-
     (scheme-langserver analysis util)
 
     (scheme-langserver analysis identifier reference)
@@ -22,6 +21,7 @@
     (scheme-langserver analysis type substitutions rules do)
     (scheme-langserver analysis type substitutions rules let)
     (scheme-langserver analysis type substitutions rules let*)
+    (scheme-langserver analysis type substitutions rules letrec)
     (scheme-langserver analysis type substitutions rules lambda)
     (scheme-langserver analysis type substitutions rules case-lambda)
     (scheme-langserver analysis type substitutions rules record)
@@ -77,7 +77,6 @@
                 (cond 
                   [(symbol? head-expression)
                     (establish-available-rules-from 
-                      file-linkage
                       (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
                       current-document
                       expanded+callee-list)]
@@ -102,7 +101,7 @@
             substitution-list
             (index-node-children current-index-node))
           (fold-left 
-            (lambda (prev current) (append prev (step current-document current available-identifiers  prev expanded+callee-list)))
+            (lambda (prev current) (append prev (step current-document current available-identifiers prev quasi-quoted-syntaxed expanded+callee-list)))
             substitution-list
             (index-node-children current-index-node)))]))
 
@@ -113,7 +112,7 @@
   (merge private-rule-compare? origin 
     `((,(cdr target-rule) . ,(car target-rule)))))
 
-(define (establish-available-rules-from file-linkage identifier-list current-document expanded+callee-list)
+(define (establish-available-rules-from identifier-list current-document expanded+callee-list)
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]

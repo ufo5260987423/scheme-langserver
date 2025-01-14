@@ -91,7 +91,7 @@
             (index-node-excluded-references-set! current-index-node available-identifiers)
             (map 
               (lambda (i)
-                (step root-file-node root-library-node file-linkage current-document i available-identifier 'quasiquoted expanded+callee-list memory))
+                (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasiquoted expanded+callee-list memory))
               (index-node-children current-index-node)))]
         [(syntax? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node 
