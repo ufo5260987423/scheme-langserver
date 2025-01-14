@@ -49,11 +49,16 @@
 (define step 
   (case-lambda 
     [(current-document current-index-node substitution-list expanded+callee-list)
-      (pretty-print 'step0)
-      (debug:print-expression current-index-node)
       (cond 
-        [(quote? current-index-node current-document) 
+        [(null? (index-node-children current-index-node))
           (append substitution-list (trivial-process current-document current-index-node substitution-list))]
+
+        [(quote? current-index-node current-document) 
+          (let ([child (car (index-node-children current-index-node))])
+            (append   
+              substitution-list 
+              `((,(index-node-variable current-index-node) = ,(index-node-variable child)))
+              (trivial-process current-document child substitution-list)))]
         ;#'(1 2 3) is a syntax not a list
         [(syntax? current-index-node current-document) '()]
         [(quasiquote? current-index-node current-document) 
@@ -142,7 +147,7 @@
 
             [(equal? r '(body)) (private-add-rule rules `((,body-process) . ,identifier))]
 
-            [else rules])
+            [else (private-add-rule rules `((,application-process) . ,identifier)) ])
           (route&add rules identifier private-add-rule))))
     '()
     (filter 
