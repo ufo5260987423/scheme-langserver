@@ -56,7 +56,7 @@
               ;for key value index-nodes
               (apply append 
                 (map 
-                  (lambda (key-value-index-node) (let:private-process-key-value substitutions key-value-index-node)) 
+                  (lambda (key-value-index-node) (let:private-process-key-value key-value-index-node)) 
                   key-value-index-nodes))))]
         [(_ (((? symbol? identifier) value) ...) _ **1) 
           (let* ([return-index-node (car (reverse children))]
@@ -68,12 +68,12 @@
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (let:private-process-key-value substitutions key-value-index-node)) key-value-index-nodes))))]
+              (apply append (map (lambda (key-value-index-node) (let:private-process-key-value key-value-index-node)) key-value-index-nodes))))]
         [else '()])
       (except c
         [else '()]))))
 
-(define (let:private-process-key-value substitutions parent-index-node)
+(define (let:private-process-key-value parent-index-node)
   (let* ([ann (index-node-datum/annotations parent-index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children parent-index-node)])
