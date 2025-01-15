@@ -87,16 +87,17 @@
                       (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
                       current-document
                       expanded+callee-list)]
-                  ;todo
                   [else '()])])
             (fold-left
               (lambda (prev child-index-node)
                 (step current-document child-index-node prev expanded+callee-list))
-                (fold-left 
-                  (lambda (prev current) 
-                    (append prev ((car (cdr current)) current-document current-index-node prev)))
-                  substitution-list
-                  target-rules)
+                (if (null? target-rules)
+                  (append substitution-list (application-process current-document current-index-node substitution-list))
+                  (fold-left 
+                    (lambda (prev current) 
+                      (append prev ((car (cdr current)) current-document current-index-node prev)))
+                    substitution-list
+                    target-rules))
               children))]
         [else substitution-list])]
       [(current-document current-index-node available-identifiers substitution-list quasi-quoted-syntaxed expanded+callee-list)
