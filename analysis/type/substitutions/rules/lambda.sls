@@ -20,7 +20,7 @@
       [children (index-node-children index-node)])
     (try
       (match expression
-        [(_ ((? symbol? identifiers) ...) _ **1 ) 
+        [(_ ((? symbol? identifiers) ...) fuzzy **1 ) 
           (let* ([variable (index-node-variable index-node)]
 
               [return-index-node (car (reverse children))]
