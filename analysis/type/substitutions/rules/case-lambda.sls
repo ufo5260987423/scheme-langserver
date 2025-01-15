@@ -14,7 +14,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (case-lambda-process document index-node substitutions)
+(define (case-lambda-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
@@ -27,13 +27,13 @@
               append 
               (map 
                 (lambda (clause-index-node)
-                  (private-clause-process substitutions `(,variable) clause-index-node))
+                  (private-clause-process `(,variable) clause-index-node))
                 clause-index-nodes)))]
         [else '()])
       (except c
         [else '()]))))
 
-(define (private-clause-process substitutions root-variables clause-index-node)
+(define (private-clause-process root-variables clause-index-node)
   (let ([children (index-node-children clause-index-node)]
       [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
     (match expression

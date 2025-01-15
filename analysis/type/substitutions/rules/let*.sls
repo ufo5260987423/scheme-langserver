@@ -16,13 +16,13 @@
 
     (scheme-langserver analysis type substitutions rules let))
 
-(define (let*-process document index-node substitutions)
+(define (let*-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
     (try
       (match expression
-        [(_ (((? symbol? identifier) value) ... ) _ **1 ) 
+        [(_ (((? symbol? identifier) value) ... ) fuzzy **1 ) 
           (let* ([return-index-node (car (reverse children))]
 
               ;((? symbol? identifier) value ) index-nodes

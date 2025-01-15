@@ -12,7 +12,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (body-process document index-node substitutions)
+(define (body-process document index-node)
   (let* ([variable (index-node-variable index-node)]
       [children (index-node-children index-node)])
     (if (null? children)

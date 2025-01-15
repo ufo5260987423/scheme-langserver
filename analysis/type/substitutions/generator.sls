@@ -92,10 +92,10 @@
               (lambda (prev child-index-node)
                 (step current-document child-index-node prev expanded+callee-list))
                 (if (null? target-rules)
-                  (append substitution-list (application-process current-document current-index-node substitution-list))
+                  (append substitution-list (application-process current-document current-index-node))
                   (fold-left 
                     (lambda (prev current) 
-                      (append prev ((car (cdr current)) current-document current-index-node prev)))
+                      (append prev ((car (cdr current)) current-document current-index-node)))
                     substitution-list
                     target-rules))
               children))])]

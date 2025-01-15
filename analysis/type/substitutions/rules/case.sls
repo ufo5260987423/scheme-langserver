@@ -13,7 +13,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (case-process document index-node substitutions)
+(define (case-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
@@ -29,7 +29,7 @@
               (apply append 
                 (map 
                   (lambda (local-expression)
-                    (trivial-process document index-node expression-variable local-expression '() #f #f))
+                    (trivial-process document index-node expression-variable local-expression #f #f))
                   (map annotation-stripped (apply append (map index-node-datum/annotations (map index-node-children previous))))))
               (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters))))]
         [(_ expression clause **1)
