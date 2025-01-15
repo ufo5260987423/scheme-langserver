@@ -36,14 +36,14 @@
 
 (define trivial-process 
   (case-lambda 
-    [(document index-node substitutions) 
+    [(document index-node) 
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
           [variable (index-node-variable index-node)])
         (if (null? (index-node-children index-node))
-          (trivial-process document index-node variable expression substitutions #f #f)
+          (trivial-process document index-node variable expression #f #f)
           '()))]
-    [(document index-node variable expression substitutions allow-unquote? quoted?)
+    [(document index-node variable expression allow-unquote? quoted?)
       ;; (pretty-print 'trivial)
       ;; (pretty-print variable)
       ;; (debug:print-expression index-node)
@@ -85,8 +85,8 @@
               [new-variable-l (make-variable)])
             (append 
               `((,variable = (inner:pair? new-variable-f new-variable-l)))
-              (trivial-process document index-node new-variable-f f substitutions allow-unquote? quoted?)
-              (trivial-process document index-node new-variable-l l substitutions allow-unquote? quoted?)))]
+              (trivial-process document index-node new-variable-f f allow-unquote? quoted?)
+              (trivial-process document index-node new-variable-l l allow-unquote? quoted?)))]
         [(or (list? expression) (vector? expression))
           (let* ([is-list? (list? expression)]
               [final-result
@@ -99,12 +99,12 @@
                           current-result
                           (let* ([current-item (car body)]
                               [v (make-variable)]
-                              [r (trivial-process document index-node v current-item substitutions #f #t)]
+                              [r (trivial-process document index-node v current-item #f #t)]
                               [first `(,@(car current-result) ,v)]
                               [last `(,@(cadr current-result) ,@r)])
                             (loop (cdr body) `(,first ,last)))))
                       (let* ([v (make-variable)]
-                          [r (trivial-process document index-node v current-expression substitutions allow-unquote? quoted?)]
+                          [r (trivial-process document index-node v current-expression allow-unquote? quoted?)]
                           [first `(,@(car ahead-result) ,v)]
                           [last `(,@(cadr ahead-result) ,@r)])
                         `(,first ,last))))

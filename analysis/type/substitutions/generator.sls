@@ -51,14 +51,14 @@
     [(current-document current-index-node substitution-list expanded+callee-list)
       (cond 
         [(null? (index-node-children current-index-node))
-          (append substitution-list (trivial-process current-document current-index-node substitution-list))]
+          (append substitution-list (trivial-process current-document current-index-node))]
 
         [(quote? current-index-node current-document) 
           (let ([child (car (index-node-children current-index-node))])
             (append   
               substitution-list 
               `((,(index-node-variable current-index-node) = ,(index-node-variable child)))
-              (trivial-process current-document child substitution-list)))]
+              (trivial-process current-document child)))]
         ;#'(1 2 3) is a syntax not a list
         [(syntax? current-index-node current-document) '()]
         [(quasiquote? current-index-node current-document) 
@@ -98,8 +98,7 @@
                       (append prev ((car (cdr current)) current-document current-index-node prev)))
                     substitution-list
                     target-rules))
-              children))]
-        [else substitution-list])]
+              children))])]
       [(current-document current-index-node available-identifiers substitution-list quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
