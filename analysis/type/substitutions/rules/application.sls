@@ -17,5 +17,5 @@
       [children (index-node-children index-node)])
     (if (null? children)
       '()
-      `((,variable = (,(index-node-variable (car children)) ,@(map index-node-variable (cdr children))))))))
+      `((,variable = ,(map index-node-variable children))))))
 )

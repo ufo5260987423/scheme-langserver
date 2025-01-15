@@ -9,7 +9,7 @@
 
     (scheme-langserver analysis identifier reference)
 
-    (scheme-langserver analysis type substitutions rules case)
+    (scheme-langserver analysis type substitutions rules application)
 
     (scheme-langserver analysis type substitutions self-defined-rules ufo-try try))
 
@@ -20,7 +20,7 @@
     (cond 
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
-      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-        (add-rule-procedure rules `((,case-process) . ,target-identifier))]
-      [else rules])))
+      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      ;   (add-rule-procedure rules `((,case-process) . ,target-identifier))]
+      [else (add-rule-procedure rules `((,application-process) . ,target-identifier))])))
 )
