@@ -31,7 +31,7 @@
               (construct-substitutions-between-index-nodes index-node return-index-node '=)
               (construct-substitutions-between-index-nodes return-index-node index-node '=)
               ;for key value index-nodes
-              (apply append (map (lambda (key-value-index-node) (let:private-process-key-value key-value-index-node)) key-value-index-nodes))))]
+              (apply append (map let:private-process-key-value key-value-index-nodes))))]
         [else '()])
       (except c
         [else '()]))))
