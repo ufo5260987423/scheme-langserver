@@ -22,7 +22,7 @@
       [children (index-node-children index-node)])
     (try
       (match expression
-        [(_ (? symbol? loop-identifier) (((? symbol? identifier) value ) ... ) fuzzy **1) 
+        [(_ (? symbol? loop-identifier) (((? symbol? identifier) value ) ... ) fuzzy ...) 
           (let* ([return-index-node (car (reverse children))]
               [return-variable (index-node-variable return-index-node)]
 
@@ -54,8 +54,7 @@
               ;for loop procedure
               (cartesian-product `(,loop-variable) '(=) loop-procedure-details)
               ;for key value index-nodes
-              (apply append (map let:private-process-key-value key-value-index-nodes))
-                ))]
+              (apply append (map let:private-process-key-value key-value-index-nodes))))]
         [(_ (((? symbol? identifier) value) ...) fuzzy **1) 
           (let* ([return-index-node (car (reverse children))]
 

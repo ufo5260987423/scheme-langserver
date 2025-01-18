@@ -141,8 +141,7 @@
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
                     (is-first-child? index-node) 
-                    (or (equal? 'parameter (identifier-reference-type identifier-reference))
-                      (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
+                    (equal? 'parameter (identifier-reference-type identifier-reference)))
                   (let* ([ancestor (index-node-parent index-node)]
                       [children (index-node-children ancestor)]
                       [rests (cdr children)]
@@ -153,8 +152,7 @@
                     `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))]
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
-                    (or (equal? 'parameter (identifier-reference-type identifier-reference))
-                      (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
+                    (equal? 'parameter (identifier-reference-type identifier-reference)))
                   (let* ([ancestor (index-node-parent index-node)]
                       [children (index-node-children ancestor)]
                       [target-variable (index-node-variable target-index-node)]
@@ -173,10 +171,10 @@
                               ,(vector-ref (list->vector symbols) index))
                               c)) 
                             ,head-variable)))))]
-                [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
-                  (if (null? (identifier-reference-type-expressions identifier-reference))
-                    (define-record-type-process document (identifier-reference-initialization-index-node identifier-reference) '()))
-                  (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
+                ; [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
+                ;   (if (null? (identifier-reference-type-expressions identifier-reference))
+                ;     (define-record-type-process document (identifier-reference-initialization-index-node identifier-reference) '()))
+                ;   (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
                 [else '()]))]
           ;import
           [else 
