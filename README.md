@@ -1,5 +1,7 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
+[<img src="https://api.gitsponsors.com/api/badge/img?id=522947040" height="20">](https://api.gitsponsors.com/api/badge/link?p=eV5pHRshlhkVSYzAQkG50EMY4Tlkg2p6L9WTrPmnhwGTHs085yHTvU8grcpRYhH3fUaviPHhT93qPK1CSTufoQ==)
+
 
 **Now, VSCode can use scheme-langserver!** Please refere [HERE](./doc/startup.md).
 
@@ -16,6 +18,7 @@ This package is a language server protocol implementation helping scheme program
 This package also has been tested with [Chez Scheme](https://cisco.github.io/ChezScheme/) versions 9.4 and 9.5. A detailed test on version 10.0.0 will be done after upgrading my laptop OS to a newer version.
 
 I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can donate with [this patreon page](https://www.patreon.com/PoorProgrammer/membership) or [爱发电](https://afdian.com/a/ufo5260987423).
+
 
 ## Compilation , Intallation & Configuration is [HERE](./doc/startup.md)
 
