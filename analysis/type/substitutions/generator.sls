@@ -143,16 +143,16 @@
           (if (find meta-library? is)
             (cond 
               [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
-              ; [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
-              ; [(equal? r '(define-top-level-value)) (private-add-rule rules `((,define-process) . ,identifier))]
-              ; [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
+              [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
+              [(equal? r '(define-top-level-value)) (private-add-rule rules `((,define-process) . ,identifier))]
+              [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
 
               [(equal? r '(if)) (private-add-rule rules `((,if-process) . ,identifier))]
-              ; [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
-              ; [(equal? r '(unless)) (private-add-rule rules `((,body-process) . ,identifier))]
+              [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
+              [(equal? r '(unless)) (private-add-rule rules `((,body-process) . ,identifier))]
 
               [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
-              ; [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
+              [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
 
               [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
               [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
