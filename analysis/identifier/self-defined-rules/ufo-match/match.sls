@@ -40,7 +40,7 @@
 
       [(? private:check? s) '()]
       [(? symbol? s)
-        (let* ([r (make-identifier-reference s document pattern-index-node pattern-index-node '() 'variable '() '())])
+        (let* ([r (make-identifier-reference s document pattern-index-node (index-node-parent scope-index-node) '() 'variable '() '())])
           (append-references-into-ordered-references-for document scope-index-node `(,r))
           (index-node-excluded-references-set! pattern-index-node 
             (append (index-node-excluded-references exclude-index-node) `(,r)))
