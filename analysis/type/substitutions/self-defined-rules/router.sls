@@ -22,5 +22,8 @@
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
       ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
       ;   (add-rule-procedure rules `((,case-process) . ,target-identifier))]
-      [else (add-rule-procedure rules `((,application-process) . ,target-identifier))])))
+      [else 
+        ; (add-rule-procedure rules `((,application-process) . ,target-identifier))
+        rules
+        ])))
 )
