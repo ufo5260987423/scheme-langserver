@@ -40,17 +40,10 @@
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
           [variable (index-node-variable index-node)])
-      ; (pretty-print 'trivial0)
-      ; (pretty-print variable)
-      ; (debug:print-expression index-node)
         (if (null? (index-node-children index-node))
           (trivial-process document index-node variable expression #f #f)
           '()))]
     [(document index-node variable expression allow-unquote? quoted?)
-      ; (pretty-print 'trivial1)
-      ; (pretty-print expression)
-      ; (pretty-print allow-unquote?)
-      ; (pretty-print quoted?)
       (cond
         ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,private-char?))]
@@ -76,10 +69,6 @@
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
         [(and (pair? expression) (not (list? expression)))
-          ; (pretty-print 'trivial)
-          ; (pretty-print expression)
-          ; (pretty-print (car expression))
-          ; (pretty-print (cdr expression))
           (let* ([f (car expression)]
               [l (cdr expression)]
               [new-variable-f (make-variable)]
@@ -117,24 +106,14 @@
         [else '()])]))
 
 (define (private-process document identifier-reference index-node variable)
-      ; (pretty-print 'trivial3)
-      ; (pretty-print (identifier-reference-identifier identifier-reference))
   (sort substitution-compare
     (if (null? (identifier-reference-parents identifier-reference))
       (let* ([target-document (identifier-reference-document identifier-reference)]
           [target-index-node (identifier-reference-index-node identifier-reference)]
           [type-expressions (identifier-reference-type-expressions identifier-reference)])
-      ; (pretty-print 'trivial4)
-      ; (pretty-print (identifier-reference-identifier identifier-reference))
       (cond 
           ;it's in r6rs library?
           [(null? target-index-node)
-      ; (pretty-print 'trivial5)
-      ; (pretty-print (identifier-reference-identifier identifier-reference))
-      ; (pretty-print 'trivial6)
-      ; (print-graph #t)
-      ; (pretty-print variable)
-      ; (pretty-print (cartesian-product `(,variable) '(:) type-expressions))
             (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]
           ; this can't be excluded by identifier-catching rules
           [(equal? index-node target-index-node) '()]
