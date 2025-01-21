@@ -43,8 +43,10 @@
         (let* ([r (make-identifier-reference s document pattern-index-node pattern-index-node '() 'variable '() '())])
           (append-references-into-ordered-references-for document scope-index-node `(,r))
           (index-node-excluded-references-set! pattern-index-node 
-            (append (index-node-excluded-references exclude-index-node) `(,r))))]
-      ; [('set! (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
+            (append (index-node-excluded-references exclude-index-node) `(,r)))
+          (index-node-references-export-to-other-node-set! pattern-index-node 
+            (append (index-node-references-export-to-other-node pattern-index-node) `(,r))))]
+      [('set! (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
       [('? something (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
       [('= something (? symbol? s)) (private:pattern+scope document (car (reverse children)) scope-index-node exclude-index-node)]
       [('and (? symbol? s) **1) 

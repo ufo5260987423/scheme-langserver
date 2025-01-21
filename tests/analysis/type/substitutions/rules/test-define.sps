@@ -63,6 +63,7 @@
 (test-end)
 
 (test-begin "debug for index-node.sls:debug:print-expressions")
+(print-graph #t)
     (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #t)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]

@@ -21,7 +21,7 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [(_(dummy0 ...) dummy1 ... ) 
+        [(_ (dummy0 ...) dummy1 ... ) 
           (let loop ([rest (cdr (index-node-children index-node))])
             (if (not (null? rest))
               (let* ([identifier-index-node-grand-parent (car rest)]

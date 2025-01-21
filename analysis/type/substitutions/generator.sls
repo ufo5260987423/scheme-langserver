@@ -10,7 +10,6 @@
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
-    (scheme-langserver analysis util)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
@@ -41,7 +40,7 @@
         substitution-compare
         (fold-left 
           (lambda (prev current)
-            (append prev (step document current prev '())))
+            (step document current prev '()))
           '()
           (document-index-node-list document))))))
 
@@ -55,26 +54,36 @@
 
         [(quote? current-index-node current-document) 
           (let ([child (car (index-node-children current-index-node))])
-            (append   
+            (append 
               substitution-list 
               `((,(index-node-variable current-index-node) = ,(index-node-variable child)))
               (trivial-process current-document child)))]
         ;#'(1 2 3) is a syntax not a list
         [(syntax? current-index-node current-document) '()]
         [(quasiquote? current-index-node current-document) 
-          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (fold-left 
-              (lambda (prev current)
-                (append prev (step current-document current available-identifiers prev 'quasiquoted expanded+callee-list)))
-              substitution-list
-              (index-node-children current-index-node)))]
+          substitution-list
+          ; (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
+          ;     [child (car (index-node-children current-index-node))])
+          ;   (fold-left 
+          ;     (lambda (prev current)
+          ;       (step current-document current available-identifiers prev 'quasiquoted expanded+callee-list))
+          ;     (append   
+          ;       substitution-list 
+          ;       `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
+          ;     (index-node-children current-index-node)))
+              ]
         [(quasisyntax? current-index-node current-document)
-          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (fold-left 
-              (lambda (prev current)
-                (append prev (step current-document current available-identifiers prev 'quasisyntax expanded+callee-list)))
-              substitution-list
-              (index-node-children current-index-node)))]
+          substitution-list
+          ; (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
+          ;     [child (car (index-node-children current-index-node))])
+          ;   (fold-left 
+          ;     (lambda (prev current)
+          ;       (step current-document current available-identifiers prev 'quasisyntax expanded+callee-list))
+          ;     (append   
+          ;       substitution-list 
+          ;       `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
+          ;     (index-node-children current-index-node)))
+              ]
 
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
@@ -91,24 +100,26 @@
             (fold-left
               (lambda (prev child-index-node)
                 (step current-document child-index-node prev expanded+callee-list))
-                (if (null? target-rules)
-                  (append substitution-list (application-process current-document current-index-node))
-                  (fold-left 
-                    (lambda (prev current) 
-                      (append prev ((car (cdr current)) current-document current-index-node)))
-                    substitution-list
-                    target-rules))
+              (if (symbol? head-expression)
+                (fold-left 
+                  (lambda (prev current) 
+                    (append prev ((car (cdr current)) current-document current-index-node)))
+                  substitution-list
+                  target-rules)
+                ;this must be grounded, generally you shouldn't test this.
+                (append substitution-list (application-process current-document current-index-node)))
               children))])]
       [(current-document current-index-node available-identifiers substitution-list quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
-            ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))])
+            ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))]
+            [else #f])
           (fold-left 
-            (lambda (prev current) (append prev (step current-document current prev expanded+callee-list)))
+            (lambda (prev current) (step current-document current prev expanded+callee-list))
             substitution-list
             (index-node-children current-index-node))
           (fold-left 
-            (lambda (prev current) (append prev (step current-document current available-identifiers prev quasi-quoted-syntaxed expanded+callee-list)))
+            (lambda (prev current) (step current-document current available-identifiers prev quasi-quoted-syntaxed expanded+callee-list))
             substitution-list
             (index-node-children current-index-node)))]))
 
@@ -125,30 +136,33 @@
       (let* ([top (root-ancestor identifier)]
           [r (map identifier-reference-identifier top)]
           [i (identifier-reference-identifier identifier)]
-          [is (map identifier-reference-library-identifier top)])
-        (if (find meta-library? is)
-          (cond 
-            [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
-            [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
-            [(equal? r '(define-top-level-value)) (private-add-rule rules `((,define-process) . ,identifier))]
-            [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
+          [is (map identifier-reference-library-identifier top)]
+          [type (map identifier-reference-type top)])
+        (if (or (equal? '(procedure) type) (equal? '(variable) type)) 
+          (private-add-rule rules `((,application-process) . ,identifier))
+          (if (find meta-library? is)
+            (cond 
+              [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
+              [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
+              [(equal? r '(define-top-level-value)) (private-add-rule rules `((,define-process) . ,identifier))]
+              [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
 
-            [(equal? r '(if)) (private-add-rule rules `((,if-process) . ,identifier))]
-            [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
-            [(equal? r '(unless)) (private-add-rule rules `((,body-process) . ,identifier))]
+              [(equal? r '(if)) (private-add-rule rules `((,if-process) . ,identifier))]
+              [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
+              [(equal? r '(unless)) (private-add-rule rules `((,body-process) . ,identifier))]
 
-            [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
-            [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
+              [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
+              [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
 
-            [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
-            [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
-            [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
-            [(equal? r '(letrec*)) (private-add-rule rules `((,let*-process) . ,identifier))]
+              [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
+              [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
+              [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
+              [(equal? r '(letrec*)) (private-add-rule rules `((,let*-process) . ,identifier))]
 
-            [(equal? r '(body)) (private-add-rule rules `((,body-process) . ,identifier))]
+              [(equal? r '(body)) (private-add-rule rules `((,body-process) . ,identifier))]
 
-            [else (private-add-rule rules `((,application-process) . ,identifier)) ])
-          (route&add rules identifier private-add-rule))))
+              [else (private-add-rule rules `((,do-nothing) . ,identifier))])
+            (route&add rules identifier private-add-rule)))))
     '()
     (filter 
       (lambda (identifier) 

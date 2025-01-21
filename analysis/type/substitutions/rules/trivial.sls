@@ -44,12 +44,6 @@
           (trivial-process document index-node variable expression #f #f)
           '()))]
     [(document index-node variable expression allow-unquote? quoted?)
-      ;; (pretty-print 'trivial)
-      ;; (pretty-print variable)
-      ;; (debug:print-expression index-node)
-      ;; (pretty-print expression)
-      ;; (pretty-print allow-unquote?)
-      ;; (pretty-print quoted?)
       (cond
         ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,private-char?))]
@@ -75,10 +69,6 @@
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
         [(and (pair? expression) (not (list? expression)))
-          ; (pretty-print 'trivial)
-          ; (pretty-print expression)
-          ; (pretty-print (car expression))
-          ; (pretty-print (cdr expression))
           (let* ([f (car expression)]
               [l (cdr expression)]
               [new-variable-f (make-variable)]
@@ -121,7 +111,7 @@
       (let* ([target-document (identifier-reference-document identifier-reference)]
           [target-index-node (identifier-reference-index-node identifier-reference)]
           [type-expressions (identifier-reference-type-expressions identifier-reference)])
-        (cond 
+      (cond 
           ;it's in r6rs library?
           [(null? target-index-node)
             (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]

@@ -248,15 +248,18 @@
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
-            (type:environment-result-list-set! 
-              env 
-              (apply append 
-                (map 
-                  (lambda (reified)
-                    (if (equal? reified expression) 
-                      `(,reified)
-                      (type:interpret-result-list reified env new-memory)))
-                  (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
+            (let ([tmp (map caddr (substitution:walk (type:environment-substitution-list env) expression))])
+              (type:environment-result-list-set! 
+                env 
+                (if (null? tmp)
+                  `(,expression)
+                  (apply append 
+                    (map 
+                      (lambda (reified)
+                        (if (equal? reified expression) 
+                          `(,reified)
+                          (type:interpret-result-list reified env new-memory)))
+                      tmp)))))]
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
           [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
