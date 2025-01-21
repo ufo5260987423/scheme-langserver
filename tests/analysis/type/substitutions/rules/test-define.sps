@@ -73,13 +73,6 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 103 10))]
             [variable (index-node-variable target-index-node)]
             [check-base 'void?])
-        ; (pretty-print 'var0)
-        ; (pretty-print variable)
-        ; (debug:print-expression target-index-node)
-        ; (pretty-print 'var1)
-        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-        ; (pretty-print 'var2)
-        ; (pretty-print (document-substitution-list target-document))
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
