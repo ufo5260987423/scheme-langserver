@@ -31,7 +31,7 @@
                     (file-linkage-take 
                       linkage 
                       current-from-path 
-                      (hashtable-ref id->path-map to 0))) 
+                      (hashtable-ref id->path-map to #f))) 
                   (car (reverse result)))))
             (shrink-ids 
               linkage
