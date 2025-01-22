@@ -144,6 +144,7 @@
             (pretty-print 'workspace-error)
             (pretty-print c)]
           [else 
+            (display-condition c)
             (pretty-print target-path)
             (pretty-print 'workspace-error)
             (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
