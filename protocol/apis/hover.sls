@@ -7,6 +7,7 @@
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -39,11 +40,20 @@
               (annotation-stripped (index-node-datum/annotations target-index-node)) 
               '())
             '())])
-      (if (symbol? prefix)
-        (make-alist 
-          'contents 
-          (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))
-        '()))))
+      (cond 
+        [(workspace-type-inference? workspace)
+          (let* ([variable (index-node-variable target-index-node)]
+              [substitution (document-substitution-list document)]
+              [env (make-type:environment substitution)]
+              [types (type:interpret-result-list variable env)])
+            (make-alist
+              'contents
+              (list->vector (type:interpret->strings types))))]
+        [(symbol? prefix) 
+          (make-alist 
+            'contents 
+            (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))]
+        [else '()]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference) 
@@ -68,15 +78,15 @@
           (filter 
             (lambda (end-pos) (< end-pos start-pos)) 
             (sort > (map index-node-end (document-index-node-list document))))])
-      (make-alist 
-        'language 
-          "scheme")
-        'value 
-          (string-trim
-            (substring 
-              text 
-              (if (null? parent-index-node-end-list)
-                (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
-                (car parent-index-node-end-list)) 
-              end-pos)))))
+      (string-append 
+        "```scheme\n"
+        (string-trim
+          (substring 
+            text 
+            (if (null? parent-index-node-end-list)
+              (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
+              (car parent-index-node-end-list)) 
+            end-pos))
+        "\n```"
+            ))))
 )
