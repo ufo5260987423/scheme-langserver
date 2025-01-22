@@ -39,21 +39,30 @@
             (if (null? (index-node-children target-index-node)) 
               (annotation-stripped (index-node-datum/annotations target-index-node)) 
               '())
-            '())])
-      (cond 
-        [(workspace-type-inference? workspace)
-          (let* ([variable (index-node-variable target-index-node)]
-              [substitution (document-substitution-list document)]
-              [env (make-type:environment substitution)]
-              [types (type:interpret-result-list variable env)])
-            (make-alist
-              'contents
-              (list->vector (type:interpret->strings types))))]
-        [(symbol? prefix) 
-          (make-alist 
-            'contents 
-            (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))]
-        [else '()]))))
+            '())]
+        [type-string 
+          (if (workspace-type-inference? workspace)
+            (let* ([variable (index-node-variable target-index-node)]
+                [substitution (document-substitution-list document)]
+                [env (make-type:environment substitution)]
+                [types (type:interpret-result-list variable env)])
+              (pretty-print (length types))
+              (pretty-print (map type:interpret->strings types))
+              (make-alist
+                'contents
+                (fold-left 
+                  (lambda (prev current)
+                    (string-append prev "\n" current))
+                  "# Type Inference"
+                  (dedupe (map type:interpret->strings types)))))
+            "")])
+        (make-alist 
+          'contents 
+          (list->vector 
+            (append `(,type-string)
+              (if (symbol? prefix)
+                (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
+                '())))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference) 
