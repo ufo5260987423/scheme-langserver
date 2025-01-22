@@ -61,29 +61,25 @@
         ;#'(1 2 3) is a syntax not a list
         [(syntax? current-index-node current-document) '()]
         [(quasiquote? current-index-node current-document) 
-          substitution-list
-          ; (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
-          ;     [child (car (index-node-children current-index-node))])
-          ;   (fold-left 
-          ;     (lambda (prev current)
-          ;       (step current-document current available-identifiers prev 'quasiquoted expanded+callee-list))
-          ;     (append   
-          ;       substitution-list 
-          ;       `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
-          ;     (index-node-children current-index-node)))
-              ]
+          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
+              [child (car (index-node-children current-index-node))])
+            (fold-left 
+              (lambda (prev current)
+                (step current-document current available-identifiers prev 'quasiquoted expanded+callee-list))
+              (append   
+                substitution-list 
+                `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
+              (index-node-children current-index-node)))]
         [(quasisyntax? current-index-node current-document)
-          substitution-list
-          ; (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
-          ;     [child (car (index-node-children current-index-node))])
-          ;   (fold-left 
-          ;     (lambda (prev current)
-          ;       (step current-document current available-identifiers prev 'quasisyntax expanded+callee-list))
-          ;     (append   
-          ;       substitution-list 
-          ;       `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
-          ;     (index-node-children current-index-node)))
-              ]
+          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
+              [child (car (index-node-children current-index-node))])
+            (fold-left 
+              (lambda (prev current)
+                (step current-document current available-identifiers prev 'quasisyntax expanded+callee-list))
+              (append   
+                substitution-list 
+                `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
+              (index-node-children current-index-node)))]
 
         [(not (null? (index-node-children current-index-node))) 
           (let* ([children (index-node-children current-index-node)]
