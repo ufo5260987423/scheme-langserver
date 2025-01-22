@@ -79,7 +79,7 @@
             (lambda (end-pos) (< end-pos start-pos)) 
             (sort > (map index-node-end (document-index-node-list document))))])
       (string-append 
-        "```scheme\n"
+        "# Definition\n```scheme\n"
         (string-trim
           (substring 
             text 
