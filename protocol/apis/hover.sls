@@ -46,8 +46,6 @@
                 [substitution (document-substitution-list document)]
                 [env (make-type:environment substitution)]
                 [types (type:interpret-result-list variable env)])
-              (pretty-print (length types))
-              (pretty-print (map type:interpret->strings types))
               (make-alist
                 'contents
                 (fold-left 
