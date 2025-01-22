@@ -46,21 +46,27 @@
                 [substitution (document-substitution-list document)]
                 [env (make-type:environment substitution)]
                 [types (type:interpret-result-list variable env)])
-              (make-alist
-                'contents
-                (fold-left 
-                  (lambda (prev current)
-                    (string-append prev "\n" current))
-                  "# Type Inference"
-                  (dedupe (map type:interpret->strings types)))))
+              (fold-left 
+                (lambda (prev current)
+                  (string-append prev "\n\n" current))
+                "## Type Inference"
+                (dedupe (apply append (map type:interpret->strings types)))))
             "")])
-        (make-alist 
-          'contents 
-          (list->vector 
-            (append `(,type-string)
-              (if (symbol? prefix)
-                (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
-                '())))))))
+      (make-alist 
+        'contents 
+        (list->vector 
+          (append 
+            `(
+              ,(if (index-node? target-index-node)
+                (string-append 
+                  "# "
+                  (call-with-string-output-port 
+                    (lambda (p) (pretty-print prefix p))))
+                "")
+              ,type-string)
+            (if (symbol? prefix)
+              (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
+              '())))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference) 
@@ -86,7 +92,7 @@
             (lambda (end-pos) (< end-pos start-pos)) 
             (sort > (map index-node-end (document-index-node-list document))))])
       (string-append 
-        "# Definition\n```scheme\n"
+        "## Definition\n```scheme\n"
         (string-trim
           (substring 
             text 

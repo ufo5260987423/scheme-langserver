@@ -41,7 +41,7 @@
     [(list? target) (string-append "(" (apply string-append (map inner:type->string target)) ") ")]
     [(symbol? target) (string-append (symbol->string target) " ")]
     [(variable? target) (string-append "[variable " (variable-uuid target) "] ")]
-    [(identifier-reference? target) (string-append "[identifier-refrence " (symbol->string (identifier-reference-identifier target))  "] ")]
+    [(identifier-reference? target) (string-append "[identifier-reference " (symbol->string (identifier-reference-identifier target))  "] ")]
     [else 
       (print-graph #t)
       (pretty-print target)
