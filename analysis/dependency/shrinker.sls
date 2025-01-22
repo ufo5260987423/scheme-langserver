@@ -23,7 +23,7 @@
           [rest-from (cdr ids)]
           [current-from-path (hashtable-ref id->path-map current-from #f)])
         (if (null? result)
-          (shrink-ids linkage rest-from (append result (list `(,current-from))))
+          (shrink-ids linkage rest-from `((,current-from)))
           (if (zero? 
               (apply + 
                 (map 
@@ -31,7 +31,7 @@
                     (file-linkage-take 
                       linkage 
                       current-from-path 
-                      (hashtable-ref id->path-map to #f))) 
+                      (hashtable-ref id->path-map to 0))) 
                   (car (reverse result)))))
             (shrink-ids 
               linkage
