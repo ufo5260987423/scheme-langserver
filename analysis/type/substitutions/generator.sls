@@ -27,7 +27,7 @@
     (scheme-langserver analysis type substitutions rules trivial)
     (scheme-langserver analysis type substitutions rules define)
     (scheme-langserver analysis type substitutions rules application)
-    (scheme-langserver analysis type substitutions rules body)
+    (scheme-langserver analysis type substitutions rules begin)
     (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver analysis type substitutions self-defined-rules router))
@@ -134,7 +134,7 @@
           [i (identifier-reference-identifier identifier)]
           [is (map identifier-reference-library-identifier top)]
           [type (map identifier-reference-type top)])
-        (if (or (equal? '(procedure) type) (equal? '(variable) type)) 
+        (if (or (equal? '(procedure) type) (equal? '(variable) type) (equal? '(getter) type) (equal? '(setter) type) (equal? '(predicator) type) (equal? '(constructor) type)) 
           (private-add-rule rules `((,application-process) . ,identifier))
           (if (find meta-library? is)
             (cond 
@@ -145,7 +145,7 @@
 
               [(equal? r '(if)) (private-add-rule rules `((,if-process) . ,identifier))]
               [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
-              [(equal? r '(unless)) (private-add-rule rules `((,body-process) . ,identifier))]
+              [(equal? r '(unless)) (private-add-rule rules `((,begin-process) . ,identifier))]
 
               [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
               [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
@@ -155,7 +155,7 @@
               [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
               [(equal? r '(letrec*)) (private-add-rule rules `((,let*-process) . ,identifier))]
 
-              [(equal? r '(body)) (private-add-rule rules `((,body-process) . ,identifier))]
+              [(equal? r '(begin)) (private-add-rule rules `((,begin-process) . ,identifier))]
 
               [else (private-add-rule rules `((,do-nothing) . ,identifier))])
             (route&add rules identifier private-add-rule)))))

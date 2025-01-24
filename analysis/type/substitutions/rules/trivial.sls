@@ -161,10 +161,8 @@
                               ,(vector-ref (list->vector symbols) index))
                               c)) 
                             ,head-variable)))))]
-                ; [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
-                ;   (if (null? (identifier-reference-type-expressions identifier-reference))
-                ;     (define-record-type-process document (identifier-reference-initialization-index-node identifier-reference) '()))
-                ;   (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
+                [(and (contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference)) (not (null? type-expressions)))
+                  (cartesian-product `(,variable) '(:) type-expressions)]
                 [else '()]))]
           ;import
           [else 
