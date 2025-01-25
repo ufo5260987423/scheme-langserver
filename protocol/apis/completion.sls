@@ -57,7 +57,8 @@
               #f
               (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))) 
           (find-available-references-for document target-index-node))]
-      [type-inference? (workspace-type-inference? workspace)])
+      ; [type-inference? (workspace-type-inference? workspace)]
+      [type-inference? #f])
       ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector (map 
       (lambda (identifier)
