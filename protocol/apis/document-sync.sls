@@ -44,10 +44,10 @@
         (null? (walk-file (workspace-file-node workspace) (substring uri 7 (string-length uri)))))
         ;TODO:well, can be optimized
         (refresh-workspace workspace)]
-      [(not (null? target-file))
-        (let ([target-document (file-node-document target-file)])
-          (if (not (equal? (document-text target-document) text))
-            (update-file-node-with-tail workspace target-file text)))]
+      ; [(not (null? target-file))
+      ;   (let ([target-document (file-node-document target-file)])
+      ;     (if (not (equal? (document-text target-document) text))
+      ;       (update-file-node-with-tail workspace target-file text)))]
       [else '()])))
 
 (define (did-close workspace params)
