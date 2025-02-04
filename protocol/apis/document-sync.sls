@@ -27,10 +27,12 @@
 (define (did-open workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [uri (text-document-uri text-document)]
-      [path (uri->path uri)])
-    (if 
-      (and 
-        (null? (walk-file (workspace-file-node workspace) path))
+      [text (text-document-text text-document)]
+      [path (uri->path uri)]
+      [target-file (walk-file (workspace-file-node workspace) path)])
+    (cond 
+      [(and 
+        (null? target-file)
         ;for many LSP clients, they wrongly produce uri without processing escape character, and here I refer from 
         ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
         ;Care should be taken to handle encoding in URIs. For example, some clients (such as VS Code) may encode colons in drive 
@@ -40,11 +42,16 @@
         ;server responses will have encoded colons). The same applies to casing of drive letters - one party should not assume 
         ;the other party will return paths with drive letters cased the same as itself.
         (null? (walk-file (workspace-file-node workspace) (substring uri 7 (string-length uri)))))
-      ;TODO:well, can be optimized
-      (refresh-workspace workspace))))
+        ;TODO:well, can be optimized
+        (refresh-workspace workspace)]
+      [(not (null? target-file))
+        (let ([target-document (file-node-document target-file)])
+          (if (not (equal? (document-text target-document) text))
+            (update-file-node-with-tail workspace target-file text)))]
+      [else '()])))
 
 (define (did-close workspace params)
-  '())
+  (did-open workspace params))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 (define (did-change workspace params)
