@@ -45,7 +45,7 @@ Previous releases please refer to [this file](./doc/release-log.md).
 8. Catching *-syntax(define-syntax, let-syntax, etc.) based local identifier binding. 
 9. Cross-platform parallel indexing.
 10. Self-made source code annotator to be compatible with .sps files.
-11. Peephole optimization for API requests.
+11. Peephole optimization for API requests with suspendable task.
 12. Type inference with a homemade DSL interpreter(I'm very proud of it!). And now it has been embedded into the auto-completion. As the following figure indicated, the "length-b" and "length-a" having "integer?" type are in the front of those recommended options because they can match the parameter type requiring from "<=". 
 ![Autocompletion with type inference](./doc/figure/auto-completion-with-type-inference.png "Autocompletion with type inference")
 A test in can prove this result, just run `scheme --script tests/protocol/apis/test-completion.sps` and the log file `scheme-langserver.log` would contain results like this:
@@ -63,7 +63,7 @@ send-message
 17. Code eval.
 18. Code diagnostic.
 19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
-20. Extract expression/statements into a procedure()
+20. Extract expression/statements into a procedure.
 
 ## TODO:Contributing 
 
