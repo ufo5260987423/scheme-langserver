@@ -9,13 +9,13 @@
   (let* ([path->id-map (file-linkage-path->id-map linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [ids (map (lambda (current-path) (hashtable-ref path->id-map current-path #f)) paths)]
-      [shrinked-ids (shrink-ids (file-linkage-matrix linkage) ids)])
+      [shrinked-ids (shrink-ids (file-linkage-matrix linkage) ids '())])
     (map 
       (lambda (ids) 
         (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
       shrinked-ids)))
 
-(define (shrink-ids matrix ids)
+(define (shrink-ids matrix ids advance-list)
   (let ([tmp 
       (filter
         (lambda (current-from) 
@@ -30,8 +30,14 @@
       [(null? tmp) 
         ;here, the ids is basically a super node representing cycles
         ;so, ramdom remove one to break
-        `(,@(shrink-ids matrix (cdr ids))
-            (,(car ids)))]
+        (car 
+          (sort 
+            (lambda (a b)
+              (< (length a) (length b)))
+            (map 
+              (lambda (id)
+                (shrink-ids matrix (remove id ids) `(,@advance-list id)))
+              ids)))]
       [else 
         `(,tmp 
           ,@(shrink-ids matrix 
@@ -40,6 +46,7 @@
                   (if (memq id tmp)
                     prev
                     `(,@prev ,id)))
-                '()
-                ids)))])))
+                advance-list
+                ids)
+              '()))])))
 )
