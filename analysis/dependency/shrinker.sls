@@ -9,35 +9,27 @@
   (let* ([path->id-map (file-linkage-path->id-map linkage)]
       [id->path-map (file-linkage-id->path-map linkage)]
       [ids (map (lambda (current-path) (hashtable-ref path->id-map current-path #f)) paths)]
-      [shrinked-ids (shrink-ids (file-linkage-matrix linkage) ids '())])
+      [shrinked-ids (shrink-ids (file-linkage-matrix linkage) ids)])
     (map 
       (lambda (ids) 
         (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
       shrinked-ids)))
 
-(define (shrink-ids matrix ids result)
-  (if (null? ids)
-    result
-    (let* ([current-from (car ids)]
-        [rest-from (cdr ids)])
-      (if (null? result)
-        (shrink-ids matrix rest-from `((,current-from)))
-        (if (zero? 
-            (apply + 
-              (map 
-                (lambda (to) 
-                  (matrix-take matrix current-from to)) 
-                (car (reverse result)))))
-          (shrink-ids 
-            matrix
-            rest-from 
-            (append 
-              (reverse (cdr (reverse result))) 
-              (list (append (car (reverse result)) `(,current-from)))))
-          (shrink-ids 
-            matrix
-            rest-from 
-            (append 
-              result
-              (list `(,current-from)))))))))
+(define (shrink-ids matrix ids)
+  (fold-left
+    (lambda (prev current-from)
+      (cond 
+        [(null? prev) `((,current-from))]
+        [(zero? 
+          (apply + 
+            (map 
+              (lambda (to) 
+                (matrix-take matrix current-from to)) 
+              (car (reverse prev)))))
+          (append 
+            (reverse (cdr (reverse prev))) 
+            (list (append (car (reverse prev)) `(,current-from))))]
+        [else (append prev (list `(,current-from)))]))
+    '()
+    ids))
 )
