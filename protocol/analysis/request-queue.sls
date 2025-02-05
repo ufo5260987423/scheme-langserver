@@ -64,11 +64,7 @@
   (with-mutex (request-queue-mutex queue)
     (request-queue-cancelable-task-list-set! 
       queue
-      (filter 
-        (lambda (t) 
-          ;here, canceled? check occured in local thread. It may be inacuracy because conflict with another thread. But this is enough.
-          (not (equal? task t)))
-        (request-queue-cancelable-task-list queue)))))
+      (remove task (request-queue-cancelable-task-list queue)))))
 
 (define (request-queue-push queue request)
   (let ([id (request-id request)])
