@@ -43,7 +43,7 @@
           (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
           (loop))
         (letrec* ([task (dequeue! (request-queue-queue queue))]
-            [ticks 100]
+            [ticks 10000]
             [job (lambda () (request-processor (cancelable-task-request task)))]
             ;will be in another thread
             [complete 
