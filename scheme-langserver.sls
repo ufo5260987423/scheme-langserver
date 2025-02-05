@@ -99,7 +99,7 @@
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
+        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))]))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";

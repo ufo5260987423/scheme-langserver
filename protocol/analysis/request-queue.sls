@@ -42,33 +42,33 @@
         (begin
           (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
           (loop))
-        (let ([task (dequeue! (request-queue-queue queue))]
-            ; Each tick corresponds roughly to one nonleaf procedure call
-            [ticks 100])
-          (request-queue-cancelable-task-list-set! 
-            queue
-            (append 
-              (filter 
-                (lambda (t) 
-                  ;here, canceled? check occured in local thread. It may be inacuracy because conflict with another thread. But this is enough.
-                  (not (cancelable-task-canceled? t))) 
-                (request-queue-cancelable-task-list queue))
-              `(,task)))
+        (letrec* ([task (dequeue! (request-queue-queue queue))]
+            [ticks 100]
+            [job (lambda () (request-processor (cancelable-task-request task)))]
+            ;will be in another thread
+            [complete 
+              (lambda (ticks value) 
+                (cancel task)
+                (remove:from-request-cancelable-task-list queue task)
+                value)]
+            ;will be in another thread
+            [expire 
+              (lambda (remains) 
+                (if (cancelable-task-canceled? task)
+                  (remove:from-request-cancelable-task-list queue task)
+                  (remains ticks complete expire)))])
           ;will be in another thread
-          (lambda ()
-            ((call/1cc 
-              (lambda (return)
-                (timer-interrupt-handler
-                  (lambda ()
-                    (with-mutex (cancelable-task-mutex task)
-                      (if (cancelable-task-canceled? task)
-                        (return '())))
-                    (set-timer ticks)))
-                ;check `canceled?` immidiately
-                (set-timer 1)
-                (request-processor (cancelable-task-request task))
-                ;this may cause conflict with local thread. But it's ok
-                (cancel task))))))))))
+          (lambda () ((make-engine job) ticks complete expire)))))))
+
+(define (remove:from-request-cancelable-task-list queue task)
+  (with-mutex (request-queue-mutex queue)
+    (request-queue-cancelable-task-list-set! 
+      queue
+      (filter 
+        (lambda (t) 
+          ;here, canceled? check occured in local thread. It may be inacuracy because conflict with another thread. But this is enough.
+          (not (equal? task t)))
+        (request-queue-cancelable-task-list queue)))))
 
 (define (request-queue-push queue request)
   (let ([id (request-id request)])
@@ -82,6 +82,10 @@
             ;must cancel in local thread.
             (when target-task (cancel target-task)))]
         [else 
-          (enqueue! (request-queue-queue queue) (make-cancelable-task request))])))
+          (let ([target-task (make-cancelable-task request)])
+            (enqueue! (request-queue-queue queue) target-task)
+            (request-queue-cancelable-task-list-set! 
+              queue
+              `(,@(request-queue-cancelable-task-list queue) ,target-task)))])))
   (condition-signal (request-queue-condition queue)))
 )
