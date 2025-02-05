@@ -16,20 +16,30 @@
       shrinked-ids)))
 
 (define (shrink-ids matrix ids)
-  (fold-left
-    (lambda (prev current-from)
-      (cond 
-        [(null? prev) `((,current-from))]
-        [(zero? 
-          (apply + 
-            (map 
-              (lambda (to) 
-                (matrix-take matrix current-from to)) 
-              (car (reverse prev)))))
-          (append 
-            (reverse (cdr (reverse prev))) 
-            (list (append (car (reverse prev)) `(,current-from))))]
-        [else (append prev (list `(,current-from)))]))
-    '()
-    ids))
+  (let ([tmp 
+      (filter
+        (lambda (current-from) 
+          (zero? 
+            (apply + 
+              (map 
+                (lambda (to) (matrix-take matrix current-from to))
+                ids))))
+        ids)])
+    (cond 
+      [(null? ids) '()]
+      [(null? tmp) 
+        ;here, the ids is basically a super node representing cycles
+        ;so, ramdom remove one to break
+        `(,@(shrink-ids matrix (cdr ids))
+            (,(car ids)))]
+      [else 
+        `(,tmp 
+          ,@(shrink-ids matrix 
+              (fold-left
+                (lambda (prev id)
+                  (if (memq id tmp)
+                    prev
+                    `(,@prev ,id)))
+                '()
+                ids)))])))
 )
