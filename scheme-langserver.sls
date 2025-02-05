@@ -91,7 +91,7 @@
         ;         (do-log-timestamp server-instance)
         ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
 
-        ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
+        ; ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/rangeFormatting"
@@ -210,23 +210,25 @@
         [(input-port output-port log-port enable-multi-thread? type-inference?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
-              [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
+              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 
                   (lambda () 
                     (let loop ()
-                      (private:try-catch server-instance (request-queue-pop request-queue))
+                      ((request-queue-pop request-queue (lambda (r) (private:try-catch server-instance r))))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
-                (if (not (null? request-message))
-                  (if (not (or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))))
-                    (begin
-                      (if (null? thread-pool)
-                        (private:try-catch server-instance request-message)
-                        (request-queue-push request-queue request-message))
-                      (loop (read-message server-instance))))))
+                (cond 
+                  [(null? request-message) '()]
+                  [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
+                  [(null? thread-pool) 
+                    (private:try-catch server-instance request-message)
+                    (loop (read-message server-instance))]
+                  [else
+                    (request-queue-push request-queue request-message)
+                    (loop (read-message server-instance))]))
               (except c 
                 [else 
                   (display-condition c log-port)
