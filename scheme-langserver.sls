@@ -142,7 +142,7 @@
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t
               ; 'callHierarchyProvider #t
-              'completionProvider (make-alist 'triggerCharacters (vector "("))
+              'completionProvider (make-alist 'triggerCharacters (vector))
               ; 'signatureHelpProvider (make-alist 'triggerCharacters (vector " " ")" "]"))
               ; 'implementationProvider #t
               ; 'renameProvider renameProvider

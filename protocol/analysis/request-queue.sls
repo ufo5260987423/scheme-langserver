@@ -77,11 +77,11 @@
               [target-task (find predicator (request-queue-cancelable-task-list queue))])
             ;must cancel in local thread.
             (when target-task (cancel target-task)))]
-        [else 
-          (let ([target-task (make-cancelable-task request)])
-            (enqueue! (request-queue-queue queue) target-task)
-            (request-queue-cancelable-task-list-set! 
-              queue
-              `(,@(request-queue-cancelable-task-list queue) ,target-task)))])))
+        [else '()])
+      (let ([target-task (make-cancelable-task request)])
+        (enqueue! (request-queue-queue queue) target-task)
+        (request-queue-cancelable-task-list-set! 
+          queue
+          `(,@(request-queue-cancelable-task-list queue) ,target-task)))))
   (condition-signal (request-queue-condition queue)))
 )
