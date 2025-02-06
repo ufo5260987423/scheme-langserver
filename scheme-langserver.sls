@@ -91,7 +91,7 @@
         ;         (do-log-timestamp server-instance)
         ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
 
-        ; ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
+        ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
           ; ["textDocument/prepareRename"
           ;  (text-document/prepareRename id params)]
           ; ["textDocument/rangeFormatting"
