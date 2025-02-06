@@ -93,7 +93,6 @@
           ,head-variable)))))
 
 (define (sort-with-type-inferences target-document position-index-node target-identifier-reference-list)
-  (print-graph #t)
   (let* ([substitutions (document-substitution-list target-document)]
       [position-expression (private-generate-position-expression position-index-node)]
       [env (make-type:environment substitutions)]

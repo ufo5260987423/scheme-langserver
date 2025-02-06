@@ -71,6 +71,7 @@
     [(left right env max-depth) 
       (cond
         [(equal? left right) #t]
+        [(equal? left 'something?) #f]
         [(equal? right 'something?) #t]
         [(and (identifier-reference? left) (inner:record? right)) 
           (equal? left (cadr right))]
