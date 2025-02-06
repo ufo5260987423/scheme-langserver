@@ -51,21 +51,22 @@
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]
       [whole-list
-        (filter 
-          (lambda (candidate-reference) 
-            (if (equal? "" prefix)
-              #f
-              (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))) 
-          (find-available-references-for document target-index-node))]
+        (if (equal? "" prefix)
+          (find-available-references-for document target-index-node)
+          (filter 
+            (lambda (candidate-reference) 
+              (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))
+            (find-available-references-for document target-index-node)))]
       ; [type-inference? (workspace-type-inference? workspace)]
       [type-inference? #f])
       ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
-    (list->vector (map 
-      (lambda (identifier)
-        (identifier-reference->completion-item-alist identifier prefix))
-      (if type-inference?
-        (sort-with-type-inferences document target-index-node whole-list)
-        (sort-identifier-references whole-list))))))
+    (list->vector 
+      (map 
+        (lambda (identifier)
+          (identifier-reference->completion-item-alist identifier prefix))
+        (if type-inference?
+          (sort-with-type-inferences document target-index-node whole-list)
+          (sort-identifier-references whole-list))))))
 
 (define (private-generate-position-expression index-node)
   (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))

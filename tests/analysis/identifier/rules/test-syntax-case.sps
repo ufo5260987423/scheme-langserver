@@ -49,7 +49,6 @@
             [document (file-node-document target-file-node)]
             [loop-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 110 74))])
         (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
-        (step root-file-node root-library-node file-linkage document)
         (test-equal '(loop) (map identifier-reference-identifier (find-available-references-for document loop-index-node 'loop))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
