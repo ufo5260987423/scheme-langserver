@@ -71,7 +71,7 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference) 
   (if (null? (identifier-reference-index-node reference))
-    (symbol->string (identifier-reference-identifier reference))
+    ""
     (let* (
       ; [not-target-index-node (identifier-reference-initialization-index-node reference)]
         [index-node (identifier-reference-initialization-index-node reference)]

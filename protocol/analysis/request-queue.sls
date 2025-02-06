@@ -43,8 +43,9 @@
           (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
           (loop))
         (letrec* ([task (dequeue! (request-queue-queue queue))]
-            [ticks 10000]
-            [job (lambda () (request-processor (cancelable-task-request task)))]
+            [request (cancelable-task-request task)]
+            [ticks 100000]
+            [job (lambda () (request-processor request))]
             ;will be in another thread
             [complete 
               (lambda (ticks value) 
@@ -55,7 +56,9 @@
             [expire 
               (lambda (remains) 
                 (if (cancelable-task-canceled? task)
-                  (remove:from-request-cancelable-task-list queue task)
+                  (begin 
+                    (remove:from-request-cancelable-task-list queue task)
+                    (request-processor (make-request (request-id request) "$/cancelRequest" (make-alist 'method (request-method request)))))
                   (remains ticks complete expire)))])
           ;will be in another thread
           (lambda () ((make-engine job) ticks complete expire)))))))
@@ -67,21 +70,21 @@
       (remove task (request-queue-cancelable-task-list queue)))))
 
 (define (request-queue-push queue request)
-  (let ([id (request-id request)])
-    (with-mutex (request-queue-mutex queue)
-      (cond 
-        [(equal? (request-method request) "$/cancelRequest")
-          (let* ([pure-queue (request-queue-queue queue)]
-              ;here, id is cancel target id
-              [predicator (lambda (task) (equal? id (request-id (cancelable-task-request task))))]
-              [target-task (find predicator (request-queue-cancelable-task-list queue))])
-            ;must cancel in local thread.
-            (when target-task (cancel target-task)))]
-        [else '()])
-      (let ([target-task (make-cancelable-task request)])
-        (enqueue! (request-queue-queue queue) target-task)
-        (request-queue-cancelable-task-list-set! 
-          queue
-          `(,@(request-queue-cancelable-task-list queue) ,target-task)))))
+  (with-mutex (request-queue-mutex queue)
+    (cond 
+      [(equal? (request-method request) "$/cancelRequest")
+        (let* ([id (assq-ref (request-params request) 'id)]
+            [pure-queue (request-queue-queue queue)]
+            ;here, id is cancel target id
+            [predicator (lambda (task) (equal? id (request-id (cancelable-task-request task))))]
+            [target-task (find predicator (request-queue-cancelable-task-list queue))])
+          ;must cancel in local thread.
+          (when target-task (cancel target-task)))]
+      [else 
+        (let ([target-task (make-cancelable-task request)])
+          (enqueue! (request-queue-queue queue) target-task)
+          (request-queue-cancelable-task-list-set! 
+            queue
+            `(,@(request-queue-cancelable-task-list queue) ,target-task)))]))
   (condition-signal (request-queue-condition queue)))
 )
