@@ -65,9 +65,10 @@
       (map 
         (lambda (identifier)
           (identifier-reference->completion-item-alist identifier prefix))
-        (if type-inference?
-          (sort-with-type-inferences document target-index-node whole-list)
-          (sort-identifier-references whole-list))))))
+        (cond 
+          [(not (index-node? target-index-node)) (sort-identifier-references whole-list)]
+          [(and type-inference? (index-node? target-index-node)) (sort-with-type-inferences document target-index-node whole-list)]
+          [else (sort-identifier-references whole-list)])))))
 
 (define (private-generate-position-expression index-node)
   (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))

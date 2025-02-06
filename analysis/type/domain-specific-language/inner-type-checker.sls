@@ -67,7 +67,7 @@
 
 (define (inner:macro? expression)
   (match expression
-    [('with-type ((? inner:macro-template? denotions) **1) body) #t]
+    [('with ((? inner:macro-template? denotions) **1) body) #t]
     [else #f]))
 
 (define (inner:macro-template? expression)

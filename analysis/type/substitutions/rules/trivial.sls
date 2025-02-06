@@ -156,8 +156,8 @@
                       '()
                       `((,target-variable 
                           = 
-                          ((with-type ((a b c)) 
-                            ((with-type ((x ,@symbols))
+                          ((with ((a b c)) 
+                            ((with ((x ,@symbols))
                               ,(vector-ref (list->vector symbols) index))
                               c)) 
                             ,head-variable)))))]
