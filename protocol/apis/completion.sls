@@ -67,7 +67,7 @@
           (identifier-reference->completion-item-alist identifier prefix))
         (cond 
           [(not (index-node? target-index-node)) (sort-identifier-references whole-list)]
-          [(and type-inference? (index-node? target-index-node)) (sort-with-type-inferences document target-index-node whole-list)]
+          [(and type-inference? (not (is-first-child? target-index-node))) (sort-with-type-inferences document target-index-node whole-list)]
           [else (sort-identifier-references whole-list)])))))
 
 (define (private-generate-position-expression index-node)
@@ -88,7 +88,7 @@
       (if (= index (length rests))
         '()
         `((with ((a b c)) 
-          ((with ((x ,@symbols))
+          ((with ((x ,@symbols x0 ...))
             ,(vector-ref (list->vector symbols) index))
             c)) 
           ,head-variable)))))
