@@ -211,23 +211,25 @@
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)])
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)]
+              [request-processor (lambda (r) (private:try-catch server-instance r))]
+              )
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 
                   (lambda () 
                     (let loop ()
-                      ((request-queue-pop request-queue (lambda (r) (private:try-catch server-instance r))))
+                      ((request-queue-pop request-queue request-processor))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
                 (cond 
                   [(null? request-message) '()]
                   [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
                   [(null? thread-pool) 
-                    (private:try-catch server-instance request-message)
+                    (request-processor request-message)
                     (loop (read-message server-instance))]
                   [else
-                    (request-queue-push request-queue request-message)
+                    (request-queue-push request-queue request-message request-processor)
                     (loop (read-message server-instance))]))
               (except c 
                 [else 
