@@ -62,13 +62,24 @@
       )
       ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector 
-      (map 
-        (lambda (identifier)
-          (identifier-reference->completion-item-alist identifier prefix))
-        (cond 
-          [(not (index-node? target-index-node)) (sort-identifier-references whole-list)]
-          [(and type-inference? (not (is-first-child? target-index-node))) (sort-with-type-inferences document target-index-node whole-list)]
-          [else (sort-identifier-references whole-list)])))))
+      (cond 
+        [(not (index-node? target-index-node)) 
+          (map  
+            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
+            (sort-identifier-references whole-list))]
+        [(and type-inference? (not (is-first-child? target-index-node))) 
+          (let ([t (sort-with-type-inferences document target-index-node whole-list)])
+            (append 
+              (map  
+                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "0-"))
+                (car t))
+              (map  
+                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "1-"))
+                (cdr t))))]
+        [else 
+          (map  
+            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
+            (sort-identifier-references whole-list))]))))
 
 (define (private-generate-position-expression index-node)
   (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))
@@ -125,15 +136,15 @@
           target-identifier-reference-list)]
       [true-list (map car (filter (lambda (current-pair) (cdr current-pair)) target-identifiers-with-types))]
       [false-list (map car (filter (lambda (current-pair) (not (cdr current-pair))) target-identifiers-with-types))])
-    (append 
+    (cons
       (sort-identifier-references true-list)
       (sort-identifier-references false-list))))
 
-(define (identifier-reference->completion-item-alist reference prefix)
+(define (identifier-reference->completion-item-alist reference prefix index-string-prefix)
   (let* ([s (symbol->string (identifier-reference-identifier reference))]
       [l (string-length prefix)])
     (make-alist 
       'label s
       'insertText (substring s (- l 1) (string-length s))
-      )))
+      'sortText (string-append index-string-prefix s))))
 )
