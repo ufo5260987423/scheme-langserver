@@ -231,16 +231,19 @@
 (define find-available-references-for
   (case-lambda
     [(document current-index-node)
+      (let* ([local (index-node-references-import-in-this-node current-index-node)]
+          [local-identifiers (map identifier-reference-identifier local)]
+          [exclude (index-node-excluded-references current-index-node)])
         (filter
-          (lambda (reference)
-            (not (find 
-                  (lambda (er) (equal? er reference))
-                  (index-node-excluded-references current-index-node))))
+          (lambda (reference) (not (member reference exclude)))
           (append 
-            (index-node-references-import-in-this-node current-index-node) 
-            (if (null? (index-node-parent current-index-node))
-              (document-ordered-reference-list document) 
-              (find-available-references-for document (index-node-parent current-index-node)))))]
+            local
+            (filter 
+              (lambda (reference)
+                (not (member (identifier-reference-identifier reference) local-identifiers)))
+              (if (null? (index-node-parent current-index-node))
+                (document-ordered-reference-list document) 
+                (find-available-references-for document (index-node-parent current-index-node)))))))]
     [(document current-index-node identifier) 
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])

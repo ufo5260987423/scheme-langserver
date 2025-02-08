@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis type substitutions rules record)
-  (export record-process)
+  (export define-record-type-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -15,13 +15,12 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (record-process document index-node substitutions)
+(define (define-record-type-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
     (match expression
-      [('define-record-type dummy0 dummy1 ...) 
-        (guard-for document index-node 'define-record-type '(chezscheme) '(rnrs) '(rnrs base) '(scheme) '(rnrs records syntactic)) 
+      [(_ dummy0 dummy1 ...) 
         (let ([collection (private-collect-identifiers index-node)])
           (if (null? collection)
             '()
@@ -29,26 +28,27 @@
                 [constructor (find (lambda (identifier) (equal? (identifier-reference-type identifier) 'constructor)) collection)]
                 [getters (filter (lambda (identifier) (equal? (identifier-reference-type identifier) 'getter)) collection)]
                 [setters (filter (lambda (identifier) (equal? (identifier-reference-type identifier) 'setter)) collection)])
-              (if (null? (identifier-reference-type-expressions predicator))
-                (begin
-                  (map 
-                    (lambda (getter)
-                      (identifier-reference-type-expressions-set! 
-                        getter
-                        `((something? <- (inner:list? ,predicator)))))
-                    getters)
-                  (map 
-                    (lambda (setter)
-                      (identifier-reference-type-expressions-set! 
-                        setter
-                        `((void? <- (inner:list? ,predicator something?)))))
-                    setters)
-                  (identifier-reference-type-expressions-set! 
-                    predicator
-                    `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
-                  (identifier-reference-type-expressions-set! 
-                    constructor 
-                    `((,predicator <- (inner:list? something? ...))))))))
+              (if (and predicator constructor)
+                (if (null? (identifier-reference-type-expressions predicator))
+                  (begin
+                    (map 
+                      (lambda (getter)
+                        (identifier-reference-type-expressions-set! 
+                          getter
+                          `((something? <- (inner:list? ,predicator)))))
+                      getters)
+                    (map 
+                      (lambda (setter)
+                        (identifier-reference-type-expressions-set! 
+                          setter
+                          `((void? <- (inner:list? ,predicator something?)))))
+                      setters)
+                    (identifier-reference-type-expressions-set! 
+                      predicator
+                      `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
+                    (identifier-reference-type-expressions-set! 
+                      constructor 
+                      `((,predicator <- (inner:list? something? ...)))))))))
             '())]
       [else '()])))
 

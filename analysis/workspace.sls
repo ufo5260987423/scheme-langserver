@@ -144,6 +144,7 @@
             (pretty-print 'workspace-error)
             (pretty-print c)]
           [else 
+            (display-condition c)
             (pretty-print target-path)
             (pretty-print 'workspace-error)
             (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
@@ -214,7 +215,6 @@
         [refreshable-batches (shrink-paths linkage refreshable-path)])
       (init-references workspace-instance refreshable-batches))))
 
-
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)
     (let* ([name (path->name path)] 
@@ -226,7 +226,7 @@
         [node (make-file-node path name parent folder? '() document)]
         [children (if folder?
             (map 
-              (lambda(p) 
+              (lambda (p) 
                 (init-virtual-file-system 
                   (string-append path 
                     (if (string-suffix? (list->string (list (directory-separator))) path)

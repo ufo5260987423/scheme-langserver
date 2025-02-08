@@ -51,20 +51,35 @@
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]
       [whole-list
-        (filter 
-          (lambda (candidate-reference) 
-            (if (equal? "" prefix)
-              #f
-              (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))) 
-          (find-available-references-for document target-index-node))]
-      [type-inference? (workspace-type-inference? workspace)])
+        (if (equal? "" prefix)
+          (find-available-references-for document target-index-node)
+          (filter 
+            (lambda (candidate-reference) 
+              (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))
+            (find-available-references-for document target-index-node)))]
+      [type-inference? (workspace-type-inference? workspace)]
+      ; [type-inference? #f]
+      )
       ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
-    (list->vector (map 
-      (lambda (identifier)
-        (identifier-reference->completion-item-alist identifier prefix))
-      (if type-inference?
-        (sort-with-type-inferences document target-index-node whole-list)
-        (sort-identifier-references whole-list))))))
+    (list->vector 
+      (cond 
+        [(not (index-node? target-index-node)) 
+          (map  
+            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
+            (sort-identifier-references whole-list))]
+        [(and type-inference? (not (is-first-child? target-index-node))) 
+          (let ([t (sort-with-type-inferences document target-index-node whole-list)])
+            (append 
+              (map  
+                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "0-"))
+                (car t))
+              (map  
+                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "1-"))
+                (cdr t))))]
+        [else 
+          (map  
+            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
+            (sort-identifier-references whole-list))]))))
 
 (define (private-generate-position-expression index-node)
   (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))
@@ -84,13 +99,12 @@
       (if (= index (length rests))
         '()
         `((with ((a b c)) 
-          ((with ((x ,@symbols))
+          ((with ((x ,@symbols x0 ...))
             ,(vector-ref (list->vector symbols) index))
             c)) 
           ,head-variable)))))
 
 (define (sort-with-type-inferences target-document position-index-node target-identifier-reference-list)
-  (print-graph #t)
   (let* ([substitutions (document-substitution-list target-document)]
       [position-expression (private-generate-position-expression position-index-node)]
       [env (make-type:environment substitutions)]
@@ -122,15 +136,15 @@
           target-identifier-reference-list)]
       [true-list (map car (filter (lambda (current-pair) (cdr current-pair)) target-identifiers-with-types))]
       [false-list (map car (filter (lambda (current-pair) (not (cdr current-pair))) target-identifiers-with-types))])
-    (append 
+    (cons
       (sort-identifier-references true-list)
       (sort-identifier-references false-list))))
 
-(define (identifier-reference->completion-item-alist reference prefix)
+(define (identifier-reference->completion-item-alist reference prefix index-string-prefix)
   (let* ([s (symbol->string (identifier-reference-identifier reference))]
       [l (string-length prefix)])
     (make-alist 
       'label s
       'insertText (substring s (- l 1) (string-length s))
-      )))
+      'sortText (string-append index-string-prefix s))))
 )

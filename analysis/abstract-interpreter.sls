@@ -87,11 +87,12 @@
         [(quote? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node (private:find-available-references-for expanded+callee-list current-document current-index-node))]
         [(quasiquote? current-index-node current-document) 
-          (index-node-excluded-references-set! current-index-node (private:find-available-references-for expanded+callee-list current-document current-index-node))
-          (map 
-            (lambda (i)
-              (step root-file-node root-library-node file-linkage current-document i (index-node-excluded-references current-index-node) 'quasiquoted expanded+callee-list memory))
-            (index-node-children current-index-node))]
+          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+            (index-node-excluded-references-set! current-index-node available-identifiers)
+            (map 
+              (lambda (i)
+                (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasiquoted expanded+callee-list memory))
+              (index-node-children current-index-node)))]
         [(syntax? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node 
             (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
@@ -152,11 +153,6 @@
 (define (private-add-rule origin target-rule)
   (merge private-rule-compare? origin 
     `((,(cdr target-rule) . ,(car target-rule)))))
-
-(define (get-primitive-rule-from primitive-expression)
-  (cond 
-    [(equal? (primitive-content primitive-expression) '$invoke-library) `(,primitive-expression . (,invoke-library-process))]
-    [else '()]))
 
 (define (establish-available-rules-from file-linkage identifier-list current-document expanded+callee-list memory)
   (fold-left 

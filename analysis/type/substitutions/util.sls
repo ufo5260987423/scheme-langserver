@@ -7,6 +7,7 @@
     add-to-substitutions
     remove-from-substitutions
     debug:pretty-print-substitution
+    do-nothing
     substitution->string)
   (import 
     (chezscheme)
@@ -17,6 +18,8 @@
     (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver virtual-file-system index-node))
+
+(define (do-nothing . fuzzy) '())
 
 (define (debug:pretty-print-substitution substitutions)
   (pretty-print (map 

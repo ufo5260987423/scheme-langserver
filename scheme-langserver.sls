@@ -99,7 +99,7 @@
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method " \n")))]))))
+        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))]))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";
@@ -142,7 +142,7 @@
               ; 'typeDefinitionProvider #t
               ; 'selectionRangeProvider #t
               ; 'callHierarchyProvider #t
-              'completionProvider (make-alist 'triggerCharacters (vector "("))
+              'completionProvider (make-alist 'triggerCharacters (vector))
               ; 'signatureHelpProvider (make-alist 'triggerCharacters (vector " " ")" "]"))
               ; 'implementationProvider #t
               ; 'renameProvider renameProvider
@@ -210,23 +210,27 @@
         [(input-port output-port log-port enable-multi-thread? type-inference?) 
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
-              [request-queue (if (and enable-multi-thread? threaded?) (init-request-queue) '())]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)])
+              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)]
+              [request-processor (lambda (r) (private:try-catch server-instance r))]
+              )
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 
                   (lambda () 
                     (let loop ()
-                      (private:try-catch server-instance (request-queue-pop request-queue))
+                      ((request-queue-pop request-queue request-processor))
                       (loop)))))
               (let loop ([request-message (read-message server-instance)])
-                (if (not (null? request-message))
-                  (if (not (or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))))
-                    (begin
-                      (if (null? thread-pool)
-                        (private:try-catch server-instance request-message)
-                        (request-queue-push request-queue request-message))
-                      (loop (read-message server-instance))))))
+                (cond 
+                  [(null? request-message) '()]
+                  [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
+                  [(null? thread-pool) 
+                    (request-processor request-message)
+                    (loop (read-message server-instance))]
+                  [else
+                    (request-queue-push request-queue request-message request-processor)
+                    (loop (read-message server-instance))]))
               (except c 
                 [else 
                   (display-condition c log-port)

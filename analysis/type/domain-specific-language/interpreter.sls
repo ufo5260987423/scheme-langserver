@@ -71,6 +71,7 @@
     [(left right env max-depth) 
       (cond
         [(equal? left right) #t]
+        [(equal? left 'something?) #f]
         [(equal? right 'something?) #t]
         [(and (identifier-reference? left) (inner:record? right)) 
           (equal? left (cadr right))]
@@ -248,15 +249,18 @@
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(variable? expression)
-            (type:environment-result-list-set! 
-              env 
-              (apply append 
-                (map 
-                  (lambda (reified)
-                    (if (equal? reified expression) 
-                      `(,reified)
-                      (type:interpret-result-list reified env new-memory)))
-                  (map caddr (substitution:walk (type:environment-substitution-list env) expression)))))]
+            (let ([tmp (map caddr (substitution:walk (type:environment-substitution-list env) expression))])
+              (type:environment-result-list-set! 
+                env 
+                (if (null? tmp)
+                  `(,expression)
+                  (apply append 
+                    (map 
+                      (lambda (reified)
+                        (if (equal? reified expression) 
+                          `(,reified)
+                          (type:interpret-result-list reified env new-memory)))
+                      tmp)))))]
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
           [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
@@ -300,13 +304,13 @@
 
 (define (macro-head-execute-with expression interpreted-inputs)
   (match expression
-    [(('with-type ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
-      (execute-macro `((with-type ,denotions ,body) ,@interpreted-inputs))]
+    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1) 
+      (execute-macro `((with ,denotions ,body) ,@interpreted-inputs))]
     [else (raise 'macro-not-match:macro-head-execute-with)]))
 
 (define (execute-macro expression)
   (match expression
-    [(('with-type ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
+    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
       (if (candy:matchable? denotions inputs)
         (execute-macro (private-with body (candy:match-left denotions inputs)))
         expression)]

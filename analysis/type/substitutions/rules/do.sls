@@ -13,14 +13,13 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (do-process document index-node substitutions)
+(define (do-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
     (try
       (match expression
-        [('do ((var init update ...) **1) (test result ...) _ ... ) 
-          (guard-for document index-node 'do '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        [(_ ((var init update ...) **1) (test result ...) _ ... ) 
           (let* ([children (index-node-children index-node)]
               [var-index-node (cadr children)])
             (apply append (map private-process (index-node-children var-index-node))))]

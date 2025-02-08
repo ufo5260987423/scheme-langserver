@@ -36,20 +36,14 @@
 
 (define trivial-process 
   (case-lambda 
-    [(document index-node substitutions) 
+    [(document index-node) 
       (let* ([ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)]
           [variable (index-node-variable index-node)])
         (if (null? (index-node-children index-node))
-          (trivial-process document index-node variable expression substitutions #f #f)
+          (trivial-process document index-node variable expression #f #f)
           '()))]
-    [(document index-node variable expression substitutions allow-unquote? quoted?)
-      ;; (pretty-print 'trivial)
-      ;; (pretty-print variable)
-      ;; (debug:print-expression index-node)
-      ;; (pretty-print expression)
-      ;; (pretty-print allow-unquote?)
-      ;; (pretty-print quoted?)
+    [(document index-node variable expression allow-unquote? quoted?)
       (cond
         ;These clauses won't be affected by quote
         [(char? expression) (list `(,variable : ,private-char?))]
@@ -75,18 +69,14 @@
         [(symbol? expression) (list `(,variable : ,private-symbol?))]
 
         [(and (pair? expression) (not (list? expression)))
-          ; (pretty-print 'trivial)
-          ; (pretty-print expression)
-          ; (pretty-print (car expression))
-          ; (pretty-print (cdr expression))
           (let* ([f (car expression)]
               [l (cdr expression)]
               [new-variable-f (make-variable)]
               [new-variable-l (make-variable)])
             (append 
               `((,variable = (inner:pair? new-variable-f new-variable-l)))
-              (trivial-process document index-node new-variable-f f substitutions allow-unquote? quoted?)
-              (trivial-process document index-node new-variable-l l substitutions allow-unquote? quoted?)))]
+              (trivial-process document index-node new-variable-f f allow-unquote? quoted?)
+              (trivial-process document index-node new-variable-l l allow-unquote? quoted?)))]
         [(or (list? expression) (vector? expression))
           (let* ([is-list? (list? expression)]
               [final-result
@@ -99,12 +89,12 @@
                           current-result
                           (let* ([current-item (car body)]
                               [v (make-variable)]
-                              [r (trivial-process document index-node v current-item substitutions #f #t)]
+                              [r (trivial-process document index-node v current-item #f #t)]
                               [first `(,@(car current-result) ,v)]
                               [last `(,@(cadr current-result) ,@r)])
                             (loop (cdr body) `(,first ,last)))))
                       (let* ([v (make-variable)]
-                          [r (trivial-process document index-node v current-expression substitutions allow-unquote? quoted?)]
+                          [r (trivial-process document index-node v current-expression allow-unquote? quoted?)]
                           [first `(,@(car ahead-result) ,v)]
                           [last `(,@(cadr ahead-result) ,@r)])
                         `(,first ,last))))
@@ -121,7 +111,7 @@
       (let* ([target-document (identifier-reference-document identifier-reference)]
           [target-index-node (identifier-reference-index-node identifier-reference)]
           [type-expressions (identifier-reference-type-expressions identifier-reference)])
-        (cond 
+      (cond 
           ;it's in r6rs library?
           [(null? target-index-node)
             (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]
@@ -141,8 +131,7 @@
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
                     (is-first-child? index-node) 
-                    (or (equal? 'parameter (identifier-reference-type identifier-reference))
-                      (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
+                    (equal? 'parameter (identifier-reference-type identifier-reference)))
                   (let* ([ancestor (index-node-parent index-node)]
                       [children (index-node-children ancestor)]
                       [rests (cdr children)]
@@ -153,8 +142,7 @@
                     `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))]
                 [(and 
                     (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
-                    (or (equal? 'parameter (identifier-reference-type identifier-reference))
-                      (equal? 'syntax-parameter (identifier-reference-type identifier-reference))))
+                    (equal? 'parameter (identifier-reference-type identifier-reference)))
                   (let* ([ancestor (index-node-parent index-node)]
                       [children (index-node-children ancestor)]
                       [target-variable (index-node-variable target-index-node)]
@@ -168,15 +156,13 @@
                       '()
                       `((,target-variable 
                           = 
-                          ((with-type ((a b c)) 
-                            ((with-type ((x ,@symbols))
+                          ((with ((a b c)) 
+                            ((with ((x ,@symbols))
                               ,(vector-ref (list->vector symbols) index))
                               c)) 
                             ,head-variable)))))]
-                [(contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference))
-                  (if (null? (identifier-reference-type-expressions identifier-reference))
-                    (record-process document (identifier-reference-initialization-index-node identifier-reference) '()))
-                  (cartesian-product `(,variable) '(:) (identifier-reference-type-expressions identifier-reference))]
+                [(and (contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference)) (not (null? type-expressions)))
+                  (cartesian-product `(,variable) '(:) type-expressions)]
                 [else '()]))]
           ;import
           [else 

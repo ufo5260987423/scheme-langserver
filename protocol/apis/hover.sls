@@ -7,6 +7,7 @@
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -38,17 +39,39 @@
             (if (null? (index-node-children target-index-node)) 
               (annotation-stripped (index-node-datum/annotations target-index-node)) 
               '())
-            '())])
-      (if (symbol? prefix)
-        (make-alist 
-          'contents 
-          (list->vector (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))))
-        '()))))
+            '())]
+        [type-string 
+          (if (workspace-type-inference? workspace)
+            (let* ([variable (index-node-variable target-index-node)]
+                [substitution (document-substitution-list document)]
+                [env (make-type:environment substitution)]
+                [types (type:interpret-result-list variable env)])
+              (fold-left 
+                (lambda (prev current)
+                  (string-append prev "\n\n" current))
+                "## Type Inference"
+                (dedupe (apply append (map type:interpret->strings types)))))
+            "")])
+      (make-alist 
+        'contents 
+        (list->vector 
+          (append 
+            `(
+              ,(if (index-node? target-index-node)
+                (string-append 
+                  "# "
+                  (call-with-string-output-port 
+                    (lambda (p) (pretty-print prefix p))))
+                "")
+              ,type-string)
+            (if (symbol? prefix)
+              (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
+              '())))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference) 
   (if (null? (identifier-reference-index-node reference))
-    (symbol->string (identifier-reference-identifier reference))
+    ""
     (let* (
       ; [not-target-index-node (identifier-reference-initialization-index-node reference)]
         [index-node (identifier-reference-initialization-index-node reference)]
@@ -68,15 +91,15 @@
           (filter 
             (lambda (end-pos) (< end-pos start-pos)) 
             (sort > (map index-node-end (document-index-node-list document))))])
-      (make-alist 
-        'language 
-          "scheme")
-        'value 
-          (string-trim
-            (substring 
-              text 
-              (if (null? parent-index-node-end-list)
-                (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
-                (car parent-index-node-end-list)) 
-              end-pos)))))
+      (string-append 
+        "## Definition\n```scheme\n"
+        (string-trim
+          (substring 
+            text 
+            (if (null? parent-index-node-end-list)
+              (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
+              (car parent-index-node-end-list)) 
+            end-pos))
+        "\n```"
+            ))))
 )

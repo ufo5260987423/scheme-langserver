@@ -1,5 +1,5 @@
-(library (scheme-langserver analysis type substitutions rules application)
-  (export application-process)
+(library (scheme-langserver analysis type substitutions rules begin)
+  (export begin-process)
   (import 
     (chezscheme) 
 
@@ -12,10 +12,10 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (application-process document index-node)
+(define (begin-process document index-node)
   (let* ([variable (index-node-variable index-node)]
       [children (index-node-children index-node)])
     (if (null? children)
       '()
-      `((,variable = ,(map index-node-variable children))))))
+      `((,variable = ,(index-node-variable (car (reverse children))))))))
 )
