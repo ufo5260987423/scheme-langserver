@@ -36,7 +36,7 @@
               (< (length a) (length b)))
             (map 
               (lambda (id)
-                (shrink-ids matrix (remove id ids) `(,@advance-list id)))
+                (shrink-ids matrix (remove id ids) `(,@advance-list ,id)))
               ids)))]
       [else 
         `(,tmp 
