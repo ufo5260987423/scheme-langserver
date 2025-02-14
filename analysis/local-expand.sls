@@ -14,7 +14,6 @@
     (scheme-langserver util dedupe)
 
     (scheme-langserver analysis util)
-    (scheme-langserver analysis dependency shrinker)
     (scheme-langserver analysis dependency file-linkage)
     (scheme-langserver analysis dependency rules library-import)
     (scheme-langserver analysis identifier reference))

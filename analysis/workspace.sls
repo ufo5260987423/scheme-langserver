@@ -43,7 +43,6 @@
     (scheme-langserver analysis tokenizer)
     
     (scheme-langserver analysis dependency file-linkage)
-    (scheme-langserver analysis dependency shrinker)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules library-import)
@@ -70,8 +69,7 @@
       [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-file-node root-library-node)]
-      [paths (get-init-reference-path file-linkage)]
-      [batches (shrink-paths file-linkage paths)])
+      [batches (get-init-reference-batches file-linkage)])
     (init-references workspace-instance batches)
     (workspace-file-node-set! workspace-instance root-file-node)
     (workspace-library-node-set! workspace-instance root-library-node)
@@ -93,8 +91,7 @@
                 [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
-          [paths (get-init-reference-path file-linkage)]
-          [batches (shrink-paths file-linkage paths)])
+          [batches (get-init-reference-batches file-linkage)])
     ; (pretty-print 'aaa)
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
     ; (pretty-print 'eee)

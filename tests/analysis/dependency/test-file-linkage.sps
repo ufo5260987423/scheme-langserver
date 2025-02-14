@@ -25,7 +25,7 @@
     (let* ([root-file-node (init-virtual-file-system (current-directory) '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))]
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (init-file-linkage root-file-node root-library-node)]
-            [paths (get-init-reference-path file-linkage)]
+            [paths (apply append (get-init-reference-batches file-linkage))]
             [target-path (string-append (current-directory) "/protocol/error-code.sls")])
         (test-equal target-path (find (lambda (p) (equal? target-path p)) paths)))
 (test-end)

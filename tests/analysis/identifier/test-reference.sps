@@ -30,7 +30,7 @@
             [document (file-node-document target-file-node)])
         (let ([index-node (car (document-index-node-list document))])
             ; (pretty-print (map identifier-reference-identifier (index-node-references-import-in-this-node index-node)))
-            (test-equal #f (null? (filter (lambda (reference) (equal? 'get-init-reference-path (identifier-reference-identifier reference))) 
+            (test-equal #f (null? (filter (lambda (reference) (equal? 'get-init-reference-batches (identifier-reference-identifier reference))) 
                 (find-available-references-for document index-node))))))
 (test-end)
 

@@ -18,7 +18,8 @@
     get-imported-libraries-from-index-node
     
     refresh-file-linkage&get-refresh-path
-    get-init-reference-path)
+    get-init-reference-batches
+    shrink-paths)
   (import 
     (chezscheme)
     (scheme-langserver analysis util)
@@ -113,30 +114,61 @@
       (map (lambda (id) (hashtable-ref id->path-map id #f)) (linkage-matrix-from-recursive matrix from-node-id))
       '())))
 
-(define (get-init-reference-path linkage)
+(define (get-init-reference-batches linkage)
   (let* ([node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
-      [visited-ids (make-vector node-count)]
+      [ids (iota node-count)]
       [matrix (file-linkage-matrix linkage)]
-      [id->path-map (file-linkage-id->path-map linkage)])
-    (let loop ([from-id 0] 
-        [path '()]
-        [last-path-length 0])
-      (cond 
-        [(or (= (length path) node-count) 
-          (and (= node-count from-id)
-            (= last-path-length (length path))))
-          (map (lambda (id) (hashtable-ref id->path-map id #f)) path)]
-        [(= node-count from-id)
-          (loop 0 path (length path))]
-        [(not (zero? (vector-ref visited-ids from-id)))
-          (loop (+ 1 from-id) path last-path-length)]
-        [else 
-          (let ([to-ids (matrix-from matrix from-id)])
-            (if (= (length to-ids) (apply + (map (lambda (to-id) (vector-ref visited-ids to-id)) to-ids)))
-              (begin
-                (vector-set! visited-ids from-id 1)
-                (loop (+ from-id 1) (append path `(,from-id)) last-path-length))
-              (loop (+ from-id 1) path last-path-length)))]))))
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [batches (shrink-ids matrix ids '())])
+    (map 
+      (lambda (ids) 
+        (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
+      batches)))
+
+(define (shrink-paths linkage paths)
+  (let* ([path->id-map (file-linkage-path->id-map linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [ids (map (lambda (current-path) (hashtable-ref path->id-map current-path #f)) paths)]
+      [shrinked-ids (shrink-ids (file-linkage-matrix linkage) ids '())])
+    (map 
+      (lambda (ids) 
+        (map (lambda (id) (hashtable-ref id->path-map id #f)) ids))
+      shrinked-ids)))
+
+(define (shrink-ids matrix ids advance-list)
+  (let ([tmp 
+      (filter
+        (lambda (current-from) 
+          (zero? 
+            (apply + 
+              (map 
+                (lambda (to) (matrix-take matrix current-from to))
+                ids))))
+        ids)])
+    (cond 
+      [(null? ids) '()]
+      [(null? tmp) 
+        ;here, the ids is basically a super node representing cycles
+        ;so, ramdom remove one to break
+        (car 
+          (sort 
+            (lambda (a b)
+              (< (length a) (length b)))
+            (map 
+              (lambda (id)
+                (shrink-ids matrix (remove id ids) `(,@advance-list ,id)))
+              ids)))]
+      [else 
+        `(,tmp 
+          ,@(shrink-ids matrix 
+              (fold-left
+                (lambda (prev id)
+                  (if (memq id tmp)
+                    prev
+                    `(,@prev ,id)))
+                advance-list
+                ids)
+              '()))])))
 
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]
