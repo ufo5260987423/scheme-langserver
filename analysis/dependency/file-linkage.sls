@@ -76,7 +76,6 @@
       [reference-id-to (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)))]
       [reference-id-from (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-from-recursive (file-linkage-matrix linkage) id)))]
       [matrix (file-linkage-matrix linkage)]
-      [target-document (file-node-document file-node)]
       [old-imported-file-ids
         (map 
           (lambda(p) (hashtable-ref path->id-map p #f)) 
