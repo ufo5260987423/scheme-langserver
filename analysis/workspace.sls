@@ -93,6 +93,7 @@
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
     ; (pretty-print 'aaa)
+    ; (pretty-print batches)
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
     ; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
@@ -131,7 +132,7 @@
     ; (pretty-print target-path)
     (step root-file-node root-library-node file-linkage document)
     (process-library-identifier-excluded-references document)
-    ;; (pretty-print 'test1)
+    ; (pretty-print 'test1)
     (if type-inference?
       (try 
         (construct-substitution-list-for document)
