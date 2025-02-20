@@ -152,6 +152,11 @@ bash .akku/env
 compile-chez-program run.ss
 ```
 
+If you want a static runnable file, you may add `-static` to latest line, as
+```bash
+compile-chez-program run.ss -static
+```
+
 ### Build & Compile for For WSL(Windows Subsystem for Linux)
 
 In WSL, although it's kind of another Linux, `compile-chez-program` might fail with such a message:
