@@ -2,6 +2,7 @@
 # Scheme-langserver
 [<img src="https://api.gitsponsors.com/api/badge/img?id=522947040" height="20">](https://api.gitsponsors.com/api/badge/link?p=eV5pHRshlhkVSYzAQkG50EMY4Tlkg2p6L9WTrPmnhwGTHs085yHTvU8grcpRYhH3fUaviPHhT93qPK1CSTufoQ==)
 
+<video src="https://github.com/user-attachments/assets/893bba98-6709-4fac-a4d3-dc7b6aab46fb" controls="controls" width="500" height="300"></video>
 
 **Now, VSCode can use scheme-langserver!** Please refere [HERE](./doc/startup.md).
 
