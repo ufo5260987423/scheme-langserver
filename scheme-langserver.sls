@@ -212,8 +212,7 @@
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference?)]
-              [request-processor (lambda (r) (private:try-catch server-instance r))]
-              )
+              [request-processor (lambda (r) (private:try-catch server-instance r))])
             (try
               (if (not (null? thread-pool)) 
                 (thread-pool-add-job thread-pool 

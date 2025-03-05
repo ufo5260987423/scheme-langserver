@@ -22,6 +22,8 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
+        [(_ (? symbol? loop-identifier) () fuzzy ... ) 
+          (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)]
         [(_ (? symbol? loop-identifier) (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
           (fold-left 
             (lambda (exclude-list identifier-parent-index-node)

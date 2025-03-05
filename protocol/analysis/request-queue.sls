@@ -59,16 +59,13 @@
 
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
-    (let loop ()
       (if (queue-empty? (request-queue-queue queue))
-        (begin
-          (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
-          (loop))
-        (letrec* ([task (dequeue! (request-queue-queue queue))]
-            [request (tickal-task-request task)]
-            [job (lambda () (request-processor request))])
-          ;will be in another thread
-          (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))))
+        (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
+      (letrec* ([task (dequeue! (request-queue-queue queue))]
+          [request (tickal-task-request task)]
+          [job (lambda () (request-processor request))])
+        ;will be in another thread
+        (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
 
 (define (remove:from-request-tickal-task-list queue task)
   (with-mutex (request-queue-mutex queue)
