@@ -65,11 +65,10 @@
       symbols)))
 
 (define (get-all-symbols s-expression)
-  (if (symbol? s-expression)
-    `(,s-expression)
-    (cond
-      [(list? s-expression) (apply append (map get-all-symbols s-expression))]
-      [(pair? s-expression) (get-all-symbols `(,(car s-expression) ,(cdr s-expression)))]
-      [(vector? s-expression) (apply append (vector->list (vector-map get-all-symbols s-expression)))]
-      [else '()])))
+  (cond
+    [(symbol? s-expression) `(,s-expression)]
+    [(list? s-expression) (apply append (map get-all-symbols s-expression))]
+    [(pair? s-expression) (get-all-symbols `(,(car s-expression) ,(cdr s-expression)))]
+    [(vector? s-expression) (apply append (vector->list (vector-map get-all-symbols s-expression)))]
+    [else '()]))
 )

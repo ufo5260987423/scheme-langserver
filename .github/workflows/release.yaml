@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "*.*.*"
 
 jobs:
   build-and-release:
@@ -26,7 +26,7 @@ jobs:
             -v ./build:/root/scheme-langserver/build/ \
             $(docker build -q .) \
             bash -c 'source .akku/bin/activate
-                     compile-chez-program run.ss
+                     compile-chez-program run.ss --static
                      mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
                      '
 
@@ -37,7 +37,7 @@ jobs:
             -v ./build:/root/scheme-langserver/build/ \
             $(docker build -f Dockerfile.musl -q .) \
             ash -c 'source .akku/bin/activate
-                    compile-chez-program run.ss
+                    compile-chez-program run.ss --static
                     mv run build/scheme-langserver-x86_64-linux-musl || exit 1
                     '
 
