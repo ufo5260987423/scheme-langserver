@@ -1,4 +1,18 @@
-(import 
-    (chezscheme) 
+(import
+    (chezscheme)
     (scheme-langserver))
-(apply init-server (command-line-arguments))
+
+(let ([arg (command-line-arguments)])
+  (if (and (pair? arg) (equal? (car arg) "--help"))
+      (begin
+        (display "Usage: run [input-port] [output-port] [log-path] [enable-multi-thread?] [type-inference?]\n")
+        (display "Arguments:\n")
+        (display "  input-port            Port to read messages (default: stdin)\n")
+        (display "  output-port           Port to write messages (default: stdout)\n")
+        (display "  log-path              Path to write log output (default: null)\n")
+        (display "  enable-multi-thread?  enable | disable (default: disable)\n")
+        (display "  type-inference?       enable | disable (defaule: disable)\n")
+        (display "Example Usage:\n")
+        (display "  ./run ~/mylog.txt enable enable\n")
+        (exit 0)))
+  (apply init-server arg))
