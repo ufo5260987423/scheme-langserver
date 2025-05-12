@@ -1,7 +1,7 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
 
-You may cite this project with
+You may read my [paper](./doc/paper.pdf) and cite like this 
 > WANG, Z. (2025, May 12). Scheme-langserver: Treat Scheme Code Editing as the First-Class Concern. The 18th European Lisp Symposium (ELS`25), Zurich. https://doi.org/10.5281/zenodo.15384882
 
 Due to GitHub may block Chinese IP addresses, I have to copy this repository to [here](https://codeberg.org/ufo5260987423/scheme-langserver) and [here](https://gitee.com/ufo5260987423/scheme-langserver). I will continually update all repositories but I can't guarrentee. I now also collaborate with [XmacsLabs](https://github.com/XmacsLabs), you may also find a fork [here](https://github.com/XmacsLabs/scheme-langserver).
@@ -125,10 +125,11 @@ Well, I'm also interested in [OMN (Opusmodus Notation)](https://opusmodus.com/) 
 find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ```
 ## Detailed Document
-1. [Catching identifier bindings](./doc/analysis/identifier.md)
-2. [Synchronizing](./doc/util/synchronize.md)
-3. [Type inference](./doc/analysis/type-inference.md),~~[类型推断](./doc/analysis/type-inference.cn.md)~~(Deprecated, and I'm writing a Chinese book for it)
-4. [API Analysis](./doc/protocol/analysis.md)
+1. [Scheme-langserver: Treat Scheme Code Editing as the First-Class Concern](./doc/paper.pdf).
+2. [Catching identifier bindings](./doc/analysis/identifier.md)
+3. [Synchronizing](./doc/util/synchronize.md)
+4. [Type inference](./doc/analysis/type-inference.md),~~[类型推断](./doc/analysis/type-inference.cn.md)~~(Deprecated, and I'm writing a Chinese book for it)
+5. [API Analysis](./doc/protocol/analysis.md)
 
 ## Star History
 
