@@ -1,6 +1,9 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
 
+You may cite this project with
+> WANG, Z. (2025, May 12). Scheme-langserver: Treat Scheme Code Editing as the First-Class Concern. The 18th European Lisp Symposium (ELS`25), Zurich. https://doi.org/10.5281/zenodo.15384882
+
 Due to GitHub may block Chinese IP addresses, I have to copy this repository to [here](https://codeberg.org/ufo5260987423/scheme-langserver) and [here](https://gitee.com/ufo5260987423/scheme-langserver). I will continually update all repositories but I can't guarrentee. I now also collaborate with [XmacsLabs](https://github.com/XmacsLabs), you may also find a fork [here](https://github.com/XmacsLabs/scheme-langserver).
 
 <video src="https://github.com/user-attachments/assets/893bba98-6709-4fac-a4d3-dc7b6aab46fb" controls="controls" width="500" height="300"></video>
