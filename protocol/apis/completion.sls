@@ -51,12 +51,14 @@
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]
       [whole-list
+       (if (null? target-index-node)
+           '()
         (if (equal? "" prefix)
           (find-available-references-for document target-index-node)
           (filter 
             (lambda (candidate-reference) 
               (string-prefix? prefix (symbol->string (identifier-reference-identifier candidate-reference))))
-            (find-available-references-for document target-index-node)))]
+            (find-available-references-for document target-index-node))))]
       [type-inference? (workspace-type-inference? workspace)]
       ; [type-inference? #f]
       )
@@ -145,6 +147,6 @@
       [l (string-length prefix)])
     (make-alist 
       'label s
-      'insertText (substring s (- l 1) (string-length s))
+      'insertText (substring s (if (< l 1) 0 (- l 1)) (string-length s))
       'sortText (string-append index-string-prefix s))))
 )
