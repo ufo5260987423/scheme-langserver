@@ -51,8 +51,8 @@
             (symbol->string (annotation-stripped (index-node-datum/annotations target-index-node)))
             ""))]
       [whole-list
-       (if (null? target-index-node)
-           '()
+      (if (null? target-index-node)
+        '()
         (if (equal? "" prefix)
           (find-available-references-for document target-index-node)
           (filter 
