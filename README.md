@@ -1,5 +1,6 @@
 ![](./doc/figure/logo-no-background.png)
 # Scheme-langserver
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ufo5260987423/scheme-langserver)
 
 You may read my [paper](./doc/paper.pdf) and cite like this 
 > WANG, Z. (2025, May 12). Scheme-langserver: Treat Scheme Code Editing as the First-Class Concern. The 18th European Lisp Symposium (ELS`25), Zurich. https://doi.org/10.5281/zenodo.15384882
@@ -130,6 +131,7 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 3. [Synchronizing](./doc/util/synchronize.md)
 4. [Type inference](./doc/analysis/type-inference.md),~~[类型推断](./doc/analysis/type-inference.cn.md)~~(Deprecated, and I'm writing a Chinese book for it)
 5. [API Analysis](./doc/protocol/analysis.md)
+6. [Deepwiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
 
 ## Star History
 
