@@ -29,7 +29,7 @@
             (if (null? target-file-node) target-file-node `(,target-file-node)) 
             (apply append (map (lambda (index-node) (load-process root-file-node document index-node)) (index-node-children index-node)))))]
       [('load-library (? string? path) dummy ...) 
-        (guard-for document index-node 'load '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        (guard-for document index-node 'load-library '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         (let ([target-file-node 
               (cond
                 ; [(not (string? path)) '()]
@@ -40,7 +40,7 @@
             (if (null? target-file-node) target-file-node `(,target-file-node)) 
             (apply append (map (lambda (index-node) (load-process root-file-node document index-node)) (index-node-children index-node)))))]
       [('load-program (? string? path) dummy ...) 
-        (guard-for document index-node 'load '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+        (guard-for document index-node 'load-program '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
         (let ([target-file-node 
               (cond
                 ; [(not (string? path)) '()]
