@@ -25,7 +25,7 @@
 (test-begin "library-import-process for ss")
     (let* ([root-file-node (init-virtual-file-system "./run.ss" '() (lambda (fuzzy) #t))]
             [root-index-nodes (document-index-node-list (file-node-document root-file-node))])
-        (test-equal '((chezscheme) (srfi :37 args-fold) (scheme-langserver)) (car (map library-import-process root-index-nodes))))
+        (test-equal '((chezscheme) (scheme-langserver)) (car (map library-import-process root-index-nodes))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
