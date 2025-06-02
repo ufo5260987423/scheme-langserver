@@ -13,7 +13,7 @@
     (scheme-langserver analysis tokenizer))
 
 (test-begin "read ss")
-    (test-equal 2 (length (source-file->annotations "./run.ss")))
+    (test-equal 5 (length (source-file->annotations "./run.ss")))
 (test-end)
 
 (test-begin "read sps")
