@@ -18,6 +18,8 @@
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
     identifier-reference-initialization-index-node
+    identifier-reference-syntax-callee-transformers
+    identifier-reference-syntax-callee-transformers-set!
 
     identifier-compare?
 
@@ -59,7 +61,12 @@
     (mutable parents)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
-    (mutable type-expressions)))
+    (mutable type-expressions)
+    (mutable syntax-callee-transformers))
+  (protocol
+    (lambda (new)
+      (lambda (identifier document index-node initialization-index-node library-identifier type parents type-expression)
+        (new identifier document index-node initialization-index-node library-identifier type parents type-expression '())))))
 
 (define (is-ancestor-of? identifier-reference0 identifier-reference1)
   (if (equal? identifier-reference0 identifier-reference1)
@@ -169,7 +176,8 @@
   (sort identifier-compare? identifier-references))
 
 (define (guard-for document current-index-node target-identifier . library-identifier-rest)
-  (let ([candidates (find-available-references-for document current-index-node target-identifier)])
+  (let* ([pre-candidates (find-available-references-for document current-index-node target-identifier)]
+      [candidates (map root-ancestor pre-candidates)])
     (if (private-check-library-identifier? candidates library-identifier-rest)
       #t
       (let loop ([body 

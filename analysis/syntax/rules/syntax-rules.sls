@@ -22,7 +22,8 @@
       [expression (annotation-stripped ann)])
     (try
       (match expression
-        [(_ ((? symbol? literals) ...) (pattern template) **1) 
+        [(s ((? symbol? literals) ...) (pattern template) **1) 
+          (guard-for document index-node s '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
           (let* ([children (index-node-children index-node)]
               [rest-index-nodes (cddr children)])
             (map 
