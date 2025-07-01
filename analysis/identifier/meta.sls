@@ -26,58 +26,84 @@
 (define (meta-library? list-instance)
   (not (null? (find-meta list-instance))))
 
-(define (find-meta list-instance)
-  (if (not initialized?)
-    (begin
-      (init-type-expressions)
-      (set! initialized? #t)))
-  (cond
-    [(equal? list-instance '(rnrs)) rnrs]
-    [(equal? list-instance '(scheme)) scheme] 
-    [(equal? list-instance '(chezscheme)) chezscheme]
-    [(equal? list-instance '(rnrs condition)) rnrs-condition]
-    ; https://www.gnu.org/software/guile/manual/html_node/rnrs.html
-    [(equal? list-instance '(rnrs (6))) rnrs]
-    [(equal? list-instance '(rnrs base (6))) rnrs-base]
-    [(equal? list-instance '(rnrs arithmetic fixnums base (6))) rnrs-arithmetic-fixnums]
-    [(equal? list-instance '(rnrs bytevectors (6))) rnrs-bytevectors]
-    [(equal? list-instance '(rnrs conditions (6))) rnrs-condition]
-    [(equal? list-instance '(rnrs control (6))) rnrs-control]
-    [(equal? list-instance '(rnrs exceptions (6))) rnrs-exception]
-    [(equal? list-instance '(rnrs hashtable (6))) rnrs-hashtables]
-    [(equal? list-instance '(rnrs lists (6))) rnrs-lists]
-    [(equal? list-instance '(rnrs mutable-pairs (6))) rnrs-mutable-pairs]
-    [(equal? list-instance '(rnrs io ports (6))) rnrs-io-ports]
-    [(equal? list-instance '(rnrs io simple (6))) rnrs-io-simple]
-    [(equal? list-instance '(rnrs records syntactic (6))) rnrs-records-syntactic]
-    [(equal? list-instance '(rnrs unicode (6))) rnrs-unicode]
-    [(equal? list-instance '(rnrs base)) rnrs-base]
-    [(equal? list-instance '(rnrs files)) rnrs-files]
-    [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
-    [(equal? list-instance '(rnrs exception)) rnrs-exception]
-    [(equal? list-instance '(rnrs lists)) rnrs-lists]
-    [(equal? list-instance '(rnrs bytevectors)) rnrs-bytevectors]
-    [(equal? list-instance '(rnrs control)) rnrs-control]
-    [(equal? list-instance '(rnrs unicode)) rnrs-unicode]
-    [(equal? list-instance '(rnrs enums)) rnrs-enums]
-    [(equal? list-instance '(rnrs r5rs)) rnrs-r5rs]
-    [(equal? list-instance '(rnrs eval)) rnrs-eval]
-    [(equal? list-instance '(rnrs hashtables)) rnrs-hashtables]
-    [(equal? list-instance '(rnrs sorting)) rnrs-sorting]
-    [(equal? list-instance '(rnrs programs)) rnrs-programs]
-    [(equal? list-instance '(rnrs mutable-pairs)) rnrs-mutable-pairs]
-    [(equal? list-instance '(rnrs mutable-strings)) rnrs-mutable-strings]
-    [(equal? list-instance '(rnrs io ports)) rnrs-io-ports]
-    [(equal? list-instance '(rnrs io simple)) rnrs-io-simple]
-    [(equal? list-instance '(rnrs arithmetic flonums)) rnrs-arithmetic-flonums]
-    [(equal? list-instance '(rnrs arithmetic bitwise)) rnrs-arithmetic-bitwise]
-    [(equal? list-instance '(rnrs arithmetic fixnums)) rnrs-arithmetic-fixnums]
-    [(equal? list-instance '(rnrs records syntactic)) rnrs-records-syntactic]
-    [(equal? list-instance '(rnrs records procedure)) rnrs-records-procedure]
-    [(equal? list-instance '(rnrs records inspection)) rnrs-records-inspection]
-    [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
-    [(equal? list-instance '(scheme csv7)) scheme-csv7]
-    [else '()]))
+(define find-meta
+  (case-lambda
+    [(list-instance) (find-meta list-instance 'r6rs)]
+    [(list-instance top-environment)
+      (pretty-print `(DEBUG: function: in find-meta))
+      (if (not initialized?)
+        (begin
+          (init-type-expressions)
+          (set! initialized? #t)))
+      (cond
+        [(equal? top-environment 'r6rs)
+          (cond
+            [(equal? list-instance '(rnrs)) rnrs]
+            [(equal? list-instance '(scheme)) scheme] 
+            [(equal? list-instance '(chezscheme)) chezscheme]
+            [(equal? list-instance '(rnrs condition)) rnrs-condition]
+            ; https://www.gnu.org/software/guile/manual/html_node/rnrs.html
+            [(equal? list-instance '(rnrs (6))) rnrs]
+            [(equal? list-instance '(rnrs base (6))) rnrs-base]
+            [(equal? list-instance '(rnrs arithmetic fixnums base (6))) rnrs-arithmetic-fixnums]
+            [(equal? list-instance '(rnrs bytevectors (6))) rnrs-bytevectors]
+            [(equal? list-instance '(rnrs conditions (6))) rnrs-condition]
+            [(equal? list-instance '(rnrs control (6))) rnrs-control]
+            [(equal? list-instance '(rnrs exceptions (6))) rnrs-exception]
+            [(equal? list-instance '(rnrs hashtable (6))) rnrs-hashtables]
+            [(equal? list-instance '(rnrs lists (6))) rnrs-lists]
+            [(equal? list-instance '(rnrs mutable-pairs (6))) rnrs-mutable-pairs]
+            [(equal? list-instance '(rnrs io ports (6))) rnrs-io-ports]
+            [(equal? list-instance '(rnrs io simple (6))) rnrs-io-simple]
+            [(equal? list-instance '(rnrs records syntactic (6))) rnrs-records-syntactic]
+            [(equal? list-instance '(rnrs unicode (6))) rnrs-unicode]
+            [(equal? list-instance '(rnrs base)) rnrs-base]
+            [(equal? list-instance '(rnrs files)) rnrs-files]
+            [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
+            [(equal? list-instance '(rnrs exception)) rnrs-exception]
+            [(equal? list-instance '(rnrs lists)) rnrs-lists]
+            [(equal? list-instance '(rnrs bytevectors)) rnrs-bytevectors]
+            [(equal? list-instance '(rnrs control)) rnrs-control]
+            [(equal? list-instance '(rnrs unicode)) rnrs-unicode]
+            [(equal? list-instance '(rnrs enums)) rnrs-enums]
+            [(equal? list-instance '(rnrs r5rs)) rnrs-r5rs]
+            [(equal? list-instance '(rnrs eval)) rnrs-eval]
+            [(equal? list-instance '(rnrs hashtables)) rnrs-hashtables]
+            [(equal? list-instance '(rnrs sorting)) rnrs-sorting]
+            [(equal? list-instance '(rnrs programs)) rnrs-programs]
+            [(equal? list-instance '(rnrs mutable-pairs)) rnrs-mutable-pairs]
+            [(equal? list-instance '(rnrs mutable-strings)) rnrs-mutable-strings]
+            [(equal? list-instance '(rnrs io ports)) rnrs-io-ports]
+            [(equal? list-instance '(rnrs io simple)) rnrs-io-simple]
+            [(equal? list-instance '(rnrs arithmetic flonums)) rnrs-arithmetic-flonums]
+            [(equal? list-instance '(rnrs arithmetic bitwise)) rnrs-arithmetic-bitwise]
+            [(equal? list-instance '(rnrs arithmetic fixnums)) rnrs-arithmetic-fixnums]
+            [(equal? list-instance '(rnrs records syntactic)) rnrs-records-syntactic]
+            [(equal? list-instance '(rnrs records procedure)) rnrs-records-procedure]
+            [(equal? list-instance '(rnrs records inspection)) rnrs-records-inspection]
+            [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
+            [(equal? list-instance '(scheme csv7)) scheme-csv7]
+            [else '()])]
+        [(equal? top-environment 'r7rs)
+          (cond
+            [(equal? list-instance '(rnrs 7 small base)) rnrs-7-small-base]
+            [(equal? list-instance '(rnrs 7 small case lambda)) rnrs-7-small-case-lambda]
+            [(equal? list-instance '(rnrs 7 small char)) rnrs-7-small-char]
+            [(equal? list-instance '(rnrs 7 small complex)) rnrs-7-small-complex]
+            [(equal? list-instance '(rnrs 7 small cxr)) rnrs-7-small-cxr]
+            [(equal? list-instance '(rnrs 7 small eval)) rnrs-7-small-eval]
+            [(equal? list-instance '(rnrs 7 small file)) rnrs-7-small-file]
+            [(equal? list-instance '(rnrs 7 small inexact)) rnrs-7-small-inexact]
+            [(equal? list-instance '(rnrs 7 small lazy)) rnrs-7-small-lazy]
+            [(equal? list-instance '(rnrs 7 small load)) rnrs-7-small-load]
+            [(equal? list-instance '(rnrs 7 small process context)) rnrs-7-small-process-context]
+            [(equal? list-instance '(rnrs 7 small read)) rnrs-7-small-read]
+            [(equal? list-instance '(rnrs 7 small repl)) rnrs-7-small-repl]
+            [(equal? list-instance '(rnrs 7 small time)) rnrs-7-small-time]
+            [(equal? list-instance '(rnrs 7 small write)) rnrs-7-small-write]
+            [(equal? list-instance '(rnrs 7 small r5rs)) rnrs-7-small-r5rs]
+            [else '()])]
+        [else '()])]))
 
 (define (private-process library-instance list-instance)
   (sort-identifier-references 
@@ -103,7 +129,7 @@
                       (symbol->string (car target0))
                       (symbol->string (car target1))))
                   (list (identifier-reference-identifier identifier-reference))))
-                chezscheme)))
+              chezscheme)))
         list-instance))
     (list rnrs scheme chezscheme rnrs-condition rnrs-base 
 rnrs-files rnrs-syntax-case rnrs-exception rnrs-lists 
@@ -4858,4 +4884,610 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (record-type-field-names	procedure)
 (record-type-name	procedure)
 (record-type-symbol	procedure))))
+
+(define rnrs-7-small-base (private-process '(rnrs 7 small base) '( 
+(* procedure)
+(+ procedure)
+(- procedure)
+(... syntax)
+(/ procedure)
+(< procedure)
+(<= procedure)
+(= procedure)
+(=> syntax)
+(> procedure)
+(>= procedure)
+(_ syntax)
+(abs procedure)
+(and syntax)
+(append procedure)
+(apply procedure)
+(assoc procedure)
+(assq procedure)
+(assv procedure)
+(begin syntax)
+(binary-port? procedure)
+(boolean=? procedure)
+(boolean? procedure)
+(bytevector procedure)
+(bytevector-append procedure)
+(bytevector-copy procedure)
+(bytevector-copy! procedure)
+(bytevector-length procedure)
+(bytevector-u8-ref procedure)
+(bytevector-u8-set! procedure)
+(bytevector? procedure)
+(caar procedure)
+(cadr procedure)
+(call-with-current-continuation procedure)
+(call-with-port procedure)
+(call-with-values procedure)
+(call/cc procedure)
+(car procedure)
+(case syntax)
+(cdar procedure)
+(cddr procedure)
+(cdr procedure)
+(ceiling procedure)
+(char->integer procedure)
+(char-ready? procedure)
+(char<=? procedure)
+(char<? procedure)
+(char=? procedure)
+(char>=? procedure)
+(char>? procedure)
+(char? procedure)
+(close-input-port procedure)
+(close-output-port procedure)
+(close-port procedure)
+(complex? procedure)
+(cond syntax)
+(cond-expand syntax)
+(cons procedure)
+(current-error-port procedure)
+(current-input-port procedure)
+(current-output-port procedure)
+(define syntax)
+(define-record-type syntax)
+(define-syntax syntax)
+(define-values syntax)
+(denominator procedure)
+(do syntax)
+(dynamic-wind procedure)
+(else syntax)
+(eof-object procedure)
+(eof-object? procedure)
+(eq? procedure)
+(equal? procedure)
+(eqv? procedure)
+(error procedure)
+(error-object-irritants procedure)
+(error-object-message procedure)
+(error-object? procedure)
+(even? procedure)
+(exact procedure)
+(exact-integer-sqrt procedure)
+(exact-integer? procedure)
+(exact? procedure)
+(expt procedure)
+(features procedure)
+(file-error? procedure)
+(floor procedure)
+(floor-quotient procedure)
+(floor-remainder procedure)
+(floor/ procedure)
+(flush-output-port procedure)
+(for-each procedure)
+(gcd procedure)
+(get-output-bytevector procedure)
+(get-output-string procedure)
+(guard syntax)
+(if syntax)
+(include syntax)
+(include-ci syntax)
+(inexact procedure)
+(inexact? procedure)
+(input-port-open? procedure)
+(input-port? procedure)
+(integer->char procedure)
+(integer? procedure)
+(lambda syntax)
+(lcm procedure)
+(length procedure)
+(let syntax)
+(let* syntax)
+(let*-values syntax)
+(let-syntax syntax)
+(let-values syntax)
+(letrec syntax)
+(letrec* syntax)
+(letrec-syntax syntax)
+(list procedure)
+(list->string procedure)
+(list->vector procedure)
+(list-copy procedure)
+(list-ref procedure)
+(list-set! procedure)
+(list-tail procedure)
+(list? procedure)
+(make-bytevector procedure)
+(make-list procedure)
+(make-parameter procedure)
+(make-string procedure)
+(make-vector procedure)
+(map procedure)
+(max procedure)
+(member procedure)
+(memq procedure)
+(memv procedure)
+(min procedure)
+(modulo procedure)
+(negative? procedure)
+(newline procedure)
+(not procedure)
+(null? procedure)
+(number->string procedure)
+(number? procedure)
+(numerator procedure)
+(odd? procedure)
+(open-input-bytevector procedure)
+(open-input-string procedure)
+(open-output-bytevector procedure)
+(open-output-string procedure)
+(or syntax)
+(output-port-open? procedure)
+(output-port? procedure)
+(pair? procedure)
+(parameterize syntax)
+(peek-char procedure)
+(peek-u8 procedure)
+(port? procedure)
+(positive? procedure)
+(procedure? procedure)
+(quasiquote syntax)
+(quote syntax)
+(quotient procedure)
+(raise procedure)
+(raise-continuable procedure)
+(rational? procedure)
+(rationalize procedure)
+(read-bytevector procedure)
+(read-bytevector! procedure)
+(read-char procedure)
+(read-error? procedure)
+(read-line procedure)
+(read-string procedure)
+(read-u8 procedure)
+(real? procedure)
+(remainder procedure)
+(reverse procedure)
+(round procedure)
+(set! syntax)
+(set-car! procedure)
+(set-cdr! procedure)
+(square procedure)
+(string procedure)
+(string->list procedure)
+(string->number procedure)
+(string->symbol procedure)
+(string->utf8 procedure)
+(string->vector procedure)
+(string-append procedure)
+(string-copy procedure)
+(string-copy! procedure)
+(string-fill! procedure)
+(string-for-each procedure)
+(string-length procedure)
+(string-map procedure)
+(string-ref procedure)
+(string-set! procedure)
+(string<=? procedure)
+(string<? procedure)
+(string=? procedure)
+(string>=? procedure)
+(string>? procedure)
+(string? procedure)
+(substring procedure)
+(symbol->string procedure)
+(symbol=? procedure)
+(symbol? procedure)
+(syntax-error syntax)
+(syntax-rules syntax)
+(textual-port? procedure)
+(truncate procedure)
+(truncate-quotient procedure)
+(truncate-remainder procedure)
+(truncate/ procedure)
+(u8-ready? procedure)
+(unless syntax)
+(unquote syntax)
+(unquote-splicing syntax)
+(utf8->string procedure)
+(values procedure)
+(vector procedure)
+(vector->list procedure)
+(vector->string procedure)
+(vector-append procedure)
+(vector-copy procedure)
+(vector-copy! procedure)
+(vector-fill! procedure)
+(vector-for-each procedure)
+(vector-length procedure)
+(vector-map procedure)
+(vector-ref procedure)
+(vector-set! procedure)
+(vector? procedure)
+(when syntax)
+(with-exception-handler procedure)
+(write-bytevector procedure)
+(write-char procedure)
+(write-string procedure)
+(write-u8 procedure)
+(zero? procedure)
+)))
+
+(define rnrs-7-small-case-lambda (private-process '(rnrs 7 small case lambda) '( 
+(case-lambda syntax)
+)))
+
+(define rnrs-7-small-char (private-process '(rnrs 7 small char) '( 
+(char-alphabetic? procedure)
+(char-ci<=? procedure)
+(char-ci<? procedure)
+(char-ci=? procedure)
+(char-ci>=? procedure)
+(char-ci>? procedure)
+(char-downcase procedure)
+(char-foldcase procedure)
+(char-lower-case? procedure)
+(char-numeric? procedure)
+(char-upcase procedure)
+(char-upper-case? procedure)
+(char-whitespace? procedure)
+(digit-value procedure)
+(string-ci<=? procedure)
+(string-ci<? procedure)
+(string-ci=? procedure)
+(string-ci>=? procedure)
+(string-ci>? procedure)
+(string-downcase procedure)
+(string-foldcase procedure)
+(string-upcase procedure)
+)))
+
+(define rnrs-7-small-complex (private-process '(rnrs 7 small complex) '( 
+(angle procedure)
+(imag-part procedure)
+(magnitude procedure)
+(make-polar procedure)
+(make-rectangular procedure)
+(real-part procedure)
+)))
+
+(define rnrs-7-small-cxr (private-process '(rnrs 7 small cxr) '( 
+(caaaar procedure)
+(caaadr procedure)
+(caaar procedure)
+(caadar procedure)
+(caaddr procedure)
+(caadr procedure)
+(cadaar procedure)
+(cadadr procedure)
+(cadar procedure)
+(caddar procedure)
+(cadddr procedure)
+(caddr procedure)
+(cdaaar procedure)
+(cdaadr procedure)
+(cdaar procedure)
+(cdadar procedure)
+(cdaddr procedure)
+(cdadr procedure)
+(cddaar procedure)
+(cddadr procedure)
+(cddar procedure)
+(cdddar procedure)
+(cddddr procedure)
+(cdddr procedure)
+)))
+
+(define rnrs-7-small-eval (private-process '(rnrs 7 small eval) '( 
+(environment procedure)
+(eval procedure)
+)))
+
+(define rnrs-7-small-file (private-process '(rnrs 7 small file) '( 
+(call-with-input-file procedure)
+(call-with-output-file procedure)
+(delete-file procedure)
+(file-exists? procedure)
+(open-binary-input-file procedure)
+(open-binary-output-file procedure)
+(open-input-file procedure)
+(open-output-file procedure)
+(with-input-from-file procedure)
+(with-output-to-file procedure)
+)))
+
+(define rnrs-7-small-inexact (private-process '(rnrs 7 small inexact) '( 
+(acos procedure)
+(asin procedure)
+(atan procedure)
+(cos procedure)
+(exp procedure)
+(finite? procedure)
+(infinite? procedure)
+(log procedure)
+(nan? procedure)
+(sin procedure)
+(sqrt procedure)
+(tan procedure)
+)))
+
+(define rnrs-7-small-lazy (private-process '(rnrs 7 small lazy) '( 
+(delay syntax)
+(delay-force syntax)
+(force procedure)
+(make-promise procedure)
+(promise? procedure)
+)))
+
+(define rnrs-7-small-load (private-process '(rnrs 7 small load) '( 
+(load procedure)
+)))
+
+(define rnrs-7-small-process-context (private-process '(rnrs 7 small process context) '( 
+(command-line procedure)
+(emergency-exit procedure)
+(exit procedure)
+(get-environment-variable procedure)
+(get-environment-variables procedure)
+)))
+
+(define rnrs-7-small-read (private-process '(rnrs 7 small read) '( 
+(read procedure)
+)))
+
+(define rnrs-7-small-repl (private-process '(rnrs 7 small repl) '( 
+(interaction-environment procedure)
+)))
+
+(define rnrs-7-small-time (private-process '(rnrs 7 small time) '( 
+(current-jiffy procedure)
+(current-second procedure)
+(jiffies-per-second procedure)
+)))
+
+(define rnrs-7-small-write (private-process '(rnrs 7 small write) '( 
+(display procedure)
+(write procedure)
+(write-shared procedure)
+(write-simple procedure)
+)))
+
+(define rnrs-7-small-r5rs (private-process '(rnrs 7 small r5rs) '( 
+(* procedure)
+(+ procedure)
+(- procedure)
+(... syntax)
+(/ procedure)
+(< procedure)
+(<= procedure)
+(= procedure)
+(=> syntax)
+(> procedure)
+(>= procedure)
+(_ syntax)
+(abs procedure)
+(acos procedure)
+(and syntax)
+(angle procedure)
+(append procedure)
+(apply procedure)
+(asin procedure)
+(assoc procedure)
+(assq procedure)
+(assv procedure)
+(atan procedure)
+(begin syntax)
+(boolean? procedure)
+(caaaar procedure)
+(caaadr procedure)
+(caaar procedure)
+(caadar procedure)
+(caaddr procedure)
+(caadr procedure)
+(caar procedure)
+(cadaar procedure)
+(cadadr procedure)
+(cadar procedure)
+(caddar procedure)
+(cadddr procedure)
+(caddr procedure)
+(cadr procedure)
+(call-with-current-continuation procedure)
+(call-with-input-file procedure)
+(call-with-output-file procedure)
+(call-with-values procedure)
+(car procedure)
+(case syntax)
+(cdaaar procedure)
+(cdaadr procedure)
+(cdaar procedure)
+(cdadar procedure)
+(cdaddr procedure)
+(cdadr procedure)
+(cdar procedure)
+(cddaar procedure)
+(cddadr procedure)
+(cddar procedure)
+(cdddar procedure)
+(cddddr procedure)
+(cdddr procedure)
+(cddr procedure)
+(cdr procedure)
+(ceiling procedure)
+(char->integer procedure)
+(char-alphabetic? procedure)
+(char-ci<=? procedure)
+(char-ci<? procedure)
+(char-ci=? procedure)
+(char-ci>=? procedure)
+(char-ci>? procedure)
+(char-downcase procedure)
+(char-lower-case? procedure)
+(char-numeric? procedure)
+(char-ready? procedure)
+(char-upcase procedure)
+(char-upper-case? procedure)
+(char-whitespace? procedure)
+(char<=? procedure)
+(char<? procedure)
+(char=? procedure)
+(char>=? procedure)
+(char>? procedure)
+(char? procedure)
+(close-input-port procedure)
+(close-output-port procedure)
+(complex? procedure)
+(cond syntax)
+(cons procedure)
+(cos procedure)
+(current-input-port procedure)
+(current-output-port procedure)
+(define syntax)
+(define-syntax syntax)
+(delay syntax)
+(denominator procedure)
+(display procedure)
+(do syntax)
+(dynamic-wind procedure)
+(else syntax)
+(eof-object? procedure)
+(eq? procedure)
+(equal? procedure)
+(eqv? procedure)
+(eval procedure)
+(even? procedure)
+(exact->inexact procedure)
+(exact? procedure)
+(exp procedure)
+(expt procedure)
+(floor procedure)
+(for-each procedure)
+(force procedure)
+(gcd procedure)
+(if syntax)
+(imag-part procedure)
+(inexact->exact procedure)
+(inexact? procedure)
+(input-port? procedure)
+(integer->char procedure)
+(integer? procedure)
+(interaction-environment procedure)
+(lambda syntax)
+(lcm procedure)
+(length procedure)
+(let syntax)
+(let* syntax)
+(let-syntax syntax)
+(letrec syntax)
+(letrec-syntax syntax)
+(list procedure)
+(list->string procedure)
+(list->vector procedure)
+(list-ref procedure)
+(list-tail procedure)
+(list? procedure)
+(load procedure)
+(log procedure)
+(magnitude procedure)
+(make-polar procedure)
+(make-rectangular procedure)
+(make-string procedure)
+(make-vector procedure)
+(map procedure)
+(max procedure)
+(member procedure)
+(memq procedure)
+(memv procedure)
+(min procedure)
+(modulo procedure)
+(negative? procedure)
+(newline procedure)
+(not procedure)
+(null-environment procedure)
+(null? procedure)
+(number->string procedure)
+(number? procedure)
+(numerator procedure)
+(odd? procedure)
+(open-input-file procedure)
+(open-output-file procedure)
+(or syntax)
+(output-port? procedure)
+(pair? procedure)
+(peek-char procedure)
+(positive? procedure)
+(procedure? procedure)
+(quasiquote syntax)
+(quote syntax)
+(quotient procedure)
+(rational? procedure)
+(rationalize procedure)
+(read procedure)
+(read-char procedure)
+(real-part procedure)
+(real? procedure)
+(remainder procedure)
+(reverse procedure)
+(round procedure)
+(scheme-report-environment procedure)
+(set! syntax)
+(set-car! procedure)
+(set-cdr! procedure)
+(sin procedure)
+(sqrt procedure)
+(string procedure)
+(string->list procedure)
+(string->number procedure)
+(string->symbol procedure)
+(string-append procedure)
+(string-ci<=? procedure)
+(string-ci<? procedure)
+(string-ci=? procedure)
+(string-ci>=? procedure)
+(string-ci>? procedure)
+(string-copy procedure)
+(string-fill! procedure)
+(string-length procedure)
+(string-ref procedure)
+(string-set! procedure)
+(string<=? procedure)
+(string<? procedure)
+(string=? procedure)
+(string>=? procedure)
+(string>? procedure)
+(string? procedure)
+(substring procedure)
+(symbol->string procedure)
+(symbol? procedure)
+(syntax-rules syntax)
+(tan procedure)
+(truncate procedure)
+(values procedure)
+(vector procedure)
+(vector->list procedure)
+(vector-fill! procedure)
+(vector-length procedure)
+(vector-ref procedure)
+(vector-set! procedure)
+(vector? procedure)
+(with-input-from-file procedure)
+(with-output-to-file procedure)
+(write procedure)
+(write-char procedure)
+(zero? procedure)
+)))
+
 )
