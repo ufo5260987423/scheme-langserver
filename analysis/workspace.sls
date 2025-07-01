@@ -86,16 +86,15 @@
     [(path identifier top-environment threaded? type-inference?)
     ;; (pretty-print `(DEBUG: function: init-workspace))
       (let* ([root-file-node 
-              (init-virtual-file-system path '() 
-                (cond
+            (init-virtual-file-system path '() 
+              (cond
                 ;todo:add more filter
-                  [(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/tests/r7rs"))]
-                  ;;[(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/.akku/list"))]
-                  [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-                  [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
-             [root-library-node (init-library-node root-file-node)]
-             [file-linkage (init-file-linkage root-file-node root-library-node)]
-             [batches (get-init-reference-batches file-linkage)])
+                [(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/tests/r7rs"))]
+                [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+                [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
+          [root-library-node (init-library-node root-file-node)]
+          [file-linkage (init-file-linkage root-file-node root-library-node)]
+          [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
@@ -214,13 +213,7 @@
         [refreshable-batches (shrink-paths linkage refreshable-path)])
       (init-references workspace-instance refreshable-batches))))
 
-;;(define hit-count 0)
-
 (define (init-virtual-file-system path parent my-filter)
-  ;;(pretty-print `(DEBUG: function: in init-virtual-file-system))
-  ;;(pretty-print `(DEBUG: para: ,path ,parent ,my-filter))
-  ;;(set! hit-count (+ hit-count 1))
-  ;;(if (= 312 hit-count) (error "I made this"))
   (if (my-filter path)
     (let* ([name (path->name path)] 
         [folder? (file-directory? path)]
