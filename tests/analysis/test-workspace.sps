@@ -75,4 +75,15 @@
                 (map identifier-reference-identifier (document-ordered-reference-list document)))))
 (test-end)
 
+(test-begin "init-workspace-basic-test")
+  (pretty-print `(DEBUG: test workspace init-workspace))
+  ;; (pretty-print `(DEBUG: var: current-directory ,(current-directory)))
+(let* ([workspace (init-workspace (current-directory) 'akku 'r7rs #f #f)]
+       [root-file-node (workspace-file-node workspace)]
+       [root-library-node (workspace-library-node workspace)])
+  ;; (pretty-print `(DEBUG: workspace ,workspace))
+  (test-equal #f (null? root-file-node))
+  (test-equal #f (null? root-library-node)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
