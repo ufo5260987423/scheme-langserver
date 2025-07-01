@@ -82,8 +82,9 @@
     [(path) (init-workspace path 'akku 'r6rs #f #f)]
     [(path threaded?) (init-workspace path 'akku 'r6rs threaded? #f)]
     [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference?)]
+    [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
     [(path identifier top-environment threaded? type-inference?)
-    (pretty-print `(DEBUG: function: init-workspace))
+    ;; (pretty-print `(DEBUG: function: init-workspace))
       (let* ([root-file-node 
               (init-virtual-file-system path '() 
                 (cond

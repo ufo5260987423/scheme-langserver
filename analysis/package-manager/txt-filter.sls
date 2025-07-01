@@ -8,7 +8,7 @@
 
 (define (generate-txt-file-filter list-path)
   (lambda (path)
-    (pretty-print `(DEBUG: ,path)) 
+    ;; (pretty-print `(DEBUG: ,path)) 
     (cond
       [(string-contains path "akku") #f]
       [(string-suffix? ".scm.txt" path) #t]
