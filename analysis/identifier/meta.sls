@@ -30,7 +30,6 @@
   (case-lambda
     [(list-instance) (find-meta list-instance 'r6rs)]
     [(list-instance top-environment)
-      (pretty-print `(DEBUG: function: in find-meta))
       (if (not initialized?)
         (begin
           (init-type-expressions)
@@ -86,22 +85,22 @@
             [else '()])]
         [(equal? top-environment 'r7rs)
           (cond
-            [(equal? list-instance '(rnrs 7 small base)) rnrs-7-small-base]
-            [(equal? list-instance '(rnrs 7 small case lambda)) rnrs-7-small-case-lambda]
-            [(equal? list-instance '(rnrs 7 small char)) rnrs-7-small-char]
-            [(equal? list-instance '(rnrs 7 small complex)) rnrs-7-small-complex]
-            [(equal? list-instance '(rnrs 7 small cxr)) rnrs-7-small-cxr]
-            [(equal? list-instance '(rnrs 7 small eval)) rnrs-7-small-eval]
-            [(equal? list-instance '(rnrs 7 small file)) rnrs-7-small-file]
-            [(equal? list-instance '(rnrs 7 small inexact)) rnrs-7-small-inexact]
-            [(equal? list-instance '(rnrs 7 small lazy)) rnrs-7-small-lazy]
-            [(equal? list-instance '(rnrs 7 small load)) rnrs-7-small-load]
-            [(equal? list-instance '(rnrs 7 small process context)) rnrs-7-small-process-context]
-            [(equal? list-instance '(rnrs 7 small read)) rnrs-7-small-read]
-            [(equal? list-instance '(rnrs 7 small repl)) rnrs-7-small-repl]
-            [(equal? list-instance '(rnrs 7 small time)) rnrs-7-small-time]
-            [(equal? list-instance '(rnrs 7 small write)) rnrs-7-small-write]
-            [(equal? list-instance '(rnrs 7 small r5rs)) rnrs-7-small-r5rs]
+            [(equal? list-instance '(scheme base)) scheme-base]
+            [(equal? list-instance '(scheme case lambda)) scheme-case-lambda]
+            [(equal? list-instance '(scheme char)) scheme-char]
+            [(equal? list-instance '(scheme complex)) scheme-complex]
+            [(equal? list-instance '(scheme cxr)) scheme-cxr]
+            [(equal? list-instance '(scheme eval)) scheme-eval]
+            [(equal? list-instance '(scheme file)) scheme-file]
+            [(equal? list-instance '(scheme inexact)) scheme-inexact]
+            [(equal? list-instance '(scheme lazy)) scheme-lazy]
+            [(equal? list-instance '(scheme load)) scheme-load]
+            [(equal? list-instance '(scheme process context)) scheme-process-context]
+            [(equal? list-instance '(scheme read)) scheme-read]
+            [(equal? list-instance '(scheme repl)) scheme-repl]
+            [(equal? list-instance '(scheme time)) scheme-time]
+            [(equal? list-instance '(scheme write)) scheme-write]
+            [(equal? list-instance '(scheme r5rs)) scheme-r5rs]
             [else '()])]
         [else '()])]))
 
@@ -4885,7 +4884,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (record-type-name	procedure)
 (record-type-symbol	procedure))))
 
-(define rnrs-7-small-base (private-process '(rnrs 7 small base) '( 
+(define scheme-base (private-process '(scheme base) '( 
 (* procedure)
 (+ procedure)
 (- procedure)
@@ -5126,11 +5125,11 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (zero? procedure)
 )))
 
-(define rnrs-7-small-case-lambda (private-process '(rnrs 7 small case lambda) '( 
+(define scheme-case-lambda (private-process '(scheme case lambda) '( 
 (case-lambda syntax)
 )))
 
-(define rnrs-7-small-char (private-process '(rnrs 7 small char) '( 
+(define scheme-char (private-process '(scheme char) '( 
 (char-alphabetic? procedure)
 (char-ci<=? procedure)
 (char-ci<? procedure)
@@ -5155,7 +5154,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (string-upcase procedure)
 )))
 
-(define rnrs-7-small-complex (private-process '(rnrs 7 small complex) '( 
+(define scheme-complex (private-process '(scheme complex) '( 
 (angle procedure)
 (imag-part procedure)
 (magnitude procedure)
@@ -5164,7 +5163,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (real-part procedure)
 )))
 
-(define rnrs-7-small-cxr (private-process '(rnrs 7 small cxr) '( 
+(define scheme-cxr (private-process '(scheme cxr) '( 
 (caaaar procedure)
 (caaadr procedure)
 (caaar procedure)
@@ -5191,12 +5190,12 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (cdddr procedure)
 )))
 
-(define rnrs-7-small-eval (private-process '(rnrs 7 small eval) '( 
+(define scheme-eval (private-process '(scheme eval) '( 
 (environment procedure)
 (eval procedure)
 )))
 
-(define rnrs-7-small-file (private-process '(rnrs 7 small file) '( 
+(define scheme-file (private-process '(scheme file) '( 
 (call-with-input-file procedure)
 (call-with-output-file procedure)
 (delete-file procedure)
@@ -5209,7 +5208,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (with-output-to-file procedure)
 )))
 
-(define rnrs-7-small-inexact (private-process '(rnrs 7 small inexact) '( 
+(define scheme-inexact (private-process '(scheme inexact) '( 
 (acos procedure)
 (asin procedure)
 (atan procedure)
@@ -5224,7 +5223,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (tan procedure)
 )))
 
-(define rnrs-7-small-lazy (private-process '(rnrs 7 small lazy) '( 
+(define scheme-lazy (private-process '(scheme lazy) '( 
 (delay syntax)
 (delay-force syntax)
 (force procedure)
@@ -5232,11 +5231,11 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (promise? procedure)
 )))
 
-(define rnrs-7-small-load (private-process '(rnrs 7 small load) '( 
+(define scheme-load (private-process '(scheme load) '( 
 (load procedure)
 )))
 
-(define rnrs-7-small-process-context (private-process '(rnrs 7 small process context) '( 
+(define scheme-process-context (private-process '(scheme process context) '( 
 (command-line procedure)
 (emergency-exit procedure)
 (exit procedure)
@@ -5244,28 +5243,28 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (get-environment-variables procedure)
 )))
 
-(define rnrs-7-small-read (private-process '(rnrs 7 small read) '( 
+(define scheme-read (private-process '(scheme read) '( 
 (read procedure)
 )))
 
-(define rnrs-7-small-repl (private-process '(rnrs 7 small repl) '( 
+(define scheme-repl (private-process '(scheme repl) '( 
 (interaction-environment procedure)
 )))
 
-(define rnrs-7-small-time (private-process '(rnrs 7 small time) '( 
+(define scheme-time (private-process '(scheme time) '( 
 (current-jiffy procedure)
 (current-second procedure)
 (jiffies-per-second procedure)
 )))
 
-(define rnrs-7-small-write (private-process '(rnrs 7 small write) '( 
+(define scheme-write (private-process '(scheme write) '( 
 (display procedure)
 (write procedure)
 (write-shared procedure)
 (write-simple procedure)
 )))
 
-(define rnrs-7-small-r5rs (private-process '(rnrs 7 small r5rs) '( 
+(define scheme-r5rs (private-process '(scheme r5rs) '( 
 (* procedure)
 (+ procedure)
 (- procedure)

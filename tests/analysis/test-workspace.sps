@@ -76,8 +76,6 @@
 (test-end)
 
 (test-begin "init-workspace-basic-test")
-  (pretty-print `(DEBUG: test workspace init-workspace))
-  ;; (pretty-print `(DEBUG: var: current-directory ,(current-directory)))
 (let* ([workspace (init-workspace (current-directory) 'akku 'r7rs #f #f)]
        [root-file-node (workspace-file-node workspace)]
        [root-library-node (workspace-library-node workspace)])
