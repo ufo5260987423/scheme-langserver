@@ -28,6 +28,7 @@ I do this open source work just in my spare time and I can contribute many splen
 
 
 ## Compilation , Intallation & Configuration is [HERE](./doc/startup.md)
+## Debug or Issue Bugs, you may find [THIS](./doc/how-to-debug.md) helpful.
 
 ## Recent Status
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
@@ -74,37 +75,6 @@ send-message
 
 ## TODO:Contributing 
 
-## Debug
-
-### How to Debug
-https://www.scheme.com/debug/debug.html#g1
-
-### Output Log
-Following tips from [Building](#building), [Installation for Lunar Vim](#installation-for-lunarvim) and [Installation for VScode](#todo-installation-for-vscode), if anyone wants to do some developing and log something, it will be convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
-```lua
-local util = require 'lspconfig.util'
-local bin_name = '{path-to-run}'
-local cmd = { bin_name ,"path-to-log-file"}
-
-return {
-  default_config = {
-    cmd = cmd,
-    filetypes = { 'scheme' },
-    root_dir = util.find_git_ancestor,
-    single_file_support = true,
-  },
-  docs = {
-    description = [[
-https://github.com/ufo5260987423/scheme-langserver
-`scheme-langserver`, a language server protocol implementation for scheme
-]]   ,
-  },
-}
-```
-### Recurring with Log 
-With above [output log](#output-log), you may use `tests/log-debug.sps` recurring bugs:
-1. Rename `{path-to-log}`(usually `~/scheme-langserver.log`) as `~/ready-for-analyse.log`;
-2. run `scheme --script tests/log-debug.sps`. If you want to re-produce the multi-thread environment, it would also be available to run `scheme --script tests/log-debug.sps`.
 
 ## Test
 Almost all key procedures and APIs are tested. My work is just so rough but useful, maybe you would like to find what I've done in `tests` directory or just run following command in `{scheme-langserver-root-directory}`
