@@ -48,6 +48,7 @@
     (scheme-langserver analysis identifier rules library-import)
 
     (scheme-langserver analysis package-manager akku)
+    (scheme-langserver analysis package-manager txt-filter)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -78,24 +79,23 @@
 
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku #f #f)]
-    [(path threaded?) (init-workspace path 'akku threaded? #f)]
-    [(path threaded? type-inference?) (init-workspace path 'akku threaded? type-inference?)]
-    [(path identifier threaded? type-inference?) 
-    ; (pretty-print 'init)
+    [(path) (init-workspace path 'akku 'r6rs #f #f)]
+    [(path threaded?) (init-workspace path 'akku 'r6rs threaded? #f)]
+    [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference?)]
+    [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
+    [(path identifier top-environment threaded? type-inference?)
+    ;; (pretty-print `(DEBUG: function: init-workspace))
       (let* ([root-file-node 
             (init-virtual-file-system path '() 
               (cond
                 ;todo:add more filter
+                [(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/tests/r7rs"))]
                 [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
                 [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
-    ; (pretty-print 'aaa)
-    ; (pretty-print batches)
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-    ; (pretty-print 'eee)
         (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
 
 ;; head -[linkage]->files
