@@ -2,7 +2,7 @@
 
 # akku install
 # bash .akku/env
-compile-chez-program run.ss
+compile-chez-program run.ss --static
 
 find .akku/libobj/srfi -name "*so" > srfi.so.txt
 # echo './run.so' >> srfi.so.txt
