@@ -15,9 +15,13 @@
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
+    workspace-facet
     workspace-type-inference?
 
     update-file-node-with-tail
+
+    attach-new-file
+    remove-new-file
 
     pick
     generate-library-node)
@@ -26,7 +30,7 @@
     (ufo-threaded-function)
 
     (chezscheme) 
-    (only (srfi :13 strings) string-suffix?)
+    (only (srfi :13 strings) string-suffix? string-prefix?)
 
     (scheme-langserver util path)
     (ufo-try)
@@ -85,18 +89,17 @@
     [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
     [(path identifier top-environment threaded? type-inference?)
     ;; (pretty-print `(DEBUG: function: init-workspace))
-      (let* ([root-file-node 
-            (init-virtual-file-system path '() 
-              (cond
-                ;todo:add more filter
-                [(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/tests/r7rs"))]
-                [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-                [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
+      (let* ([facet 
+            (case identifier
+              [txt (generate-txt-file-filter)]
+              [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+              [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
+          [root-file-node (init-virtual-file-system path '() facet)]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-        (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
+        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference?))]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -238,6 +241,35 @@
       (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
       node)
     '()))
+
+
+(define (remove-new-file path parent my-filter)
+  (let ([f (walk-file parent path)])
+    (cond 
+      [(not (null? f)) '()]
+      [else 
+        (file-node-children-set!
+          (filter 
+            (lambda (x) (not (equal? x f)))
+            (file-node-children (file-node-parent f))))])))
+
+(define (attach-new-file path parent my-filter)
+  (let ([f (walk-file parent path)])
+    (cond 
+      [(not (file-exists? path)) '()]
+      [(not (null? f)) f]
+      [(null? (file-node-children parent)) 
+        (init-virtual-file-system path parent my-filter)
+        (walk-file parent path)]
+      [else 
+        (let ([maybe-parent 
+              (find 
+                (lambda (child)
+                  (string-prefix? path (file-node-path child)))
+                (file-node-children parent))])
+          (if maybe-parent
+            (attach-new-file path maybe-parent my-filter)
+            '()))])))
 
 (define (init-document path)
   (let ([uri (path->uri path)]
