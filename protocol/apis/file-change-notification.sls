@@ -70,6 +70,6 @@
                 (not (equal? file-node siblins)))
               (file-node-children (file-node-parent file-node))))))
       (map 
-        (lambda (path) (walk-file file-node path))
+        (lambda (path) (walk-file (workspace-file-node workspace) path))
         paths))))
 )
