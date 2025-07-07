@@ -29,7 +29,7 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didCreateFiles
 (define (did-create workspace params)
   (let* ([files (vector->list (assq-ref params 'files))]
-      [uris (map (lambda (file) (assq-re file 'uri)) files)]
+      [uris (map (lambda (file) (assq-ref file 'uri)) files)]
       [paths (map uri->path uris)]
       [facet (workspace-facet workspace)]
       [root-file-node (workspace-file-node workspace)])
@@ -58,7 +58,7 @@
 ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didDeleteFiles
 (define (did-delete workspace params)
   (let* ([files (vector->list (assq-ref params 'files))]
-      [uris (map (lambda (file) (assq-re file 'uri)) files)]
+      [uris (map (lambda (file) (assq-ref file 'uri)) files)]
       [paths (map uri->path uris)])
     (map 
       (lambda (file-node)
