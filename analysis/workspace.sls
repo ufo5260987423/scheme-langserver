@@ -249,6 +249,7 @@
       [(not (null? f)) '()]
       [else 
         (file-node-children-set!
+          (file-node-parent f)
           (filter 
             (lambda (x) (not (equal? x f)))
             (file-node-children (file-node-parent f))))])))

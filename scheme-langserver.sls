@@ -156,9 +156,12 @@
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
               'documentFormattingProvider #f
-              'workspace.fileOperations.didCreate (make-alist 'pattern (make-alist 'glob "*"))
-              'workspace.fileOperations.didRename (make-alist 'pattern (make-alist 'glob "*"))
-              'workspace.fileOperations.didDelete (make-alist 'pattern (make-alist 'glob "*"))
+              'workspace 
+                (make-alist 'fileOperations 
+                  (make-alist 
+                    'didCreate (make-alist 'scheme "file" 'pattern (make-alist 'glob "*"))
+                    'didRename (make-alist 'scheme "file" 'pattern (make-alist 'glob "*"))
+                    'didDelete (make-alist 'scheme "file" 'pattern (make-alist 'glob "*"))))
               ; 'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
