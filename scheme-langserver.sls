@@ -159,9 +159,11 @@
               'workspace 
                 (make-alist 'fileOperations 
                   (make-alist 
-                    'didCreate (make-alist 'scheme "file" 'pattern (make-alist 'glob "*"))
-                    'didRename (make-alist 'scheme "file" 'pattern (make-alist 'glob "*"))
-                    'didDelete (make-alist 'scheme "file" 'pattern (make-alist 'glob "*"))))
+                  ;however, these three are only triggered when create/rename/delete file with vscode's origin create/renmae/delete
+                  ;so that we must to add fault tolerant to re-init workspace
+                    'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
+                    'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
+                    'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))))
               ; 'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t
