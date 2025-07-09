@@ -63,11 +63,18 @@
     (immutable facet)
     ;only for identifer catching and type inference
     (immutable threaded?)
-    (immutable type-inference?)))
+    (immutable type-inference?)
+    (immutable top-environment)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
-      [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
+      [top-environment (workspace-top-environment workspace-instance)]
+      [filter 
+        (case top-environment
+          ['r6rs (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+          ['r7rs (generate-txt-file-filter)]
+          [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
+      [root-file-node (init-virtual-file-system path '() filter)]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-file-node root-library-node)]
       [batches (get-init-reference-batches file-linkage)])
@@ -95,7 +102,7 @@
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference?))]))
+        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment))]))
 
 ;; head -[linkage]->files
 ;; for single file
