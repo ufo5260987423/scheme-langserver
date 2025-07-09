@@ -85,18 +85,17 @@
     [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
     [(path identifier top-environment threaded? type-inference?)
     ;; (pretty-print `(DEBUG: function: init-workspace))
-      (let* ([root-file-node 
-            (init-virtual-file-system path '() 
-              (cond
-                ;todo:add more filter
-                [(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/tests/r7rs"))]
-                [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-                [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
+      (let* ([facet 
+            (case identifier
+              [txt (generate-txt-file-filter)]
+              [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+              [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
+          [root-file-node (init-virtual-file-system path '() facet)]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-        (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
+        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference?))]))
 
 ;; head -[linkage]->files
 ;; for single file
