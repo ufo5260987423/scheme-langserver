@@ -1,5 +1,5 @@
 {"jsonrpc":"2.0",
     "method":"workspace/didDeleteFiles",
     "params":{"files":[{
-        "uri":"file://~a/tests/resources/did-create.json"
+        "uri":"file://~a/util/io.sls"
         }]}}
