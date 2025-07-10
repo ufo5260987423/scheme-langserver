@@ -275,17 +275,24 @@
 (define (init-document path)
   (let ([uri (path->uri path)]
       [s (read-string path)])
-    (if (string? s)
-      (try
-        (make-document 
-          uri 
-          s
-          (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-          (find-meta '(chezscheme)))
-        (except c
-          [(equal? c 'can-not-tolerant) '()]
-          [else '()]))
-      '())))
+    (try
+      (cond 
+        [(string? s) 
+          (make-document 
+            uri 
+            s
+            (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
+            (find-meta '(chezscheme)))]
+        [(eof-object? s) 
+          (make-document 
+            uri 
+            ""
+            '()
+            (find-meta '(chezscheme)))]
+        [else '()])
+      (except c
+        [(equal? c 'can-not-tolerant) '()]
+        [else '()]))))
 
 (define init-library-node
   (case-lambda 
