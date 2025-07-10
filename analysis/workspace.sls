@@ -91,7 +91,7 @@
     [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference?)]
     [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
     [(path identifier top-environment threaded? type-inference?)
-    ;; (pretty-print `(DEBUG: function: init-workspace))
+    ;;(pretty-print `(DEBUG: function init-workspace :: ,@(list path identifier top-environment threaded? type-inference?)))
       (let* ([facet 
             (case identifier
               [txt (generate-txt-file-filter)]

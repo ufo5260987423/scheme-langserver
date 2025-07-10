@@ -10,5 +10,6 @@
   (lambda (path)
     (cond
       [(string-suffix? ".scm.txt" path) #t]
+      [(file-directory? path) #t]
       [else #f])))
 )
