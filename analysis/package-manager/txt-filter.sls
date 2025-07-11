@@ -10,6 +10,7 @@
   (lambda (path)
     ;; (pretty-print `(DEBUG: ,path)) 
     (cond
+      [(file-directory? path) #t]
       [(string-suffix? ".scm.txt" path) #t]
       [else #f])))
 )
