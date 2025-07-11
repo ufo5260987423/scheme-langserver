@@ -241,7 +241,7 @@
                   my-filter)) 
               (directory-list path))
             '())])
-      (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
+      (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
       node)
     '()))
 
@@ -260,6 +260,7 @@
 (define (attach-new-file path parent my-filter)
   (let ([f (walk-file parent path)])
     (cond 
+      [(not (my-filter path)) '()]
       [(not (file-exists? path)) '()]
       [(not (null? f)) f]
       [(file-node-folder? parent)
@@ -268,17 +269,21 @@
                 (file-node-children parent))])
           (if maybe-parent
             (attach-new-file path maybe-parent my-filter)
-            (begin 
-              ; (init-virtual-file-system 
-              ;   (find (lambda (p) (string-prefix? p path))
-              ;     (map 
-              ;       (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
-              ;       (directory-list (file-node-path parent))))
-              ;   parent my-filter)
-              (walk-file parent path))))]
+            (let ([new-node
+                  (init-virtual-file-system 
+                    (find (lambda (p) (string-prefix? p path))
+                      (map 
+                        (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
+                        (directory-list (file-node-path parent))))
+                    parent my-filter)])
+              (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
+              new-node)))]
       [else 
-        (init-virtual-file-system path parent my-filter)
-        (walk-file parent path)])))
+        (let* ([name (path->name path)] 
+            [document (init-document path)]
+            [node (make-file-node path name parent #f '() document)])
+          (file-node-children-set! parent `(,@(file-node-children parent) ,node))
+          node)])))
 
 (define (init-document path)
   (let ([uri (path->uri path)]
