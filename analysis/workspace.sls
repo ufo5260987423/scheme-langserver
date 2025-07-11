@@ -233,9 +233,9 @@
               (lambda (p) 
                 (init-virtual-file-system 
                   (string-append path 
-                    (if (string-suffix? (list->string (list (directory-separator))) path)
+                    (if (string-suffix? (string (directory-separator)) path)
                       ""
-                      (list->string (list (directory-separator))))
+                      (string (directory-separator)))
                     p) 
                   node 
                   my-filter)) 
@@ -262,18 +262,23 @@
     (cond 
       [(not (file-exists? path)) '()]
       [(not (null? f)) f]
-      [(null? (file-node-children parent)) 
-        (init-virtual-file-system path parent my-filter)
-        (walk-file parent path)]
-      [else 
+      [(file-node-folder? parent)
         (let ([maybe-parent 
-              (find 
-                (lambda (child)
-                  (string-prefix? path (file-node-path child)))
+              (find (lambda (child) (string-prefix? (file-node-path child) path))
                 (file-node-children parent))])
           (if maybe-parent
             (attach-new-file path maybe-parent my-filter)
-            '()))])))
+            (begin 
+              ; (init-virtual-file-system 
+              ;   (find (lambda (p) (string-prefix? p path))
+              ;     (map 
+              ;       (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
+              ;       (directory-list (file-node-path parent))))
+              ;   parent my-filter)
+              (walk-file parent path))))]
+      [else 
+        (init-virtual-file-system path parent my-filter)
+        (walk-file parent path)])))
 
 (define (init-document path)
   (let ([uri (path->uri path)]

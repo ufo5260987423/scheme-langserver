@@ -28,17 +28,13 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didCreateFiles
 (define (did-create workspace params)
-(pretty-print "create0")
   (let* ([files (vector->list (assq-ref params 'files))]
       [uris (map (lambda (file) (assq-ref file 'uri)) files)]
       [paths (map uri->path uris)]
       [facet (workspace-facet workspace)]
       [root-file-node (workspace-file-node workspace)])
-(pretty-print "create1")
-(pretty-print (null? (walk-file root-file-node (car paths))))
     (map 
       (lambda (file-node)
-(pretty-print "create2")
         (refresh-workspace-for workspace file-node))
       (map 
         (lambda (path) (attach-new-file path root-file-node facet))
