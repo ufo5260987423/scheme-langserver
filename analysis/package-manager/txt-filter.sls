@@ -4,14 +4,13 @@
     (chezscheme)
     (scheme-langserver util io)
     (scheme-langserver virtual-file-system file-node)
-    (only (srfi :13 strings) string-suffix? string-prefix? string-contains string-index-right string-index string-take string-drop string-drop-right))
+    (only (srfi :13 strings) string-suffix?))
 
-(define (generate-txt-file-filter list-path)
+(define (generate-txt-file-filter)
   (lambda (path)
     ;; (pretty-print `(DEBUG: ,path)) 
     (cond
-      [(string-contains path "akku") #f]
-      [(string-suffix? ".scm.txt" path) #t]
       [(file-directory? path) #t]
+      [(string-suffix? ".scm.txt" path) #t]
       [else #f])))
 )
