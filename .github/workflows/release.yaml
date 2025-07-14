@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -18,8 +20,8 @@ jobs:
       - name: Build Linux glibc image
         run: docker build .
 
-      - name: Build Linux musl image
-        run: docker build -f Dockerfile.musl .
+      # - name: Build Linux musl image
+      #   run: docker build -f Dockerfile.musl .
 
       - name: Compile executable on Linux glibc
         run: |
@@ -32,22 +34,28 @@ jobs:
                      mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
                      '
 
-      - name: Compile executable on Linux musl
-        run: |
-          mkdir -p build
-          docker run \
-            -v ./build:/root/scheme-langserver/build/ \
-            $(docker build -f Dockerfile.musl -q .) \
-            ash -c 'source .akku/bin/activate
-                    compile-chez-program run.ss --static
-                    mv run build/scheme-langserver-x86_64-linux-musl || exit 1
-                    '
+      # - name: Compile executable on Linux musl
+      #   run: |
+      #     mkdir -p build
+      #     docker run \
+      #       -v ./build:/root/scheme-langserver/build/ \
+      #       $(docker build -f Dockerfile.musl -q .) \
+      #       ash -c 'source .akku/bin/activate
+      #               compile-chez-program run.ss --static
+      #               mv run build/scheme-langserver-x86_64-linux-musl || exit 1
+      #               '
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          repo: ufo5260987423/scheme-langserver
-          files: |
-            build/scheme-langserver-x86_64-linux-glibc
-            build/scheme-langserver-x86_64-linux-musl
+          name: Scheme LangServer Auto-generated Build
+          tag_name: automated_build
+          files: build/scheme-langserver-x86_64-linux-glibc
+            # build/scheme-langserver-x86_64-linux-musl
+          body: |
+            This is an automated release of Scheme LangServer.
+
+            **Commit:** ${{ github.sha }}
+            **Branch:** ${{ github.ref_name }}
+            **Pipeline Run:** ${{ github.run_id }}
 
