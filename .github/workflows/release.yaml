@@ -18,8 +18,8 @@ jobs:
       - name: Build Linux glibc image
         run: docker build .
 
-      - name: Build Linux musl image
-        run: docker build -f Dockerfile.musl .
+      # - name: Build Linux musl image
+      #   run: docker build -f Dockerfile.musl .
 
       - name: Compile executable on Linux glibc
         run: |
