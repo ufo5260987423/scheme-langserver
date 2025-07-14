@@ -24,6 +24,7 @@
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
     (scheme-langserver protocol apis document-diagnostic)
+    (scheme-langserver protocol apis file-change-notification)
 
     (scheme-langserver util association)
     (scheme-langserver util path))
@@ -64,6 +65,10 @@
         ["textDocument/didOpen" (did-open workspace params)]
         ["textDocument/didClose" (did-close workspace params)]
         ["textDocument/didChange" (did-change workspace params)]
+
+        ["workspace/didCreateFiles" (did-create workspace params)]
+        ["workspace/didRenameFiles" (did-rename workspace params)]
+        ["workspace/didDeleteFiles" (did-delete workspace params)]
 
         ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
         ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
@@ -151,6 +156,14 @@
               'documentSymbolProvider #t
               ; 'documentLinkProvider #t
               'documentFormattingProvider #f
+              'workspace 
+                (make-alist 'fileOperations 
+                  (make-alist 
+                  ;however, these three are only triggered when create/rename/delete file with vscode's origin create/renmae/delete
+                  ;so that we must to add fault tolerant to re-init workspace
+                    'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
+                    'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
+                    'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))))
               ; 'documentRangeFormattingProvider #f
               ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
               ; 'codeLensProvider #t

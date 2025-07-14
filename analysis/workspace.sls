@@ -15,9 +15,13 @@
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
+    workspace-facet
     workspace-type-inference?
 
     update-file-node-with-tail
+
+    attach-new-file
+    remove-new-file
 
     pick
     generate-library-node)
@@ -26,7 +30,7 @@
     (ufo-threaded-function)
 
     (chezscheme) 
-    (only (srfi :13 strings) string-suffix?)
+    (only (srfi :13 strings) string-suffix? string-prefix?)
 
     (scheme-langserver util path)
     (ufo-try)
@@ -85,18 +89,17 @@
     [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
     [(path identifier top-environment threaded? type-inference?)
     ;; (pretty-print `(DEBUG: function: init-workspace))
-      (let* ([root-file-node 
-            (init-virtual-file-system path '() 
-              (cond
-                ;todo:add more filter
-                [(equal? 'r7rs top-environment) (generate-txt-file-filter (string-append path "/tests/r7rs"))]
-                [(equal? 'akku identifier) (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-                [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))]
+      (let* ([facet 
+            (case identifier
+              [txt (generate-txt-file-filter)]
+              [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+              [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
+          [root-file-node (init-virtual-file-system path '() facet)]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-        (make-workspace root-file-node root-library-node file-linkage identifier threaded? type-inference?))]))
+        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference?))]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -206,12 +209,15 @@
     (let* ([linkage (workspace-file-linkage workspace-instance)]
         [root-file-node (workspace-file-node workspace-instance)]
         [root-library-node (workspace-library-node workspace-instance)]
-        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))]
-        [path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
-        [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
-        [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
-        [refreshable-batches (shrink-paths linkage refreshable-path)])
-      (init-references workspace-instance refreshable-batches))))
+        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])
+      (if (null? library-identifiers-list)
+        (init-references workspace-instance `((,(file-node-path target-file-node))))
+        (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
+            [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
+            [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
+            ;target-file-node may don't have library-identifiers-list
+            [refreshable-batches (shrink-paths linkage refreshable-path)])
+          (init-references workspace-instance refreshable-batches))))))
 
 (define (init-virtual-file-system path parent my-filter)
   (if (my-filter path)
@@ -227,32 +233,79 @@
               (lambda (p) 
                 (init-virtual-file-system 
                   (string-append path 
-                    (if (string-suffix? (list->string (list (directory-separator))) path)
+                    (if (string-suffix? (string (directory-separator)) path)
                       ""
-                      (list->string (list (directory-separator))))
+                      (string (directory-separator)))
                     p) 
                   node 
                   my-filter)) 
               (directory-list path))
             '())])
-      (file-node-children-set! node (filter (lambda(p) (not (null? p))) children))
+      (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
       node)
     '()))
+
+
+(define (remove-new-file path parent my-filter)
+  (let ([f (walk-file parent path)])
+    (cond 
+      [(not (null? f)) '()]
+      [else 
+        (file-node-children-set!
+          (file-node-parent f)
+          (filter 
+            (lambda (x) (not (equal? x f)))
+            (file-node-children (file-node-parent f))))])))
+
+(define (attach-new-file path parent my-filter)
+  (let ([f (walk-file parent path)])
+    (cond 
+      [(not (my-filter path)) '()]
+      [(not (file-exists? path)) '()]
+      [(not (null? f)) f]
+      [(file-node-folder? parent)
+        (let ([maybe-parent 
+              (find (lambda (child) (string-prefix? (file-node-path child) path))
+                (file-node-children parent))])
+          (if maybe-parent
+            (attach-new-file path maybe-parent my-filter)
+            (let ([new-node
+                  (init-virtual-file-system 
+                    (find (lambda (p) (string-prefix? p path))
+                      (map 
+                        (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
+                        (directory-list (file-node-path parent))))
+                    parent my-filter)])
+              (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
+              new-node)))]
+      [else 
+        (let* ([name (path->name path)] 
+            [document (init-document path)]
+            [node (make-file-node path name parent #f '() document)])
+          (file-node-children-set! parent `(,@(file-node-children parent) ,node))
+          node)])))
 
 (define (init-document path)
   (let ([uri (path->uri path)]
       [s (read-string path)])
-    (if (string? s)
-      (try
-        (make-document 
-          uri 
-          s
-          (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-          (find-meta '(chezscheme)))
-        (except c
-          [(equal? c 'can-not-tolerant) '()]
-          [else '()]))
-      '())))
+    (try
+      (cond 
+        [(string? s) 
+          (make-document 
+            uri 
+            s
+            (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
+            (find-meta '(chezscheme)))]
+        [(eof-object? s) 
+          (make-document 
+            uri 
+            ""
+            '()
+            (find-meta '(chezscheme)))]
+        [else '()])
+      (except c
+        [(equal? c 'can-not-tolerant) '()]
+        [else '()]))))
 
 (define init-library-node
   (case-lambda 

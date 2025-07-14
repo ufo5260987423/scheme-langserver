@@ -1,0 +1,6 @@
+{"jsonrpc":"2.0",
+    "method":"workspace/didCreateFiles",
+    "params":{
+        "files":[{
+            "uri":"file://~a/util/io.sls"
+            }]}}

@@ -1,11 +1,11 @@
-# stub from https://github.com/softprops/action-gh-release
+# stub from https://github.com/softprops/action-gh-release 
 name: Release 
 on:
   push:
     tags:
       - "*.*.*"
-  pull_request:
-    branches: main
+  # pull_request:
+  #   branches: main
 
 jobs:
   build-and-release:
@@ -48,14 +48,5 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Scheme LangServer Auto-generated Build
-          tag_name: automated_build
+          repo: ufo5260987423/scheme-langserver
           files: build/scheme-langserver-x86_64-linux-glibc
-            # build/scheme-langserver-x86_64-linux-musl
-          body: |
-            This is an automated release of Scheme LangServer.
-
-            **Commit:** ${{ github.sha }}
-            **Branch:** ${{ github.ref_name }}
-            **Pipeline Run:** ${{ github.run_id }}
-
