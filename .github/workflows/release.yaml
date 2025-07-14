@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -32,16 +34,16 @@ jobs:
                      mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
                      '
 
-      - name: Compile executable on Linux musl
-        run: |
-          mkdir -p build
-          docker run \
-            -v ./build:/root/scheme-langserver/build/ \
-            $(docker build -f Dockerfile.musl -q .) \
-            ash -c 'source .akku/bin/activate
-                    compile-chez-program run.ss --static
-                    mv run build/scheme-langserver-x86_64-linux-musl || exit 1
-                    '
+      # - name: Compile executable on Linux musl
+      #   run: |
+      #     mkdir -p build
+      #     docker run \
+      #       -v ./build:/root/scheme-langserver/build/ \
+      #       $(docker build -f Dockerfile.musl -q .) \
+      #       ash -c 'source .akku/bin/activate
+      #               compile-chez-program run.ss --static
+      #               mv run build/scheme-langserver-x86_64-linux-musl || exit 1
+      #               '
 
       - name: Release
         uses: softprops/action-gh-release@v2
