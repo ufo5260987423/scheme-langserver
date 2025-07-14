@@ -9,7 +9,7 @@
 (define (generate-txt-file-filter)
   (lambda (path)
     (cond
-      [(string-suffix? ".scm.txt" path) #t]
       [(file-directory? path) #t]
+      [(string-suffix? ".scm.txt" path) #t]
       [else #f])))
 )
