@@ -50,9 +50,8 @@ jobs:
         with:
           name: Scheme LangServer Auto-generated Build
           tag_name: automated_build
-          files: |
-            build/scheme-langserver-x86_64-linux-glibc
-            build/scheme-langserver-x86_64-linux-musl
+          files: build/scheme-langserver-x86_64-linux-glibc
+            # build/scheme-langserver-x86_64-linux-musl
           body: |
             This is an automated release of Scheme LangServer.
 
