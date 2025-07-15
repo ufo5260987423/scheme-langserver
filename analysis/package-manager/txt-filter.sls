@@ -8,7 +8,6 @@
 
 (define (generate-txt-file-filter)
   (lambda (path)
-    ;; (pretty-print `(DEBUG: ,path)) 
     (cond
       [(file-directory? path) #t]
       [(string-suffix? ".scm.txt" path) #t]

@@ -17,6 +17,7 @@
     workspace-file-linkage
     workspace-facet
     workspace-type-inference?
+    workspace-top-environment
 
     update-file-node-with-tail
 
@@ -67,11 +68,12 @@
     (immutable facet)
     ;only for identifer catching and type inference
     (immutable threaded?)
-    (immutable type-inference?)))
+    (immutable type-inference?)
+    (immutable top-environment)))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
-      [root-file-node (init-virtual-file-system path '() (generate-akku-acceptable-file-filter (string-append path "/.akku/list")))]
+      [root-file-node (init-virtual-file-system path '() (workspace-facet workspace-instance) (workspace-top-environment workspace-instance))]
       [root-library-node (init-library-node root-file-node)]
       [file-linkage (init-file-linkage root-file-node root-library-node)]
       [batches (get-init-reference-batches file-linkage)])
@@ -94,12 +96,12 @@
               [txt (generate-txt-file-filter)]
               [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
               [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
-          [root-file-node (init-virtual-file-system path '() facet)]
+          [root-file-node (init-virtual-file-system path '() facet top-environment)]
           [root-library-node (init-library-node root-file-node)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference?))]))
+        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment))]))
 
 ;; head -[linkage]->files
 ;; for single file
@@ -219,31 +221,35 @@
             [refreshable-batches (shrink-paths linkage refreshable-path)])
           (init-references workspace-instance refreshable-batches))))))
 
-(define (init-virtual-file-system path parent my-filter)
-  (if (my-filter path)
-    (let* ([name (path->name path)] 
-        [folder? (file-directory? path)]
-        [document 
-          (if folder? 
-            '() 
-            (init-document path))]
-        [node (make-file-node path name parent folder? '() document)]
-        [children (if folder?
-            (map 
-              (lambda (p) 
-                (init-virtual-file-system 
-                  (string-append path 
-                    (if (string-suffix? (string (directory-separator)) path)
-                      ""
-                      (string (directory-separator)))
-                    p) 
-                  node 
-                  my-filter)) 
-              (directory-list path))
-            '())])
-      (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
-      node)
-    '()))
+(define init-virtual-file-system
+  (case-lambda
+    [(path parent my-filter) (init-virtual-file-system path parent my-filter 'r6rs)]
+    [(path parent my-filter top-environment)
+      (if (my-filter path)
+      (let* ([name (path->name path)] 
+          [folder? (file-directory? path)]
+          [document 
+            (if folder? 
+              '() 
+              (init-document path top-environment))]
+          [node (make-file-node path name parent folder? '() document)]
+          [children (if folder?
+              (map 
+                (lambda (p) 
+                  (init-virtual-file-system 
+                    (string-append path 
+                      (if (string-suffix? (string (directory-separator)) path)
+                        ""
+                        (string (directory-separator)))
+                      p) 
+                    node 
+                    my-filter
+                    top-environment)) 
+                (directory-list path))
+              '())])
+        (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
+        node)
+      '())]))
 
 
 (define (remove-new-file path parent my-filter)
@@ -257,37 +263,43 @@
             (lambda (x) (not (equal? x f)))
             (file-node-children (file-node-parent f))))])))
 
-(define (attach-new-file path parent my-filter)
-  (let ([f (walk-file parent path)])
-    (cond 
-      [(not (my-filter path)) '()]
-      [(not (file-exists? path)) '()]
-      [(not (null? f)) f]
-      [(file-node-folder? parent)
-        (let ([maybe-parent 
-              (find (lambda (child) (string-prefix? (file-node-path child) path))
-                (file-node-children parent))])
-          (if maybe-parent
-            (attach-new-file path maybe-parent my-filter)
-            (let ([new-node
-                  (init-virtual-file-system 
-                    (find (lambda (p) (string-prefix? p path))
-                      (map 
-                        (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
-                        (directory-list (file-node-path parent))))
-                    parent my-filter)])
-              (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
-              new-node)))]
-      [else 
-        (let* ([name (path->name path)] 
-            [document (init-document path)]
-            [node (make-file-node path name parent #f '() document)])
-          (file-node-children-set! parent `(,@(file-node-children parent) ,node))
-          node)])))
+(define attach-new-file
+  (case-lambda
+    [(path parent my-filter) (attach-new-file path parent my-filter 'r6rs)]
+    [(path parent my-filter top-environment)
+      (let ([f (walk-file parent path)])
+        (cond 
+          [(not (my-filter path)) '()]
+          [(not (file-exists? path)) '()]
+          [(not (null? f)) f]
+          [(file-node-folder? parent)
+            (let ([maybe-parent 
+                  (find (lambda (child) (string-prefix? (file-node-path child) path))
+                    (file-node-children parent))])
+              (if maybe-parent
+                (attach-new-file path maybe-parent my-filter top-environment)
+                (let ([new-node
+                      (init-virtual-file-system 
+                        (find (lambda (p) (string-prefix? p path))
+                          (map 
+                            (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
+                            (directory-list (file-node-path parent))))
+                        parent my-filter top-environment)])
+                  (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
+                  new-node)))]
+          [else 
+            (let* ([name (path->name path)] 
+                [document (init-document path top-environment)]
+                [node (make-file-node path name parent #f '() document)])
+              (file-node-children-set! parent `(,@(file-node-children parent) ,node))
+              node)]))]))
 
-(define (init-document path)
+(define (init-document path top-environment)
   (let ([uri (path->uri path)]
-      [s (read-string path)])
+      [s (read-string path)]
+      [meta-lib (case top-environment
+                  ['r7rs '(scheme base)]
+                  [else '(chezscheme)])])
     (try
       (cond 
         [(string? s) 
@@ -295,13 +307,13 @@
             uri 
             s
             (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-            (find-meta '(chezscheme)))]
+            (find-meta meta-lib top-environment))]
         [(eof-object? s) 
           (make-document 
             uri 
             ""
             '()
-            (find-meta '(chezscheme)))]
+            (find-meta meta-lib top-environment))]
         [else '()])
       (except c
         [(equal? c 'can-not-tolerant) '()]
