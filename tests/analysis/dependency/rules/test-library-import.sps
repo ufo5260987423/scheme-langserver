@@ -28,4 +28,16 @@
         (test-equal '((chezscheme) (srfi :37 args-fold) (scheme-langserver)) (car (map library-import-process root-index-nodes))))
 (test-end)
 
+(test-begin "library-import-process for r7rs liii")
+    (let* ([root-file-node (init-virtual-file-system "./tests/resources/r7rs/liii/rich-vector.scm.txt" '() (lambda (fuzzy) #t) 'r7rs)]
+            [root-index-nodes (document-index-node-list (file-node-document root-file-node))])
+        (test-equal '((liii string) (liii hash-table) (liii sort) (liii list) (liii vector) (liii oop) (srfi srfi-8)) (car (map library-import-process root-index-nodes))))
+(test-end)
+
+(test-begin "library-import-process for r7rs srfi")
+    (let* ([root-file-node (init-virtual-file-system "./tests/resources/r7rs/srfi/sicp.scm.txt" '() (lambda (fuzzy) #t) 'r7rs)]
+            [root-index-nodes (document-index-node-list (file-node-document root-file-node))])
+        (test-equal '((srfi srfi-216)) (car (map library-import-process root-index-nodes))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

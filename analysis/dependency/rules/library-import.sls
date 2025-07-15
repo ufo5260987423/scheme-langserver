@@ -18,7 +18,7 @@
         [expression (annotation-stripped ann)])
       (match expression
         [('library _ **1 ) (map match-import (index-node-children index-node))]
-        ; [('define-library _ **1 ) (map match-import (index-node-children index-node))]
+        [('define-library _ **1 ) (map match-import (index-node-children index-node))]
         [else (list (match-import index-node))]))))
 
 (define (match-import index-node)
