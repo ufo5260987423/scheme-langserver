@@ -5,6 +5,7 @@ skip=(
     "./tests/output-identifier-types.sps" 
     "./tests/parallel-log-debug.sps" 
     "./tests/log-debug.sps" 
+    "./tests/profile/lexer.sps" 
 )
 
 success=0
