@@ -74,7 +74,7 @@
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
       [root-file-node (init-virtual-file-system path '() (workspace-facet workspace-instance) (workspace-top-environment workspace-instance))]
-      [root-library-node (init-library-node root-file-node)]
+      [root-library-node (init-library-node root-file-node (workspace-top-environment workspace-instance))]
       [file-linkage (init-file-linkage root-file-node root-library-node)]
       [batches (get-init-reference-batches file-linkage)])
     (init-references workspace-instance batches)
@@ -97,7 +97,7 @@
               [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
               [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
           [root-file-node (init-virtual-file-system path '() facet top-environment)]
-          [root-library-node (init-library-node root-file-node)]
+          [root-library-node (init-library-node root-file-node top-environment)]
           [file-linkage (init-file-linkage root-file-node root-library-node)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
@@ -159,8 +159,7 @@
       [linkage (workspace-file-linkage workspace-instance)]
       [target-document (file-node-document target-file-node)]
       [root-library-node (workspace-library-node workspace-instance)]
-
-      [old-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))]
+      [old-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))]
       [old-library-node-list 
         (filter (lambda (item) (not (null? item)))
           (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
@@ -177,7 +176,7 @@
     (document-line-length-vector-set! target-document (text->line-length-vector text))
     (document-index-node-list-set! target-document new-index-nodes)
 
-    (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])
+    (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (not (equal? new-library-identifiers-list old-library-identifiers-list))
         (begin 
 ;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
@@ -211,7 +210,7 @@
     (let* ([linkage (workspace-file-linkage workspace-instance)]
         [root-file-node (workspace-file-node workspace-instance)]
         [root-library-node (workspace-library-node workspace-instance)]
-        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node))])
+        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (null? library-identifiers-list)
         (init-references workspace-instance `((,(file-node-path target-file-node))))
         (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
@@ -321,15 +320,16 @@
 
 (define init-library-node
   (case-lambda 
-    [(file-node) (init-library-node file-node (make-library-node '() '() '() '())) ]
-    [(file-node root-library-node) 
+    [(file-node) (init-library-node file-node 'r6rs (make-library-node '() '() '() '()) )]
+    [(file-node top-environment) (init-library-node file-node top-environment (make-library-node '() '() '() '()))]
+    [(file-node top-environment root-library-node)
       (if (file-node-folder? file-node)
         (map 
-          (lambda (child-node) (init-library-node child-node root-library-node))
+          (lambda (child-node) (init-library-node child-node top-environment root-library-node))
           (file-node-children file-node))
         (map 
           (lambda (library-identifiers) (generate-library-node library-identifiers root-library-node file-node))
-          (get-library-identifiers-list (file-node-document file-node))))
+          (get-library-identifiers-list (file-node-document file-node) top-environment)))
       root-library-node]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
