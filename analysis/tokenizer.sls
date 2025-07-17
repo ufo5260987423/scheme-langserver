@@ -64,7 +64,7 @@
                   [rest (string-take-right source (- (string-length source) position 1))])
                 (private:tolerant-parse->patch (string-append head ")" rest)))]
             [else (raise 'can-not-tolerant1)])]
-        [else (raise 'can-not-tolerant0)]))))
+        [else (raise 'can-not-tolerant2)]))))
 
 (define source-file->annotations
   (case-lambda
