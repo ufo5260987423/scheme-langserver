@@ -25,6 +25,7 @@
     (scheme-langserver analysis util)
 
     (scheme-langserver analysis dependency rules library-import)
+    (scheme-langserver analysis dependency rules library-import-r7rs)
     (scheme-langserver analysis dependency rules load)
 
     (scheme-langserver util dedupe)
@@ -42,13 +43,16 @@
     (mutable id->path-map)
     (mutable matrix)))
 
-(define (init-file-linkage root-file-node root-library-node)
-  (let ([id->path-map (make-eq-hashtable)]
-        [path->id-map (make-hashtable string-hash equal?)])
-    (init-maps root-library-node id->path-map path->id-map)
-    (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
-      (init-matrix root-library-node root-file-node root-library-node path->id-map matrix)
-      (make-file-linkage path->id-map id->path-map matrix))))
+(define init-file-linkage
+  (case-lambda
+    [(root-file-node root-library-node) (init-file-linkage root-file-node root-library-node 'r6rs)]
+    [(root-file-node root-library-node top-environment)
+      (let ([id->path-map (make-eq-hashtable)]
+            [path->id-map (make-hashtable string-hash equal?)])
+        (init-maps root-library-node id->path-map path->id-map)
+        (let ([matrix (make-vector (* (hashtable-size id->path-map) (hashtable-size id->path-map)))])
+          (init-matrix root-library-node root-file-node root-library-node path->id-map matrix top-environment)
+          (make-file-linkage path->id-map id->path-map matrix)))]))
 
 (define (init-maps current-library-node id->path-map path->id-map)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
@@ -59,41 +63,45 @@
         (loop (cdr file-nodes)))))
   (map (lambda (node) (init-maps node id->path-map path->id-map)) (library-node-children current-library-node)))
 
-(define (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node-list new-library-identifier-list)
-  (let* ([path (file-node-path file-node)]
-      [path->id-map (file-linkage-path->id-map linkage)]
-      [id->path-map (file-linkage-id->path-map linkage)]
-      [old-node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
-      [id (if (hashtable-ref path->id-map path #f)
-        (hashtable-ref path->id-map path #f)
-        (if (null? new-library-identifier-list)
-          '()
-          (begin
-            (hashtable-set! path->id-map path old-node-count)
-            (hashtable-set! id->path-map old-node-count path)
-            (file-linkage-matrix-set! linkage (matrix-expand (file-linkage-matrix linkage)))
-            old-node-count)))]
-      [reference-id-to (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)))]
-      [reference-id-from (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-from-recursive (file-linkage-matrix linkage) id)))]
-      [matrix (file-linkage-matrix linkage)]
-      [old-imported-file-ids
-        (map 
-          (lambda(p) (hashtable-ref path->id-map p #f)) 
-          (get-reference-path-from linkage path))]
-      [new-imported-file-ids
-        (map 
-          (lambda(p) (hashtable-ref path->id-map p #f)) 
-          (apply append 
+(define refresh-file-linkage&get-refresh-path
+  (case-lambda
+    [(linkage root-library-node file-node new-index-node-list new-library-identifier-list)
+      (refresh-file-linkage&get-refresh-path linkage root-library-node file-node new-index-node-list new-library-identifier-list 'r6rs)]
+    [(linkage root-library-node file-node new-index-node-list new-library-identifier-list top-environment)
+      (let* ([path (file-node-path file-node)]
+          [path->id-map (file-linkage-path->id-map linkage)]
+          [id->path-map (file-linkage-id->path-map linkage)]
+          [old-node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
+          [id (if (hashtable-ref path->id-map path #f)
+            (hashtable-ref path->id-map path #f)
+            (if (null? new-library-identifier-list)
+              '()
+              (begin
+                (hashtable-set! path->id-map path old-node-count)
+                (hashtable-set! id->path-map old-node-count path)
+                (file-linkage-matrix-set! linkage (matrix-expand (file-linkage-matrix linkage)))
+                old-node-count)))]
+          [reference-id-to (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-to-recursive (file-linkage-matrix linkage) id)))]
+          [reference-id-from (if (null? id) '() (filter (lambda (inner-id) (not (= inner-id id))) (linkage-matrix-from-recursive (file-linkage-matrix linkage) id)))]
+          [matrix (file-linkage-matrix linkage)]
+          [old-imported-file-ids
             (map 
-              (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
-              new-index-node-list)))])
-    (if (null? id)
-      ;;todo shrink matrix
-      '()
-      (begin 
-        (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
-        (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
-        (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to))))))
+              (lambda(p) (hashtable-ref path->id-map p #f)) 
+              (get-reference-path-from linkage path))]
+          [new-imported-file-ids
+            (map 
+              (lambda(p) (hashtable-ref path->id-map p #f)) 
+              (apply append 
+                (map 
+                  (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node top-environment))
+                  new-index-node-list)))])
+        (if (null? id)
+          ;;todo shrink matrix
+          '()
+          (begin 
+            (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
+            (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
+            (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to)))))]))
 
 (define (get-reference-path-to linkage to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
@@ -234,45 +242,56 @@
     (hashtable-ref (file-linkage-path->id-map linkage) from #f) 
     (hashtable-ref (file-linkage-path->id-map linkage) to #f)))
 
-(define (get-imported-libraries-from-index-node root-library-node index-node)
-  (apply append 
-    (map 
-      (lambda (l) (map file-node-path (library-node-file-nodes l)))
-      (filter (lambda (l) 
-          (if (null? l) #f (not (null? (library-node-file-nodes l)))))
-        (map 
-          (lambda (id) (walk-library id root-library-node))
-          (library-import-process index-node))))))
+(define get-imported-libraries-from-index-node
+  (case-lambda
+    [(root-library-node index-node) (get-imported-libraries-from-index-node root-library-node index-node 'r6rs)]
+    [(root-library-node index-node top-environment)
+      (let ([func (case top-environment
+                    ['r6rs library-import-process]
+                    ['r7rs library-import-process-r7rs])])
+        (apply append 
+          (map 
+            (lambda (l) (map file-node-path (library-node-file-nodes l)))
+            (filter (lambda (l) 
+                (if (null? l) #f (not (null? (library-node-file-nodes l)))))
+              (map 
+                (lambda (id) (walk-library id root-library-node))
+                (func index-node))))))]))
 
-(define (init-matrix current-library-node root-file-node root-library-node path->id-map matrix)
-  (let loop ([file-nodes (library-node-file-nodes current-library-node)])
-    (if (pair? file-nodes)
-      (let* ([file-node (car file-nodes)]
-          [path (file-node-path file-node)]
-          [imported-libraries 
-            (dedupe (apply append 
-              (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node))
-                (document-index-node-list (file-node-document file-node)))))]
-          [loaded-files 
-            (dedupe (apply append 
-              (map (lambda (index-node) (load-process root-file-node (file-node-document file-node) index-node))
-                (document-index-node-list (file-node-document file-node)))))])
-
-        (map (lambda (imported-library-path) 
-                (if (not (null? imported-library-path))
-                  (matrix-set! matrix 
-                    (hashtable-ref path->id-map path #f) 
-                    (hashtable-ref path->id-map imported-library-path #f))))
-          imported-libraries)
-
-        (map (lambda (file-node) 
-                (matrix-set! matrix 
-                  (hashtable-ref path->id-map path #f) 
-                  (hashtable-ref path->id-map (file-node-path file-node) #f)))
-          loaded-files)
+(define init-matrix
+  (case-lambda
+    [(current-library-node root-file-node root-library-node path->id-map matrix) (init-matrix current-library-node root-file-node root-library-node path->id-map matrix 'r6rs)]
+    [(current-library-node root-file-node root-library-node path->id-map matrix top-environment)
+      (let loop ([file-nodes (library-node-file-nodes current-library-node)])
+        (if (pair? file-nodes)
+          (let* ([file-node (car file-nodes)]
+              [path (file-node-path file-node)]
+              [imported-libraries 
+                (dedupe (apply append 
+                  (map (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node top-environment))
+                    (document-index-node-list (file-node-document file-node)))))]
+              [loaded-files 
+                (dedupe (apply append 
+                  (map (lambda (index-node) (load-process root-file-node (file-node-document file-node) index-node))
+                    (document-index-node-list (file-node-document file-node)))))])
+    
+            (map (lambda (imported-library-path) 
+                    (if (not (null? imported-library-path))
+                      (matrix-set! matrix 
+                        (hashtable-ref path->id-map path #f) 
+                        (hashtable-ref path->id-map imported-library-path #f))))
+              imported-libraries)
+    
+            (map (lambda (file-node) 
+                    (matrix-set! matrix 
+                      (hashtable-ref path->id-map path #f) 
+                      (hashtable-ref path->id-map (file-node-path file-node) #f)))
+              loaded-files)
+            
+            (loop (cdr file-nodes)))))  
         
-        (loop (cdr file-nodes)))))
-  (map  (lambda (node) 
-          (init-matrix node root-file-node root-library-node path->id-map matrix)) 
-    (library-node-children current-library-node)))
+      (map  (lambda (node) 
+              (init-matrix node root-file-node root-library-node path->id-map matrix top-environment)) 
+        (library-node-children current-library-node))  
+        ]))
 )
