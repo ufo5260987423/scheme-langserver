@@ -75,7 +75,7 @@
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
       [root-file-node (init-virtual-file-system path '() (workspace-facet workspace-instance) (workspace-top-environment workspace-instance))]
       [root-library-node (init-library-node root-file-node (workspace-top-environment workspace-instance))]
-      [file-linkage (init-file-linkage root-file-node root-library-node)]
+      [file-linkage (init-file-linkage root-file-node root-library-node (workspace-top-environment workspace-instance))]
       [batches (get-init-reference-batches file-linkage)])
     (init-references workspace-instance batches)
     (workspace-file-node-set! workspace-instance root-file-node)
@@ -98,7 +98,7 @@
               [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
           [root-file-node (init-virtual-file-system path '() facet top-environment)]
           [root-library-node (init-library-node root-file-node top-environment)]
-          [file-linkage (init-file-linkage root-file-node root-library-node)]
+          [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
         (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment))]))
@@ -198,7 +198,7 @@
               (if (walk-library library-identifiers root-library-node)
                 (generate-library-node library-identifiers root-library-node target-file-node)))
             new-library-identifiers-list)
-          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node))
+          (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node (workspace-top-environment workspace-instance)))
 ;;For new dependency
           (map (lambda (document) (document-refreshable?-set! document #t))
             (map (lambda (path) (file-node-document (walk-file root-file-node path))) 
@@ -213,7 +213,7 @@
         [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (null? library-identifiers-list)
         (init-references workspace-instance `((,(file-node-path target-file-node))))
-        (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list)]
+        (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list (workspace-top-environment workspace-instance))]
             [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
             [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
             ;target-file-node may don't have library-identifiers-list
