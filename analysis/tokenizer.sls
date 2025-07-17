@@ -42,7 +42,28 @@
                   [what (vector-ref (list->vector (string->list source)) position)]
                   [rest (string-take-right source (- (string-length source) position 1))])
                 (private:tolerant-parse->patch (string-append head " " rest)))]
-            [else (raise 'can-not-tolerant0)]))]
+            ["invalid character name #\\~a" 
+              (let* ([position (- (caddr (condition-irritants e)) 2)]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (caadr (condition-irritants e))]
+                  [l (+ 2 (string-length what))]
+                  [rest (string-take-right source (- (string-length source) position l))]
+                  [blank (make-string l #\space)])
+                (private:tolerant-parse->patch (string-append head blank rest)))]
+            ["invalid delimiter ~a for ~a"
+              (let* ([position (caddr (condition-irritants e))]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [end-position (string-find-delimiter source (+ 1 position))]
+                  [l (- end-position position -1)]
+                  [rest (string-take-right source (- (string-length source) position l))]
+                  [blank (make-string l #\space)])
+                (private:tolerant-parse->patch (string-append head blank rest)))]
+            [else 
+              (display-condition e)
+              (newline)
+              (pretty-print (condition-irritants e))
+              (pretty-print (car (condition-irritants e)))
+            (raise 'can-not-tolerant0)]))]
         [(and (condition? e) (string? (caar (condition-irritants e))))
           (case (caar (condition-irritants e))
             [("unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
@@ -134,4 +155,20 @@
         (consume-block-comment char-input-port)]
       [(eof-object? c) (port-position char-input-port)]
       [else (loop (get-char char-input-port))])))
+
+(define (string-find-delimiter s position)
+  (case (string-ref s position)
+    [#\( position]
+    [#\) position]
+    [#\[ position]
+    [#\] position]
+    [#\" position];"
+    [#\; position]
+    [#\# position]
+    [#\space position]
+    [#\newline position]
+    [#\linefeed position]
+    [#\tab position]
+    [#\return position]
+    [else (string-find-delimiter s (+ 1 position))]))
 )
