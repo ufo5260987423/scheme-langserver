@@ -17,18 +17,26 @@
 
 (define (do-nothing . fuzzy) (void))
 
-(define (get-library-identifiers-list document)
-    (if (null? document)
-        '()
-        (let ([index-node-list (document-index-node-list document)])
-            (dedupe
-                (map 
-                    (lambda (index-node)
-                        (match (annotation-stripped (index-node-datum/annotations index-node))
-                            [('library (name **1) _ ... ) name]
-                            [('define-library (name **1) _ ... ) name]
-                            [else '()]))
-                    index-node-list)))))
+(define get-library-identifiers-list
+    (case-lambda
+        [(document) (get-library-identifiers-list document 'r6rs)]
+        [(document top-environment)
+            (let [(func (case top-environment
+                            ['r6rs
+                                (lambda (index-node)
+                                (match (annotation-stripped (index-node-datum/annotations index-node))
+                                    [('library (name **1) _ ... ) name]
+                                    [else '()]))]
+                            ['r7rs
+                                (lambda (index-node)
+                                (match (annotation-stripped (index-node-datum/annotations index-node))
+                                    [('define-library (name **1) _ ... ) name]
+                                    [else '()]))]))]
+                (if (null? document)
+                    '()
+                    (let ([index-node-list (document-index-node-list document)])
+                        (dedupe
+                            (map func index-node-list)))))]))
 
 (define (get-nearest-ancestor-library-identifier index-node)
     (if (null? index-node)
