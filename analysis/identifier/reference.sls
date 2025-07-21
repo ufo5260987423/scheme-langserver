@@ -59,7 +59,15 @@
     (mutable parents)
     ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
-    (mutable type-expressions)))
+    (mutable type-expressions)
+    (mutable top-environment))
+  (protocol
+    (lambda (new)
+      (case-lambda
+        [(identifier document index-node initialization-index-node library-identifier type parents type-expressions)
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions 'r6rs)]
+        [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)]))))
 
 (define (is-ancestor-of? identifier-reference0 identifier-reference1)
   (if (equal? identifier-reference0 identifier-reference1)
