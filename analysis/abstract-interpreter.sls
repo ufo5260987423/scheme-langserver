@@ -57,6 +57,8 @@
     (scheme-langserver analysis identifier rules identifier-syntax)
 
     (scheme-langserver analysis identifier rules r7rs define-r7rs)
+    (scheme-langserver analysis identifier rules r7rs define-library-import-r7rs)
+    (scheme-langserver analysis identifier rules r7rs define-library-export-r7rs)
 
     (scheme-langserver analysis identifier self-defined-rules router)
 
@@ -243,6 +245,9 @@
             [(and (equal? r '(body)) (find-top-env? 'r6rs top))
               (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
 
+            [(and (equal? r '(define-library)) (find-top-env? 'r7rs top))
+              (private-add-rule rules `((,library-import-process-r7rs . ,export-process-r7rs) . ,identifier))]
+
             [else rules])
           (route&add 
             rules identifier 
@@ -273,7 +278,6 @@
           (find-available-references-for current-document current-index-node expression)))]))
 
 (define (find-top-env? standard top)
-  (find (lambda (top-environment) (equal? standard top-environment))
-    (map identifier-reference-top-environment top)))
-
+  (not (null? (find (lambda (top-environment) (equal? standard top-environment))
+                (map identifier-reference-top-environment top)))))
 )
