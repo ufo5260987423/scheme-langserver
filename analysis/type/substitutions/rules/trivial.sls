@@ -186,13 +186,14 @@
       [result '()]
       [exclude '(,variable)])
     (let* ([current-result 
-          (map 
-            (lambda (v)
-              (filter 
-                (lambda (s)
-                  (equal? (car s) v))
-                substitution-list))
-            current-variables)]
+          (apply append 
+            (map 
+              (lambda (v)
+                (filter 
+                  (lambda (s)
+                    (equal? (car s) v))
+                  substitution-list))
+              current-variables))]
         [variables (filter (lambda (v) (not (contain? exclude v))) (private-get-variables current-result))])
       (if (null? variables)
         result
