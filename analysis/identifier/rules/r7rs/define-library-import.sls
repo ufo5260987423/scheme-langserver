@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier rules r7rs define-library-import-r7rs)
+(library (scheme-langserver analysis identifier rules r7rs define-library-import)
   (export 
     library-import-process-r7rs)
   (import 
@@ -24,11 +24,12 @@
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (cddr (index-node-children index-node)))]
-      ; [('define-library _ **1 ) 
-      ; ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
-      ;   (map 
-      ;     (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
-      ;     (index-node-children index-node))]
+      ;; [('define-library _ **1 ) 
+      ;; ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
+      ;;   ((pretty-print `(DEBUG: match 2)))
+      ;;   (map 
+      ;;     (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
+      ;;     (index-node-children index-node))]
       [else '()])
     index-node))
 

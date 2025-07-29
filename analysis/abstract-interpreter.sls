@@ -56,9 +56,9 @@
     (scheme-langserver analysis identifier rules with-syntax)
     (scheme-langserver analysis identifier rules identifier-syntax)
 
-    (scheme-langserver analysis identifier rules r7rs define-r7rs)
-    (scheme-langserver analysis identifier rules r7rs define-library-import-r7rs)
-    (scheme-langserver analysis identifier rules r7rs define-library-export-r7rs)
+    (scheme-langserver analysis identifier rules r7rs define)
+    (scheme-langserver analysis identifier rules r7rs define-library-import)
+    (scheme-langserver analysis identifier rules r7rs define-library-export)
 
     (scheme-langserver analysis identifier self-defined-rules router)
 
@@ -164,12 +164,14 @@
       (let* ([top (root-ancestor identifier)]
           [r (map identifier-reference-identifier top)]
           [i (identifier-reference-identifier identifier)]
-          [is (map identifier-reference-library-identifier top)])
-        (if (find meta-library? is)
+          [is (map identifier-reference-library-identifier top)]
+          [top-environment (car (map identifier-reference-top-environment top))]
+          )
+        (if (find (lambda (is) (meta-library? is top-environment)) is)
           (cond 
-            [(and (equal? r '(define)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(define)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-process) . ,identifier))]
-            [(and (equal? r '(define)) (find-top-env? 'r7rs top))
+            [(and (equal? r '(define)) (private:top-env=? 'r7rs top))
               (private-add-rule rules `((,define-r7rs-process) . ,identifier))]
             [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
             [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
@@ -178,14 +180,14 @@
             [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
 
             [(equal? r '(set!)) (private-add-rule rules `((,define-top-level-value-process) . ,identifier))]
-            [(and (equal? r '(set-top-level-value!)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(set-top-level-value!)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-top-level-value-process) . ,identifier))]
-            [(and (equal? r '(define-top-level-value)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(define-top-level-value)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-top-level-value-process) . ,identifier))]
 
-            [(and (equal? r '(set-top-level-syntax!)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(set-top-level-syntax!)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-top-level-syntax-process) . ,identifier))]
-            [(and (equal? r '(define-top-level-syntax)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(define-top-level-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-top-level-syntax-process) . ,identifier))]
 
             [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
@@ -196,22 +198,22 @@
             [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
             [(equal? r '(letrec*)) (private-add-rule rules `((,letrec*-process) . ,identifier))]
             [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process) . ,identifier))]
-            [(and (equal? r '(fluid-let)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(fluid-let)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-process) . ,identifier))]
-            [(and (equal? r '(fluid-let-syntax)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(fluid-let-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-syntax-process) . ,identifier))]
 
-            [(and (equal? r '(syntax-case)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(syntax-case)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,syntax-case-process) . ,identifier))]
             [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process) . ,identifier))]
-            [(and (equal? r '(identifier-syntax)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(identifier-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,identifier-syntax-process) . ,identifier))]
-            [(and (equal? r '(with-syntax)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(with-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,with-syntax-process) . ,identifier))]
 
-            [(and (equal? r '(library)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(library)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,library-import-process . ,export-process) . ,identifier))]
-            [(and (equal? r '(invoke-library)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(invoke-library)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,invoke-library-process) . ,identifier))]
             [(equal? r '(import)) 
               (let ([special 
@@ -237,15 +239,15 @@
                 (private-add-rule rules `((,special) . ,identifier)))]
 
             [(equal? r '(load)) (private-add-rule rules `((,load-process) . ,identifier))]
-            [(and (equal? r '(load-program)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(load-program)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,load-program-process) . ,identifier))]
-            [(and (equal? r '(load-library)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(load-library)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,load-library-process) . ,identifier))]
 
-            [(and (equal? r '(body)) (find-top-env? 'r6rs top))
+            [(and (equal? r '(body)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
 
-            [(and (equal? r '(define-library)) (find-top-env? 'r7rs top))
+            [(and (equal? r '(define-library)) (private:top-env=? 'r7rs top))
               (private-add-rule rules `((,library-import-process-r7rs . ,export-process-r7rs) . ,identifier))]
 
             [else rules])
@@ -277,7 +279,7 @@
           (private:find-available-references-for expanded+callee-list current-document (cdr result) expression)
           (find-available-references-for current-document current-index-node expression)))]))
 
-(define (find-top-env? standard top)
+(define (private:top-env=? standard top)
   (not (null? (find (lambda (top-environment) (equal? standard top-environment))
                 (map identifier-reference-top-environment top)))))
 )

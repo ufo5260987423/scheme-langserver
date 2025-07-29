@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier rules r7rs define-library-export-r7rs)
+(library (scheme-langserver analysis identifier rules r7rs define-library-export)
   (export export-process-r7rs)
   (import 
     (chezscheme) 
