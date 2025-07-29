@@ -196,7 +196,6 @@
               current-variables))]
         [variables (filter (lambda (v) (not (contain? exclude v))) (private-get-variables current-result))])
       (if (null? variables)
-        ; result
         (append result current-result)
         (loop 
           variables
