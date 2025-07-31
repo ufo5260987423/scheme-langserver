@@ -45,7 +45,7 @@
     (scheme-langserver analysis identifier rules fluid-let)
     (scheme-langserver analysis identifier rules fluid-let-syntax)
 
-    (scheme-langserver analysis identifier rules body)
+    (scheme-langserver analysis identifier rules begin)
 
     (scheme-langserver analysis identifier rules library-export)
     (scheme-langserver analysis identifier rules library-import)
@@ -244,8 +244,7 @@
             [(and (equal? r '(load-library)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,load-library-process) . ,identifier))]
 
-            [(and (equal? r '(body)) (private:top-env=? 'r6rs top))
-              (private-add-rule rules `((,do-nothing . ,body-process) . ,identifier))]
+            [(equal? r '(begin)) (private-add-rule rules `((,do-nothing . ,begin-process) . ,identifier))]
 
             [(and (equal? r '(define-library)) (private:top-env=? 'r7rs top))
               (private-add-rule rules `((,library-import-process-r7rs . ,export-process-r7rs) . ,identifier))]

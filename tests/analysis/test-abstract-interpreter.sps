@@ -39,4 +39,23 @@
                     (index-node-references-import-in-this-node (car (document-index-node-list document)))))))
 (test-end)
 
+(test-begin "define-library-import-process-r7rs")
+    (let* ( [workspace (init-workspace (string-append (current-directory) "/tests/resources/r7rs") 'txt 'r7rs #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/r7rs/liii/rich-vector.scm.txt"))]
+            [root-library-node (init-library-node root-file-node 'r7rs)]
+            [file-linkage (workspace-file-linkage workspace)]
+            [document (file-node-document target-file-node)])
+  
+        (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(scheme base) 'r7rs)))
+        (step root-file-node root-library-node file-linkage document)
+        
+        (test-equal 
+            '%index-of
+            (find 
+                (lambda (identifier) (equal? identifier '%index-of))
+                (map identifier-reference-identifier 
+                    (index-node-references-import-in-this-node (car (document-index-node-list document)))))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

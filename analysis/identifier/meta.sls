@@ -144,7 +144,11 @@ rnrs-programs rnrs-mutable-pairs rnrs-mutable-strings
 rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums 
 rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
 rnrs-records-syntactic rnrs-records-procedure 
-rnrs-records-inspection chezscheme-csv7 scheme-csv7))
+rnrs-records-inspection chezscheme-csv7 scheme-csv7
+scheme-base scheme-case-lambda scheme-char scheme-complex
+scheme-cxr scheme-eval scheme-file scheme-inexact scheme-lazy 
+scheme-load scheme-process-context scheme-read scheme-repl 
+scheme-time scheme-write scheme-r5rs))
   ;numeric tower
   (fold-left 
     (lambda (parent identifier-reference)
