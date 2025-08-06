@@ -18,6 +18,7 @@
     identifier-reference-type-expressions-set!
     identifier-reference-index-node
     identifier-reference-initialization-index-node
+    identifier-reference-top-environment
 
     identifier-compare?
 

@@ -122,7 +122,7 @@
 (test-begin "expand:step-by-step & generate-pair:template+callee & generate-pair:template+expanded for syntax-case")
   (let* ([workspace-instance (init-workspace (current-directory))]
       [root-file-node (workspace-file-node workspace-instance)]
-      [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/body.sls"))]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/begin.sls"))]
       [document (file-node-document target-file-node)]
       [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 19 4))]
       [identifier-reference (car (find-available-references-for document target-index-node 'try))]

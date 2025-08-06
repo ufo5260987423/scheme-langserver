@@ -1,5 +1,5 @@
-(library (scheme-langserver analysis identifier rules body)
-  (export body-process)
+(library (scheme-langserver analysis identifier rules begin)
+  (export begin-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -14,7 +14,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
-(define (body-process root-file-node root-library-node document index-node)
+(define (begin-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (try
