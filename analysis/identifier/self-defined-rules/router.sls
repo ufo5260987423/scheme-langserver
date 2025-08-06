@@ -13,7 +13,7 @@
     (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules body)
+    (scheme-langserver analysis identifier rules begin)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
     (scheme-langserver analysis identifier self-defined-rules ufo-match match)
@@ -29,7 +29,7 @@
         [possible-new-memory `(,@(reverse (cdr (reverse memory))) (,(car (reverse memory)) . ,identifier-list))])
     (cond 
       [(and (equal? library-identifiers '((srfi :23 error tricks))) (equal? expressions '(SRFI-23-error->R6RS)))
-        (add-rule-procedure rules `((,do-nothing . ,body-process) . ,target-identifier))]
+        (add-rule-procedure rules `((,do-nothing . ,begin-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((srfi private include))) (equal? expressions '(include/resolve)))
         (let ([target-lambda 
             (lambda (root-file-node root-library-node document index-node)
