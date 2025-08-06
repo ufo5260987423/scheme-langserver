@@ -51,9 +51,9 @@
         (step root-file-node root-library-node file-linkage document)
         
         (test-equal 
-            '%index-of
+            'receive
             (find 
-                (lambda (identifier) (equal? identifier '%index-of))
+                (lambda (identifier) (equal? identifier 'receive))
                 (map identifier-reference-identifier 
                     (index-node-references-import-in-this-node (car (document-index-node-list document)))))))
 (test-end)
