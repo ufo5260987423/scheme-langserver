@@ -15,7 +15,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
-; procedure parameter variable 
+; procedure parameter
 (define (define-r7rs-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
