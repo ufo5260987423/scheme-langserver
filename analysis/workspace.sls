@@ -133,11 +133,11 @@
   (let* ([current-file-node (walk-file root-file-node target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)])
-    ; (pretty-print 'test0)
-    ; (pretty-print target-path)
+    (pretty-print 'test0)
+    (pretty-print target-path)
     (step root-file-node root-library-node file-linkage document)
     (process-library-identifier-excluded-references document)
-    ; (pretty-print 'test1)
+    (pretty-print 'test1)
     (if type-inference?
       (try 
         (construct-substitution-list-for document)
