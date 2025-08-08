@@ -23,8 +23,11 @@
       [root-identifiers (apply append (map root-ancestor identifiers))])
     (find (lambda (i) (or (meta-library? (identifier-reference-library-identifier i)) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
 
-(define (meta-library? list-instance)
-  (not (null? (find-meta list-instance))))
+(define meta-library?
+  (case-lambda
+    [(list-instance) (meta-library? list-instance 'r6rs)]
+    [(list-instance top-environment)
+      (not (null? (find-meta list-instance top-environment)))]))
 
 (define find-meta
   (case-lambda
@@ -104,12 +107,15 @@
             [else '()])]
         [else '()])]))
 
-(define (private-process library-instance list-instance)
-  (sort-identifier-references 
-    (map 
-        (lambda (identifier-pair) 
-          (make-identifier-reference (car identifier-pair) '() '() '() library-instance (cadr identifier-pair) '() '()))
-        list-instance)))
+(define private-process
+  (case-lambda
+    [(library-instance list-instance) (private-process library-instance list-instance 'r6rs)]
+    [(library-instance list-instance top-environment)
+      (sort-identifier-references 
+        (map 
+            (lambda (identifier-pair) 
+              (make-identifier-reference (car identifier-pair) '() '() '() library-instance (cadr identifier-pair) '() '() top-environment))
+            list-instance))]))
 
 (define (init-type-expressions)
   (map 
@@ -138,7 +144,11 @@ rnrs-programs rnrs-mutable-pairs rnrs-mutable-strings
 rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums 
 rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
 rnrs-records-syntactic rnrs-records-procedure 
-rnrs-records-inspection chezscheme-csv7 scheme-csv7))
+rnrs-records-inspection chezscheme-csv7 scheme-csv7
+scheme-base scheme-case-lambda scheme-char scheme-complex
+scheme-cxr scheme-eval scheme-file scheme-inexact scheme-lazy 
+scheme-load scheme-process-context scheme-read scheme-repl 
+scheme-time scheme-write scheme-r5rs))
   ;numeric tower
   (fold-left 
     (lambda (parent identifier-reference)
@@ -4884,7 +4894,8 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (record-type-name	procedure)
 (record-type-symbol	procedure))))
 
-(define scheme-base (private-process '(scheme base) '( 
+(define scheme-base (private-process '(scheme base) '(
+(define-library	syntax)
 (* procedure)
 (+ procedure)
 (- procedure)
@@ -5123,11 +5134,11 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (write-string procedure)
 (write-u8 procedure)
 (zero? procedure)
-)))
+) 'r7rs))
 
 (define scheme-case-lambda (private-process '(scheme case lambda) '( 
 (case-lambda syntax)
-)))
+) 'r7rs))
 
 (define scheme-char (private-process '(scheme char) '( 
 (char-alphabetic? procedure)
@@ -5152,7 +5163,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (string-downcase procedure)
 (string-foldcase procedure)
 (string-upcase procedure)
-)))
+) 'r7rs))
 
 (define scheme-complex (private-process '(scheme complex) '( 
 (angle procedure)
@@ -5161,7 +5172,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (make-polar procedure)
 (make-rectangular procedure)
 (real-part procedure)
-)))
+) 'r7rs))
 
 (define scheme-cxr (private-process '(scheme cxr) '( 
 (caaaar procedure)
@@ -5188,12 +5199,12 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (cdddar procedure)
 (cddddr procedure)
 (cdddr procedure)
-)))
+) 'r7rs))
 
 (define scheme-eval (private-process '(scheme eval) '( 
 (environment procedure)
 (eval procedure)
-)))
+) 'r7rs))
 
 (define scheme-file (private-process '(scheme file) '( 
 (call-with-input-file procedure)
@@ -5206,7 +5217,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (open-output-file procedure)
 (with-input-from-file procedure)
 (with-output-to-file procedure)
-)))
+) 'r7rs))
 
 (define scheme-inexact (private-process '(scheme inexact) '( 
 (acos procedure)
@@ -5221,7 +5232,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (sin procedure)
 (sqrt procedure)
 (tan procedure)
-)))
+) 'r7rs))
 
 (define scheme-lazy (private-process '(scheme lazy) '( 
 (delay syntax)
@@ -5229,11 +5240,11 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (force procedure)
 (make-promise procedure)
 (promise? procedure)
-)))
+) 'r7rs))
 
 (define scheme-load (private-process '(scheme load) '( 
 (load procedure)
-)))
+) 'r7rs))
 
 (define scheme-process-context (private-process '(scheme process context) '( 
 (command-line procedure)
@@ -5241,28 +5252,28 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (exit procedure)
 (get-environment-variable procedure)
 (get-environment-variables procedure)
-)))
+) 'r7rs))
 
 (define scheme-read (private-process '(scheme read) '( 
 (read procedure)
-)))
+) 'r7rs))
 
 (define scheme-repl (private-process '(scheme repl) '( 
 (interaction-environment procedure)
-)))
+) 'r7rs))
 
 (define scheme-time (private-process '(scheme time) '( 
 (current-jiffy procedure)
 (current-second procedure)
 (jiffies-per-second procedure)
-)))
+) 'r7rs))
 
 (define scheme-write (private-process '(scheme write) '( 
 (display procedure)
 (write procedure)
 (write-shared procedure)
 (write-simple procedure)
-)))
+) 'r7rs))
 
 (define scheme-r5rs (private-process '(scheme r5rs) '( 
 (* procedure)
@@ -5487,6 +5498,6 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7))
 (write procedure)
 (write-char procedure)
 (zero? procedure)
-)))
+) 'r7rs))
 
 )

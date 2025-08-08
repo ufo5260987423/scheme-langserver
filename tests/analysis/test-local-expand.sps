@@ -40,7 +40,7 @@
     (let* ( [workspace (init-workspace (current-directory) #f #f)]  
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/body.sls"))]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/begin.sls"))]
             [document (file-node-document target-file-node)]
             [target-text (document-text document)]
             [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int target-text 20 7))]
