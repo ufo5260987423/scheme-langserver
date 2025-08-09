@@ -119,6 +119,7 @@
             substitution-list
             (index-node-children current-index-node)))]))
 
+;this procedure is too expensive to process substitution list. This branch, type-inference is abandoned now. Though I think it should be correct.
 (define (private-append-substitution substitution-list non-ordered-substitution-list . rest)
   (cond 
     [(null? rest)
