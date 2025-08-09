@@ -50,11 +50,11 @@
     [(current-document current-index-node substitution-list expanded+callee-list)
       (cond 
         [(null? (index-node-children current-index-node))
-          (append substitution-list (trivial-process current-document current-index-node))]
+          (private-append-substitution substitution-list (trivial-process current-document current-index-node))]
 
         [(quote? current-index-node current-document) 
           (let ([child (car (index-node-children current-index-node))])
-            (append 
+            (private-append-substitution 
               substitution-list 
               `((,(index-node-variable current-index-node) = ,(index-node-variable child)))
               (trivial-process current-document child)))]
@@ -66,7 +66,7 @@
             (fold-left 
               (lambda (prev current)
                 (step current-document current available-identifiers prev 'quasiquoted expanded+callee-list))
-              (append   
+              (private-append-substitution
                 substitution-list 
                 `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
               (index-node-children current-index-node)))]
@@ -76,7 +76,7 @@
             (fold-left 
               (lambda (prev current)
                 (step current-document current available-identifiers prev 'quasisyntax expanded+callee-list))
-              (append   
+              (private-append-substitution
                 substitution-list 
                 `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
               (index-node-children current-index-node)))]
@@ -99,11 +99,11 @@
               (if (symbol? head-expression)
                 (fold-left 
                   (lambda (prev current) 
-                    (append prev ((car (cdr current)) current-document current-index-node)))
+                    (private-append-substitution prev ((car (cdr current)) current-document current-index-node)))
                   substitution-list
                   target-rules)
                 ;this must be grounded, generally you shouldn't test this.
-                (append substitution-list (application-process current-document current-index-node)))
+                (private-append-substitution substitution-list (application-process current-document current-index-node)))
               children))])]
       [(current-document current-index-node available-identifiers substitution-list quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
@@ -118,6 +118,18 @@
             (lambda (prev current) (step current-document current available-identifiers prev quasi-quoted-syntaxed expanded+callee-list))
             substitution-list
             (index-node-children current-index-node)))]))
+
+(define (private-append-substitution substitution-list non-ordered-substitution-list . rest)
+  (cond 
+    [(null? rest)
+      (ordered-dedupe 
+        (merge substitution-compare
+          substitution-list
+          (sort substitution-compare non-ordered-substitution-list)))]
+    [else 
+      (apply private-append-substitution 
+        `(,(private-append-substitution substitution-list non-ordered-substitution-list)
+          ,@rest))]))
 
 (define (private-rule-compare? item0 item1)
   (apply identifier-compare? (map car (list item0 item1))))
