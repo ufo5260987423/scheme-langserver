@@ -111,7 +111,7 @@
       (let* ([target-document (identifier-reference-document identifier-reference)]
           [target-index-node (identifier-reference-index-node identifier-reference)]
           [type-expressions (identifier-reference-type-expressions identifier-reference)])
-      (cond 
+        (cond 
           ;it's in r6rs library?
           [(null? target-index-node)
             (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]
@@ -172,7 +172,9 @@
                   `(,variable) 
                   '(=) 
                   `(,(index-node-variable (identifier-reference-index-node identifier-reference))))
-                (private-get-reachable (document-substitution-list target-document) variable))
+                (private-get-reachable 
+                  (document-substitution-list target-document) 
+                  (index-node-variable (identifier-reference-index-node identifier-reference))))
               (cartesian-product `(,variable) '(:) `(,type-expressions)))]))
       (apply 
         append 
