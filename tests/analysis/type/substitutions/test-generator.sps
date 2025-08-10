@@ -44,27 +44,13 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 26))]
-            [variable (index-node-variable target-index-node)])
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 26))])
         (construct-substitutions-for target-document)
         (test-equal 
             #t 
             (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+                (type:interpret-result-list target-index-node)
                 (construct-type-expression-with-meta 'fixnum?))))
-(test-end)
-
-(test-begin "walk for symbol")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 12 9))]
-            [variable (index-node-variable target-index-node)])
-        (construct-substitution-list-for target-document)
-        (test-equal (car (car (substitution:walk (document-substitution-list target-document) variable))) variable))
 (test-end)
 
 (test-begin "type-inference-for symbol")
