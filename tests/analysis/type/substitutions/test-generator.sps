@@ -46,7 +46,7 @@
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 26))]
             [variable (index-node-variable target-index-node)])
-        (construct-substitution-list-for target-document)
+        (construct-substitutions-for target-document)
         (test-equal 
             #t 
             (contain? 
