@@ -29,12 +29,7 @@
               [key-value-index-nodes (index-node-children (cadr children))])
             (extend-index-node-substitution-list index-node return-index-node)
             (extend-index-node-substitution-list return-index-node index-node)
-            (append 
-              ;for let index-node
-              (construct-substitutions-between-index-nodes index-node return-index-node '=)
-              (construct-substitutions-between-index-nodes return-index-node index-node '=)
-              ;for key value index-nodes
-              (apply append (map let:private-process-key-value key-value-index-nodes))))]
+            (map let:private-process-key-value key-value-index-nodes))]
         [else '()])
       (except c
         [else '()]))))

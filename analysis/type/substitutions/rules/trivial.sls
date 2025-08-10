@@ -44,25 +44,25 @@
     [(document index-node expression allow-unquote? quoted?)
       (cond
         ;These clauses won't be affected by quote
-        [(char? expression) (extend-index-node-substitution-list current-index-node private-char?)]
-        [(string? expression) (extend-index-node-substitution-list current-index-node private-string?)]
-        [(boolean? expression) (extend-index-node-substitution-list current-index-node private-boolean?)]
-        [(fixnum? expression) (extend-index-node-substitution-list current-index-node private-fixnum?)]
-        [(bignum? expression) (extend-index-node-substitution-list current-index-node private-bignum?)]
-        [(integer? expression) (extend-index-node-substitution-list current-index-node private-integer?)]
-        [(cflonum? expression) (extend-index-node-substitution-list current-index-node private-cflonum?)]
-        [(flonum? expression) (extend-index-node-substitution-list current-index-node private-flonum?)]
-        [(rational? expression) (extend-index-node-substitution-list current-index-node private-rational?)]
-        [(real? expression) (extend-index-node-substitution-list current-index-node private-real?)]
-        [(complex? expression) (extend-index-node-substitution-list current-index-node private-complex?)]
-        [(number? expression) (extend-index-node-substitution-list current-index-node private-number?)]
+        [(char? expression) (extend-index-node-substitution-list index-node private-char?)]
+        [(string? expression) (extend-index-node-substitution-list index-node private-string?)]
+        [(boolean? expression) (extend-index-node-substitution-list index-node private-boolean?)]
+        [(fixnum? expression) (extend-index-node-substitution-list index-node private-fixnum?)]
+        [(bignum? expression) (extend-index-node-substitution-list index-node private-bignum?)]
+        [(integer? expression) (extend-index-node-substitution-list index-node private-integer?)]
+        [(cflonum? expression) (extend-index-node-substitution-list index-node private-cflonum?)]
+        [(flonum? expression) (extend-index-node-substitution-list index-node private-flonum?)]
+        [(rational? expression) (extend-index-node-substitution-list index-node private-rational?)]
+        [(real? expression) (extend-index-node-substitution-list index-node private-real?)]
+        [(complex? expression) (extend-index-node-substitution-list index-node private-complex?)]
+        [(number? expression) (extend-index-node-substitution-list index-node private-number?)]
 
         [(and (symbol? expression) (not quoted?))
           (map 
             (lambda (identifier-reference) 
               (private-process document identifier-reference index-node))
             (find-available-references-for document index-node expression))]
-        [(symbol? expression) (extend-index-node-substitution-list current-index-node private-symbol?)]
+        [(symbol? expression) (extend-index-node-substitution-list index-node private-symbol?)]
 
         [(and (pair? expression) (not (list? expression)))
           (let* ([f (car expression)]
@@ -71,7 +71,7 @@
               [new-index-node-l (make-index-node index-node '() '() '() '() '() '() '())])
             (extend-index-node-substitution-list
               index-node
-              `(,(inner:pair? new-index-node-f new-index-node-l)))
+              `(inner:pair? ,new-index-node-f ,new-index-node-l))
             (trivial-process document new-index-node-f f allow-unquote? quoted?)
             (trivial-process document new-index-node-l l allow-unquote? quoted?))]
         [(or (list? expression) (vector? expression))
@@ -85,7 +85,7 @@
                         v)))
                   ; (if is-list? '(inner:list?) '(inner:vector?))
                   (if is-list? expression (vector->list expression)))]
-              [final-result `(,(if is-list? inner:list? inner:vector?) ,@middle-result)])
+              [final-result `(,(if is-list? 'inner:list? 'inner:vector?) ,@middle-result)])
             (extend-index-node-substitution-list index-node final-result))]
         [else '()])]))
 
@@ -97,7 +97,9 @@
       (cond 
         ;it's in r6rs library?
         [(null? target-index-node)
-          (extend-index-node-substitution-list index-node . type-expressions)]
+          (map 
+            (lambda (t) (extend-index-node-substitution-list index-node t))
+            type-expressions)]
         ; this can't be excluded by identifier-catching rules
         [(equal? index-node target-index-node) '()]
         ;local
@@ -138,7 +140,9 @@
                         c)) 
                       ,head))))]
             [(and (contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference)) (not (null? type-expressions)))
-              (extend-index-node-substitution-list index-node . type-expressions)]
+              (map 
+                (lambda (t) (extend-index-node-substitution-list index-node t))
+                type-expressions)]
             [else '()])]
         ;import
         [else 
@@ -146,7 +150,9 @@
             (extend-index-node-substitution-list
               index-node
               (identifier-reference-index-node identifier-reference))
-            (extend-index-node-substitution-list index-node . type-expressions))]))
+            (map 
+              (lambda (t) (extend-index-node-substitution-list index-node t))
+              type-expressions))]))
     (map 
       (lambda (parent) (private-process document parent index-node))
       (identifier-reference-parents identifier-reference))))

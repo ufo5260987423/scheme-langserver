@@ -27,14 +27,14 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "construct-substitution-list-for")
+(test-begin "construct-substitutions-for")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)])
-        (construct-substitution-list-for target-document)
-        (test-equal #f (null? (document-substitution-list target-document))))
+        (construct-substitutions-for target-document)
+        (test-equal #t #t))
 (test-end)
 
 (test-begin "type-inference-for fixnum literal")

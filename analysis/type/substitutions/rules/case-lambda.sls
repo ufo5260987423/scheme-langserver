@@ -24,7 +24,7 @@
           (map 
             (lambda (clause-index-node)
               (private-clause-process `(,index-node) clause-index-node))
-            clause-index-nodes)]
+            (cdr children))]
         [else '()])
       (except c
         [else '()]))))
@@ -34,9 +34,8 @@
       [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
     (match expression
       [(((? symbol? parameter) ...) _ **1) 
-        (extend-index-node-substitution-list
-          root-index-node
-          .
+        (map 
+          (lambda (t) (extend-index-node-substitution-list root-index-node t))
           (construct-lambdas-with 
             `(,(car (reverse children)))
             (construct-parameter-index-nodes-products-with (index-node-children (car children)))))]

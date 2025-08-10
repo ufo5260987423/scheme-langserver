@@ -1,6 +1,6 @@
 (library (scheme-langserver analysis type substitutions generator)
   (export 
-    construct-substitution-list-for)
+    construct-substitutions-for)
   (import 
     (chezscheme)
 

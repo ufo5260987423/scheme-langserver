@@ -20,7 +20,6 @@
               [except-index-node (car (reverse children))]
               [except-children (index-node-children except-index-node)]
               [something-end-index-node (cadr (reverse children))]
-              [try-variable (index-node-variable index-node)]
               [branch-index-nodes (cddr except-children)])
             (extend-index-node-substitution-list index-node something-end-index-node)
             (map 

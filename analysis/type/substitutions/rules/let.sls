@@ -36,7 +36,9 @@
 
             (extend-index-node-substitution-list index-node return-index-node)
             (extend-index-node-substitution-list return-index-node index-node)
-            (extend-index-node-substitution-list loop-index-node . loop-procedure-details)
+            (map 
+              (lambda (t) (extend-index-node-substitution-list loop-index-node t))
+              loop-procedure-details)
             (map let:private-process-key-value key-value-index-nodes))]
         [(_ (((? symbol? identifier) value) ...) fuzzy **1) 
           (let* ([return-index-node (car (reverse children))]

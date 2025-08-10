@@ -26,8 +26,12 @@
               [previous (map reverse clauses-children)]
               [latters (map cadr reverse)]
               [expression-node (cadr children)])
-            (extend-index-node-substitution-list expression-node . previous-index-nodes)
-            (extend-index-node-substitution-list index-node . latters))]
+            (map 
+              (lambda (t) (extend-index-node-substitution-list expression-node t))
+              previous-index-nodes)
+            (map 
+              (lambda (t) (extend-index-node-substitution-list index-node t))
+              latters))]
         [else '()])
       (except c
         [else '()]))))
