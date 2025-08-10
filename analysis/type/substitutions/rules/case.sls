@@ -19,25 +19,15 @@
       [children (index-node-children index-node)])
     (try
       (match expression
-        [(_ (? symbol? expression) clause **1)
-          (let* ([clauses (cddr children)]
-              [clauses-children (map index-node-children clauses)]
-              [previous (map car clauses-children)]
-              [latters (map cadr clauses-children)]
-              [expression-variable (index-node-variable (cadr children))])
-            (append 
-              (apply append 
-                (map 
-                  (lambda (local-expression)
-                    (trivial-process document index-node expression-variable local-expression #f #f))
-                  (map annotation-stripped (apply append (map index-node-datum/annotations (map index-node-children previous))))))
-              (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters))))]
         [(_ expression clause **1)
           (let* ([clauses (cddr children)]
               [clauses-children (map index-node-children clauses)]
-              [previous (map car clauses-children)]
-              [latters (map cadr clauses-children)])
-            (apply append (map (lambda (r) (construct-substitutions-between-index-nodes index-node r '=)) latters)))]
+              [previous-index-nodes (map car clauses-children)]
+              [previous (map reverse clauses-children)]
+              [latters (map cadr reverse)]
+              [expression-node (cadr children)])
+            (extend-index-node-substitution-list expression-node . previous-index-nodes)
+            (extend-index-node-substitution-list index-node . latters))]
         [else '()])
       (except c
         [else '()]))))

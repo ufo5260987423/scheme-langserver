@@ -1,8 +1,8 @@
 (library (scheme-langserver virtual-file-system index-node)
   (export 
     debug:print-expression
-    debug:print-expression&variable
-    debug:recursive-print-expression&variable
+    debug:print-expression&uuid
+    debug:recursive-print-expression&uuid
 
     pick-index-node-from
     pick-index-node-parent-of
@@ -19,7 +19,7 @@
     index-node-start
     index-node-end
     index-node-datum/annotations
-    index-node-variable
+    index-node-uuid
 
     index-node-children
     index-node-children-set!
@@ -29,6 +29,10 @@
     index-node-references-import-in-this-node-set!
     index-node-excluded-references
     index-node-excluded-references-set!
+    index-node-substitution-list
+    index-node-substitution-list-set!
+
+    extend-index-node-substitution-list 
 
     unquote-splicing?
     unquote?
@@ -50,8 +54,8 @@
     clear-references-for)
   (import 
     (chezscheme)
-    (scheme-langserver util dedupe)
-    (scheme-langserver analysis type domain-specific-language variable))
+    (uuid)
+    (scheme-langserver util dedupe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node
@@ -60,16 +64,24 @@
     (immutable start)
     (immutable end)
     (immutable datum/annotations)
-    (immutable variable)
+    (immutable uuid)
 
     (mutable children)
     (mutable references-export-to-other-node)
     (mutable references-import-in-this-node)
-    (mutable excluded-references))
+    (mutable excluded-references)
+    (mutable substitution-list))
   (protocol
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
-        (new parent start end datum/annotations (make-variable) children references-export-to-other-node references-import-in-this-node excluded-references)))))
+        (new parent start end datum/annotations (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '())))))
+
+(define (extend-index-node-substitution-list index-node . target-substitutions)
+  (index-node-substitution-list-set!
+    index-node
+    (append 
+      (index-node-substitution-list index-node)
+      target-substitutions)))
 
 (define (unquote-splicing? index-node document)
   (private index-node document 'unquote-splicing))
@@ -104,13 +116,13 @@
 (define (debug:print-expression index-node)
   (pretty-print (annotation-stripped (index-node-datum/annotations index-node))))
 
-(define (debug:print-expression&variable index-node)
+(define (debug:print-expression&uuid index-node)
   (debug:print-expression index-node)
-  (pretty-print (index-node-variable index-node)))
+  (pretty-print (index-node-uuid index-node)))
 
-(define (debug:recursive-print-expression&variable index-node)
-  (debug:print-expression&variable index-node)
-  (map debug:recursive-print-expression&variable (index-node-children index-node)))
+(define (debug:recursive-print-expression&uuid index-node)
+  (debug:print-expression&uuid index-node)
+  (map debug:recursive-print-expression&uuid (index-node-children index-node)))
 
 (define (find-leaves index-node-list)
   (fold-left 

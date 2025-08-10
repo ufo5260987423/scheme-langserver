@@ -27,6 +27,8 @@
 
               ;((? symbol? identifier) value ) index-nodes
               [key-value-index-nodes (index-node-children (cadr children))])
+            (extend-index-node-substitution-list index-node return-index-node)
+            (extend-index-node-substitution-list return-index-node index-node)
             (append 
               ;for let index-node
               (construct-substitutions-between-index-nodes index-node return-index-node '=)

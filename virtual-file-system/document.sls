@@ -9,8 +9,6 @@
     document-index-node-list-set!
     document-ordered-reference-list
     document-ordered-reference-list-set!
-    document-substitution-list
-    document-substitution-list-set!
     document-refreshable?
     document-refreshable?-set!
     document-line-length-vector-set!
@@ -25,17 +23,15 @@
 (define-record-type document 
   (fields 
     (immutable uri)
-    ;now it is only used for type-inference in analysis/type/substitutions/trivial.sls
     (mutable text)
     (mutable index-node-list)
     (mutable ordered-reference-list)
-    (mutable substitution-list)
     (mutable refreshable?)
     (mutable line-length-vector))
   (protocol
     (lambda (new)
       (lambda (uri text index-node-list reference-list)
-        (new uri text index-node-list reference-list '() #t (text->line-length-vector text))))))
+        (new uri text index-node-list reference-list #t (text->line-length-vector text))))))
 
 (define (document+bias->position-list document bias)
   (let loop ([current-line 0]

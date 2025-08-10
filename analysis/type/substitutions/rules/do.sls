@@ -22,7 +22,7 @@
         [(_ ((var init update ...) **1) (test result ...) _ ... ) 
           (let* ([children (index-node-children index-node)]
               [var-index-node (cadr children)])
-            (apply append (map private-process (index-node-children var-index-node))))]
+            (map private-process (index-node-children var-index-node)))]
         [else '()])
       (except c
         [else '()]))))
@@ -34,18 +34,13 @@
     (match expression
       [((? symbol? var) init)
         (let* ([var-index-node (car children)]
-          [var-variable (index-node-variable var-index-node)]
-          [init-index-node (cadr children)]
-          [init-index-variable (index-node-variable init-index-node)])
-          `((,var-variable = ,init-index-variable)))]
+            [init-index-node (cadr children)])
+          (extend-index-node-substitution-list var-index-node init-index-node))]
       [((? symbol? var) init update)
         (let* ([var-index-node (car children)]
-          [var-variable (index-node-variable var-index-node)]
-          [init-index-node (cadr children)]
-          [init-index-variable (index-node-variable init-index-node)]
-          [update-index-node (caddr (children))]
-          [update-index-variable (index-node-variable update-index-node)])
-          `((,var-variable = ,init-index-variable)
-            (,var-variable = ,update-index-variable)))]
+            [init-index-node (cadr children)]
+            [update-index-node (caddr (children))])
+          (extend-index-node-substitution-list var-index-node init-index-node)
+          (extend-index-node-substitution-list var-index-node update-index-node))]
       [else '()])))
 )

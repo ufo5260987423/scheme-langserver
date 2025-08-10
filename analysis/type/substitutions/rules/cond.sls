@@ -19,12 +19,9 @@
     (try
       (match expression
         [(_ clause **1)
-          (apply 
-            append 
-            (map 
-              (lambda (clause-index-node)
-                (private-clause-process index-node clause-index-node))
-              (cdr children)))]
+          (map 
+            (lambda (clause-index-node) (private-clause-process index-node clause-index-node))
+            (cdr children))]
         [else '()])
       (except c
         [else '()]))))
@@ -37,9 +34,8 @@
       [last-child (car (reverse children))])
     (match expression
       [(predicator tail **1) 
-        (append
-          `((,(index-node-variable first-child) = something?))
-          (construct-substitutions-between-index-nodes root-index-node last-child '=)
-          (construct-substitutions-between-index-nodes last-child root-index-node '=)) ]
+        (extend-index-node-substitution-list first-child 'something?)
+        (extend-index-node-substitution-list root-index-node last-child)
+        (extend-index-node-substitution-list last-child root-index-node)]
       [else '()])))
 )

@@ -13,9 +13,7 @@
     (scheme-langserver virtual-file-system document))
 
 (define (begin-process document index-node)
-  (let* ([variable (index-node-variable index-node)]
-      [children (index-node-children index-node)])
-    (if (null? children)
-      '()
-      `((,variable = ,(index-node-variable (car (reverse children))))))))
+  (extend-index-node-substitution-list
+    index-node
+    (car (reverse (index-node-children index-node)))))
 )

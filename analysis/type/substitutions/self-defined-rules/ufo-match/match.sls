@@ -22,14 +22,12 @@
     (try
       (match expression
         [(_ something **1)
-          (fold-left 
-            (lambda (prev i) 
+          (map 
+            (lambda (i)
               (let ([c (index-node-children i)])
-                (append prev 
-                  (if (not (null? c))
-                    (private:pattern+scope document (car c) i)
-                    '()))))
-            '()
+                (if (not (null? c))
+                  (private:pattern+scope document (car c) i)
+                  '())))
             (cdr (index-node-children index-node)))]
         [else '()])
       (except c
@@ -41,10 +39,10 @@
     (match expression 
       [('? something (? symbol? s)) 
         (let* ([s-index-node (car (reverse children))]
-            [s-variable (index-node-variable s-index-node)]
             [pre-available-references (find-available-references-for document scope-index-node s)]
             [available-references (dedupe (apply append (map root-ancestor pre-available-references)))])
-          (cartesian-product `(,s-variable) '(:) 
+          (extend-index-node-substitution-list s-index-node
+            .
             (map construct-type-expression-with-meta 
               (map identifier-reference-identifier 
                 (filter 
@@ -52,8 +50,7 @@
                     (and (null? (identifier-reference-index-node r)) (string-suffix? (symbol->string (identifier-reference-identifier r)) "?")))
                   available-references)))))]
       [else 
-        (fold-left 
-          (lambda (prev i) (append prev (private:pattern+scope document i scope-index-node)))
-          '()
+        (map 
+          (lambda (i) (private:pattern+scope document i scope-index-node))
           children)])))
 )
