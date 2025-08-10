@@ -22,7 +22,6 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions generator)
-    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object))
