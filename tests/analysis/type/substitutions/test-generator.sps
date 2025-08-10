@@ -61,12 +61,11 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 16 11))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta '(boolean? <- (inner:list? real? real? **1)))])
-        (construct-substitution-list-for target-document)
+        (construct-substitutions-for target-document)
         (test-equal #t 
             (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+                (type:interpret-result-list target-index-node)
                 check-base)))
 (test-end)
 
