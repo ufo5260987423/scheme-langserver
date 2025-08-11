@@ -194,10 +194,10 @@
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      ; (pretty-print 'interpret)
-      ; (print-graph #t)
-      ; (pretty-print (length memory))
-      ; (pretty-print expression)
+      (pretty-print 'interpret)
+      (print-graph #t)
+      (pretty-print (length memory))
+      (pretty-print (inner:type->string expression))
       (let ([new-memory `(,@memory ,expression)])
         (cond
           [(null? expression) expression]
@@ -207,8 +207,10 @@
             ; (pretty-print memory)
             (type:environment-result-list-set! env `(,expression))]
           [(contain? memory expression) 
+      (pretty-print 'interpret0)
             (type:environment-result-list-set! env `(,expression))]
           [(inner:executable? expression)
+      (pretty-print 'interpret1)
             ;the clause sequence is important
             (match expression
               [((? inner:macro? l) params ...)
@@ -245,7 +247,11 @@
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(index-node? expression)
+      (pretty-print 'interpret2)
+            (debug:print-expression&uuid expression)
             (let ([tmp (index-node-substitution-list expression)])
+      (pretty-print (map inner:type->string tmp))
+      (pretty-print 'interpret2.0)
               (type:environment-result-list-set! 
                 env 
                 (if (null? tmp)
@@ -258,8 +264,12 @@
                           (type:interpret-result-list reified env new-memory)))
                       tmp)))))]
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
-          [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
+          [(inner:macro? expression) 
+      (pretty-print 'interpret3)
+          (type:environment-result-list-set! env `(,expression))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
+      (pretty-print 'interpret4)
+          (pretty-print (map inner:type->string expression))
             (type:environment-result-list-set! env 
               (apply 
                 (private-generate-cartesian-product-procedure)
@@ -271,6 +281,7 @@
           ;If here's no "not", it will leads to error because of its item maybe failed macro indicated
           ;by above "except" branch. The only solution is type:depature&interpret->result-list.
           [(and (list? expression) (not (inner:contain? expression inner:macro?)))
+      (pretty-print 'interpret5)
             (let ([filtered 
                   (filter
                     (lambda (r) (or (inner:macro? r) (inner:lambda? r)))
@@ -287,12 +298,12 @@
       (type:environment-result-list-set! 
         env 
         (dedupe (type:environment-result-list env)))
-      ; (pretty-print 'bye0)
-      ; (pretty-print expression)
-      ; (pretty-print 'bye1)
-      ; (pretty-print (length memory))
-      ; (pretty-print (length (type:environment-result-list env)))
-      ; (pretty-print (type:environment-result-list env))
+      (pretty-print 'bye0)
+      (pretty-print (inner:type->string expression))
+      (pretty-print 'bye1)
+      (pretty-print (length memory))
+      (pretty-print (length (type:environment-result-list env)))
+      (pretty-print (map inner:type->string (type:environment-result-list env)))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]

@@ -13,5 +13,7 @@
     (scheme-langserver virtual-file-system document))
 
 (define (application-process document index-node)
-  (extend-index-node-substitution-list index-node . (index-node-children index-node)))
+  (map 
+    (lambda (t) (extend-index-node-substitution-list index-node t))
+    (index-node-children index-node)))
 )
