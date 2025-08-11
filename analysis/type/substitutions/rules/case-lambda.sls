@@ -9,7 +9,6 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
-    (scheme-langserver analysis type domain-specific-language variable)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
