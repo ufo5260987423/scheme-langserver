@@ -125,7 +125,6 @@
         [client-capabilities (assq-ref params 'capabilities)]
         [window (assq-ref client-capabilities 'window)]
         [workDoneProgress? (if window (assq-ref window 'workDoneProgress) #f)]
-        [identifier (if (equal? (server-top-environment server-instance) 'r6rs) 'akku 'txt)]
         [textDocument (assq-ref params 'textDocument)]
         ; [renameProvider 
         ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
@@ -175,13 +174,13 @@
 
     (if (null? (server-mutex server-instance))
       (begin 
-        (server-workspace-set! server-instance (init-workspace root-path identifier (server-top-environment server-instance) #f (server-type-inference? server-instance)))
+        (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #f (server-type-inference? server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
         (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
           (begin 
-            (server-workspace-set! server-instance (init-workspace root-path identifier (server-top-environment server-instance) #t (server-type-inference? server-instance)))
+            (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #t (server-type-inference? server-instance)))
             (server-work-done-progress?-set! server-instance workDoneProgress?)
             (success-response id (make-alist 'capabilities server-capabilities)))
           (fail-response id server-error-start "server has been initialized"))))))
