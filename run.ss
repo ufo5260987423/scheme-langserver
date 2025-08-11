@@ -11,14 +11,14 @@
 
 Options:
   -l, --log-path                Path to write log output (default: current-project-directory/.scheme-langserver.log)
-  -m, --multi-thread       Enable multi thread (default: enable). use f or false to diasble
+  -m, --multi-thread            Enable multi thread (default: enable).
 
-  -t, --type-inference       Enable type inference (default: enable). use f or false to diasble
+  -t, --type-inference          Enable type inference (default: enable).
 
 
-  -h, --help       Print help information
+  -h, --help                    Print help information
 
-  -e, --top-environment Switch to support different top environment, for example R6RS, R7RS, etc.(default: R6RS)
+  -e, --top-environment         Switch to support different top environment, for example R6RS, R7RS, etc.(default: R6RS)
 
 
 Example Usage:
@@ -44,17 +44,17 @@ Example Usage:
 
 (define (multi-thread-proc option name arg seeds)
   (cond
-    ((or (string-ci=? arg "t") (string-ci=? arg "true"))
+    ((string-ci=? arg "enable")
       (hashtable-set! seeds "multi-thread" #t))
-    ((or (string-ci=? arg "f") (string-ci=? arg "false"))
+    ((string-ci=? arg "disable")
       (hashtable-set! seeds "multi-thread" #f)))
   seeds)
 
 (define (type-inference-proc option name arg seeds)
   (cond
-    ((or (string-ci=? arg "t") (string-ci=? arg "true"))
+    ((string-ci=? arg "enable")
       (hashtable-set! seeds "type-inference" #t))
-    ((or (string-ci=? arg "f") (string-ci=? arg "false"))
+    ((string-ci=? arg "disable")
       (hashtable-set! seeds "type-inference" #f)))
   seeds)
 
