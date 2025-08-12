@@ -38,14 +38,12 @@
 (define (inner:type->string target)
   (cond
     [(null? target) "() "]
-    [(and (list? target) (inner:trivial? target)) 
+    [(list? target) 
       (string-append "(" (apply string-append (map inner:type->string target)) ") ")]
     [(symbol? target) (string-append (symbol->string target) " ")]
     [(index-node? target) (string-append "[index-node-uuid " (index-node-uuid target) "] ")]
     [(identifier-reference? target) (string-append "[identifier-reference " (symbol->string (identifier-reference-identifier target))  "] ")]
     [else
-      (print-graph #t)
-      (pretty-print target)
       (raise "can't do the transformation")]))
 
 (define (inner:?->pair target)
