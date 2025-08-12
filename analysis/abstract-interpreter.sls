@@ -60,6 +60,10 @@
     (scheme-langserver analysis identifier rules r7rs define-library-import)
     (scheme-langserver analysis identifier rules r7rs define-library-export)
 
+    (scheme-langserver analysis identifier rules s7 define-macro)
+    (scheme-langserver analysis identifier rules s7 define*)
+    (scheme-langserver analysis identifier rules s7 lambda*)
+
     (scheme-langserver analysis identifier self-defined-rules router)
 
     (scheme-langserver virtual-file-system index-node)
@@ -171,7 +175,7 @@
           (cond 
             [(and (equal? r '(define)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-process) . ,identifier))]
-            [(and (equal? r '(define)) (private:top-env=? 'r7rs top))
+            [(and (equal? r '(define)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,define-r7rs-process) . ,identifier))]
             [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
             [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
@@ -246,8 +250,17 @@
 
             [(equal? r '(begin)) (private-add-rule rules `((,do-nothing . ,begin-process) . ,identifier))]
 
-            [(and (equal? r '(define-library)) (private:top-env=? 'r7rs top))
+            [(and (equal? r '(define-library)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,library-import-process-r7rs . ,export-process-r7rs) . ,identifier))]
+            
+            [(and (equal? r '(define*)) (private:top-env=? 's7 top))
+              (private-add-rule rules `((,define*-process) . ,identifier))]
+            
+            [(and (equal? r '(define*)) (private:top-env=? 's7 top))
+              (private-add-rule rules `((,define-macro-process) . ,identifier))]
+            
+            [(and (equal? r '(define*)) (private:top-env=? 's7 top))
+              (private-add-rule rules `((,lambda*-process) . ,identifier))]
 
             [else rules])
           (route&add 

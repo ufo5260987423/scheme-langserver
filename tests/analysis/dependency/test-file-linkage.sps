@@ -71,4 +71,15 @@
             (car paths)))
 (test-end)
 
+(test-begin "file-linkage-to-s7")
+    (let* ([root-file-node (init-virtual-file-system (current-directory) '() (generate-txt-file-filter) 's7)]
+            [root-library-node (init-library-node root-file-node 's7)]
+            [file-linkage (init-file-linkage root-file-node root-library-node 's7)]
+            [to-path (string-append (current-directory) "/tests/resources/r7rs/srfi/srfi-8.scm.txt")]
+            [paths (file-linkage-to file-linkage to-path)])
+        (test-equal 
+            (string-append (current-directory) "/tests/resources/r7rs/liii/rich-vector.scm.txt")
+            (car paths)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
