@@ -12,6 +12,8 @@
 
     get-root-ancestor
 
+    make-virtual-index-node
+
     make-index-node
     index-node?
     index-node-parent
@@ -75,6 +77,11 @@
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
         (new parent start end datum/annotations (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '())))))
+
+(define make-virtual-index-node
+  (case-lambda 
+    [() (make-virtual-index-node '())]
+    [(parent) (make-index-node parent '() '() '() '() '() '() '())]))
 
 (define (extend-index-node-substitution-list index-node . target-substitutions)
   (index-node-substitution-list-set!

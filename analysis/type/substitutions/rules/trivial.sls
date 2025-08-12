@@ -67,8 +67,8 @@
         [(and (pair? expression) (not (list? expression)))
           (let* ([f (car expression)]
               [l (cdr expression)]
-              [new-index-node-f (make-index-node index-node '() '() '() '() '() '() '())]
-              [new-index-node-l (make-index-node index-node '() '() '() '() '() '() '())])
+              [new-index-node-f (make-virtual-index-node index-node)]
+              [new-index-node-l (make-virtual-index-node index-node)])
             (extend-index-node-substitution-list
               index-node
               `(inner:pair? ,new-index-node-f ,new-index-node-l))
