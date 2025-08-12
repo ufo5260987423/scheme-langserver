@@ -174,6 +174,7 @@
 
 (define type:depature&interpret->result-list
   (case-lambda
+    [(expression) (type:depature&interpret->result-list expression (make-type:environment '()) PRIVATE-MAX-DEPTH)]
     [(expression env) (type:depature&interpret->result-list expression env PRIVATE-MAX-DEPTH)]
     [(expression env max-depth)
       ; (pretty-print 'depature)
