@@ -66,6 +66,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
   (case-lambda
+    [(left right) (type:->? left right (make-type:environment '()) PRIVATE-MAX-DEPTH)]
     [(left right env) (type:->? left right env PRIVATE-MAX-DEPTH)]
     [(left right env max-depth) 
       (cond

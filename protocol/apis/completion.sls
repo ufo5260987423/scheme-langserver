@@ -87,30 +87,25 @@
   (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))
     (let* ([ancestor (index-node-parent index-node)]
         [children (index-node-children ancestor)]
-        [rests (cdr children)]
-        [rest-variables (map index-node-variable rests)])
-      `(,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))
+        [rests (cdr children)])
+      `(,ancestor <- (inner:list? ,@rests)))
     (let* ([ancestor (index-node-parent index-node)]
         [children (index-node-children ancestor)]
         [head (car children)]
-        [head-variable (index-node-variable head)]
         [rests (cdr children)]
-        [rest-variables (map index-node-variable rests)]
         [index (index-of (list->vector rests) index-node)]
-        [symbols (generate-symbols-with "d" (length rest-variables))])
+        [symbols (generate-symbols-with "d" (length rests))])
       (if (= index (length rests))
         '()
         `((with ((a b c)) 
           ((with ((x ,@symbols x0 ...))
             ,(vector-ref (list->vector symbols) index))
             c)) 
-          ,head-variable)))))
+          ,head)))))
 
 (define (sort-with-type-inferences target-document position-index-node target-identifier-reference-list)
-  (let* ([substitutions (document-substitution-list target-document)]
-      [position-expression (private-generate-position-expression position-index-node)]
-      [env (make-type:environment substitutions)]
-      [position-types (type:interpret-result-list position-expression env)]
+  (let* ([position-expression (private-generate-position-expression position-index-node)]
+      [position-types (type:interpret-result-list position-expression)]
       [target-identifiers-with-types 
         (map 
           (lambda (identifier-reference)
@@ -119,21 +114,17 @@
                   [(not (null? (identifier-reference-type-expressions identifier-reference))) 
                     (find 
                       (lambda (current-pair)
-                        (type:->? (car current-pair) (cadr current-pair) env))
+                        (type:->? (car current-pair) (cadr current-pair)))
                       (cartesian-product (identifier-reference-type-expressions identifier-reference) position-types))]
                   [(null? (identifier-reference-index-node identifier-reference)) #f]
                   [else 
                     (let* ([current-index-node (identifier-reference-index-node identifier-reference)]
-                        [current-variable (index-node-variable current-index-node)]
-                        [current-document (identifier-reference-document identifier-reference)]
-                        [current-substitutions (document-substitution-list current-document)]
-                        [current-env (make-type:environment current-substitutions)]
-                        [current-types (type:interpret-result-list current-variable current-env)])
+                        [current-types (type:interpret-result-list current-index-node)])
                       (if (null? (identifier-reference-type-expressions identifier-reference))
                         (identifier-reference-type-expressions-set! identifier-reference current-types))
                       (find 
                         (lambda (current-pair)
-                          (type:->? (car current-pair) (cadr current-pair) env))
+                          (type:->? (car current-pair) (cadr current-pair)))
                         (cartesian-product current-types position-types)))])))
           target-identifier-reference-list)]
       [true-list (map car (filter (lambda (current-pair) (cdr current-pair)) target-identifiers-with-types))]

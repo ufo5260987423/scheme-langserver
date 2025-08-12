@@ -67,9 +67,11 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 147 9))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 166 9))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitutions-for target-document)
+        ; (debug:print-expression&uuid target-index-node)
+        ; (pretty-print (map inner:type->string (type:interpret-result-list target-index-node)))
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list target-index-node)))
@@ -91,6 +93,6 @@
 ;             (contain? 
 ;                 (type:recursive-interpret-result-list target-index-node)
 ;                 check-base)))
-(test-end)
+; (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
