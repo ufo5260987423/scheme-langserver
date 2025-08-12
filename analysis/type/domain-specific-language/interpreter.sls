@@ -194,10 +194,10 @@
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      (pretty-print 'interpret1)
-      (print-graph #t)
-      (pretty-print (length memory))
-      (pretty-print (inner:type->string expression))
+      ; (pretty-print 'interpret1)
+      ; (print-graph #t)
+      ; (pretty-print (length memory))
+      ; (pretty-print (inner:type->string expression))
       (let ([new-memory `(,@memory ,expression)])
         (cond
           [(null? expression) expression]
@@ -245,7 +245,6 @@
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(index-node? expression)
-            (debug:print-expression&uuid expression)
             (let ([tmp (index-node-substitution-list expression)])
               (type:environment-result-list-set! 
                 env 
@@ -289,12 +288,12 @@
       (type:environment-result-list-set! 
         env 
         (dedupe (type:environment-result-list env)))
-      (pretty-print 'bye0)
-      (pretty-print (inner:type->string expression))
-      (pretty-print 'bye1)
-      (pretty-print (length memory))
-      (pretty-print (length (type:environment-result-list env)))
-      (pretty-print (map inner:type->string (type:environment-result-list env)))
+      ; (pretty-print 'bye0)
+      ; (pretty-print (inner:type->string expression))
+      ; (pretty-print 'bye1)
+      ; (pretty-print (length memory))
+      ; (pretty-print (length (type:environment-result-list env)))
+      ; (pretty-print (map inner:type->string (type:environment-result-list env)))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]

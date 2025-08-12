@@ -39,25 +39,25 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 49 10))]
             [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitutions-for target-document)
-        (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))
+        ; (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
-    ; (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-    ;         [root-file-node (workspace-file-node workspace)]
-    ;         [root-library-node (workspace-library-node workspace)]
-    ;         [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/contain.sls"))]
-    ;         [target-document (file-node-document target-file-node)]
-    ;         [target-text (document-text target-document)]
-    ;         [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 12))]
-    ;         [check-base (construct-type-expression-with-meta 'boolean?)])
-    ;     (construct-substitutions-for target-document)
-    ;     ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-    ;     ; (debug:pretty-print-substitution (document-substitution-list target-document))
-    ;     ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
-    ;     (test-equal #t 
-    ;         (contain? 
-    ;             (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/contain.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 12))]
+            [check-base (construct-type-expression-with-meta 'boolean?)])
+        (construct-substitutions-for target-document)
+        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
+        ; (debug:pretty-print-substitution (document-substitution-list target-document))
+        ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
+        (test-equal #t 
+            (contain? 
+                (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
 (test-end)
 
 ; (test-begin "debug for index-node.sls:debug:print-expressions")

@@ -22,7 +22,7 @@
         [(_ clause **1) 
           (map 
             (lambda (clause-index-node)
-              (private-clause-process `(,index-node) clause-index-node))
+              (private-clause-process index-node clause-index-node))
             (cdr children))]
         [else '()])
       (except c
