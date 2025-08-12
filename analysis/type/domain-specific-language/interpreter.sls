@@ -149,6 +149,7 @@
 
 (define type:recursive-interpret-result-list
   (case-lambda 
+    [(expression) (type:recursive-interpret-result-list expression (make-type:environment '()) PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION PRIVATE-MAX-RECURSION-SET-SIZE)]
     [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION PRIVATE-MAX-RECURSION-SET-SIZE)]
     [(expression env max-depth max-recursion max-recursion-set-size) 
       ; (debug:pretty-print-substitution (type:environment-substitution-list env))
