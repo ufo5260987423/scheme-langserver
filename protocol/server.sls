@@ -18,6 +18,7 @@
     ;close
     server-condition
     server-request-queue
+    server-top-environment
 
     server-work-done-progress?
     server-work-done-progress?-set!)
@@ -37,22 +38,40 @@
     (mutable workspace)
     (mutable shutdown?)
     (mutable condition)
-    (mutable work-done-progress?))
+    (mutable work-done-progress?)
+    (immutable top-environment)
+    )
   (protocol
     (lambda (new)
-      (lambda (input-port output-port log-port thread-pool request-queue workspace type-inference?)
-        (new 
-          input-port 
-          output-port 
-          log-port 
-          thread-pool
-          (if (null? thread-pool) '() (make-mutex))
-          request-queue
-          type-inference?
-          workspace
-          #f
-          (make-condition)
-          #f)))))
+      (case-lambda
+        [(input-port output-port log-port thread-pool request-queue workspace type-inference?)
+          (new 
+            input-port 
+            output-port 
+            log-port 
+            thread-pool
+            (if (null? thread-pool) '() (make-mutex))
+            request-queue
+            type-inference?
+            workspace
+            #f
+            (make-condition)
+            #f
+            'r6rs)]
+        [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment)
+          (new 
+            input-port 
+            output-port 
+            log-port 
+            thread-pool
+            (if (null? thread-pool) '() (make-mutex))
+            request-queue
+            type-inference?
+            workspace
+            #f
+            (make-condition)
+            #f
+            top-environment)]))))
 
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))
