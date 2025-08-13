@@ -41,4 +41,10 @@
         (test-equal '((srfi srfi-216)) (car (map library-import-process-r7rs root-index-nodes))))
 (test-end)
 
+(test-begin "library-import-process for s7")
+    (let* ([root-file-node (init-virtual-file-system "./tests/resources/r7rs/srfi/sicp.scm.txt" '() (lambda (fuzzy) #t) 's7)]
+            [root-index-nodes (document-index-node-list (file-node-document root-file-node))])
+        (test-equal '((srfi srfi-216)) (car (map library-import-process-r7rs root-index-nodes))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

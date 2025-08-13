@@ -75,8 +75,16 @@
                 (map identifier-reference-identifier (document-ordered-reference-list document)))))
 (test-end)
 
-(test-begin "init-workspace-basic-test")
+(test-begin "init-workspace-basic-test-r7rs")
 (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/r7rs") 'txt 'r7rs #f #f)]
+        [root-file-node (workspace-file-node workspace)]
+        [root-library-node (workspace-library-node workspace)])
+    (test-equal #f (null? root-file-node))
+    (test-equal #f (null? root-library-node)))
+(test-end)
+
+(test-begin "init-workspace-basic-test-s7")
+(let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/r7rs") 'txt 's7 #f #f)]
         [root-file-node (workspace-file-node workspace)]
         [root-library-node (workspace-library-node workspace)])
     (test-equal #f (null? root-file-node))

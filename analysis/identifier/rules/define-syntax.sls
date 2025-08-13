@@ -15,7 +15,7 @@
     (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
-; syntax-parameter syntax-variable
+; syntax-parameter syntax-variable syntax parameter
 (define (define-syntax-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [library-identifiers (get-nearest-ancestor-library-identifier index-node)]

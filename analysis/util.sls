@@ -31,6 +31,11 @@
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
                                     [('define-library (name **1) _ ... ) name]
+                                    [else '()]))]
+                            ['s7
+                                (lambda (index-node)
+                                (match (annotation-stripped (index-node-datum/annotations index-node))
+                                    [('define-library (name **1) _ ... ) name]
                                     [else '()]))]))]
                 (if (null? document)
                     '()

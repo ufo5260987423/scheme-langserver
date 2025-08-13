@@ -298,6 +298,7 @@
       [s (read-string path)]
       [meta-lib (case top-environment
                   ['r7rs '(scheme base)]
+                  ['s7 '(s7)]
                   [else '(chezscheme)])])
     (try
       (cond 
