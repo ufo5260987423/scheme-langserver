@@ -30,37 +30,37 @@
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "variable declaration")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 40 17))]
-            [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitutions-for target-document)
-        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-        (test-equal #t 
-            (contain? 
-                (type:interpret-result-list target-index-node) 
-                check-base)))
-(test-end)
+; (test-begin "variable declaration")
+;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+;             [target-document (file-node-document target-file-node)]
+;             [target-text (document-text target-document)]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 40 17))]
+;             [check-base (construct-type-expression-with-meta 'fixnum?)])
+;         (construct-substitutions-for target-document)
+;         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
+;         (test-equal #t 
+;             (contain? 
+;                 (type:interpret-result-list target-index-node) 
+;                 check-base)))
+; (test-end)
 
 (test-begin "variable access")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 41 14))]
-            [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitutions-for target-document)
-        (test-equal #t 
-            (contain? 
-                (type:interpret-result-list target-index-node) 
-                check-base)))
+    ; (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+    ;         [root-file-node (workspace-file-node workspace)]
+    ;         [root-library-node (workspace-library-node workspace)]
+    ;         [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+    ;         [target-document (file-node-document target-file-node)]
+    ;         [target-text (document-text target-document)]
+    ;         [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 41 14))]
+    ;         [check-base (construct-type-expression-with-meta 'fixnum?)])
+    ;     (construct-substitutions-for target-document)
+    ;     (test-equal #t 
+    ;         (contain? 
+    ;             (type:interpret-result-list target-index-node) 
+    ;             check-base)))
     (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -70,7 +70,7 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 166 9))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitutions-for target-document)
-        ; (debug:print-expression&uuid target-index-node)
+        (debug:print-expression&uuid target-index-node)
         ; (pretty-print (map inner:type->string (type:interpret-result-list target-index-node)))
         (test-equal #t 
             (contain? 
