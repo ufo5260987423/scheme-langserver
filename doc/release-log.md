@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+1.2.9 Now, enjoy type inference!
+
 1.2.8 Now hover and auto completion is ready for use. I also have done many things about parsing fault tolerance.
 
 1.2.7 Fix bugs on uri parsing, do you know LSP request uri may wrongly process escape characters?

@@ -41,11 +41,11 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.lsp.start({
       name = 'scheme-langserver',
       cmd = {'{path-to-run}',
-        '~/scheme-langserver.log',
+        '-l ~/scheme-langserver.log',
         --enable multi-thread
-        'enable',
+        '-m enable',
         --disable type inference, because it's on very early stage.
-        'diable',
+        '-t disable',
       },
       root_dir = vim.fs.root(args.buf, {'.gitignore','AKKU.manifest'}),
     })
