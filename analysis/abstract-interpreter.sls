@@ -256,10 +256,10 @@
             [(and (equal? r '(define*)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,define*-process) . ,identifier))]
             
-            [(and (equal? r '(define*)) (private:top-env=? 's7 top))
+            [(and (equal? r '(define-macro)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,define-macro-process) . ,identifier))]
             
-            [(and (equal? r '(define*)) (private:top-env=? 's7 top))
+            [(and (equal? r '(lambda*)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,lambda*-process) . ,identifier))]
 
             [else rules])
