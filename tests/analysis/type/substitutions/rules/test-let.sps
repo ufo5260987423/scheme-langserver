@@ -77,21 +77,21 @@
                 check-base)))
 (test-end)
 
-; (test-begin "loop declaration")
-;     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-;             [root-file-node (workspace-file-node workspace)]
-;             [root-library-node (workspace-library-node workspace)]
-;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-;             [target-document (file-node-document target-file-node)]
-;             [target-text (document-text target-document)]
-;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 10))]
-;             [check-base (construct-type-expression-with-meta '((inner:list? something? ...) <- (inner:list? number? (inner:list? something? ...))))])
-;         (construct-substitutions-for target-document)
-;         (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
-;         (test-equal #t 
-;             (contain? 
-;                 (type:recursive-interpret-result-list target-index-node)
-;                 check-base)))
-; (test-end)
+(test-begin "loop declaration")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+            [target-document (file-node-document target-file-node)]
+            [target-text (document-text target-document)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 10))]
+            [check-base (construct-type-expression-with-meta '((inner:list?) <- (inner:list? fixnum? (inner:list?))))])
+        (construct-substitutions-for target-document)
+        ; (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
+        (test-equal #t 
+            (contain? 
+                (type:recursive-interpret-result-list target-index-node)
+                check-base)))
+(test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
