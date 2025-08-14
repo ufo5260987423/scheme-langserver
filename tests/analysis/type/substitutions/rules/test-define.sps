@@ -52,8 +52,6 @@
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 12))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitutions-for target-document)
-        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-        ; (debug:pretty-print-substitution (document-substitution-list target-document))
         ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
         (test-equal #t 
             (contain? 
@@ -67,9 +65,11 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 116 10))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 122 10))]
             [check-base 'void?])
         (construct-substitutions-for target-document)
+        ; (debug:print-expression&uuid target-index-node)
+        ; (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))
         (test-equal #t 
             (contain? 
                 (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
