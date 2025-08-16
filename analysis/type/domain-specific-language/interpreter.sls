@@ -14,12 +14,12 @@
     type:<-?
     type:=?
 
-    substitution:walk
-
     make-type:environment)
   (import 
     (chezscheme)
     (ufo-match)
+
+    (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver util binary-search)
     (scheme-langserver util contain)
@@ -31,7 +31,6 @@
     (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
-    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
 (define-record-type type:environment
@@ -49,16 +48,16 @@
 (define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
 
 (define (type:interpret->strings target)
-  (map inner:type->string (type:interpret-result-list (private-substitute-variable&macro target))))
+  (map inner:type->string (type:interpret-result-list (private-substitute-index-node&macro target))))
 
-(define (private-substitute-variable&macro target)
+(define (private-substitute-index-node&macro target)
   (cond 
     [(inner:macro? target) 'something?]
-    [(variable? target) 'something?]
+    [(index-node? target) 'something?]
     [(null? target) target]
     [(symbol? target) target]
     [(list? target) 
-      (let ([tmp (map private-substitute-variable&macro target)])
+      (let ([tmp (map private-substitute-index-node&macro target)])
         (if (equal? 'something? (car tmp))
           'something?
           tmp))]
@@ -67,6 +66,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;type equity;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define type:->?
   (case-lambda
+    [(left right) (type:->? left right (make-type:environment '()) PRIVATE-MAX-DEPTH)]
     [(left right env) (type:->? left right env PRIVATE-MAX-DEPTH)]
     [(left right env max-depth) 
       (cond
@@ -124,7 +124,7 @@
 
 (define (type:solved? expression)
   (cond
-    [(variable? expression) #f]
+    [(index-node? expression) #f]
     [(inner:macro? expression) #f]
     [(inner:executable? expression) #f]
     [(list? expression)
@@ -150,6 +150,7 @@
 
 (define type:recursive-interpret-result-list
   (case-lambda 
+    [(expression) (type:recursive-interpret-result-list expression (make-type:environment '()) PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION PRIVATE-MAX-RECURSION-SET-SIZE)]
     [(expression env) (type:recursive-interpret-result-list expression env PRIVATE-MAX-DEPTH PRIVATE-MAX-RECURSION PRIVATE-MAX-RECURSION-SET-SIZE)]
     [(expression env max-depth max-recursion max-recursion-set-size) 
       ; (debug:pretty-print-substitution (type:environment-substitution-list env))
@@ -166,18 +167,16 @@
                   (map
                     (lambda (e) (type:depature&interpret->result-list e env-iterator max-depth))
                     target-expression-list))]
-              [r1 (filter type:solved? r0)]
-              [s0 (type:environment-substitution-list env-iterator)]
-              [s1 (remove-from-substitutions s0 (lambda (i) (equal? expression (car i))))]
-              [s2 (fold-left add-to-substitutions s1 (map (lambda(i) `(,expression = ,i)) r1))])
+              [r1 (filter type:solved? r0)])
             (loop 
               (+ 1 i)
               (filter (lambda (maybe) (not (type:solved? maybe))) r0)
-              (make-type:environment s2)
+              env-iterator
               (append result r1)))))]))
 
 (define type:depature&interpret->result-list
   (case-lambda
+    [(expression) (type:depature&interpret->result-list expression (make-type:environment '()) PRIVATE-MAX-DEPTH)]
     [(expression env) (type:depature&interpret->result-list expression env PRIVATE-MAX-DEPTH)]
     [(expression env max-depth)
       ; (pretty-print 'depature)
@@ -198,10 +197,10 @@
   (case-lambda 
     [(expression env memory max-depth)
       (type:environment-result-list-set! env '())
-      ; (pretty-print 'interpret)
+      ; (pretty-print 'interpret1)
       ; (print-graph #t)
       ; (pretty-print (length memory))
-      ; (pretty-print expression)
+      ; (pretty-print (inner:type->string expression))
       (let ([new-memory `(,@memory ,expression)])
         (cond
           [(null? expression) expression]
@@ -235,7 +234,7 @@
                         (map (lambda (item) (type:interpret-result-list item env new-memory)) params)))))]
               [((? inner:lambda? l) params ...)
                 (if (inner:list? (inner:lambda-param l))
-                  (if (inner:contain? l variable?)
+                  (if (inner:contain? l index-node?)
                     (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params) 
                       (try
                         (type:environment-result-list-set! env 
@@ -248,8 +247,8 @@
                     (type:environment-result-list-set! env (list (inner:lambda-return l))))
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
-          [(variable? expression)
-            (let ([tmp (map caddr (substitution:walk (type:environment-substitution-list env) expression))])
+          [(index-node? expression)
+            (let ([tmp (index-node-substitution-list expression)])
               (type:environment-result-list-set! 
                 env 
                 (if (null? tmp)
@@ -262,7 +261,8 @@
                           (type:interpret-result-list reified env new-memory)))
                       tmp)))))]
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
-          [(inner:macro? expression) (type:environment-result-list-set! env `(,expression))]
+          [(inner:macro? expression) 
+          (type:environment-result-list-set! env `(,expression))]
           [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
             (type:environment-result-list-set! env 
               (apply 
@@ -292,11 +292,11 @@
         env 
         (dedupe (type:environment-result-list env)))
       ; (pretty-print 'bye0)
-      ; (pretty-print expression)
+      ; (pretty-print (inner:type->string expression))
       ; (pretty-print 'bye1)
       ; (pretty-print (length memory))
       ; (pretty-print (length (type:environment-result-list env)))
-      ; (pretty-print (type:environment-result-list env))
+      ; (pretty-print (map inner:type->string (type:environment-result-list env)))
       env]
     [(expression env memory) (type:interpret expression env memory PRIVATE-MAX-DEPTH)]
     [(expression env) (type:interpret expression env '())]
@@ -327,8 +327,8 @@
           [input (cdr pair)])
         (cond 
           [(symbol? denotion) (private-substitute left denotion input)]
-          [(variable? denotion) (private-substitute left denotion input)]
-          ; [(variable? input) (private-substitute denotion left input)]
+          [(index-node? denotion) (private-substitute left denotion input)]
+          ; [(index-node? input) (private-substitute denotion left input)]
           ; [(identifier-reference? denotion) 
           ;   (if (type:<- denotion input env)
           ;     left
@@ -374,24 +374,4 @@
               (lambda (i) (filter (lambda (r) (type:partially-solved? r 3)) i))
               (lambda (i) (filter type:solved? i))
               (lambda (i) (filter (lambda (oh-my-god) #f) i))))))]))
-;;;;;;;;;;;;;;;;;;;;;;;;;;substitutions;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define (substitution:walk substitutions target)
-  (binary-search 
-    (list->vector substitutions) 
-    substitution-compare 
-    `(,target '? '?)))
-
-(define (debug:substitution-sorted? substitutions)
-  (let loop ([l substitutions]
-      [s (sort substitution-compare substitutions)])
-    (cond 
-      [(and (null? l) (null? s)) #t]
-      [(or (null? l) (null? s)) #f]
-      [(equal? (car (car l)) (car (car s))) (loop (cdr l) (cdr s))]
-      [else 
-        (pretty-print 'debug:sorted-origin)
-        (pretty-print (car l))
-        (pretty-print 'debug:sorted-sorted)
-        (pretty-print (car s))
-        #f])))
 )

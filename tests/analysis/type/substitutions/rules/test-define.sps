@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
-;; Copyright (c) 2022 WANG Zheng
+;; Copyright (c) 2022-NOW WANG Zheng
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
@@ -23,7 +23,6 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
-    (scheme-langserver analysis type domain-specific-language variable)
 
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions generator)
@@ -38,12 +37,12 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 49 10))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'number?)])
-        (construct-substitution-list-for target-document)
+        (construct-substitutions-for target-document)
+        ; (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))
         (test-equal #t 
             (contain? 
-                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
+                (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -51,31 +50,29 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 12))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'boolean?)])
-        (construct-substitution-list-for target-document)
-        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
-        ; (debug:pretty-print-substitution (document-substitution-list target-document))
+        (construct-substitutions-for target-document)
         ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
         (test-equal #t 
             (contain? 
-                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
+                (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
 (test-end)
 
 (test-begin "debug for index-node.sls:debug:print-expressions")
-(print-graph #t)
-    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #t)]
+    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 103 10))]
-            [variable (index-node-variable target-index-node)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 122 10))]
             [check-base 'void?])
+        (construct-substitutions-for target-document)
+        ; (debug:print-expression&uuid target-index-node)
+        ; (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))
         (test-equal #t 
             (contain? 
-                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
+                (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
 (test-end)
 
 ; a better cutting is needed

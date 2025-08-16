@@ -21,14 +21,16 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
+
     (scheme-langserver analysis type domain-specific-language interpreter)
-    (scheme-langserver analysis type domain-specific-language variable)
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
+
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions generator)
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "variable declaration")
+(test-begin "index-node/variable declaration")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -36,13 +38,11 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 40 17))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitution-list-for target-document)
-        ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
+        (construct-substitutions-for target-document)
         (test-equal #t 
             (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                (type:interpret-result-list target-index-node) 
                 check-base)))
 (test-end)
 
@@ -54,12 +54,11 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 41 14))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitution-list-for target-document)
+        (construct-substitutions-for target-document)
         (test-equal #t 
             (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                (type:interpret-result-list target-index-node) 
                 check-base)))
     (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
@@ -67,13 +66,14 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 147 9))]
-            [variable (index-node-variable target-index-node)]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 166 9))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
-        (construct-substitution-list-for target-document)
+        (construct-substitutions-for target-document)
+        ; (debug:print-expression&uuid target-index-node)
+        ; (pretty-print (map inner:type->string (type:interpret-result-list target-index-node)))
         (test-equal #t 
             (contain? 
-                (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
+                (map car (filter list? (type:interpret-result-list target-index-node)))
                 check-base)))
 (test-end)
 
@@ -85,12 +85,12 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 10))]
-            [variable (index-node-variable target-index-node)]
-            [check-base (construct-type-expression-with-meta '((inner:list? something? ...) <- (inner:list? number? (inner:list? something? ...))))])
-        (construct-substitution-list-for target-document)
+            [check-base (construct-type-expression-with-meta '((inner:list?) <- (inner:list? fixnum? (inner:list?))))])
+        (construct-substitutions-for target-document)
+        ; (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
         (test-equal #t 
             (contain? 
-                (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))
+                (type:recursive-interpret-result-list target-index-node)
                 check-base)))
 (test-end)
 

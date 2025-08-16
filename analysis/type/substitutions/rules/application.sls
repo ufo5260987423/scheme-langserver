@@ -13,9 +13,5 @@
     (scheme-langserver virtual-file-system document))
 
 (define (application-process document index-node)
-  (let* ([variable (index-node-variable index-node)]
-      [children (index-node-children index-node)])
-    (if (null? children)
-      '()
-      `((,variable = ,(map index-node-variable children))))))
+  (extend-index-node-substitution-list index-node (index-node-children index-node)))
 )

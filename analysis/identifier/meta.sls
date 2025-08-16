@@ -11,7 +11,6 @@
     (scheme-langserver util binary-search)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions rnrs-meta-rules)
-    (scheme-langserver analysis type domain-specific-language variable)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -175,7 +174,7 @@ scheme-time scheme-write scheme-r5rs s7))
   (match expression
     [('inner:record? fuzzy ...) `(inner:record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
 
-    [(? variable? fuzzy) fuzzy]
+    [(? index-node? fuzzy) fuzzy]
     [('inner:list? fuzzy ...) `(inner:list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('inner:vector? fuzzy ...) `(inner:vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('inner:pair? fuzzy ...) `(inner:pair? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]

@@ -9,7 +9,6 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
-    (scheme-langserver analysis type domain-specific-language variable)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
@@ -21,28 +20,23 @@
     (try
       (match expression
         [(_ clause **1) 
-          (let* ([variable (index-node-variable index-node)]
-              [clause-index-nodes (cdr children)])
-            (apply 
-              append 
-              (map 
-                (lambda (clause-index-node)
-                  (private-clause-process `(,variable) clause-index-node))
-                clause-index-nodes)))]
+          (map 
+            (lambda (clause-index-node)
+              (private-clause-process index-node clause-index-node))
+            (cdr children))]
         [else '()])
       (except c
         [else '()]))))
 
-(define (private-clause-process root-variables clause-index-node)
+(define (private-clause-process root-index-node clause-index-node)
   (let ([children (index-node-children clause-index-node)]
       [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
     (match expression
       [(((? symbol? parameter) ...) _ **1) 
-        (cartesian-product
-          root-variables
-          '(=)
+        (map 
+          (lambda (t) (extend-index-node-substitution-list root-index-node t))
           (construct-lambdas-with 
-            `(,(index-node-variable (car (reverse children))))
-            (construct-parameter-variable-products-with (index-node-children (car children)))))]
+            `(,(car (reverse children)))
+            (construct-parameter-index-nodes-products-with (index-node-children (car children)))))]
       [else '()])))
 )

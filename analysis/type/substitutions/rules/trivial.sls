@@ -15,7 +15,6 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions rules record)
-    (scheme-langserver analysis type domain-specific-language variable)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
@@ -38,174 +37,125 @@
   (case-lambda 
     [(document index-node) 
       (let* ([ann (index-node-datum/annotations index-node)]
-          [expression (annotation-stripped ann)]
-          [variable (index-node-variable index-node)])
+          [expression (annotation-stripped ann)])
         (if (null? (index-node-children index-node))
-          (trivial-process document index-node variable expression #f #f)
+          (trivial-process document index-node expression #f #f)
           '()))]
-    [(document index-node variable expression allow-unquote? quoted?)
+    [(document index-node expression allow-unquote? quoted?)
       (cond
         ;These clauses won't be affected by quote
-        [(char? expression) (list `(,variable : ,private-char?))]
-        [(string? expression) (list `(,variable : ,private-string?))]
-        [(boolean? expression) (list `(,variable : ,private-boolean?))]
-        [(fixnum? expression) (list `(,variable : ,private-fixnum?))]
-        [(bignum? expression) (list `(,variable : ,private-bignum?))]
-        [(integer? expression) (list `(,variable : ,private-integer?))]
-        [(cflonum? expression) (list `(,variable : ,private-cflonum?))]
-        [(flonum? expression) (list `(,variable : ,private-flonum?))]
-        [(rational? expression) (list `(,variable : ,private-rational?))]
-        [(real? expression) (list `(,variable : ,private-real?))]
-        [(complex? expression) (list `(,variable : ,private-complex?))]
-        [(number? expression) (list `(,variable : ,private-number?))]
+        [(char? expression) (extend-index-node-substitution-list index-node private-char?)]
+        [(string? expression) (extend-index-node-substitution-list index-node private-string?)]
+        [(boolean? expression) (extend-index-node-substitution-list index-node private-boolean?)]
+        [(fixnum? expression) (extend-index-node-substitution-list index-node private-fixnum?)]
+        [(bignum? expression) (extend-index-node-substitution-list index-node private-bignum?)]
+        [(integer? expression) (extend-index-node-substitution-list index-node private-integer?)]
+        [(cflonum? expression) (extend-index-node-substitution-list index-node private-cflonum?)]
+        [(flonum? expression) (extend-index-node-substitution-list index-node private-flonum?)]
+        [(rational? expression) (extend-index-node-substitution-list index-node private-rational?)]
+        [(real? expression) (extend-index-node-substitution-list index-node private-real?)]
+        [(complex? expression) (extend-index-node-substitution-list index-node private-complex?)]
+        [(number? expression) (extend-index-node-substitution-list index-node private-number?)]
 
         [(and (symbol? expression) (not quoted?))
-          (apply 
-            append 
-            (map 
-              (lambda (identifier-reference) 
-                (private-process document identifier-reference index-node variable))
-              (find-available-references-for document index-node expression)))]
-        [(symbol? expression) (list `(,variable : ,private-symbol?))]
+          (map 
+            (lambda (identifier-reference) 
+              (private-process document identifier-reference index-node))
+            (find-available-references-for document index-node expression))]
+        [(symbol? expression) (extend-index-node-substitution-list index-node private-symbol?)]
 
         [(and (pair? expression) (not (list? expression)))
           (let* ([f (car expression)]
               [l (cdr expression)]
-              [new-variable-f (make-variable)]
-              [new-variable-l (make-variable)])
-            (append 
-              `((,variable = (inner:pair? new-variable-f new-variable-l)))
-              (trivial-process document index-node new-variable-f f allow-unquote? quoted?)
-              (trivial-process document index-node new-variable-l l allow-unquote? quoted?)))]
+              [new-index-node-f (make-virtual-index-node index-node)]
+              [new-index-node-l (make-virtual-index-node index-node)])
+            (extend-index-node-substitution-list
+              index-node
+              `(inner:pair? ,new-index-node-f ,new-index-node-l))
+            (trivial-process document new-index-node-f f allow-unquote? quoted?)
+            (trivial-process document new-index-node-l l allow-unquote? quoted?))]
         [(or (list? expression) (vector? expression))
           (let* ([is-list? (list? expression)]
-              [final-result
-                (fold-left 
-                  (lambda (ahead-result current-expression)
+              [middle-result
+                (map
+                  (lambda (current-expression)
                     (if (and (private-unquote-splicing? index-node document current-expression) allow-unquote? quoted?)
-                      (let loop ([body (cdr current-expression)]
-                          [current-result ahead-result])
-                        (if (null? body)
-                          current-result
-                          (let* ([current-item (car body)]
-                              [v (make-variable)]
-                              [r (trivial-process document index-node v current-item #f #t)]
-                              [first `(,@(car current-result) ,v)]
-                              [last `(,@(cadr current-result) ,@r)])
-                            (loop (cdr body) `(,first ,last)))))
-                      (let* ([v (make-variable)]
-                          [r (trivial-process document index-node v current-expression allow-unquote? quoted?)]
-                          [first `(,@(car ahead-result) ,v)]
-                          [last `(,@(cadr ahead-result) ,@r)])
-                        `(,first ,last))))
-                  `((,(if is-list? 'inner:list? 'inner:vector?))())
+                      (let* ([v (make-index-node index-node '() '() '() '() '() '() '())])
+                        (trivial-process document v current-expression #f #t)
+                        v)))
+                  ; (if is-list? '(inner:list?) '(inner:vector?))
                   (if is-list? expression (vector->list expression)))]
-              [variable-list (car final-result)]
-              [extend-substitution-list (cadr final-result)])
-            `(,@extend-substitution-list (,variable = ,variable-list)))]
+              [final-result `(,(if is-list? 'inner:list? 'inner:vector?) ,@middle-result)])
+            (extend-index-node-substitution-list index-node final-result))]
         [else '()])]))
 
-(define (private-process document identifier-reference index-node variable)
-  (sort substitution-compare
-    (if (null? (identifier-reference-parents identifier-reference))
-      (let* ([target-document (identifier-reference-document identifier-reference)]
-          [target-index-node (identifier-reference-index-node identifier-reference)]
-          [type-expressions (identifier-reference-type-expressions identifier-reference)])
+(define (private-process document identifier-reference index-node)
+  (if (null? (identifier-reference-parents identifier-reference))
+    (let* ([target-document (identifier-reference-document identifier-reference)]
+        [target-index-node (identifier-reference-index-node identifier-reference)]
+        [type-expressions (identifier-reference-type-expressions identifier-reference)])
       (cond 
-          ;it's in r6rs library?
-          [(null? target-index-node)
-            (if (null? type-expressions) '() (cartesian-product `(,variable) '(:) type-expressions))]
-          ; this can't be excluded by identifier-catching rules
-          [(equal? index-node target-index-node) '()]
-          ;local
-          ;You can't cache and speed up this clause by distinguishing variable in/not in 
-          ;identifier-reference-initialization-index-node scope, because reify depdends on 
-          ;implicit conversion and there may be several nested variable initializations for
-          ;which we can't cleanly decide when to do the imlicit conversion.
-          [(equal? document target-document)
-            (append
-              `((,variable = ,(index-node-variable target-index-node)))
-              ;implicit conversion for gradual typing
-              (cond 
-                [(null? (index-node-parent index-node)) '()]
-                [(and 
-                    (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
-                    (is-first-child? index-node) 
-                    (equal? 'parameter (identifier-reference-type identifier-reference)))
-                  (let* ([ancestor (index-node-parent index-node)]
-                      [children (index-node-children ancestor)]
-                      [rests (cdr children)]
-                      [rest-variables (map index-node-variable rests)]
-                      [target-variable (index-node-variable target-index-node)])
-                    ; (pretty-print (document-uri document))
-                    ; (pretty-print `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))
-                    `((,target-variable = (,(index-node-variable ancestor) <- (inner:list? ,@rest-variables)))))]
-                [(and 
-                    (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
-                    (equal? 'parameter (identifier-reference-type identifier-reference)))
-                  (let* ([ancestor (index-node-parent index-node)]
-                      [children (index-node-children ancestor)]
-                      [target-variable (index-node-variable target-index-node)]
-                      [head (car children)]
-                      [head-variable (index-node-variable head)]
-                      [rests (cdr children)]
-                      [rest-variables (map index-node-variable rests)]
-                      [index (index-of (list->vector rests) index-node)]
-                      [symbols (generate-symbols-with "d" (length rest-variables))])
-                    (if (= index (length rests))
-                      '()
-                      `((,target-variable 
-                          = 
-                          ((with ((a b c)) 
-                            ((with ((x ,@symbols))
-                              ,(vector-ref (list->vector symbols) index))
-                              c)) 
-                            ,head-variable)))))]
-                [(and (contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference)) (not (null? type-expressions)))
-                  (cartesian-product `(,variable) '(:) type-expressions)]
-                [else '()]))]
-          ;import
-          [else 
-            (if (null? type-expressions)
-              (append 
-                (cartesian-product 
-                  `(,variable) 
-                  '(=) 
-                  `(,(index-node-variable (identifier-reference-index-node identifier-reference))))
-                (private-get-reachable (document-substitution-list target-document) variable))
-              (cartesian-product `(,variable) '(:) `(,type-expressions)))]))
-      (apply 
-        append 
-        (map 
-          (lambda (parent) (private-process document parent index-node variable))
-          (identifier-reference-parents identifier-reference))))))
-
-(define (private-get-reachable substitution-list variable)
-  (let loop (
-      [current-variables `(,variable)]
-      [result '()]
-      [exclude '(,variable)])
-    (let* ([current-result 
+        ;it's in r6rs library?
+        [(null? target-index-node)
           (map 
-            (lambda (v)
-              (filter 
-                (lambda (s)
-                  (equal? (car s) v))
-                substitution-list))
-            current-variables)]
-        [variables (filter (lambda (v) (not (contain? exclude v))) (private-get-variables current-result))])
-      (if (null? variables)
-        result
-        (loop 
-          variables
-          (append result current-result)
-          (append exclude variables))))))
-
-(define (private-get-variables tree)
-  (cond 
-    [(list? tree) (apply append (map private-get-variables tree))]
-    [(variable? tree) `(,tree)]
-    [else '()]))
+            (lambda (t) (extend-index-node-substitution-list index-node t))
+            type-expressions)]
+        ; this can't be excluded by identifier-catching rules
+        [(equal? index-node target-index-node) '()]
+        ;local
+        ;You can't cache and speed up this clause by distinguishing variable in/not in 
+        ;identifier-reference-initialization-index-node scope, because reify depdends on 
+        ;implicit conversion and there may be several nested variable initializations for
+        ;which we can't cleanly decide when to do the imlicit conversion.
+        [(equal? document target-document)
+          (extend-index-node-substitution-list index-node target-index-node)
+            ; `((,variable = ,(index-node-variable target-index-node)))
+            ;implicit conversion for gradual typing
+          (cond 
+            [(null? (index-node-parent index-node)) '()]
+            [(and 
+                (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
+                (is-first-child? index-node) 
+                (equal? 'parameter (identifier-reference-type identifier-reference)))
+              (let* ([ancestor (index-node-parent index-node)]
+                  [children (index-node-children ancestor)]
+                  [rests (cdr children)])
+                (extend-index-node-substitution-list target-index-node `(,ancestor <- (inner:list? ,@rests))))]
+            [(and 
+                (is-ancestor? (identifier-reference-initialization-index-node identifier-reference) index-node) 
+                (equal? 'parameter (identifier-reference-type identifier-reference)))
+              (let* ([ancestor (index-node-parent index-node)]
+                  [children (index-node-children ancestor)]
+                  [head (car children)]
+                  [rests (cdr children)]
+                  [index (index-of (list->vector rests) index-node)]
+                  [symbols (generate-symbols-with "d" (length rests))])
+                (if (= index (length rests))
+                  '()
+                  (extend-index-node-substitution-list
+                    target-index-node
+                    `((with ((a b c)) 
+                      ((with ((x ,@symbols))
+                        ,(vector-ref (list->vector symbols) index))
+                        c)) 
+                      ,head))))]
+            [(and (contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference)) (not (null? type-expressions)))
+              (map 
+                (lambda (t) (extend-index-node-substitution-list index-node t))
+                type-expressions)]
+            [else '()])]
+        ;import
+        [else 
+          (if (null? type-expressions)
+            (extend-index-node-substitution-list
+              index-node
+              (identifier-reference-index-node identifier-reference))
+            (map 
+              (lambda (t) (extend-index-node-substitution-list index-node t))
+              type-expressions))]))
+    (map 
+      (lambda (parent) (private-process document parent index-node))
+      (identifier-reference-parents identifier-reference))))
 
 (define (generate-symbols-with base-string max)
   (let loop ([result '()])

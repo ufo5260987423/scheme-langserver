@@ -21,8 +21,10 @@
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
+
     (scheme-langserver analysis type domain-specific-language interpreter)
-    (scheme-langserver analysis type domain-specific-language variable)
+    (scheme-langserver analysis type domain-specific-language inner-type-checker)
+
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions generator)
 
@@ -36,13 +38,13 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 37))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta '(inner:list?))])
-        (construct-substitution-list-for target-document)
-        ; (debug:print-expression target-index-node)
+        (construct-substitutions-for target-document)
+        ; (debug:print-expression&uuid target-index-node)
+        ; (pretty-print (map inner:type->string (index-node-substitution-list target-index-node)))
         (test-equal #t 
             (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                (type:interpret-result-list target-index-node) 
                 check-base)))
 (test-end)
 
@@ -54,14 +56,37 @@
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 26))]
-            [variable (index-node-variable target-index-node)]
             [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitution-list-for target-document)
+        (construct-substitutions-for target-document)
         ; (debug:print-expression target-index-node)
         (test-equal #t 
             (contain? 
-                (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))) 
+                (type:interpret-result-list target-index-node) 
                 check-base)))
 (test-end)
 
+; (test-begin "outer-documents type reference")
+;     (let* ([workspace (init-workspace (current-directory) '() #f #f)]
+;             [root-file-node (workspace-file-node workspace)]
+;             [root-library-node (workspace-library-node workspace)]
+
+;             [target-file-node0 (walk-file root-file-node (string-append (current-directory) "/util/dedupe.sls"))]
+;             [target-document0 (file-node-document target-file-node0)]
+
+;             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/util.sls"))]
+;             [target-document (file-node-document target-file-node)]
+;             [target-text (document-text target-document)]
+;             [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 37 25))]
+;             [variable (index-node-variable target-index-node)]
+;             [check-base 
+;                 (construct-type-expression-with-meta 
+;                     '((inner:list?)<-(inner:list? something? something?)))])
+;         (construct-substitutions-for target-document)
+;         ; (debug:print-expression target-index-node)
+;         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document0)))
+;         ; (pretty-print (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))
+;         (test-equal #t 
+;             (not (null?
+;                 (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))))
+; (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

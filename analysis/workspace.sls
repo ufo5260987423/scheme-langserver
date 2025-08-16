@@ -140,7 +140,7 @@
     ; (pretty-print 'test1)
     (if type-inference?
       (try 
-        (construct-substitution-list-for document)
+        (construct-substitutions-for document)
         (except c 
           [(or (string? c) (symbol? c))
             (pretty-print target-path)

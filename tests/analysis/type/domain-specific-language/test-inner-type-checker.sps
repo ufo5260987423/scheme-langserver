@@ -9,7 +9,6 @@
     (srfi :64 testing) 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language interpreter)
-    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver util contain))
 
@@ -25,10 +24,8 @@
     (test-equal #t (inner:list? (construct-type-expression-with-meta '(inner:list? number? **1 string? ...))))
     (test-equal #f (inner:trivial? (construct-type-expression-with-meta '(inner:pair? number?))))
     (test-equal #t (inner:lambda? (construct-type-expression-with-meta '(number? <- (inner:list? number? number?)))))
-    (test-equal #t (inner:lambda? `(,(make-variable) <- (inner:list? ))))
     (test-equal #t (inner:trivial? (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?))))
     (test-equal #t (inner:executable? (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?))))
-    (test-equal #t (inner:executable? `((,(make-variable) <- (inner:list? )) something?)))
     (test-equal #t
         (contain?
             (type:interpret-result-list (construct-type-expression-with-meta '((with (a b c) (inner:list? a b c)) number? number? number?)))

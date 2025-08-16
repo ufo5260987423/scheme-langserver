@@ -32,20 +32,18 @@
     (ufo-try)
     (scheme-langserver util contain)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type domain-specific-language variable)
-    (scheme-langserver analysis type domain-specific-language syntax-candy))
+    (scheme-langserver analysis type domain-specific-language syntax-candy)
+    (scheme-langserver virtual-file-system index-node))
 
 (define (inner:type->string target)
   (cond
     [(null? target) "() "]
-    [(and (list? target) (inner:trivial? target)) 
+    [(list? target) 
       (string-append "(" (apply string-append (map inner:type->string target)) ") ")]
     [(symbol? target) (string-append (symbol->string target) " ")]
-    [(variable? target) (string-append "[variable " (variable-uuid target) "] ")]
+    [(index-node? target) (string-append "[index-node-uuid " (index-node-uuid target) "] ")]
     [(identifier-reference? target) (string-append "[identifier-reference " (symbol->string (identifier-reference-identifier target))  "] ")]
     [else
-      (print-graph #t)
-      (pretty-print target)
       (raise "can't do the transformation")]))
 
 (define (inner:?->pair target)
@@ -95,9 +93,9 @@
 
 (define (private-inner:trivial-item? item)
   (cond
-    [(variable? item) #t]
+    [(index-node? item) #t]
     [(identifier-reference? item) #t]
-    ;NOTE: variable is different from something! Porque variable is more like undefined, and something is defined.
+    ;NOTE: index-node/variable is different from something! Porque variable is more like undefined, and something is defined.
     ;Or in Hott's tongue, something is confired as one of universe. And variable haven't been desided.
     [(equal? 'something? item) #t]
     [(equal? 'void? item) #t]
@@ -144,19 +142,19 @@
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) #t]
     [((? inner:trivial? head) '<- (? inner:pair? tail)) #t]
-    [((? inner:trivial? head) '<- (? variable? tail)) #t]
+    [((? inner:trivial? head) '<- (? index-node? tail)) #t]
     [else #f]))
 
 (define (inner:lambda-param body)
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) tail]
-    [((? inner:trivial? head) '<- (? variable? tail)) tail]
+    [((? inner:trivial? head) '<- (? index-node? tail)) tail]
     [else '()]))
 
 (define (inner:lambda-return body)
   (match body
     [((? inner:trivial? head) '<- (? inner:list? tail)) head]
-    [((? inner:trivial? head) '<- (? variable? tail)) head]
+    [((? inner:trivial? head) '<- (? index-node? tail)) head]
     [else '()]))
 
 (define (inner:list? body)

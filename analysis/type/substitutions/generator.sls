@@ -1,6 +1,6 @@
 (library (scheme-langserver analysis type substitutions generator)
   (export 
-    construct-substitution-list-for)
+    construct-substitutions-for)
   (import 
     (chezscheme)
 
@@ -32,53 +32,43 @@
 
     (scheme-langserver analysis type substitutions self-defined-rules router))
 
-(define (construct-substitution-list-for document)
-  (document-substitution-list-set! 
-    document 
-    (ordered-dedupe 
-      (sort 
-        substitution-compare
-        (fold-left 
-          (lambda (prev current)
-            (step document current prev '()))
-          '()
-          (document-index-node-list document))))))
+(define (construct-substitutions-for document)
+  (map
+    (lambda (index-node) (step document index-node '()))
+    (document-index-node-list document)))
 
-; document index-node base-substitution-list allow-unquote? quoted?
+; document index-node allow-unquote? quoted?
 (define step 
   (case-lambda 
-    [(current-document current-index-node substitution-list expanded+callee-list)
+    [(current-document current-index-node expanded+callee-list)
       (cond 
         [(null? (index-node-children current-index-node))
-          (append substitution-list (trivial-process current-document current-index-node))]
+          (trivial-process current-document current-index-node)]
 
         [(quote? current-index-node current-document) 
-          (let ([child (car (index-node-children current-index-node))])
-            (append 
-              substitution-list 
-              `((,(index-node-variable current-index-node) = ,(index-node-variable child)))
-              (trivial-process current-document child)))]
+          (extend-index-node-substitution-list 
+            current-index-node 
+            (car (index-node-children current-index-node)))
+          (trivial-process current-document (car (index-node-children current-index-node)))]
         ;#'(1 2 3) is a syntax not a list
         [(syntax? current-index-node current-document) '()]
         [(quasiquote? current-index-node current-document) 
-          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
-              [child (car (index-node-children current-index-node))])
-            (fold-left 
-              (lambda (prev current)
-                (step current-document current available-identifiers prev 'quasiquoted expanded+callee-list))
-              (append   
-                substitution-list 
-                `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
+          (extend-index-node-substitution-list 
+            current-index-node 
+            (car (index-node-children current-index-node)))
+          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+            (map
+              (lambda (current)
+                (step current-document current available-identifiers 'quasiquoted expanded+callee-list))
               (index-node-children current-index-node)))]
         [(quasisyntax? current-index-node current-document)
-          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)]
-              [child (car (index-node-children current-index-node))])
-            (fold-left 
-              (lambda (prev current)
-                (step current-document current available-identifiers prev 'quasisyntax expanded+callee-list))
-              (append   
-                substitution-list 
-                `((,(index-node-variable current-index-node) = ,(index-node-variable child))))
+          (extend-index-node-substitution-list 
+            current-index-node 
+            (car (index-node-children current-index-node)))
+          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+            (map
+              (lambda (current)
+                (step current-document current available-identifiers 'quasisyntax expanded+callee-list))
               (index-node-children current-index-node)))]
 
         [(not (null? (index-node-children current-index-node))) 
@@ -93,30 +83,25 @@
                       current-document
                       expanded+callee-list)]
                   [else '()])])
-            (fold-left
-              (lambda (prev child-index-node)
-                (step current-document child-index-node prev expanded+callee-list))
-              (if (symbol? head-expression)
-                (fold-left 
-                  (lambda (prev current) 
-                    (append prev ((car (cdr current)) current-document current-index-node)))
-                  substitution-list
-                  target-rules)
-                ;this must be grounded, generally you shouldn't test this.
-                (append substitution-list (application-process current-document current-index-node)))
+            (if (symbol? head-expression)
+              (map
+                (lambda (current) ((car (cdr current)) current-document current-index-node))
+                target-rules)
+              ;this must be grounded, generally you shouldn't test this.
+              (application-process current-document current-index-node))
+            (map
+              (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
               children))])]
-      [(current-document current-index-node available-identifiers substitution-list quasi-quoted-syntaxed expanded+callee-list)
+      [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
             ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))]
             [else #f])
-          (fold-left 
-            (lambda (prev current) (step current-document current prev expanded+callee-list))
-            substitution-list
+          (map
+            (lambda (current) (step current-document current expanded+callee-list))
             (index-node-children current-index-node))
-          (fold-left 
-            (lambda (prev current) (step current-document current available-identifiers prev quasi-quoted-syntaxed expanded+callee-list))
-            substitution-list
+          (map
+            (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed expanded+callee-list))
             (index-node-children current-index-node)))]))
 
 (define (private-rule-compare? item0 item1)

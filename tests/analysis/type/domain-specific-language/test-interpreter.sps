@@ -26,19 +26,18 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
-    (scheme-langserver analysis type domain-specific-language variable)
     (scheme-langserver analysis type substitutions util)
     (scheme-langserver analysis type substitutions generator)
 
     (scheme-langserver protocol alist-access-object))
 
-(test-begin "type:intepret")
+(test-begin "type:interpret")
     (test-equal 
         (type:interpret-result-list (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number?)))
         (list (construct-type-expression-with-meta 'number?)))
     (test-equal #t
         (contain? 
-            (let ([v (make-variable)])
+            (let ([v (make-virtual-index-node)])
                 (type:interpret-result-list `((,v <- (inner:list? ,v)) ,(construct-type-expression-with-meta 'number?))))
             (construct-type-expression-with-meta 'number?)))
 (test-end)

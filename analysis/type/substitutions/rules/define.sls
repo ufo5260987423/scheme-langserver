@@ -21,21 +21,20 @@
       (match expression
         [(_ ((? symbol? identifiers) (? symbol? parameters) ... ) tail) 
           (let* ([identifier-index-node (car (index-node-children (cadr (index-node-children index-node))))]
-              [identifier-variable (index-node-variable identifier-index-node)]
-
               [tail-index-node (car (reverse (index-node-children index-node)))]
-              [return-variable (index-node-variable tail-index-node)]
 
               [parameter-index-nodes (cdr (index-node-children (cadr (index-node-children index-node))))]
-              [parameter-variable-products (construct-parameter-variable-products-with parameter-index-nodes)]
-              [lambda-details (construct-lambdas-with (list return-variable) parameter-variable-products)])
-            (cartesian-product `(,identifier-variable) '(=) lambda-details))]
+              [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)]
+              [lambda-details (construct-lambdas-with (list tail-index-node) parameter-index-nodes-products)])
+            (map 
+              (lambda (t)
+                (extend-index-node-substitution-list identifier-index-node t))
+              lambda-details))]
         [(_ (? symbol? identifiers) tail) 
           (let* ([identifier-index-node (cadr (index-node-children index-node))]
               [tail-index-node (car (reverse (index-node-children index-node)))])
-            (append 
-              (construct-substitutions-between-index-nodes identifier-index-node tail-index-node '=)
-              (construct-substitutions-between-index-nodes tail-index-node identifier-index-node '=)))]
+            (extend-index-node-substitution-list identifier-index-node tail-index-node)
+            (extend-index-node-substitution-list tail-index-node identifier-index-node))]
         [else '()])
       (except c
         [else '()]))))

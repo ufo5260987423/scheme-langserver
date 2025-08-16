@@ -42,10 +42,7 @@
             '())]
         [type-string 
           (if (workspace-type-inference? workspace)
-            (let* ([variable (index-node-variable target-index-node)]
-                [substitution (document-substitution-list document)]
-                [env (make-type:environment substitution)]
-                [types (type:interpret-result-list variable env)])
+            (let* ([types (type:interpret-result-list target-index-node)])
               (fold-left 
                 (lambda (prev current)
                   (string-append prev "\n\n" current))
