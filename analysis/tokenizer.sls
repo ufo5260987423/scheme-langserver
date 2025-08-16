@@ -63,6 +63,11 @@
                   [head (string-take source position)]
                   [rest (string-take-right source (- (string-length source) position 1))])
                 (private:tolerant-parse->patch (string-append head " " rest)))]
+            ["invalid string character \\~c"
+              (let* ([position (caddr (condition-irritants e))]
+                  [head (string-take source position)]
+                  [rest (string-take-right source (- (string-length source) position 1))])
+                (private:tolerant-parse->patch (string-append head " " rest)))]
             [else 
               (display-condition e)
               (newline)
