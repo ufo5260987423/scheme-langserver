@@ -123,10 +123,8 @@
         (if (not (null? paths))
           (let ([batch (car paths)])
             ((if threaded? threaded-map map)
-              (lambda (path)
-                (if (string? path)
-                  (private-init-references root-file-node root-library-node file-linkage path type-inference?)))
-              batch)
+              (lambda (path) (private-init-references root-file-node root-library-node file-linkage path type-inference?))
+              (filter string? batch))
             (loop (cdr paths)))))]))
 
 (define (private-init-references root-file-node root-library-node file-linkage target-path type-inference?)
