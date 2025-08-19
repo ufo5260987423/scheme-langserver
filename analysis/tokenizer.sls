@@ -68,6 +68,14 @@
                   [head (string-take source position)]
                   [rest (string-take-right source (- (string-length source) position 1))])
                 (private:tolerant-parse->patch (string-append head " " rest)))]
+            ["invalid number syntax ~a"
+              (let* ([position (caddr (condition-irritants e))]
+                  [head (string-take source position)]
+                  [end-position (string-find-delimiter source (+ 1 position))]
+                  [l (- end-position position -1)]
+                  [rest (string-take-right source (- (string-length source) position l))]
+                  [blank (make-string l #\space)])
+                (private:tolerant-parse->patch (string-append head blank rest)))]
             [else 
               (display-condition e)
               (newline)
