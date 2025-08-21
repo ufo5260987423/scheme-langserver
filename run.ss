@@ -62,7 +62,7 @@ Example Usage:
   (cond
     ((string-ci=? str "r6rs") 'r6rs)
     ((string-ci=? str "r7rs") 'r7rs)
-    ;; ((string-ci=? str "s7") 's7)
+    ((string-ci=? str "s7") 's7)
     ;; ((string-ci=? str "goldfish") 'goldfish)
     (else #f)))
 
@@ -74,7 +74,7 @@ Example Usage:
       (hashtable-set! seeds "top-environment" val)
       seeds)
     (begin
-      (display "Invalid value for --top-environment. Valid values: r6rs, r7rs\n")
+      (display "Invalid value for --top-environment. Valid values: r6rs, r7rs, s7\n")
       (exit 1)))))
 
 (define options
