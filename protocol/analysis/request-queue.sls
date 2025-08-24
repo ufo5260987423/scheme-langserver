@@ -89,6 +89,7 @@
                 (lambda (remains)
                   (remove:from-request-tickal-task-list queue tickal-task)
                   (potential-request-processor (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task))))))))))]
-      [else (make-tickal-task request queue)]))
-  (condition-signal (request-queue-condition queue)))
+      [else (make-tickal-task request queue)])
+    ;because the pool is limited to have only one thread.
+    (condition-signal (request-queue-condition queue))))
 )
