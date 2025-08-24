@@ -41,8 +41,7 @@
         (let* ([s-index-node (car (reverse children))]
             [pre-available-references (find-available-references-for document scope-index-node s)]
             [available-references (dedupe (apply append (map root-ancestor pre-available-references)))])
-          (extend-index-node-substitution-list s-index-node
-            .
+          (map (lambda (i) (extend-index-node-substitution-list s-index-node i)) 
             (map construct-type-expression-with-meta 
               (map identifier-reference-identifier 
                 (filter 
