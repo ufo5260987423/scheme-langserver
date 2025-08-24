@@ -27,26 +27,23 @@
   (fields 
     (immutable request)
     (immutable request-queue)
-    (immutable mutex)
+    (mutable stop?)
     (mutable expire)
     (mutable complete))
   (protocol
     ;must have request-queue-mutex
     (lambda (new)
       (lambda (request request-queue)
-        (letrec* ([new-task (new request request-queue (make-mutex) '() '())]
+        (letrec* ([new-task (new request request-queue #f '() '())]
             [complete 
               (lambda (ticks value) 
                 (remove:from-request-tickal-task-list request-queue new-task)
                 value)]
             [expire 
               (lambda (remains) 
-                (let ([new-pair
-                    (with-mutex (tickal-task-mutex new-task)
-                      (cons 
-                        (tickal-task-complete new-task)
-                        (tickal-task-expire new-task)))])
-                  (remains ticks (car new-pair) (cdr new-pair))))])
+                (if (tickal-task-stop? new-task)
+                  (remove:from-request-tickal-task-list request-queue new-task)
+                  (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))))])
           (enqueue! (request-queue-queue request-queue) new-task)
           (request-queue-tickal-task-list-set! 
             request-queue
@@ -86,12 +83,10 @@
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           ;must cancel in local thread.
           (when tickal-task 
-            (with-mutex (tickal-task-mutex tickal-task)
-              (tickal-task-expire-set! tickal-task
-                (lambda (remains)
-                  (remove:from-request-tickal-task-list queue tickal-task)
-                  (potential-request-processor (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task))))))))))]
+            (tickal-task-stop?-set! tickal-task #t)
+            (potential-request-processor 
+              (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
       [else (make-tickal-task request queue)])
-    ;because the pool is limited to have only one thread.
+      ;because the pool is limited to have only one thread.
     (condition-signal (request-queue-condition queue))))
 )
