@@ -44,6 +44,7 @@
     [(index-node? target) (string-append "[index-node-uuid " (index-node-uuid target) "] ")]
     [(identifier-reference? target) (string-append "[identifier-reference " (symbol->string (identifier-reference-identifier target))  "] ")]
     [else
+      (pretty-print target)
       (raise "can't do the transformation")]))
 
 (define (inner:?->pair target)
