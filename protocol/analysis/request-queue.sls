@@ -60,6 +60,8 @@
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
       (if (queue-empty? (request-queue-queue queue))
+        ;by default, this will release request-queue-mutex 
+        ;and re-enter when request-queue-condition is signed.
         (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
       (letrec* ([task (dequeue! (request-queue-queue queue))]
           [request (tickal-task-request task)]
