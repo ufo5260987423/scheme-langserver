@@ -18,7 +18,7 @@
     (scheme-langserver virtual-file-system document))
 
 (test-begin "typed-lambda-process")
-    (let* ( [root-file-node (init-virtual-file-system "./tests/resources/r7rs" '() (lambda (fuzzy) #t) 's7)]
+    (let* ( [root-file-node (init-virtual-file-system "./tests/resources/r7rs" '() (lambda (fuzzy) #t) 'goldfish)]
             [root-library-node '()]
             [target-file-node (walk-file root-file-node "./tests/resources/r7rs/liii/base64.scm.txt")]
             [document (file-node-document target-file-node)]
