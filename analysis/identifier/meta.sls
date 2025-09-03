@@ -5501,6 +5501,7 @@ scheme-time scheme-write scheme-r5rs s7))
 ) 'r7rs))
 
 (define s7 (private-process '(s7) '(
+(define-library	syntax)
 (quote syntax)
 (if syntax)
 (when syntax)
