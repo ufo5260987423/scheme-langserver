@@ -23,7 +23,7 @@
           (let* ([identifier-index-node (car (index-node-children (cadr (index-node-children index-node))))]
               [tail-index-node (car (reverse (index-node-children index-node)))]
 
-              [parameter-index-nodes (define*-parameter-index-node-extract (cdr (index-node-children (cadr (index-node-children index-node)))))]
+              [parameter-index-nodes (define*-parameter-index-node-extract (cdr (index-node-children (cadr (index-node-children index-node)))) document)]
               [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)]
               [lambda-details (construct-lambdas-with (list tail-index-node) parameter-index-nodes-products)])
             (map 
@@ -34,18 +34,20 @@
       (except c
         [else '()]))))
 
-(define (define*-parameter-index-node-extract parameter-index-nodes)
+(define (define*-parameter-index-node-extract parameter-index-nodes current-document)
   ;; for define*, the parameter could be (identifier1 identifier2 ...)
   ;; and also ((identifier1 value1) identifier2 (identifier3 value3) ...) ,
   ;; this function is used to get all identifier index-nodes.
   (map
     (lambda (index-node)
-      (let ([ann (index-node-datum/annotations index-node)]
+      (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
           (match expression
             [(? symbol? expression)
               index-node]
-            [(? pair? expression)
+            [((? symbol? param) (? symbol? type))
+              (map (lambda (id) (extend-index-node-substitution-list (car (index-node-children index-node)) id))
+                (map root-ancestor (find-available-references-for current-document index-node type)))
               (car (index-node-children index-node))])))
     parameter-index-nodes))
 
