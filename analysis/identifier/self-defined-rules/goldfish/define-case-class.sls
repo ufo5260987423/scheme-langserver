@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier rules goldfish define-case-class)
+(library (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
   (export 
     define-case-class-process
     define-case-class-parameter-process)

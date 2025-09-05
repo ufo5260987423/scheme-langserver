@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier rules goldfish typed-lambda)
+(library (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda)
   (export 
     typed-lambda-process
     typed-parameter-process)

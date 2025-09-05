@@ -1,4 +1,4 @@
-(library (scheme-langserver analysis identifier rules goldfish let1)
+(library (scheme-langserver analysis identifier self-defined-rules goldfish let1)
   (export 
     let1-process
     let1-parameter-process)
