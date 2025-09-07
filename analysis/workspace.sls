@@ -297,6 +297,7 @@
       [meta-lib (case top-environment
                   ['r7rs '(scheme base)]
                   ['s7 '(s7)]
+                  ['goldfish '(s7)]
                   [else '(chezscheme)])])
     (try
       (cond 
