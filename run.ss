@@ -18,7 +18,7 @@ Options:
 
   -h, --help                    Print help information
 
-  -e, --top-environment         Switch to support different top environment, for example R6RS, R7RS, etc.(default: R6RS)
+  -e, --top-environment         Switch to support different top environment, for example R6RS, R7RS, s7, goldfish, etc.(default: R6RS)
 
 
 Example Usage:
@@ -63,7 +63,7 @@ Example Usage:
     ((string-ci=? str "r6rs") 'r6rs)
     ((string-ci=? str "r7rs") 'r7rs)
     ((string-ci=? str "s7") 's7)
-    ;; ((string-ci=? str "goldfish") 'goldfish)
+    ((string-ci=? str "goldfish") 's7)
     (else #f)))
 
 

@@ -17,7 +17,11 @@
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
     (scheme-langserver analysis identifier self-defined-rules ufo-match match)
-    (scheme-langserver analysis identifier self-defined-rules ufo-try try))
+    (scheme-langserver analysis identifier self-defined-rules ufo-try try)
+    
+    (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
+    (scheme-langserver analysis identifier self-defined-rules goldfish let1)
+    (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda))
 
 (define (route&add 
   rules target-identifier
@@ -58,5 +62,12 @@
         ;not now to delete
         rules
         ]
+      [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
+        (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
+      [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
+        (add-rule-procedure rules `((,define-case-class-process) . ,target-identifier))]
+      [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
+        (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
+
       [else rules])))
 )

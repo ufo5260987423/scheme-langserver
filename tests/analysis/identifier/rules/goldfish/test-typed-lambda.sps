@@ -7,7 +7,7 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules goldfish typed-lambda)
+    (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda)
     (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver util text)

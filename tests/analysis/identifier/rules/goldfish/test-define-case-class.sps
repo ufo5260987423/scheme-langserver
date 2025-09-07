@@ -7,7 +7,7 @@
 (import (rnrs (6)) (srfi :64 testing) 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules goldfish define-case-class)
+    (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
     (scheme-langserver analysis identifier rules let)
     (scheme-langserver analysis identifier rules library-import)
     (scheme-langserver analysis package-manager akku)
