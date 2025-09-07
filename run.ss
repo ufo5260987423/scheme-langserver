@@ -63,7 +63,7 @@ Example Usage:
     ((string-ci=? str "r6rs") 'r6rs)
     ((string-ci=? str "r7rs") 'r7rs)
     ((string-ci=? str "s7") 's7)
-    ((string-ci=? str "goldfish") 'goldfish)
+    ((string-ci=? str "goldfish") 's7)
     (else #f)))
 
 

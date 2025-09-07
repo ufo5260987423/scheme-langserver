@@ -111,14 +111,12 @@
               'parameter
               '()
               '())])
-        (debug:print-expression index-node)
         (index-node-references-export-to-other-node-set! 
           index-node
           (append 
             (index-node-references-export-to-other-node index-node)
             `(,reference)))
 
-        (debug:print-expression lambda-node)
         (index-node-references-import-in-this-node-set! 
           lambda-node
           (sort-identifier-references 
