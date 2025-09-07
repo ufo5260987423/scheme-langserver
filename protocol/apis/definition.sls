@@ -18,7 +18,6 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_definition
 (define (definition workspace params)
-  (pretty-print 'define0)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [position (alist->position (assq-ref params 'position))]
       [line (position-line position)]
@@ -38,7 +37,6 @@
           (if (null? (index-node-children target-index-node)) 
             (annotation-stripped (index-node-datum/annotations target-index-node)) 
             '()))])
-  (pretty-print 'define1)
     (list->vector 
       (map identifier-reference->location->alist 
         (filter 
