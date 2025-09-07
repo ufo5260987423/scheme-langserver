@@ -63,7 +63,6 @@
     (scheme-langserver analysis identifier rules s7 define-macro)
     (scheme-langserver analysis identifier rules s7 define*)
     (scheme-langserver analysis identifier rules s7 lambda*)
-    (scheme-langserver analysis identifier rules s7 typed-lambda)
 
     (scheme-langserver analysis identifier self-defined-rules router)
 
@@ -262,9 +261,6 @@
             
             [(and (equal? r '(lambda*)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,lambda*-process) . ,identifier))]
-            
-            [(and (equal? r '(typed-lambda)) (private:top-env=? 's7 top))
-              (private-add-rule rules `((,typed-lambda-process) . ,identifier))]
 
             [else rules])
           (route&add 

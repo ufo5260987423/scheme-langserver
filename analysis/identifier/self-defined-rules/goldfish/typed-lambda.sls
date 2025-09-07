@@ -111,12 +111,14 @@
               'parameter
               '()
               '())])
+        (debug:print-expression index-node)
         (index-node-references-export-to-other-node-set! 
           index-node
           (append 
             (index-node-references-export-to-other-node index-node)
             `(,reference)))
 
+        (debug:print-expression lambda-node)
         (index-node-references-import-in-this-node-set! 
           lambda-node
           (sort-identifier-references 
@@ -125,7 +127,7 @@
               `(,reference))))
 
         (index-node-excluded-references-set! 
-          (index-node-parent index-node)
+          (index-node-parent (index-node-parent index-node))
           (append 
             (index-node-excluded-references index-node)
             exclude

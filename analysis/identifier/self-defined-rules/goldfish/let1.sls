@@ -24,7 +24,7 @@
       (match expression
         [(_ (? symbol? identifier) fuzzy ... )
           (let* ([identifier-index-node (cadr (index-node-children index-node))]
-                 [exclude-list (let1-parameter-process index-node identifier-index-node index-node '() document 'variable)])
+              [exclude-list (let1-parameter-process index-node identifier-index-node index-node '() document 'variable)])
             (index-node-excluded-references-set! identifier-index-node exclude-list)
             exclude-list)]
         [else '()])
