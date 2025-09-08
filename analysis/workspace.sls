@@ -13,7 +13,6 @@
     workspace-file-node
     workspace-file-node-set!
     workspace-mutex
-    workspace-condition
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
@@ -69,7 +68,6 @@
     (mutable file-linkage)
 
     (immutable mutex)
-    (immutable condition)
 
     (immutable facet)
     ;only for identifer catching and type inference
@@ -79,7 +77,7 @@
   (protocol 
     (lambda (new)
       (lambda (file-node library-node file-linkage facet threaded? type-inference? top-environment)
-        (new file-node library-node file-linkage (if threaded? (make-mutex) '()) (if threaded? (make-condition) '()) facet threaded? type-inference? top-environment)))))
+        (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment)))))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -231,8 +229,7 @@
                   (init-references workspace-instance refreshable-batches)))))])
       (if (workspace-threaded? workspace-instance)
         (with-mutex (workspace-mutex workspace-instance)
-          (thunk)
-          (condition-signal (workspace-condition workspace-instance)))
+          (thunk))
         (thunk)))))
 
 (define init-virtual-file-system
