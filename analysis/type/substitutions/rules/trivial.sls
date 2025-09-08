@@ -93,8 +93,11 @@
   (if (null? (identifier-reference-parents identifier-reference))
     (let* ([target-document (identifier-reference-document identifier-reference)]
         [target-index-node (identifier-reference-index-node identifier-reference)]
-        [type-expressions (identifier-reference-type-expressions identifier-reference)])
+        [type-expressions (identifier-reference-type-expressions identifier-reference)]
+        [type (identifier-reference-type identifier-reference)])
       (cond 
+        [(and (contain? '(constructor getter setter predicator) type) (not (null? target-index-node)))
+          (extend-index-node-substitution-list index-node identifier-reference)]
         ;it's in r6rs library?
         [(null? target-index-node)
           (map 
