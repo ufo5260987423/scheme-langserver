@@ -27,6 +27,7 @@
     (scheme-langserver util dedupe)
     (ufo-try)
 
+    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
 
@@ -287,6 +288,12 @@
                     (map 
                       (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
                       filtered)))))]
+          [(identifier-reference? expression)
+            (if (and 
+                (not (null? (identifier-reference-type-expressions expression))) 
+                (contain? '(constructor getter setter predicator) (identifier-reference-type expression)))
+              (type:environment-result-list-set! env (identifier-reference-type-expressions expression))
+              (type:environment-result-list-set! env `(,expression)))]
           [else (type:environment-result-list-set! env (list expression))]))
       (type:environment-result-list-set! 
         env 
