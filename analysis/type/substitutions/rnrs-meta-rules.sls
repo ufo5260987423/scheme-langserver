@@ -207,7 +207,7 @@
 (delete-file (void? <- (inner:list? string?)))
 (denominator (rational? <- (inner:list? rational?)))
 (directory-list ((inner:list? string? ...) <- (inner:list? string?)))
-(directory-separator (char? <- (inner:list? void?)))
+(directory-separator (char? <- (inner:list?)))
 (directory-separator? (boolean? <- (inner:list? char?)))
 (display-statistics (void? <- (inner:list? )))
 (display-string (void? <- (inner:list? string?)))
