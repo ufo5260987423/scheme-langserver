@@ -12,6 +12,8 @@
     workspace?
     workspace-file-node
     workspace-file-node-set!
+    workspace-mutex
+    workspace-condition
     workspace-library-node
     workspace-library-node-set!
     workspace-file-linkage
@@ -65,11 +67,19 @@
     (mutable file-node)
     (mutable library-node)
     (mutable file-linkage)
+
+    (immutable mutex)
+    (immutable condition)
+
     (immutable facet)
     ;only for identifer catching and type inference
     (immutable threaded?)
     (immutable type-inference?)
-    (immutable top-environment)))
+    (immutable top-environment))
+  (protocol 
+    (lambda (new)
+      (lambda (file-node library-node file-linkage facet threaded? type-inference? top-environment)
+        (new file-node library-node file-linkage (if threaded? (make-mutex) '()) (if threaded? (make-condition) '()) facet threaded? type-inference? top-environment)))))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -205,18 +215,25 @@
 ;; target-file-node<-[linkage]-other-file-nodes
 (define (refresh-workspace-for workspace-instance target-file-node)
   (if (document-refreshable? (file-node-document target-file-node))
-    (let* ([linkage (workspace-file-linkage workspace-instance)]
-        [root-file-node (workspace-file-node workspace-instance)]
-        [root-library-node (workspace-library-node workspace-instance)]
-        [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
-      (if (null? library-identifiers-list)
-        (init-references workspace-instance `((,(file-node-path target-file-node))))
-        (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list (workspace-top-environment workspace-instance))]
-            [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
-            [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
-            ;target-file-node may don't have library-identifiers-list
-            [refreshable-batches (shrink-paths linkage refreshable-path)])
-          (init-references workspace-instance refreshable-batches))))))
+    (let ([thunk 
+          (lambda ()
+            (let* ([linkage (workspace-file-linkage workspace-instance)]
+                [root-file-node (workspace-file-node workspace-instance)]
+                [root-library-node (workspace-library-node workspace-instance)]
+                [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
+              (if (null? library-identifiers-list)
+                (init-references workspace-instance `((,(file-node-path target-file-node))))
+                (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list (workspace-top-environment workspace-instance))]
+                    [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
+                    [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
+                    ;target-file-node may don't have library-identifiers-list
+                    [refreshable-batches (shrink-paths linkage refreshable-path)])
+                  (init-references workspace-instance refreshable-batches)))))])
+      (if (workspace-threaded? workspace-instance)
+        (with-mutex (workspace-mutex workspace-instance)
+          (thunk)
+          (condition-signal (workspace-condition workspace-instance)))
+        (thunk)))))
 
 (define init-virtual-file-system
   (case-lambda

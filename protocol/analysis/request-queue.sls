@@ -8,7 +8,8 @@
     (slib queue)
 
     (scheme-langserver util association)
-    (scheme-langserver protocol request))
+    (scheme-langserver protocol request)
+    (scheme-langserver analysis workspace))
 
 (define-record-type request-queue 
   (fields 
@@ -33,7 +34,7 @@
   (protocol
     ;must have request-queue-mutex
     (lambda (new)
-      (lambda (request request-queue)
+      (lambda (request request-queue workspace)
         (letrec* ([new-task (new request request-queue #f '() '())]
             [complete 
               (lambda (ticks value) 
@@ -42,7 +43,8 @@
             [expire 
               (lambda (remains) 
                 (if (tickal-task-stop? new-task)
-                  (remove:from-request-tickal-task-list request-queue new-task)
+                  (with-mutex (workspace-mutex workspace)
+                    (remove:from-request-tickal-task-list request-queue new-task))
                   (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))))])
           (enqueue! (request-queue-queue request-queue) new-task)
           (request-queue-tickal-task-list-set! 
@@ -72,7 +74,7 @@
       queue
       (remove task (request-queue-tickal-task-list queue)))))
 
-(define (request-queue-push queue request potential-request-processor)
+(define (request-queue-push queue request potential-request-processor workspace)
   (with-mutex (request-queue-mutex queue)
     (cond 
       [(equal? (request-method request) "$/cancelRequest")
@@ -86,7 +88,7 @@
             (tickal-task-stop?-set! tickal-task #t)
             (potential-request-processor 
               (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
-      [else (make-tickal-task request queue)])
+      [else (make-tickal-task request queue workspace)])
       ;because the pool is limited to have only one thread.
     (condition-signal (request-queue-condition queue))))
 )

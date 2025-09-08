@@ -246,11 +246,10 @@
                     (request-processor request-message)
                     (loop (read-message server-instance))]
                   [else
-                    (request-queue-push request-queue request-message request-processor)
+                    (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
                     (loop (read-message server-instance))]))
               (except c 
                 [else 
                   (display-condition c log-port)
                   (do-log-timestamp server-instance)])))]))
-
 )
