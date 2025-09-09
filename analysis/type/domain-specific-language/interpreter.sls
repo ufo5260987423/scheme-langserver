@@ -289,12 +289,12 @@
                       (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
                       filtered)))))]
           [(identifier-reference? expression)
-            (if (and 
-                (not (null? (identifier-reference-type-expressions expression))) 
-                ;shouldn't have predicator because predicator is also end point
-                (contain? '(constructor getter setter) (identifier-reference-type expression)))
-              (type:environment-result-list-set! env (identifier-reference-type-expressions expression))
-              (type:environment-result-list-set! env `(,expression)))]
+            (cond 
+              [(and (not (null? (identifier-reference-type-expressions expression))) (contain? '(constructor getter setter) (identifier-reference-type expression)))
+                (type:environment-result-list-set! env (identifier-reference-type-expressions expression))]
+              ; [(and (not (null? (identifier-reference-type-expressions expression))) (equal? 'predicator (identifier-reference-type expression)))
+              ;   (type:environment-result-list-set! env `(,expression ,@(identifier-reference-type-expressions expression)))]
+              [else (type:environment-result-list-set! env `(,expression))])]
           [else (type:environment-result-list-set! env (list expression))]))
       (type:environment-result-list-set! 
         env 

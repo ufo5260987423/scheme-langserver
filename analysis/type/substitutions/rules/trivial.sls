@@ -96,8 +96,10 @@
         [type-expressions (identifier-reference-type-expressions identifier-reference)]
         [type (identifier-reference-type identifier-reference)])
       (cond 
-        [(and (contain? '(constructor getter setter predicator) type) (not (null? target-index-node)))
+        [(and (contain? '(constructor getter setter ) type) (not (null? target-index-node)))
           (extend-index-node-substitution-list index-node identifier-reference)]
+        [(and (equal? 'predicator type) (not (null? target-index-node)))
+          (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))]
         ;it's in r6rs library?
         [(null? target-index-node)
           (map 
