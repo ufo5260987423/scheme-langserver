@@ -291,7 +291,8 @@
           [(identifier-reference? expression)
             (if (and 
                 (not (null? (identifier-reference-type-expressions expression))) 
-                (contain? '(constructor getter setter predicator) (identifier-reference-type expression)))
+                ;shouldn't have predicator because predicator is also end point
+                (contain? '(constructor getter setter) (identifier-reference-type expression)))
               (type:environment-result-list-set! env (identifier-reference-type-expressions expression))
               (type:environment-result-list-set! env `(,expression)))]
           [else (type:environment-result-list-set! env (list expression))]))
