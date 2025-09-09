@@ -39,8 +39,7 @@
     (mutable shutdown?)
     (mutable condition)
     (mutable work-done-progress?)
-    (immutable top-environment)
-    )
+    (immutable top-environment))
   (protocol
     (lambda (new)
       (case-lambda

@@ -142,10 +142,6 @@
                         ,(vector-ref (list->vector symbols) index))
                         c)) 
                       ,head))))]
-            [(and (contain? '(getter setter predicator constructor) (identifier-reference-type identifier-reference)) (not (null? type-expressions)))
-              (map 
-                (lambda (t) (extend-index-node-substitution-list index-node t))
-                type-expressions)]
             [else '()])]
         ;import
         [else 

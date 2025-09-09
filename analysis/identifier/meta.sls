@@ -172,8 +172,6 @@ scheme-time scheme-write scheme-r5rs s7))
 
 (define (private-construct-type-expression-with-meta expression list-instance)
   (match expression
-    [('inner:record? fuzzy ...) `(inner:record? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
-
     [(? index-node? fuzzy) fuzzy]
     [('inner:list? fuzzy ...) `(inner:list? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
     [('inner:vector? fuzzy ...) `(inner:vector? ,@(map (lambda(target) (private-construct-type-expression-with-meta target list-instance)) fuzzy))]
