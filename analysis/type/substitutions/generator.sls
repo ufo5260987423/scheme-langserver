@@ -121,7 +121,7 @@
           [type (map identifier-reference-type top)])
         (if (or (equal? '(procedure) type) (equal? '(variable) type) (equal? '(getter) type) (equal? '(setter) type) (equal? '(predicator) type) (equal? '(constructor) type)) 
           (private-add-rule rules `((,application-process) . ,identifier))
-          (if (find meta-library? is)
+          (if (find meta? top)
             (cond 
               [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
               [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]

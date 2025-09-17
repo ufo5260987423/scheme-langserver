@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis identifier meta)
   (export 
     construct-type-expression-with-meta
-    meta-library?
+    meta?
     root-meta-check
     find-meta)
   (import 
@@ -20,13 +20,9 @@
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [identifiers (find-available-references-for document index-node (annotation-stripped (index-node-datum/annotations index-node)))]
       [root-identifiers (apply append (map root-ancestor identifiers))])
-    (find (lambda (i) (or (meta-library? (identifier-reference-library-identifier i)) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
+    (find (lambda (i) (or (meta? i) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
 
-(define meta-library?
-  (case-lambda
-    [(list-instance) (meta-library? list-instance 'r6rs)]
-    [(list-instance top-environment)
-      (not (null? (find-meta list-instance top-environment)))]))
+(define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
 
 (define find-meta
   (case-lambda

@@ -66,7 +66,7 @@
     (lambda (new)
       (case-lambda
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions 'r6rs)]
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '())]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
           (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)]))))
 

@@ -168,9 +168,8 @@
       (let* ([top (root-ancestor identifier)]
           [r (map identifier-reference-identifier top)]
           [i (identifier-reference-identifier identifier)]
-          [is (map identifier-reference-library-identifier top)]
           [top-environment (car (map identifier-reference-top-environment top))])
-        (if (find (lambda (is) (meta-library? is top-environment)) is)
+        (if (find meta? top)
           (cond 
             [(and (equal? r '(define)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-process) . ,identifier))]

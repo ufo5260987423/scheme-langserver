@@ -377,5 +377,5 @@
         (case (identifier-reference-identifier first-child-identifier)
           ['define-syntax `(,first-child-identifier . ,(caddr initial-children))]
           ['let-syntax `(,first-child-identifier . ,(index-node-parent (identifier-reference-index-node identifier-reference)))]))
-      (filter (lambda (identifier) (meta-library? (identifier-reference-library-identifier identifier))) first-child-top-identifiers))))
+      (filter meta? first-child-top-identifiers))))
 )
