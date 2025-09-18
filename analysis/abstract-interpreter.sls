@@ -166,9 +166,7 @@
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]
-          [r (map identifier-reference-identifier top)]
-          [i (identifier-reference-identifier identifier)]
-          [top-environment (car (map identifier-reference-top-environment top))])
+          [r (map identifier-reference-identifier top)])
         (if (find meta? top)
           (cond 
             [(and (equal? r '(define)) (private:top-env=? 'r6rs top))
@@ -290,6 +288,5 @@
           (find-available-references-for current-document current-index-node expression)))]))
 
 (define (private:top-env=? standard top)
-  (not (null? (find (lambda (top-environment) (equal? standard top-environment))
-                (map identifier-reference-top-environment top)))))
+  (contain? (map identifier-reference-top-environment top) standard))
 )
