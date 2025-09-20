@@ -27,14 +27,14 @@ This package also has been tested with [Chez Scheme](https://cisco.github.io/Che
 I do this open source work just in my spare time and I can contribute many splendid ideas to the community like embedding data flow analysis into scheme-langserver or many other things. And I'm continuously asking for much more donation or funding. You can donate with [this patreon page](https://www.patreon.com/PoorProgrammer/membership) or [爱发电](https://afdian.com/a/ufo5260987423).
 
 
-## Compilation , Intallation & Configuration is [HERE](./doc/startup.md)
+## Compilation , Installation & Configuration is [HERE](./doc/startup.md)
 ## Debug or Issue Bugs, you may find [THIS](./doc/how-to-debug.md) helpful.
 
 ## Recent Status
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ## Release 
-2.0.0 Fix many bugs and switch between different top environments.
+2.0.1 Fix many bugs.
 
 Previous releases please refer to [this file](./doc/release-log.md).
 

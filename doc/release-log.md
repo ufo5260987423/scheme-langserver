@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+2.0.0 Fix many bugs and switch between different top environments.
+
 1.2.9 Now, enjoy type inference!
 
 1.2.8 Now hover and auto completion is ready for use. I also have done many things about parsing fault tolerance.
