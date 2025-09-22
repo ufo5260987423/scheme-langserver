@@ -50,12 +50,10 @@
           [origin-paths (map uri->path origin-uris)]
           [path-to-list 
             (apply append
+              origin-paths
               (map 
-                (lambda (path)
-                  (file-linkage-to
-                    (workspace-file-linkage workspace) 
-                    path))
-                    origin-paths))]
+                (lambda (path) (file-linkage-to (workspace-file-linkage workspace) path))
+                origin-paths))]
           [root-file-node (workspace-file-node workspace)]
           [maybe-target-documents (map (lambda (local-path) (walk-file root-file-node local-path)) path-to-list)]
           [target-documents (map file-node-document maybe-target-documents)]
