@@ -41,7 +41,10 @@
             (annotation-stripped (index-node-datum/annotations target-index-node))
             #f))])
     (if prefix
-      (let* ([available-references (find-available-references-for document target-index-node prefix)]
+      (let* ([available-references 
+            (if (null? (index-node-references-export-to-other-node target-index-node))
+              (find-available-references-for document target-index-node prefix)
+              (index-node-references-export-to-other-node target-index-node))]
           [origin-documents (dedupe (map identifier-reference-document available-references))]
           [origin-uris (map document-uri origin-documents)]
           [origin-paths (map uri->path origin-uris)]
