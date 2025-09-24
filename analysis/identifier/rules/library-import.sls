@@ -30,11 +30,6 @@
         (map 
           (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
           (cddr (index-node-children index-node)))]
-      ; [('define-library _ **1 ) 
-      ; ; this should not use 'guard', because it follows the r7rs library mechanism(in sld)
-      ;   (map 
-      ;     (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
-      ;     (index-node-children index-node))]
       [else '()])
     index-node))
 
@@ -315,7 +310,6 @@
             (lambda (index-node)
               (match (annotation-stripped (index-node-datum/annotations index-node))
                 (['library (identifier **1) _ ... ] (equal? identifier library-identifier))
-                (['define-library (identifier **1) _ ... ] (equal? identifier library-identifier))
                 (else #f)))
             candidate-index-node-list))))))
 
@@ -324,10 +318,6 @@
       [expression (annotation-stripped ann)])
     (match expression 
       [('library _ **1 ) 
-        (apply append (map 
-          (lambda (child-node) (match-export child-node))
-          (cddr (index-node-children root-index-node))))]
-      [('define-library _ **1 ) 
         (apply append (map 
           (lambda (child-node) (match-export child-node))
           (cddr (index-node-children root-index-node))))]
