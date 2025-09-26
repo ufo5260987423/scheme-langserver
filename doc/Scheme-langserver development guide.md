@@ -2,7 +2,7 @@
 
 本手册旨在向开发者说明如何为 Scheme-langserver 添加新语言支持，通过 `top-environment` 支持特定的语言环境（如 `R6/7RS`、`S7`）。其中 `R6/7RS` 是两种标准，`S7`则是一种`R7RS`实现。这些语言环境决定了词法、句法、语法层面的若干解析规则，也决定了什么样的标准库将被加载。特别的，Scheme 语言环境往往通过宏确定用户声明变量、引用库的方式，因此开发者扩展对 `top-environment` 的支持，将有相当大的自由度添加新的标准、方言、实现。这对熟悉 REPL（Read-Evaluate-Print Loop）的用户来说，可以类比为一个配置当前 REPL 环境的开关，它的作用是告诉 Scheme-langserver 当前项目应该使用哪种 Scheme 语言环境来解析代码、加载库和匹配规则。在 REPL 中，用户输入的表达式会根据当前环境加载对应的库和规则进行解析和执行。同样，`top-environment` 就是 Scheme-langserver 的“环境配置”，它确保语言服务器在处理代码时，能够正确地模拟出一个符合指定标准的上下文。
 
-阅读本手册，您可以对这些新语言支持实现 `goto-defninition`、`auto-complete` 等功能，并掌握对整个生命周期的测试方法。这些内容设计的代码结构如下：
+阅读本手册，您可以对这些新语言支持实现 `goto-defninition`、`auto-complete` 等功能，并掌握对整个生命周期的测试方法。这些内容涉及的代码结构如下：
 
 - `run.ss`: 解析启动 Scheme-langserver 的命令行参数，开发者可以从这里入手了解整个流程；
 - `scheme-langserver.sls`: 面向 LSP Client（一般是编辑器）建立一个 Client/Server 结构，把服务器输入输出等琐碎工作隔绝在外；
