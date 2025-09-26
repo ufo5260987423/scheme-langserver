@@ -104,7 +104,7 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 4. [Type inference](./doc/analysis/type-inference.md),~~[类型推断](./doc/analysis/type-inference.cn.md)~~(Deprecated, and I'm writing a Chinese book for it)
 5. [API Analysis](./doc/protocol/analysis.md)
 6. [Deepwiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
-7. [Scheme-langserver 开发指南](./doc/Scheme-langserver%20development%20guide.md), of course, if you want English please use translation software.
+7. [Scheme-langserver develop guide](./doc/Scheme-langserver%20development%20guide%20en.md).
 
 ## Star History
 
