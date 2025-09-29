@@ -38,7 +38,7 @@
           (append-references-into-ordered-references-for 
             document 
             parent-index-node 
-            (filter identifier-reference? (import-references root-library-node library-identifier)))]
+            (filter identifier-reference? (import-references document root-library-node library-identifier)))]
         [else '()]))))
 
 (define (import-process root-file-node root-library-node document index-node)
@@ -97,7 +97,7 @@
               (filter
                 (lambda (reference) 
                   (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) identifier) #t #f))
-                (import-references root-library-node library-identifier))])
+                (import-references document root-library-node library-identifier))])
 
           (if (not (null? importion-index-node))
             (let* ([current-index-node (car importion-index-node)]
@@ -124,7 +124,7 @@
               (filter
                 (lambda (reference) 
                   (if (find (lambda(id) (not (equal? id (identifier-reference-identifier reference)))) identifier) #t #f))
-                (import-references root-library-node library-identifier))])
+                (import-references document root-library-node library-identifier))])
           (if (null? grand-parent-index-node)
             (document-ordered-reference-list-set! 
               document
@@ -137,7 +137,7 @@
               (filter
                 (lambda (reference) 
                   (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) identifier) #t #f))
-                (import-references root-library-node library-identifier))])
+                (import-references document root-library-node library-identifier))])
           (if (not (null? importion-index-node))
             (let* ([current-index-node (car importion-index-node)]
                 [current-identifier (car identifiers)]
@@ -156,7 +156,7 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('prefix (library-identifier **1) (? symbol? prefix-id))
-        (let* ([imported-references (import-references root-library-node library-identifier)]
+        (let* ([imported-references (import-references document root-library-node library-identifier)]
             [prefixed-references 
               (map 
                 (lambda (reference) 
@@ -180,7 +180,7 @@
               (filter
                 (lambda (reference) 
                   (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) external-name) #t #f))
-                (import-references root-library-node library-identifier))])
+                (import-references document root-library-node library-identifier))])
           (if (not (null? importion-nodes))
             (let* ([current-importion-pair (index-node-children (car importion-nodes))]
                 [current-external-node (car current-importion-pair)]
@@ -230,7 +230,7 @@
               (filter
                 (lambda (reference) 
                   (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) external-name) #t #f))
-                (import-references root-library-node library-identifier))])
+                (import-references document root-library-node library-identifier))])
           (if (not (null? importion-nodes))
             (let* ([current-importion-pair (index-node-children (car importion-nodes))]
                 [current-external-node (car current-importion-pair)]
@@ -280,7 +280,7 @@
             ; (equal? 'expand import-level)
             ; (equal? '(meta 1) import-level)
             )
-          (let ([tmp (filter identifier-reference? (import-references root-library-node library-identifier))])
+          (let ([tmp (filter identifier-reference? (import-references document root-library-node library-identifier))])
             (if (null? grand-parent-index-node)
               (document-ordered-reference-list-set! 
                 document
@@ -290,33 +290,32 @@
         (append-references-into-ordered-references-for 
           document 
           grand-parent-index-node 
-          (filter identifier-reference? (import-references root-library-node library-identifier)))]
+          (filter identifier-reference? (import-references document root-library-node library-identifier)))]
       [else '()])))
 
-(define (import-references root-library-node library-identifier)
+(define (import-references document root-library-node library-identifier)
   (let* ([library-node (walk-library library-identifier root-library-node)]
       [candidate-file-nodes (if (null? library-node) '() (library-node-file-nodes library-node))]
       [candidate-index-node-list (apply append (map document-index-node-list (map file-node-document candidate-file-nodes)))])
     (if (null? candidate-file-nodes)
       (find-meta library-identifier)
       (apply append 
-        (map import-from-external-index-node
+        (map (lambda (x) (import-from-external-index-node document x))
           (filter
             (lambda (index-node)
-              (match (annotation-stripped (index-node-datum/annotations index-node))
-                (['define-library (identifier **1) _ ... ] (equal? identifier library-identifier))
-                (else #f)))
+              (cond 
+                [(null? (index-node-children index-node)) #f]
+                [else (meta-for? document (car (index-node-children index-node)) 'define-library)]))
             candidate-index-node-list))))))
 
-(define (import-from-external-index-node root-index-node)
-  (let* ([ann (index-node-datum/annotations root-index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression 
-      [('define-library _ **1 ) 
-        (apply append (map 
-          (lambda (child-node) (match-export child-node))
-          (cddr (index-node-children root-index-node))))]
-      [else '()])))
+(define (import-from-external-index-node document root-index-node)
+  (cond 
+    [(null? (index-node-children root-index-node)) '()]
+    [(meta-for? document (car (index-node-children root-index-node)) 'define-library)
+      (apply append (map 
+        (lambda (child-node) (match-export child-node))
+        (cddr (index-node-children root-index-node))))]
+    [else '()]))
 
 (define (match-export index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
