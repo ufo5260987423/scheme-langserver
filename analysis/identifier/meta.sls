@@ -1,7 +1,6 @@
 (library (scheme-langserver analysis identifier meta)
   (export 
     construct-type-expression-with-meta
-    meta?
     root-meta-check
     find-meta)
   (import 
@@ -21,8 +20,6 @@
       [identifiers (find-available-references-for document index-node (annotation-stripped (index-node-datum/annotations index-node)))]
       [root-identifiers (apply append (map root-ancestor identifiers))])
     (find (lambda (i) (or (meta? i) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
-
-(define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
 
 (define find-meta
   (case-lambda

@@ -4,6 +4,8 @@
     find-references-in
     guard-for
 
+    meta?
+
     append-references-into-ordered-references-for 
 
     identifier-reference?
@@ -157,6 +159,8 @@
       (equal? 'inner:pair? expression) 
       (equal? 'inner:vector? expression) 
       (identifier-reference? expression))))
+
+(define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
 
 (define (identifier-compare? target1 target2)
   (string<=?
