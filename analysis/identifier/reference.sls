@@ -5,6 +5,7 @@
     guard-for
 
     meta?
+    meta-for?
 
     append-references-into-ordered-references-for 
 
@@ -161,6 +162,13 @@
       (identifier-reference? expression))))
 
 (define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
+(define (meta-for? document index-node identifier)
+  (let ([e (annotation-stripped (index-node-datum/annotations index-node))])
+    (if (symbol? e)
+      (let* ([as (find-available-references-for document index-node e)]
+          [ras (apply append (map root-ancestor as))]
+          [metas (filter meta? ras)])
+        (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) metas)))))
 
 (define (identifier-compare? target1 target2)
   (string<=?
