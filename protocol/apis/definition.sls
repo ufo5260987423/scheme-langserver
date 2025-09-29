@@ -31,6 +31,7 @@
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
       [target-index-node (pick-index-node-from index-node-list (document+position->bias document line character))]
+      [import-file-node (if (null? target-index-node) '() (private:index-node-import-file-nodes target-index-node))]
       [prefix 
         (if (null? target-index-node)
           '()
@@ -39,13 +40,7 @@
             '()))])
     (list->vector 
       (cond 
-        [(null? target-index-node) '()]
-        [(symbol? prefix) 
-          (map identifier-reference->location->alist
-            (filter 
-              (lambda (r) (not (null? (identifier-reference-document r))))
-              (apply append (map root-ancestor (find-available-references-for document target-index-node prefix)))))]
-        [else 
+        [(not (null? import-file-node))
           (map 
             (lambda (f)
               (location->alist
@@ -54,7 +49,13 @@
                   (make-range 
                     (apply make-position (document+bias->position-list (file-node-document f) 0))
                     (apply make-position (document+bias->position-list (file-node-document f) (string-length (document-text (file-node-document f)))))))))
-            (private:index-node-import-file-nodes target-index-node))]))))
+            import-file-node)]
+        [(symbol? prefix) 
+          (map identifier-reference->location->alist
+            (filter 
+              (lambda (r) (not (null? (identifier-reference-document r))))
+              (apply append (map root-ancestor (find-available-references-for document target-index-node prefix)))))]
+        [else '()]))))
 
 (define (private:index-node-import-file-nodes index-node)
   (if (null? (index-node-import-file-nodes index-node))
