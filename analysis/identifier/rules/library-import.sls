@@ -96,6 +96,8 @@
       [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
       [('only (library-identifier **1) (? symbol? identifier) **1) 
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
             [imported-references 
@@ -125,6 +127,8 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('except (library-identifier **1) (? symbol? identifier) **1) 
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let ([tmp 
               (filter
                 (lambda (reference) 
@@ -161,6 +165,8 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('prefix (library-identifier **1) (? symbol? prefix-id))
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let* ([imported-references (import-references document root-library-node library-identifier)]
             [prefixed-references 
               (map 
@@ -178,6 +184,8 @@
           ;;todo: add something to export-to-other-node for current-index-node?
           (append-references-into-ordered-references-for document grand-parent-index-node prefixed-references))]
       [('rename (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -228,6 +236,8 @@
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -279,6 +289,8 @@
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('for (library-identifier **1) import-level) 
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (if (or
             (equal? 'run import-level)
             (equal? '(meta 0) import-level)
@@ -292,6 +304,8 @@
                 (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
               (append-references-into-ordered-references-for document grand-parent-index-node tmp))))]
       [(library-identifier **1) 
+        (if (not (null? (walk-library library-identifier root-library-node)))
+          (index-node-import-file-nodes-set! index-node (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (append-references-into-ordered-references-for 
           document 
           grand-parent-index-node 

@@ -38,17 +38,30 @@
             (annotation-stripped (index-node-datum/annotations target-index-node)) 
             '()))])
     (list->vector 
-      (map identifier-reference->location->alist 
-        (filter 
-          (lambda (r)
-            (not (null? (identifier-reference-document r))))
-          (apply append 
-            (map 
-              root-ancestor
-              (cond 
-                [(null? target-index-node) '()]
-                [(symbol? prefix) (find-available-references-for document target-index-node prefix)]
-                [else (find-available-references-for document target-index-node)]))))))))
+      (cond 
+        [(null? target-index-node) '()]
+        [(symbol? prefix) 
+          (map identifier-reference->location->alist
+            (filter 
+              (lambda (r) (not (null? (identifier-reference-document r))))
+              (apply append (map root-ancestor (find-available-references-for document target-index-node prefix)))))]
+        [else 
+          (map 
+            (lambda (f)
+              (location->alist
+                (make-location
+                  (document-uri (file-node-document f))
+                  (make-range 
+                    (apply make-position (document+bias->position-list (file-node-document f) 0))
+                    (apply make-position (document+bias->position-list (file-node-document f) (string-length (document-text (file-node-document f)))))))))
+            (private:index-node-import-file-nodes target-index-node))]))))
+
+(define (private:index-node-import-file-nodes index-node)
+  (if (null? (index-node-import-file-nodes index-node))
+    (if (null? (index-node-parent index-node))
+      '()
+      (private:index-node-import-file-nodes (index-node-parent index-node)))
+    (index-node-import-file-nodes index-node)))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)

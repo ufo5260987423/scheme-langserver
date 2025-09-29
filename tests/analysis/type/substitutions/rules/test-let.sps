@@ -66,7 +66,7 @@
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
             [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 166 9))]
+            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 169 9))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitutions-for target-document)
         ; (debug:print-expression&uuid target-index-node)
