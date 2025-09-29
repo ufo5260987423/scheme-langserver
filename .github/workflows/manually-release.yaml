@@ -1,0 +1,51 @@
+name: manually-release 
+on: workflow_dispatch
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Linux glibc image
+        run: docker build .
+
+      - name: Compile executable on Linux glibc
+        run: |
+          mkdir -p build
+          docker run \
+            -v ./build:/root/scheme-langserver/build/ \
+            $(docker build -q .) \
+            bash -c 'source .akku/bin/activate
+                     compile-chez-program run.ss --static
+                     mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
+                     '
+
+      - name: generate tag
+        id: tag
+        run: echo "tag_name=auto-build-$(date -u +%Y-%m-%d-%H-%M-%S)" >> "$GITHUB_OUTPUT"
+
+      - name: generate body
+        id: body
+        run: |
+          md5=$(md5sum build/scheme-langserver-x86_64-linux-glibc | awk '{print $1}')
+          sha256=$(sha256sum build/scheme-langserver-x86_64-linux-glibc | awk '{print $1}')
+          echo -e "### build time\n" > ${{ github.workspace }}-body.txt
+          echo -e "$(date -u +%Y-%m-%d-%H-%M-%S)\n" >> ${{ github.workspace }}-body.txt
+          echo -e "### File Hashes\n" >> ${{ github.workspace }}-body.txt
+          echo -e "| Algorithm | Hash |" >> ${{ github.workspace }}-body.txt
+          echo -e "| --------- | ---- |" >> ${{ github.workspace }}-body.txt
+          echo -e "| MD5       | \`$md5\` |" >> ${{ github.workspace }}-body.txt
+          echo -e "| SHA256    | \`$sha256\` |" >> ${{ github.workspace }}-body.txt
+
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/scheme-langserver-x86_64-linux-glibc
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          body_path: ${{ github.workspace }}-body.txt
