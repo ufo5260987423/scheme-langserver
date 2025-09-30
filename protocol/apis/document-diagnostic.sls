@@ -24,39 +24,27 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics
 (define (diagnostic workspace params)
-  '()
-  ;TODO
-  ; (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
-      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
-  ;     [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
-  ;     [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
-  ;     [document (file-node-document file-node)]
-  ;     [text (document-text document)]
-  ;     [substitution-list (document-substitution-list document)])
-  ;   (try
-  ;     ;I'd only check leaf index-node
-  ;     (vector-map 
-  ;       (lambda (index-node)
-  ;         (let ([s (index-node-start index-node)]
-  ;             [e (index-node-end index-node)]
-  ;             [types (dedupe (filter pure-identifier-reference-misture? (type:interpret-result-list (index-node-variable index-node) substitution-list)))])
-  ;         (private-make-diagnostic s e 3 
-  ;             (fold-left 
-  ;               (lambda (remain current) 
-  ;                 (if (equal? "" remain)
-  ;                   current
-  ;                   (string-append remain "\n" current)))
-  ;               ""
-  ;               (map type->string types))
-  ;             text)))
-  ;       (list->vector (find-leaves (document-index-node-list document))))
-  ;     (except e [else '()])))
-      )
+  (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
+      ; why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
+      ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
+      [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
+      [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
+      [document (file-node-document file-node)]
+      [diagnoses (document-diagnoses document)])
+    ;I'd only check leaf index-node
+    (vector-map 
+      (lambda (diagnose)
+        (let* ([index-node (car diagnose)]
+            [s (index-node-start index-node)]
+            [e (index-node-end index-node)]
+            [severity (cadr diagnose)]
+            [message (caddr diagnose)])
+        (private-make-diagnostic document s e severity message)))
+      (list->vector diagnoses))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
-(define (private-make-diagnostic document range-start range-end severity message text)
+(define (private-make-diagnostic document range-start range-end severity message)
   (make-alist 
     'range 
     (range->alist 

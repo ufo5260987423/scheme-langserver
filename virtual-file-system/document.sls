@@ -12,6 +12,10 @@
     document-refreshable?
     document-refreshable?-set!
     document-line-length-vector-set!
+    document-diagnoses
+    document-diagnoses-set!
+
+    append-new-diagnoses
 
     document+position->bias 
     document+bias->position-list
@@ -27,11 +31,17 @@
     (mutable index-node-list)
     (mutable ordered-reference-list)
     (mutable refreshable?)
-    (mutable line-length-vector))
+    (mutable line-length-vector)
+    (mutable diagnoses))
   (protocol
     (lambda (new)
       (lambda (uri text index-node-list reference-list)
-        (new uri text index-node-list reference-list #t (text->line-length-vector text))))))
+        (new uri text index-node-list reference-list #t (text->line-length-vector text) '())))))
+
+(define (append-new-diagnoses document diagnoses)
+  (document-diagnoses-set!
+    document
+    (append (document-diagnoses document) `(,diagnoses))))
 
 (define (document+bias->position-list document bias)
   (let loop ([current-line 0]
