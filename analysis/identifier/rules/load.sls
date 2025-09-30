@@ -34,24 +34,25 @@
                   [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
                   [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
             (if (not (null? target-file-node))
-              (index-node-import-file-nodes-set! index-node `(,target-file-node))
-              (let* ([target-document (file-node-document target-file-node)]
-                  [references 
-                    (if (null? library-identifier)
-                      (document-ordered-reference-list target-document)
-                      (map 
-                        (lambda (reference) 
-                          (make-identifier-reference
-                            (identifier-reference-identifier reference)
-                            (identifier-reference-document reference)
-                            (identifier-reference-index-node reference)
-                            (identifier-reference-initialization-index-node reference)
-                            library-identifier
-                            (identifier-reference-type reference)
-                            (identifier-reference-parents reference)
-                            (identifier-reference-type-expressions reference)))
-                        (document-ordered-reference-list target-document)))])
-                (append-references-into-ordered-references-for document parent-index-node references))))]
+              (begin 
+                (index-node-import-file-nodes-set! index-node `(,target-file-node))
+                (let* ([target-document (file-node-document target-file-node)]
+                    [references 
+                      (if (null? library-identifier)
+                        (document-ordered-reference-list target-document)
+                        (map 
+                          (lambda (reference) 
+                            (make-identifier-reference
+                              (identifier-reference-identifier reference)
+                              (identifier-reference-document reference)
+                              (identifier-reference-index-node reference)
+                              (identifier-reference-initialization-index-node reference)
+                              library-identifier
+                              (identifier-reference-type reference)
+                              (identifier-reference-parents reference)
+                              (identifier-reference-type-expressions reference)))
+                          (document-ordered-reference-list target-document)))])
+                  (append-references-into-ordered-references-for document parent-index-node references)))))]
         [else '()])
       (except c
         [else '()]))))
