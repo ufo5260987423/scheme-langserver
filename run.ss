@@ -28,7 +28,7 @@ Example Usage:
 (define default-log-path "./.scheme-langserver.log")
 (define default-multi-thread #t)
 (define default-type-inference #t)
-(define default-top-environment "R6RS")
+(define default-top-environment 'r6rs)
 
 (define (make-default-options)
   (let ((ht (make-hashtable string-hash equal?)))
