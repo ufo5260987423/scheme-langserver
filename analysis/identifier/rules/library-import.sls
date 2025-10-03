@@ -14,12 +14,12 @@
 
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node)
-    (only (srfi :13) string-trim))
+    (scheme-langserver virtual-file-system file-node))
 
 ; reference-identifier-type include 
 ; pointer 
@@ -369,7 +369,4 @@
               (append result (index-node-references-export-to-other-node (cadr (index-node-children (car exportion-nodes))))))))]
       [(? symbol? identifier) (index-node-references-export-to-other-node index-node)]
       [else '()])))
-
-(define (library-identifier->string l)
-  (string-trim (with-output-to-string (lambda () (pretty-print l)))))
 )

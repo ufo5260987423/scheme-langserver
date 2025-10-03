@@ -215,28 +215,10 @@
               (private-add-rule rules `((,library-import-process . ,export-process) . ,identifier))]
             [(and (equal? r '(invoke-library)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,invoke-library-process) . ,identifier))]
-            [(equal? r '(import)) 
-              (let ([special 
-                    (lambda (root-file-node root-library-node document index-node)
-                      (if (null? (index-node-parent index-node))
-                        (import-process root-file-node root-library-node document index-node)
-                        (let* ([t (car (index-node-children (index-node-parent index-node)))]
-                            [t-e (annotation-stripped (index-node-datum/annotations t))])
-                          (cond 
-                            [(not (symbol? t-e))
-                              (import-process root-file-node root-library-node document index-node)]
-                            [(and (null? (index-node-parent t)) (equal? t-e 'library)) 
-                              (do-nothing root-file-node root-library-node document index-node)]
-                            [(null? (index-node-parent t)) 
-                              (import-process root-file-node root-library-node document index-node)]
-                            [(find 
-                              (lambda (ss)
-                                (and (equal? (identifier-reference-identifier ss) 'library)
-                                  (contain? '((chezscheme) (rnrs) (rnrs (6)) (scheme) (rnrs base)) (identifier-reference-library-identifier ss)))) 
-                              (apply append (map root-ancestor (find-available-references-for current-document (index-node-parent t) t-e))))
-                              (do-nothing root-file-node root-library-node document index-node)]
-                            [else (import-process root-file-node root-library-node document index-node)]))))])
-                (private-add-rule rules `((,special) . ,identifier)))]
+            [(and (equal? r '(import)) (private:top-env=? 'r6rs top))
+              (private-add-rule rules `((,import-process) . ,identifier))]
+            [(and (equal? r '(import)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
+              (private-add-rule rules `((,r7-import-process) . ,identifier))]
 
             [(equal? r '(load)) (private-add-rule rules `((,load-process) . ,identifier))]
             [(and (equal? r '(load-program)) (private:top-env=? 'r6rs top))

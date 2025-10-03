@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier rules r7rs define-library-import)
   (export 
-    library-import-process-r7rs)
+    library-import-process-r7rs
+    r7-import-process)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -9,6 +10,7 @@
 
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system library-node)
@@ -41,7 +43,7 @@
             (filter identifier-reference? (import-references document root-library-node library-identifier)))]
         [else '()]))))
 
-(define (import-process root-file-node root-library-node document index-node)
+(define (r7-import-process root-file-node root-library-node document index-node)
   (filter-empty-list 
     (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
@@ -91,6 +93,9 @@
       [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
       [('only (library-identifier **1) (? symbol? identifier) **1) 
+        (if (null? (walk-library library-identifier root-library-node))
+          (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
             [imported-references 
@@ -120,6 +125,9 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('except (library-identifier **1) (? symbol? identifier) **1) 
+        (if (null? (walk-library library-identifier root-library-node))
+          (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let ([tmp 
               (filter
                 (lambda (reference) 
@@ -156,6 +164,9 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('prefix (library-identifier **1) (? symbol? prefix-id))
+        (if (null? (walk-library library-identifier root-library-node))
+          (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let* ([imported-references (import-references document root-library-node library-identifier)]
             [prefixed-references 
               (map 
@@ -222,70 +233,6 @@
                   (lambda (reference) 
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
-      [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
-        (let loop ([importion-nodes (cddr (index-node-children index-node))]
-            [external-names external-name]
-            [internal-names internal-name]
-            [imported-references 
-              (filter
-                (lambda (reference) 
-                  (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) external-name) #t #f))
-                (import-references document root-library-node library-identifier))])
-          (if (not (null? importion-nodes))
-            (let* ([current-importion-pair (index-node-children (car importion-nodes))]
-                [current-external-node (car current-importion-pair)]
-                [current-internal-node (cadr current-importion-pair)]
-                [current-external-name (car external-names)]
-                [current-internal-name (car internal-names)]
-                [current-references 
-                  (filter
-                    (lambda (reference) 
-                      (equal? current-external-name (identifier-reference-identifier reference)))
-                    imported-references)]
-                [renamed-references 
-                  (map 
-                    (lambda (reference)
-                      (make-identifier-reference
-                        current-internal-name
-                        (identifier-reference-document reference)
-                        (identifier-reference-index-node reference)
-                        initialization-index-node 
-                        (identifier-reference-library-identifier reference)
-                        'pointer
-                        `(,reference)
-                        (identifier-reference-type-expressions reference)))
-                    current-references)])
-
-              (append-references-into-ordered-references-for document current-internal-node current-references)
-              (append-references-into-ordered-references-for document grand-parent-index-node current-references)
-              (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
-
-              (index-node-references-export-to-other-node-set! 
-                current-external-node
-                (append 
-                  (index-node-references-import-in-this-node current-external-node)
-                  renamed-references))
-              (loop 
-                (cdr importion-nodes)
-                (cdr external-names)
-                (cdr internal-names)
-                (filter
-                  (lambda (reference) 
-                    (not (equal? current-external-name (identifier-reference-identifier reference))))
-                  imported-references)))))]
-      [('for (library-identifier **1) import-level) 
-        (if (or
-            (equal? 'run import-level)
-            (equal? '(meta 0) import-level)
-            ; (equal? 'expand import-level)
-            ; (equal? '(meta 1) import-level)
-            )
-          (let ([tmp (filter identifier-reference? (import-references document root-library-node library-identifier))])
-            (if (null? grand-parent-index-node)
-              (document-ordered-reference-list-set! 
-                document
-                (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
-              (append-references-into-ordered-references-for document grand-parent-index-node tmp))))]
       [(library-identifier **1) 
         (append-references-into-ordered-references-for 
           document 
