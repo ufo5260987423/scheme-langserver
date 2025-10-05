@@ -16,11 +16,12 @@
     (immutable mutex)
     (immutable condition)
     (immutable queue)
-    (mutable tickal-task-list))
+    (mutable tickal-task-list)
+    (mutable to-refresh-document-list))
   (protocol
     (lambda (new)
       (lambda ()
-        (new (make-mutex) (make-condition) (make-queue) '())))))
+        (new (make-mutex) (make-condition) (make-queue) '() '())))))
 
 (define ticks 10000)
 
@@ -76,8 +77,8 @@
 
 (define (request-queue-push queue request potential-request-processor workspace)
   (with-mutex (request-queue-mutex queue)
-    (cond 
-      [(equal? (request-method request) "$/cancelRequest")
+    (case (request-method request)
+      ["$/cancelRequest"
         (let* ([id (assq-ref (request-params request) 'id)]
             [pure-queue (request-queue-queue queue)]
             ;here, id is cancel target id
