@@ -1,6 +1,7 @@
 (library (scheme-langserver protocol apis document-diagnostic)
   (export 
-    diagnostic)
+    diagnostic
+    publish-diagnostics)
   (import 
     (chezscheme) 
 
@@ -22,6 +23,17 @@
 
     (only (srfi :13 strings) string-replace))
 
+(define (publish-diagnostics documents)
+  (map 
+    (lambda (d)
+      (make-alist
+        'method "textDocument/publishDiagnostics"
+        'params 
+          (make-alist
+            'uri (document-uri d)
+            'diagnostics (private:document->diagnostic-vec d))))
+    documents))
+
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics
 (define (diagnostic workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
@@ -32,19 +44,22 @@
       [document (file-node-document file-node)]
       [diagnoses (document-diagnoses document)])
     ;I'd only check leaf index-node
-    (vector-map 
-      (lambda (diagnose)
-        (let* ([index-node (car diagnose)]
-            [s (index-node-start index-node)]
-            [e (index-node-end index-node)]
-            [severity (cadr diagnose)]
-            [message (caddr diagnose)])
-        (private-make-diagnostic document s e severity message)))
-      (list->vector diagnoses))))
+    (private:document->diagnostic-vec document)))
+
+(define (private:document->diagnostic-vec document)
+  (vector-map 
+    (lambda (diagnose)
+      (let* ([index-node (car diagnose)]
+          [s (index-node-start index-node)]
+          [e (index-node-end index-node)]
+          [severity (cadr diagnose)]
+          [message (caddr diagnose)])
+      (private:make-diagnostic document s e severity message)))
+    (list->vector (document-diagnoses document))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
-(define (private-make-diagnostic document range-start range-end severity message)
+(define (private:make-diagnostic document range-start range-end severity message)
   (make-alist 
     'range 
     (range->alist 

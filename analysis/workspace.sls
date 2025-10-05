@@ -221,7 +221,12 @@
                 [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
               (if (null? library-identifiers-list)
                 (init-references workspace-instance `((,(file-node-path target-file-node))))
-                (let* ([path (refresh-file-linkage&get-refresh-path linkage root-library-node target-file-node (document-index-node-list (file-node-document target-file-node)) library-identifiers-list (workspace-top-environment workspace-instance))]
+                (let* ([path 
+                    (refresh-file-linkage&get-refresh-path 
+                      linkage root-library-node target-file-node 
+                      (document-index-node-list (file-node-document target-file-node)) 
+                      library-identifiers-list 
+                      (workspace-top-environment workspace-instance))]
                     [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
                     [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
                     ;target-file-node may don't have library-identifiers-list
