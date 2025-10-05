@@ -139,6 +139,7 @@
   (let* ([current-file-node (walk-file root-file-node target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)])
+    (document-diagnoses-set! document '())
     ; (pretty-print 'test0)
     ; (pretty-print target-path)
     (step root-file-node root-library-node file-linkage document)
