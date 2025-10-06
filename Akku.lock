@@ -57,6 +57,11 @@
    (url "https://archive.akkuscm.org/archive/pkg/i/ip-address_1.1.0_repack.tar.xz"))
   (content
    (sha256 "2313fdd9bd3024d6776ad4c1abd22f8386838e46cdfa3163bec7871223483920")))
+ ((name "laesare")
+  (location
+   (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.2_repack.tar.xz"))
+  (content
+   (sha256 "b0cc8ccc940995e7bfd01cc30191c55561f8142195749bad945bde73bfa2a18c")))
  ((name "struct-pack")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/s/struct-pack_1.1.1_repack.tar.xz"))
@@ -67,11 +72,11 @@
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.4_repack.tar.xz"))
   (content
    (sha256 "bbcafe03f57784e85c6a37b99d678670a93c464df2bc14d576e2e608519f90a3")))
- ((name "laesare")
+ ((name "ufo-timer")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.2_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-timer_1.0.0_repack.tar.xz"))
   (content
-   (sha256 "b0cc8ccc940995e7bfd01cc30191c55561f8142195749bad945bde73bfa2a18c")))
+   (sha256 "e145154e8edfbbc47662a4397b3332a1253dc3867e9e59bbf8dcbdcb41a15be5")))
  ((name "ufo-try")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-try_1.0.0_repack.tar.xz"))

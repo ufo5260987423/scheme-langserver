@@ -16,12 +16,11 @@
     (immutable mutex)
     (immutable condition)
     (immutable queue)
-    (mutable tickal-task-list)
-    (mutable to-refresh-document-list))
+    (mutable tickal-task-list))
   (protocol
     (lambda (new)
       (lambda ()
-        (new (make-mutex) (make-condition) (make-queue) '() '())))))
+        (new (make-mutex) (make-condition) (make-queue) '())))))
 
 (define ticks 10000)
 

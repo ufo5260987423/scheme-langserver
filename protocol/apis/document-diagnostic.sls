@@ -43,7 +43,7 @@
       [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
       [document (file-node-document file-node)]
       [diagnoses (document-diagnoses document)])
-    ;I'd only check leaf index-node
+    (refresh-workspace-for workspace file-node)
     (private:document->diagnostic-vec document)))
 
 (define (private:document->diagnostic-vec document)

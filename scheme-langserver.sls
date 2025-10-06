@@ -28,6 +28,9 @@
     (scheme-langserver util association)
     (scheme-langserver util path))
 
+; 0.5 second
+(define private:time-duration-nanosecond 500000000)
+
 (define (private:try-catch server-instance request)
   (let ([method (request-method request)]
       [id (request-id request)])
@@ -228,7 +231,7 @@
           (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment)
           ;The thread-pool size just limits how many threads to process requests;
-          (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 1 #t) '())]
+          (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
               [request-processor (lambda (r) (private:try-catch server-instance r))])
