@@ -23,16 +23,20 @@
 
     (only (srfi :13 strings) string-replace))
 
-(define (publish-diagnostics documents)
-  (map 
-    (lambda (d)
-      (make-alist
-        'method "textDocument/publishDiagnostics"
-        'params 
-          (make-alist
-            'uri (document-uri d)
-            'diagnostics (private:document->diagnostic-vec d))))
-    documents))
+(define (publish-diagnostics workspace type)
+  (let* ([root-file-node (workspace-file-node workspace)]
+      [all-files (recursive:all-scheme-files root-file-node)])
+    (map 
+      (lambda (d)
+        (make-alist
+          'method "textDocument/publishDiagnostics"
+          'params 
+            (make-alist
+              'uri (document-uri d)
+              'diagnostics (private:document->diagnostic-vec d))))
+      (case type
+        [fully-publish (map file-node-document all-files)]
+        [else (filter document-refreshable? (map file-node-document all-files))]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics
 (define (diagnostic workspace params)
