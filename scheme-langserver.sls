@@ -5,6 +5,7 @@
     (chezscheme) 
     (ufo-thread-pool) 
     (ufo-try) 
+    (ufo-timer) 
 
     (scheme-langserver analysis workspace)
 
@@ -68,9 +69,11 @@
       (case method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" 
-          (send-message server-instance 
-            (make-notification "textDocument/publishDiagnostics" (publish-diagnostics (server-workspace server-instance) 'fully-publish)) 
-            'do-not-replay)] 
+          (if (server-mutex server-instance)
+            (send-message server-instance 
+              (make-notification "textDocument/publishDiagnostics" (publish-diagnostics (server-workspace server-instance) 'fully-publish)) 
+              'do-not-replay)
+            '())] 
 
         ["textDocument/didOpen" (did-open workspace params)]
         ["textDocument/didClose" (did-close workspace params)]
@@ -240,6 +243,15 @@
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
+              ; [interval-timer 
+              ;   (if (and enable-multi-thread? threaded?) 
+              ;     (init-interval-timer 
+              ;       (make-time 'time-duration private:time-duration-nanosecond 0)
+              ;       (lambda () (private:publish-diagnostics server-instance))
+              ;       'stop
+
+              ;     )
+              ;     '())]
               [request-processor (lambda (r) (private:try-catch server-instance r))])
             (try
               (if (not (null? thread-pool)) 

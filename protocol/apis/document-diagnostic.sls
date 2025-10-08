@@ -36,7 +36,10 @@
               'diagnostics (private:document->diagnostic-vec d))))
       (case type
         [fully-publish (map file-node-document all-files)]
-        [else (filter document-refreshable? (map file-node-document all-files))]))))
+        [else 
+          (let ([refreshable-file-nodes (filter (lambda (f) (document-refreshable? (file-node-document f))) all-files)])
+            (map (lambda (f) (refresh-workspace-for workspace f)) refreshable-file-nodes)
+            (map file-node-document refreshable-file-nodes))]))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics
 (define (diagnostic workspace params)
