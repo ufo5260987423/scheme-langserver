@@ -52,10 +52,11 @@
           (send-message server-instance (fail-response id unknown-error-code method))]))))
 
 (define (private:publish-diagnostics server-instance)
-  (map 
-    (lambda (params)
-      (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params)))
-    (unpublish-diagnostics->list (server-workspace server-instance))))
+  (if (not (null? (server-workspace server-instance)))
+    (map 
+      (lambda (params)
+        (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params)))
+      (unpublish-diagnostics->list (server-workspace server-instance)))))
 
 (define (process-request server-instance request)
   (let* ([method (request-method request)]
@@ -239,15 +240,14 @@
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
-              ; [interval-timer 
-              ;   (if (and enable-multi-thread? threaded?) 
-              ;     (init-interval-timer 
-              ;       (make-time 'time-duration private:time-duration-nanosecond 0)
-              ;       (lambda () (private:publish-diagnostics server-instance))
-              ;       'stop
-
-              ;     )
-              ;     '())]
+              [interval-timer 
+                (if (and enable-multi-thread? threaded?) 
+                  (init-interval-timer 
+                    (make-time 'time-duration private:time-duration-nanosecond 0)
+                    (lambda () (private:publish-diagnostics server-instance))
+                    (lambda () #t)
+                    thread-pool)
+                  '())]
               [request-processor (lambda (r) (private:try-catch server-instance r))])
             (try
               (if (not (null? thread-pool)) 
