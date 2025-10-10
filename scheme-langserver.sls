@@ -55,7 +55,7 @@
   (if (not (null? (server-workspace server-instance)))
     (map 
       (lambda (params)
-        (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params)))
+        (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params) 'publish))
       (unpublish-diagnostics->list (server-workspace server-instance)))))
 
 (define (process-request server-instance request)
