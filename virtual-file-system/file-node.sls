@@ -12,7 +12,6 @@
     file-node-document-set!
     file-node-document
 
-    recursive:all-scheme-files
     walk-file
     folder-or-scheme-file?
     search-end-with 
@@ -60,9 +59,4 @@
     [(string-suffix? suffix (file-node-path node)) 
       `(,node)]
     [else '()]))
-
-(define (recursive:all-scheme-files file-node)
-  (if (file-node-folder? file-node)
-    (apply append (map recursive:all-scheme-files (file-node-children file-node)))
-    `(,file-node)))
 )

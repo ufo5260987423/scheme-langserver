@@ -19,6 +19,8 @@
     workspace-facet
     workspace-type-inference?
     workspace-top-environment
+    workspace-undiagnosed-paths
+    workspace-undiagnosed-paths-set!
 
     update-file-node-with-tail
 
@@ -73,11 +75,13 @@
     ;only for identifer catching and type inference
     (immutable threaded?)
     (immutable type-inference?)
-    (immutable top-environment))
+    (immutable top-environment)
+
+    (mutable undiagnosed-paths))
   (protocol 
     (lambda (new)
       (lambda (file-node library-node file-linkage facet threaded? type-inference? top-environment)
-        (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment)))))
+        (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment '())))))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -232,6 +236,7 @@
                     [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
                     ;target-file-node may don't have library-identifiers-list
                     [refreshable-batches (shrink-paths linkage refreshable-path)])
+                  (workspace-undiagnosed-paths-set! workspace-instance (ordered-dedupe (merge string<? (workspace-undiagnosed-paths workspace-instance) (sort string<? path)) string=?))
                   (init-references workspace-instance refreshable-batches)))))])
       (if (workspace-threaded? workspace-instance)
         (with-mutex (workspace-mutex workspace-instance)

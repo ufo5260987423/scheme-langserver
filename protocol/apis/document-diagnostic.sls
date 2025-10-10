@@ -1,7 +1,7 @@
 (library (scheme-langserver protocol apis document-diagnostic)
   (export 
     diagnostic
-    publish-diagnostics)
+    unpublish-diagnostics->list)
   (import 
     (chezscheme) 
 
@@ -23,26 +23,23 @@
 
     (only (srfi :13 strings) string-replace))
 
-(define (publish-diagnostics workspace type)
-  (let* ([root-file-node (workspace-file-node workspace)]
-      [all-files (recursive:all-scheme-files root-file-node)])
-    (map 
-      (lambda (d)
-        (make-alist
-          'method "textDocument/publishDiagnostics"
-          'params 
+(define (unpublish-diagnostics->list workspace)
+  (let ([result 
+        (map 
+          (lambda (d)
             (make-alist
               'uri (document-uri d)
-              'diagnostics (private:document->diagnostic-vec d))))
-      (map file-node-document 
-        (case type
-          [fully-publish all-files]
-          [else 
-            (let ([refreshable-file-nodes (filter (lambda (f) (document-refreshable? (file-node-document f))) all-files)])
-              (map (lambda (f) 
-                (if (document-refreshable? f)
-                  (refresh-workspace-for workspace f))) refreshable-file-nodes)
-              refreshable-file-nodes)])))))
+              'diagnostics (private:document->diagnostic-vec d)))
+          (map file-node-document 
+            (map 
+              (lambda (s)
+                (walk-file (workspace-file-node workspace) s))
+              (workspace-undiagnosed-paths workspace))))])
+    (if (null? (workspace-mutex workspace))
+      (workspace-undiagnosed-paths-set! workspace '())
+      (with-mutex (workspace-mutex workspace)
+        (workspace-undiagnosed-paths-set! workspace '())))
+    result))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics
 (define (diagnostic workspace params)

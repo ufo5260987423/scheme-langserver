@@ -52,9 +52,10 @@
           (send-message server-instance (fail-response id unknown-error-code method))]))))
 
 (define (private:publish-diagnostics server-instance)
-  (send-message server-instance 
-    (make-notification "textDocument/publishDiagnostics" (publish-diagnostics (server-workspace server-instance) '())) 
-    'do-not-replay))
+  (map 
+    (lambda (params)
+      (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params)))
+    (unpublish-diagnostics->list (server-workspace server-instance))))
 
 (define (process-request server-instance request)
   (let* ([method (request-method request)]
@@ -68,12 +69,7 @@
       (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (case method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
-        ["initialized" 
-          (if (server-mutex server-instance)
-            (send-message server-instance 
-              (make-notification "textDocument/publishDiagnostics" (publish-diagnostics (server-workspace server-instance) 'fully-publish)) 
-              'do-not-replay)
-            '())] 
+        ["initialized" (private:publish-diagnostics server-instance)] 
 
         ["textDocument/didOpen" (did-open workspace params)]
         ["textDocument/didClose" (did-close workspace params)]
