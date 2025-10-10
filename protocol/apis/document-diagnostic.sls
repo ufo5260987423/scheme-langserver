@@ -14,7 +14,6 @@
 
     (scheme-langserver util association)
     (scheme-langserver util path) 
-    (ufo-try) 
     (scheme-langserver util dedupe)
 
     (scheme-langserver virtual-file-system index-node)
