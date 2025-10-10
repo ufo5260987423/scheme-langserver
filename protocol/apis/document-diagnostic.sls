@@ -34,12 +34,15 @@
             (make-alist
               'uri (document-uri d)
               'diagnostics (private:document->diagnostic-vec d))))
-      (case type
-        [fully-publish (map file-node-document all-files)]
-        [else 
-          (let ([refreshable-file-nodes (filter (lambda (f) (document-refreshable? (file-node-document f))) all-files)])
-            (map (lambda (f) (refresh-workspace-for workspace f)) refreshable-file-nodes)
-            (map file-node-document refreshable-file-nodes))]))))
+      (map file-node-document 
+        (case type
+          [fully-publish all-files]
+          [else 
+            (let ([refreshable-file-nodes (filter (lambda (f) (document-refreshable? (file-node-document f))) all-files)])
+              (map (lambda (f) 
+                (if (document-refreshable? f)
+                  (refresh-workspace-for workspace f))) refreshable-file-nodes)
+              refreshable-file-nodes)])))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics
 (define (diagnostic workspace params)
