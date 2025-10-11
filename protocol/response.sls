@@ -46,7 +46,7 @@
     [(server-instance response-alist log-type) 
       (case log-type
         [for-replay (do-log "send-message" server-instance)]
-        [do-not-replay (do-log "publish" server-instance)])
+        [do-not-replay (do-log "publish-message" server-instance)])
 
       (do-log-timestamp  server-instance)
       (let* (
