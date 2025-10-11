@@ -2,8 +2,7 @@
   (export 
     make-request-queue
     request-queue-pop
-    request-queue-push
-    without-mutex:leisure?)
+    request-queue-push)
   (import 
     (chezscheme)
     (slib queue)
@@ -74,9 +73,6 @@
     (request-queue-tickal-task-list-set! 
       queue
       (remove task (request-queue-tickal-task-list queue)))))
-
-(define (without-mutex:leisure? queue)
-  (and (queue-empty? (request-queue-queue queue)) (null? (request-queue-tickal-task-list queue))))
 
 (define (request-queue-push queue request potential-request-processor workspace)
   (with-mutex (request-queue-mutex queue)

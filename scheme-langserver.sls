@@ -241,9 +241,7 @@
                 (if (and enable-multi-thread? threaded?) 
                   (init-interval-timer 
                     (make-time 'time-duration 0 1)
-                    (lambda () 
-                      (if (without-mutex:leisure? request-queue)
-                        (private:publish-diagnostics server-instance)))
+                    (lambda () (private:publish-diagnostics server-instance))
                     (lambda () #t)
                     thread-pool)
                   '())]
