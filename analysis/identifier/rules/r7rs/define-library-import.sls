@@ -93,7 +93,9 @@
       [grand-parent-index-node (index-node-parent (index-node-parent index-node))])
     (match expression
       [('only (library-identifier **1) (? symbol? identifier) **1) 
-        (if (null? (walk-library library-identifier root-library-node))
+        (if (or (null? (walk-library library-identifier root-library-node))
+            (null? (find-meta library-identifier 'r7rs))
+            (null? (find-meta library-identifier 's7)))
           (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
@@ -125,7 +127,9 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('except (library-identifier **1) (? symbol? identifier) **1) 
-        (if (null? (walk-library library-identifier root-library-node))
+        (if (or (null? (walk-library library-identifier root-library-node))
+            (null? (find-meta library-identifier 'r7rs))
+            (null? (find-meta library-identifier 's7)))
           (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let ([tmp 
@@ -164,7 +168,9 @@
                     (not (equal? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('prefix (library-identifier **1) (? symbol? prefix-id))
-        (if (null? (walk-library library-identifier root-library-node))
+        (if (or (null? (walk-library library-identifier root-library-node))
+            (null? (find-meta library-identifier 'r7rs))
+            (null? (find-meta library-identifier 's7)))
           (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let* ([imported-references (import-references document root-library-node library-identifier)]
@@ -184,6 +190,11 @@
           ;;todo: add something to export-to-other-node for current-index-node?
           (append-references-into-ordered-references-for document grand-parent-index-node prefixed-references))]
       [('rename (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
+        (if (or (null? (walk-library library-identifier root-library-node))
+            (null? (find-meta library-identifier 'r7rs))
+            (null? (find-meta library-identifier 's7)))
+          (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
             [internal-names internal-name]
@@ -234,6 +245,11 @@
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [(library-identifier **1) 
+        (if (or (null? (walk-library library-identifier root-library-node))
+            (null? (find-meta library-identifier 'r7rs))
+            (null? (find-meta library-identifier 's7)))
+          (append-new-diagnoses document `(,index-node 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier))))
+          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (append-references-into-ordered-references-for 
           document 
           grand-parent-index-node 

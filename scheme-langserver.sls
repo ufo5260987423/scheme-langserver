@@ -29,9 +29,6 @@
     (scheme-langserver util association)
     (scheme-langserver util path))
 
-; 0.5 second
-(define private:time-duration-nanosecond 500000000)
-
 (define (private:try-catch server-instance request)
   (let ([method (request-method request)]
       [id (request-id request)])
@@ -243,7 +240,7 @@
               [interval-timer 
                 (if (and enable-multi-thread? threaded?) 
                   (init-interval-timer 
-                    (make-time 'time-duration private:time-duration-nanosecond 0)
+                    (make-time 'time-duration 0 1)
                     (lambda () (private:publish-diagnostics server-instance))
                     (lambda () #t)
                     thread-pool)
@@ -251,11 +248,13 @@
               [request-processor (lambda (r) (private:try-catch server-instance r))])
             (try
               (if (not (null? thread-pool)) 
-                (thread-pool-add-job thread-pool 
-                  (lambda () 
-                    (let loop ()
-                      ((request-queue-pop request-queue request-processor))
-                      (loop)))))
+                (begin 
+                  (start-timer interval-timer)
+                  (thread-pool-add-job thread-pool 
+                    (lambda () 
+                      (let loop ()
+                        ((request-queue-pop request-queue request-processor))
+                        (loop))))))
               (let loop ([request-message (read-message server-instance)])
                 (cond 
                   [(null? request-message) '()]

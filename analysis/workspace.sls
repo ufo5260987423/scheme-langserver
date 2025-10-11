@@ -80,8 +80,11 @@
     (mutable undiagnosed-paths))
   (protocol 
     (lambda (new)
-      (lambda (file-node library-node file-linkage facet threaded? type-inference? top-environment)
-        (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment '())))))
+      (case-lambda 
+        [(file-node library-node file-linkage facet threaded? type-inference? top-environment)
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment '())]
+        [(file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths)
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment undiagnosed-paths)]))))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -113,7 +116,7 @@
           [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
           [batches (get-init-reference-batches file-linkage)])
         (init-references root-file-node root-library-node file-linkage threaded? batches type-inference?)
-        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment))]))
+        (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment (apply append batches)))]))
 
 ;; head -[linkage]->files
 ;; for single file
