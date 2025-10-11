@@ -31,7 +31,7 @@
       [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
       [target-index-node (pick-index-node-from index-node-list (document+position->bias document line character))]
-      [import-file-node (if (null? target-index-node) '() (private:index-node-import-file-nodes target-index-node))]
+      [import-file-node (if (null? target-index-node) '() (ancestor-recursion:index-node-import-file-nodes target-index-node))]
       [prefix 
         (if (null? target-index-node)
           '()
@@ -56,13 +56,6 @@
               (lambda (r) (not (null? (identifier-reference-document r))))
               (apply append (map root-ancestor (find-available-references-for document target-index-node prefix)))))]
         [else '()]))))
-
-(define (private:index-node-import-file-nodes index-node)
-  (if (null? (index-node-import-file-nodes index-node))
-    (if (null? (index-node-parent index-node))
-      '()
-      (private:index-node-import-file-nodes (index-node-parent index-node)))
-    (index-node-import-file-nodes index-node)))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)

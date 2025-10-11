@@ -49,6 +49,7 @@
     quasisyntax?
 
     find-leaves 
+    ancestor-recursion:index-node-import-file-nodes
 
     init-index-node
     is-first-child?
@@ -269,4 +270,11 @@
             (loop (cdr children))
             result))))
     '()))
+
+(define (ancestor-recursion:index-node-import-file-nodes index-node)
+  (if (null? (index-node-import-file-nodes index-node))
+    (if (null? (index-node-parent index-node))
+      '()
+      (ancestor-recursion:index-node-import-file-nodes (index-node-parent index-node)))
+    (index-node-import-file-nodes index-node)))
 )
