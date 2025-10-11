@@ -2,11 +2,13 @@
   (export 
     construct-type-expression-with-meta
     root-meta-check
-    find-meta)
+    find-meta
+    meta-library?)
   (import 
     (rnrs)
     (only (chezscheme) annotation-stripped pretty-print print-graph)
     (ufo-match)
+    (scheme-langserver util contain)
     (scheme-langserver util binary-search)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions rnrs-meta-rules)
@@ -20,6 +22,23 @@
       [identifiers (find-available-references-for document index-node (annotation-stripped (index-node-datum/annotations index-node)))]
       [root-identifiers (apply append (map root-ancestor identifiers))])
     (find (lambda (i) (or (meta? i) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
+
+(define (meta-library? list-instance top-environment)
+  (contain? 
+    (cond 
+      [(equal? 'r6rs top-environment) '((rnrs) (scheme) (chezscheme) (rnrs condition) (rnrs (6)) (rnrs base (6)) (rnrs arithmetic fixnums base (6)) 
+        (rnrs bytevectors (6)) (rnrs conditions (6)) (rnrs control (6)) (rnrs exceptions (6)) (rnrs hashtable (6)) (rnrs lists (6)) 
+        (rnrs mutable-pairs (6)) (rnrs io ports (6)) (rnrs io simple (6)) (rnrs records syntactic (6)) (rnrs unicode (6)) 
+        (rnrs base) (rnrs files) (rnrs syntax-case) (rnrs exception) (rnrs lists) (rnrs bytevectors) (rnrs control)
+        (rnrs unicode) (rnrs enums) (rnrs r5rs) (rnrs eval) (rnrs hashtables) (rnrs sorting) (rnrs programs) (rnrs mutable-pairs) 
+        (rnrs mutable-strings) (rnrs io ports) (rnrs io simple) (rnrs artichmetic flonums) (rnrs artichmetic bitwise) (rnrs artichmetic fixnums)
+        (rnrs records syntactic) (rnrs records procedure) (rnrs records inspection) (chezscheme csv7) (scheme csv7))]
+      [(equal? 'r7rs top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
+        (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs))]
+      [(equal? 's7 top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
+        (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs) (s7))]
+      [else #f])
+    list-instance))
 
 (define find-meta
   (case-lambda
@@ -78,7 +97,26 @@
             [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
             [(equal? list-instance '(scheme csv7)) scheme-csv7]
             [else '()])]
-        [(or (equal? top-environment 'r7rs) (equal? top-environment 's7))
+        [(equal? top-environment 'r7rs) 
+          (cond
+            [(equal? list-instance '(scheme base)) scheme-base]
+            [(equal? list-instance '(scheme case lambda)) scheme-case-lambda]
+            [(equal? list-instance '(scheme char)) scheme-char]
+            [(equal? list-instance '(scheme complex)) scheme-complex]
+            [(equal? list-instance '(scheme cxr)) scheme-cxr]
+            [(equal? list-instance '(scheme eval)) scheme-eval]
+            [(equal? list-instance '(scheme file)) scheme-file]
+            [(equal? list-instance '(scheme inexact)) scheme-inexact]
+            [(equal? list-instance '(scheme lazy)) scheme-lazy]
+            [(equal? list-instance '(scheme load)) scheme-load]
+            [(equal? list-instance '(scheme process context)) scheme-process-context]
+            [(equal? list-instance '(scheme read)) scheme-read]
+            [(equal? list-instance '(scheme repl)) scheme-repl]
+            [(equal? list-instance '(scheme time)) scheme-time]
+            [(equal? list-instance '(scheme write)) scheme-write]
+            [(equal? list-instance '(scheme r5rs)) scheme-r5rs]
+            [else '()])]
+        [(equal? top-environment 's7)
           (cond
             [(equal? list-instance '(scheme base)) scheme-base]
             [(equal? list-instance '(scheme case lambda)) scheme-case-lambda]
