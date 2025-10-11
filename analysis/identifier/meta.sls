@@ -26,13 +26,13 @@
 (define (meta-library? list-instance top-environment)
   (contain? 
     (cond 
-      [(equal? 'r6rs top-environment) '((rnrs) (scheme) (chezscheme) (rnrs condition) (rnrs (6)) (rnrs base (6)) (rnrs arithmetic fixnums base (6)) 
-        (rnrs bytevectors (6)) (rnrs conditions (6)) (rnrs control (6)) (rnrs exceptions (6)) (rnrs hashtable (6)) (rnrs lists (6)) 
-        (rnrs mutable-pairs (6)) (rnrs io ports (6)) (rnrs io simple (6)) (rnrs records syntactic (6)) (rnrs unicode (6)) 
-        (rnrs base) (rnrs files) (rnrs syntax-case) (rnrs exception) (rnrs lists) (rnrs bytevectors) (rnrs control)
+      [(equal? 'r6rs top-environment) '((rnrs) (scheme) (chezscheme) (rnrs conditions) (rnrs (6)) (rnrs base (6)) (rnrs arithmetic fixnums (6)) 
+        (rnrs bytevectors (6)) (rnrs conditions (6)) (rnrs control (6)) (rnrs exceptions (6)) (rnrs hashtables (6)) (rnrs lists (6)) 
+        (rnrs mutable-pairs (6)) (rnrs mutable-strings (6)) (rnrs io ports (6)) (rnrs io simple (6)) (rnrs records syntactic (6)) (rnrs unicode (6)) 
+        (rnrs base) (rnrs files) (rnrs syntax-case) (rnrs exceptions) (rnrs lists) (rnrs bytevectors) (rnrs control)
         (rnrs unicode) (rnrs enums) (rnrs r5rs) (rnrs eval) (rnrs hashtables) (rnrs sorting) (rnrs programs) (rnrs mutable-pairs) 
-        (rnrs mutable-strings) (rnrs io ports) (rnrs io simple) (rnrs artichmetic flonums) (rnrs artichmetic bitwise) (rnrs artichmetic fixnums)
-        (rnrs records syntactic) (rnrs records procedure) (rnrs records inspection) (chezscheme csv7) (scheme csv7))]
+        (rnrs mutable-strings) (rnrs io ports) (rnrs io simple) (rnrs arithmetic flonums) (rnrs arithmetic bitwise) (rnrs arithmetic fixnums)
+        (rnrs records syntactic) (rnrs records procedural) (rnrs records inspection) (chezscheme csv7) (scheme csv7))]
       [(equal? 'r7rs top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
         (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs))]
       [(equal? 's7 top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
@@ -54,18 +54,19 @@
             [(equal? list-instance '(rnrs)) rnrs]
             [(equal? list-instance '(scheme)) scheme] 
             [(equal? list-instance '(chezscheme)) chezscheme]
-            [(equal? list-instance '(rnrs condition)) rnrs-condition]
+            [(equal? list-instance '(rnrs conditions)) rnrs-conditions]
             ; https://www.gnu.org/software/guile/manual/html_node/rnrs.html
             [(equal? list-instance '(rnrs (6))) rnrs]
             [(equal? list-instance '(rnrs base (6))) rnrs-base]
-            [(equal? list-instance '(rnrs arithmetic fixnums base (6))) rnrs-arithmetic-fixnums]
+            [(equal? list-instance '(rnrs arithmetic fixnums (6))) rnrs-arithmetic-fixnums]
             [(equal? list-instance '(rnrs bytevectors (6))) rnrs-bytevectors]
-            [(equal? list-instance '(rnrs conditions (6))) rnrs-condition]
+            [(equal? list-instance '(rnrs conditions (6))) rnrs-conditions]
             [(equal? list-instance '(rnrs control (6))) rnrs-control]
-            [(equal? list-instance '(rnrs exceptions (6))) rnrs-exception]
-            [(equal? list-instance '(rnrs hashtable (6))) rnrs-hashtables]
+            [(equal? list-instance '(rnrs exceptions (6))) rnrs-exceptions]
+            [(equal? list-instance '(rnrs hashtables (6))) rnrs-hashtables]
             [(equal? list-instance '(rnrs lists (6))) rnrs-lists]
             [(equal? list-instance '(rnrs mutable-pairs (6))) rnrs-mutable-pairs]
+            [(equal? list-instance '(rnrs mutable-strings (6))) rnrs-mutable-strings]
             [(equal? list-instance '(rnrs io ports (6))) rnrs-io-ports]
             [(equal? list-instance '(rnrs io simple (6))) rnrs-io-simple]
             [(equal? list-instance '(rnrs records syntactic (6))) rnrs-records-syntactic]
@@ -73,7 +74,7 @@
             [(equal? list-instance '(rnrs base)) rnrs-base]
             [(equal? list-instance '(rnrs files)) rnrs-files]
             [(equal? list-instance '(rnrs syntax-case)) rnrs-syntax-case]
-            [(equal? list-instance '(rnrs exception)) rnrs-exception]
+            [(equal? list-instance '(rnrs exceptions)) rnrs-exceptions]
             [(equal? list-instance '(rnrs lists)) rnrs-lists]
             [(equal? list-instance '(rnrs bytevectors)) rnrs-bytevectors]
             [(equal? list-instance '(rnrs control)) rnrs-control]
@@ -92,7 +93,7 @@
             [(equal? list-instance '(rnrs arithmetic bitwise)) rnrs-arithmetic-bitwise]
             [(equal? list-instance '(rnrs arithmetic fixnums)) rnrs-arithmetic-fixnums]
             [(equal? list-instance '(rnrs records syntactic)) rnrs-records-syntactic]
-            [(equal? list-instance '(rnrs records procedure)) rnrs-records-procedure]
+            [(equal? list-instance '(rnrs records procedural)) rnrs-records-procedural]
             [(equal? list-instance '(rnrs records inspection)) rnrs-records-inspection]
             [(equal? list-instance '(chezscheme csv7)) chezscheme-csv7] 
             [(equal? list-instance '(scheme csv7)) scheme-csv7]
@@ -167,14 +168,14 @@
                   (list (identifier-reference-identifier identifier-reference))))
               chezscheme)))
         list-instance))
-    (list rnrs scheme chezscheme rnrs-condition rnrs-base 
-rnrs-files rnrs-syntax-case rnrs-exception rnrs-lists 
+    (list rnrs scheme chezscheme rnrs-conditions rnrs-base 
+rnrs-files rnrs-syntax-case rnrs-exceptions rnrs-lists 
 rnrs-bytevectors rnrs-control rnrs-unicode rnrs-enums 
 rnrs-r5rs rnrs-eval rnrs-hashtables rnrs-sorting 
 rnrs-programs rnrs-mutable-pairs rnrs-mutable-strings 
 rnrs-io-ports rnrs-io-simple rnrs-arithmetic-flonums 
 rnrs-arithmetic-bitwise rnrs-arithmetic-fixnums 
-rnrs-records-syntactic rnrs-records-procedure 
+rnrs-records-syntactic rnrs-records-procedural
 rnrs-records-inspection chezscheme-csv7 scheme-csv7
 scheme-base scheme-case-lambda scheme-char scheme-complex
 scheme-cxr scheme-eval scheme-file scheme-inexact scheme-lazy 
@@ -4066,7 +4067,7 @@ scheme-time scheme-write scheme-r5rs s7))
 (write-char procedure)
 (zero? procedure)))) 
 
-(define rnrs-condition (private-process '(rnrs condition) '(
+(define rnrs-conditions (private-process '(rnrs conditions) '(
 (&assertion	syntax)
 (&condition	syntax)
 (&error	syntax)
@@ -4368,7 +4369,7 @@ scheme-time scheme-write scheme-r5rs s7))
 (unsyntax-splicing	syntax)
 (with-syntax	syntax))))
 
-(define rnrs-exception (private-process '(rnrs exception) '(
+(define rnrs-exceptions (private-process '(rnrs exceptions) '(
 (=>	syntax)
 (else	syntax)
 (guard	syntax)
@@ -4877,7 +4878,7 @@ scheme-time scheme-write scheme-r5rs s7))
 (record-type-descriptor	procedure)
 (sealed	syntax))))
 
-(define rnrs-records-procedure (private-process '(rnrs records procedure) '(
+(define rnrs-records-procedural (private-process '(rnrs records procedural) '(
 (make-record-constructor-descriptor	procedure)
 (make-record-type-descriptor	procedure)
 (record-constructor	procedure)
