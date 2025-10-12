@@ -40,6 +40,8 @@
               (lambda (ticks value) 
                 (remove:from-request-tickal-task-list request-queue new-task)
                 value)]
+            ;this expire mainly aims to interrupt type infernece, so that acquires workspace mutex.
+            ;it shouldn't be supposed that it interrupt the workspace refreshing procedure.
             [expire 
               (lambda (remains) 
                 (if (tickal-task-stop? new-task)

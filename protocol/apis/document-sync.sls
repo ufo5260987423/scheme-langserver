@@ -84,6 +84,9 @@
 ;;  in the order you receive them.
                   (string-replace text temp-text start end))))))])
     (try
-      (body)
+      (if (null? (workspace-mutex workspace))
+        (body)
+        (with-mutex (workspace-mutex workspace)
+          (body)))
       (except e [else '()]))))
 )
