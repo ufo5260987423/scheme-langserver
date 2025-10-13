@@ -320,16 +320,16 @@
     (try
       (cond 
         [(string? s) 
-          (make-document 
-            uri 
-            s
-            (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))
-            (find-meta meta-lib top-environment))]
+          (let ([d
+              (make-document 
+                uri 
+                s
+                (find-meta meta-lib top-environment))])
+            (document-index-node-list-set! (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))))]
         [(eof-object? s) 
           (make-document 
             uri 
             ""
-            '()
             (find-meta meta-lib top-environment))]
         [else '()])
       (except c

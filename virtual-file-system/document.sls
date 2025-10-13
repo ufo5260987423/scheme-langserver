@@ -35,8 +35,8 @@
     (mutable diagnoses))
   (protocol
     (lambda (new)
-      (lambda (uri text index-node-list reference-list)
-        (new uri text index-node-list reference-list #t (text->line-length-vector text) '())))))
+      (lambda (uri text reference-list)
+        (new uri text '() reference-list #t (text->line-length-vector text) '())))))
 
 (define (append-new-diagnoses document diagnoses)
   (document-diagnoses-set!
