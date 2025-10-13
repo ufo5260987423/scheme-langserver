@@ -68,6 +68,7 @@
       (case method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
         ["initialized" (private:publish-diagnostics server-instance)] 
+        ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
 
         ["textDocument/didOpen" (did-open workspace params)]
         ["textDocument/didClose" (did-close workspace params)]
@@ -237,15 +238,16 @@
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
+              [request-processor (lambda (r) (private:try-catch server-instance r))]
               [interval-timer 
                 (if (and enable-multi-thread? threaded?) 
                   (init-interval-timer 
                     (make-time 'time-duration 0 1)
-                    (lambda () (private:publish-diagnostics server-instance))
+                    (lambda () 
+                      (request-queue-push request-queue (make-request '() "private:publish-diagnoses" '()) request-processor (server-workspace server-instance)))
                     (lambda () #t)
                     thread-pool)
-                  '())]
-              [request-processor (lambda (r) (private:try-catch server-instance r))])
+                  '())])
             (try
               (if (not (null? thread-pool)) 
                 (begin 
