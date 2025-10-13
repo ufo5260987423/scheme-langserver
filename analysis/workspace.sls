@@ -325,7 +325,8 @@
                 uri 
                 s
                 (find-meta meta-lib top-environment))])
-            (document-index-node-list-set! (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))))]
+            (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))) 
+            d)]
         [(eof-object? s) 
           (make-document 
             uri 

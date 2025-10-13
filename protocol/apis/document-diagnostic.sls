@@ -55,11 +55,10 @@
 (define (private:document->diagnostic-vec document)
   (vector-map 
     (lambda (diagnose)
-      (let* ([index-node (car diagnose)]
-          [s (index-node-start index-node)]
-          [e (index-node-end index-node)]
-          [severity (cadr diagnose)]
-          [message (caddr diagnose)])
+      (let* ([s (car diagnose)]
+          [e (cadr diagnose)]
+          [severity (caddr diagnose)]
+          [message (cadddr diagnose)])
       (private:make-diagnostic document s e severity message)))
     (list->vector (document-diagnoses document))))
 
