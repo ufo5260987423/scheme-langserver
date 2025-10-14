@@ -68,8 +68,8 @@
       (letrec* ([task (dequeue! (request-queue-queue queue))]
           [request (tickal-task-request task)]
           [job (lambda () 
-                (if (tickal-task-stop? new-task)
-                  (remove:from-request-tickal-task-list request-queue new-task)
+                (if (tickal-task-stop? task)
+                  (remove:from-request-tickal-task-list queue task)
                   (request-processor request)))])
         ;will be in another thread
         (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
