@@ -6,8 +6,6 @@
     (ufo-try)
     (scheme-langserver util path)
     (scheme-langserver util contain)
-    (scheme-langserver util dedupe)
-    (scheme-langserver util binary-search)
 
     (scheme-langserver analysis util)
 
