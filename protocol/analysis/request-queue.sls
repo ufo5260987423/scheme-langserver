@@ -93,13 +93,10 @@
       ["textDocument/didChange"
         (let* ([id (assq-ref (request-params request) 'id)]
             [pure-queue (request-queue-queue queue)]
-            ;here, id is cancel target id
             [predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
-            [tickal-task (find predicator (request-queue-tickal-task-list queue))])
-          ;must cancel in local thread.
-          (when tickal-task 
-            (tickal-task-stop?-set! tickal-task #t))
-            (make-tickal-task request queue workspace))]
+            [tickal-tasks (filter predicator (request-queue-tickal-task-list queue))])
+          (map (lambda (x) (tickal-task-stop?-set! x #t)) tickal-tasks)
+          (make-tickal-task request queue workspace))]
       [else (make-tickal-task request queue workspace)])
       ;because the pool is limited to have only one thread.
     (condition-signal (request-queue-condition queue))))
