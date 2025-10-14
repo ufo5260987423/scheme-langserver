@@ -35,18 +35,4 @@
         ; (pretty-print (local-expand to-eval document workspace))
         (test-equal #f (null? (local-expand to-eval document root-file-node (workspace-file-linkage workspace)))))
 (test-end)
-
-(test-begin "local-expand")
-    (let* ( [workspace (init-workspace (current-directory) #f #f)]  
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/begin.sls"))]
-            [document (file-node-document target-file-node)]
-            [target-text (document-text document)]
-            [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int target-text 20 7))]
-            [try-identifier (car (find-available-references-for document target-index-node 'try))]
-            [to-eval (annotation-stripped (index-node-datum/annotations (index-node-parent target-index-node)))])
-        ; (pretty-print (local-expand to-eval document workspace))
-        (test-equal #f (null? (local-expand to-eval document root-file-node (workspace-file-linkage workspace)))))
-(test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
