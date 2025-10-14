@@ -4,8 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
-
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
@@ -18,15 +16,12 @@
 (define (do-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
-    (try
-      (match expression
-        [(_ ((var init+update ... ) **1) fuzzy ... ) 
-          (let* ([children (index-node-children index-node)]
-            [var-index-node (cadr children)])
-            (map (lambda (i) (private-process document i index-node var-index-node)) (index-node-children var-index-node)))]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ ((var init+update ... ) **1) fuzzy ... ) 
+        (let* ([children (index-node-children index-node)]
+          [var-index-node (cadr children)])
+          (map (lambda (i) (private-process document i index-node var-index-node)) (index-node-children var-index-node)))]
+      [else '()])))
 
 (define (private-process document target-index-node initialization-index-node exclude-index-node)
   (let* ([ann (index-node-datum/annotations target-index-node)]

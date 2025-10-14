@@ -10,8 +10,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
-
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)

@@ -4,7 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
     (scheme-langserver util contain)
 
     (scheme-langserver analysis identifier reference)
@@ -23,22 +22,19 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [children (index-node-children index-node)]
       [expression (annotation-stripped ann)])
-    (try
-      (match expression
-        [(_ (((? symbol? syntax-parameter) _ ...) **1) body ...) 
-          (let* ([syntax-parameter-_s (cadr children)]
-              [syntax-parameters (map car (map index-node-children (index-node-children syntax-parameter-_s)))])
-            (map 
-              (lambda (current-syntax-parameter-index-node)
-                (let* ([expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]
-                    [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-parameter '() '())])
-                  (append-references-into-ordered-references-for document index-node `(, identifier-reference))
-                  (index-node-excluded-references-set! syntax-parameter-_s 
-                    (append 
-                      (index-node-excluded-references syntax-parameter-_s)
-                      `(,identifier-reference)))))
-              syntax-parameters))]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ (((? symbol? syntax-parameter) _ ...) **1) body ...) 
+        (let* ([syntax-parameter-_s (cadr children)]
+            [syntax-parameters (map car (map index-node-children (index-node-children syntax-parameter-_s)))])
+          (map 
+            (lambda (current-syntax-parameter-index-node)
+              (let* ([expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]
+                  [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-parameter '() '())])
+                (append-references-into-ordered-references-for document index-node `(, identifier-reference))
+                (index-node-excluded-references-set! syntax-parameter-_s 
+                  (append 
+                    (index-node-excluded-references syntax-parameter-_s)
+                    `(,identifier-reference)))))
+            syntax-parameters))]
+      [else '()])))
 )

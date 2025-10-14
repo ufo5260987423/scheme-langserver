@@ -6,7 +6,6 @@
     (ufo-match)
 
     (scheme-langserver util path)
-    (ufo-try)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)
@@ -22,19 +21,16 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [target-parent-index-node (index-node-parent index-node)])
-    (try
-      (match expression
-        [(_ name-list) 
-          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())]
-        [(_ (? symbol? name) (dummy ...) ... ) 
-          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
-          (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name) ]
-        [(_ ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
-          (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
-          (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name)]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ name-list) 
+        (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())]
+      [(_ (? symbol? name) (dummy ...) ... ) 
+        (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
+        (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name) ]
+      [(_ ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
+        (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
+        (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name)]
+      [else '()])))
 
 (define (process-define-record-type-tail initialization-index-node document target-parent-index-node index-node-list name)
   (let loop ([body index-node-list])

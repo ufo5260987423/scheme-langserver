@@ -4,8 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
-
     (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier reference)
 
@@ -19,30 +17,27 @@
 (define (define-top-level-syntax-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
-    (try
-      (match expression
-        [(_ (? symbol? identifier) dummy ...) 
-          (let ([reference (make-identifier-reference 
-                  (car* identifier)
-                  document 
-                  (cadr (index-node-children index-node))
-                  index-node
-                  '()
-                  'syntax-variable 
-                  '()
-                  '())])
-            (index-node-references-export-to-other-node-set! 
-              (identifier-reference-index-node reference)
+    (match expression
+      [(_ (? symbol? identifier) dummy ...) 
+        (let ([reference (make-identifier-reference 
+                (car* identifier)
+                document 
+                (cadr (index-node-children index-node))
+                index-node
+                '()
+                'syntax-variable 
+                '()
+                '())])
+          (index-node-references-export-to-other-node-set! 
+            (identifier-reference-index-node reference)
+            (append 
+              (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+              `(,reference)))
+          (document-ordered-reference-list-set!
+            document
+            (sort-identifier-references
               (append 
-                (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                `(,reference)))
-            (document-ordered-reference-list-set!
-              document
-              (sort-identifier-references
-                (append 
-                  (document-ordered-reference-list document)
-                  `(,reference)))))]
-        [else '()])
-      (except c
-        [else '()]))))
+                (document-ordered-reference-list document)
+                `(,reference)))))]
+      [else '()])))
 )

@@ -7,7 +7,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
     (scheme-langserver util contain)
 
     (scheme-langserver analysis identifier reference)
@@ -23,16 +22,13 @@
 (define (syntax-case-process root-file-node root-librar-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
-    (try
-      (match expression
-        [(_ to-match (literals ...) (a b ...) **1) 
-          (let ([rest (cdddr (index-node-children index-node))])
-            (map (lambda (clause-index-node)
-              (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
-              rest))]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ to-match (literals ...) (a b ...) **1) 
+        (let ([rest (cdddr (index-node-children index-node))])
+          (map (lambda (clause-index-node)
+            (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
+            rest))]
+      [else '()])))
 
 (define (clause-process initialization-index-node document index-node template-index-node literals)
   (let* ([ann (index-node-datum/annotations template-index-node)]

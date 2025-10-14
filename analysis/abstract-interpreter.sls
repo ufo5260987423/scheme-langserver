@@ -125,17 +125,21 @@
                       expanded+callee-list 
                       `(,memory (,(annotation-stripped (index-node-datum/annotations current-index-node)))))]
                   [else '()])])
-            (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
+            (try 
+              (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
+              (except c [else '()]))
             (fold-left
               (lambda (l child-index-node)
                 (step root-file-node root-library-node file-linkage current-document child-index-node expanded+callee-list memory))
               '()
               children)
-            (map 
-              (lambda (f) 
-                (if (not (null? (cdr (cdr f))))
-                  ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
-              target-rules))]
+            (try 
+              (map 
+                (lambda (f) 
+                  (if (not (null? (cdr (cdr f))))
+                    ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
+                target-rules)
+              (except c [else '()])))]
         [else '()])]
       [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list memory)
         (if (case quasi-quoted-syntaxed

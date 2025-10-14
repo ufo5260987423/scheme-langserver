@@ -3,7 +3,6 @@
   (import 
     (chezscheme) 
     (ufo-match)
-    (ufo-try)
 
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)
@@ -17,20 +16,17 @@
 (define (match-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
-    (try
-      (match expression
-        [(_ something **1)
-          (let* ([children (index-node-children index-node)]
-              [rest-children-index-nodes (cdr children)])
-            (map 
-              (lambda (i) 
-                (let ([c (index-node-children i)])
-                  (if (not (null? c))
-                    (private:pattern+scope document (car c) i (car c)))))
-              rest-children-index-nodes))]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ something **1)
+        (let* ([children (index-node-children index-node)]
+            [rest-children-index-nodes (cdr children)])
+          (map 
+            (lambda (i) 
+              (let ([c (index-node-children i)])
+                (if (not (null? c))
+                  (private:pattern+scope document (car c) i (car c)))))
+            rest-children-index-nodes))]
+      [else '()])))
 
 (define (private:pattern+scope document pattern-index-node scope-index-node exclude-index-node)
   (let* ([expression (annotation-stripped (index-node-datum/annotations pattern-index-node))]
