@@ -45,6 +45,7 @@
             [expire 
               (lambda (remains) 
                 (if (tickal-task-stop? new-task)
+                  ;because this may happend during workspace refreshing
                   (with-mutex (workspace-mutex workspace)
                     (remove:from-request-tickal-task-list request-queue new-task))
                   (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))))])
@@ -66,7 +67,10 @@
         (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
       (letrec* ([task (dequeue! (request-queue-queue queue))]
           [request (tickal-task-request task)]
-          [job (lambda () (request-processor request))])
+          [job (lambda () 
+                (if (tickal-task-stop? new-task)
+                  (remove:from-request-tickal-task-list request-queue new-task)
+                  (request-processor request)))])
         ;will be in another thread
         (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
 
