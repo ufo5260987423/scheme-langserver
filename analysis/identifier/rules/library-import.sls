@@ -297,6 +297,14 @@
                   (lambda (reference) 
                     (not (equal? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
+      [('for ('only (library-identifier **1) (? symbol? identifier) **1) import-level) 
+        (if (or
+            (equal? 'run import-level)
+            (equal? '(meta 0) import-level)
+            (equal? 'expand import-level)
+            ; (equal? '(meta 1) import-level)
+            )
+          (match-clause initialization-index-node root-file-node root-library-node document (cadr (index-node-children index-node))))]
       [('for (library-identifier **1) import-level) 
         (if (null? (walk-library library-identifier root-library-node))
           (if (not (meta-library? library-identifier 'r6rs))
@@ -305,7 +313,7 @@
         (if (or
             (equal? 'run import-level)
             (equal? '(meta 0) import-level)
-            ; (equal? 'expand import-level)
+            (equal? 'expand import-level)
             ; (equal? '(meta 1) import-level)
             )
           (let ([tmp (filter identifier-reference? (import-references document root-library-node library-identifier))])
