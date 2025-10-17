@@ -35,6 +35,8 @@
     index-node-substitution-list-set!
     index-node-import-file-nodes
     index-node-import-file-nodes-set!
+    index-node-expansions
+    index-node-expansions-set!
 
     extend-index-node-substitution-list 
 
@@ -76,11 +78,12 @@
     (mutable references-import-in-this-node)
     (mutable excluded-references)
     (mutable substitution-list)
-    (mutable import-file-nodes))
+    (mutable import-file-nodes)
+    (mutable expansions))
   (protocol
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
-        (new parent start end datum/annotations (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '())))))
+        (new parent start end datum/annotations (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
 
 (define make-virtual-index-node
   (case-lambda 
