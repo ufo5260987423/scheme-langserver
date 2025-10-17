@@ -247,7 +247,7 @@
           (if (and (not (meta-library? library-identifier 'r7rs))
               (not (meta-library? library-identifier 's7)))
             (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
+          (index-node-import-file-nodes-set! index-node (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (append-references-into-ordered-references-for 
           document 
           grand-parent-index-node 
