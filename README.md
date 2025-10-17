@@ -34,7 +34,7 @@ I do this open source work just in my spare time and I can contribute many splen
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ## Release 
-2.0.1 Fix many bugs.
+2.0.2 Publish diagnoses, though now only can figure out "fail to find library".
 
 Previous releases please refer to [this file](./doc/release-log.md).
 
@@ -65,13 +65,14 @@ send-message
 {"jsonrpc":"2.0","id":"3","result":[{"label":"length-a"},{"label":"length-b"},{"label":"lambda"},{"label":"latin-1-codec"},{"label":"lcm"},{"label":"least-fixnum"},{"label":"length"},{"label":"let"},{"label":"let*"},{"label":"let*-values"},{"label":"let-syntax"},{"label":"let-values"},{"label":"letrec"},{"label":"letrec*"},{"label":"letrec-syntax"},{"label":"lexical-violation?"},{"label":"list"},{"label":"list->string"},{"label":"list->vector"},{"label":"list-ref"},{"label":"list-sort"},{"label":"list-tail"},{"label":"list?"},{"label":"log"},{"label":"lookahead-char"},{"label":"lookahead-u8"}]}
 ```
 13. Abstract interpreter for identifier catching among different file extensions like scm, ss, sps, sls and sld.
+14. Code diagnostic. Now only support to diagnoses library-not-found.
+![Fail to find library](./doc/figure/diagnose-failt-to-find-library.png "fail to find library")
 
 ### TODOs
-14. Renaming. 
-15. Fully compatible with [r6rs standard](http://www.r6rs.org/).
-16. Step-by-step macro expander: well, I actually have implemented one and I wanted to make it a key step catching identifier binding in self-defined macros. Now, I find this catching is much harder than I thought, and the expander I don't know where it could work.
-17. Code eval.
-18. Code diagnostic.
+15. Renaming. 
+16. Fully compatible with [r6rs standard](http://www.r6rs.org/).
+17. Step-by-step macro expander: well, I actually have implemented one and I wanted to make it a key step catching identifier binding in self-defined macros. Now, I find this catching is much harder than I thought, and the expander I don't know where it could work.
+18. Code eval.
 19. Add cross-language semantic supporting. Well, would java, c, python and many other languages can be supported with an AST transformer?
 20. Extract expression/statements into a procedure.
 

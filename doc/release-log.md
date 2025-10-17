@@ -1,4 +1,6 @@
 ## Detailed Relases Log
+2.0.1 Fix many bugs.
+
 2.0.0 Fix many bugs and switch between different top environments.
 
 1.2.9 Now, enjoy type inference!
