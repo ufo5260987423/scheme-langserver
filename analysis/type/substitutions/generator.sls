@@ -49,7 +49,7 @@
           (extend-index-node-substitution-list 
             current-index-node 
             (car (index-node-children current-index-node)))
-          (trivial-process current-document (car (index-node-children current-index-node)))]
+          (trivial-process current-document (car (index-node-children current-index-node)) (annotation-stripped (index-node-datum/annotations current-index-node)) #f #t)]
         ;#'(1 2 3) is a syntax not a list
         [(syntax? current-index-node current-document) '()]
         [(quasiquote? current-index-node current-document) 

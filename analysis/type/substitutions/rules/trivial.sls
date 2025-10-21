@@ -58,10 +58,17 @@
         [(number? expression) (extend-index-node-substitution-list index-node private-number?)]
 
         [(and (symbol? expression) (not quoted?))
-          (map 
-            (lambda (identifier-reference) 
-              (private-process document identifier-reference index-node))
-            (find-available-references-for document index-node expression))]
+          (let ([as (find-available-references-for document index-node expression)])
+            (map 
+              (lambda (identifier-reference) 
+                (private-process document identifier-reference index-node))
+              as)
+            (if 
+              (and 
+                (null? (index-node-references-export-to-other-node index-node))
+                (null? as)
+                (null? (ancestor-recursion:index-node-import-file-nodes index-node)))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Scheme-langserver Warn: Unknown Symbol:" (symbol->string expression))))))]
         [(symbol? expression) (extend-index-node-substitution-list index-node private-symbol?)]
 
         [(and (pair? expression) (not (list? expression)))

@@ -49,7 +49,7 @@
                   (make-range 
                     (apply make-position (document+bias->position-list (file-node-document f) 0))
                     (apply make-position (document+bias->position-list (file-node-document f) (- (string-length (document-text (file-node-document f))) 1)))))))
-            import-file-node)]
+            (filter file-node? import-file-node))]
         [(symbol? prefix) 
           (map identifier-reference->location->alist
             (filter 
