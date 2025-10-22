@@ -3,6 +3,7 @@
     construct-substitutions-for)
   (import 
     (chezscheme)
+    (ufo-try)
 
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
@@ -84,14 +85,20 @@
                       expanded+callee-list)]
                   [else '()])])
             (if (symbol? head-expression)
-              (map
-                (lambda (current) ((car (cdr current)) current-document current-index-node))
-                target-rules)
+              (try 
+                (map
+                  (lambda (current) ((car (cdr current)) current-document current-index-node))
+                  target-rules)
+                (except c
+                  [else '()]))
               ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
-            (map
-              (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
-              children))])]
+            (try 
+              (map
+                (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
+                children)
+              (except c 
+                [else '()])))])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]

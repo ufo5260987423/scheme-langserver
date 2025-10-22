@@ -4,7 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
@@ -17,15 +16,12 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
-    (try
-      (match expression
-        [(_ ((var init update ...) **1) (test result ...) _ ... ) 
-          (let* ([children (index-node-children index-node)]
-              [var-index-node (cadr children)])
-            (map private-process (index-node-children var-index-node)))]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ ((var init update ...) **1) (test result ...) _ ... ) 
+        (let* ([children (index-node-children index-node)]
+            [var-index-node (cadr children)])
+          (map private-process (index-node-children var-index-node)))]
+      [else '()])))
 
 (define (private-process target-index-node)
   (let* ([ann (index-node-datum/annotations target-index-node)]
