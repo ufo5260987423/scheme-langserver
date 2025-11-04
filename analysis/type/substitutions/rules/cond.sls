@@ -4,8 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
 
@@ -16,15 +14,12 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
-    (try
-      (match expression
-        [(_ clause **1)
-          (map 
-            (lambda (clause-index-node) (private-clause-process index-node clause-index-node))
-            (cdr children))]
-        [else '()])
-      (except c
-        [else '()]))))
+    (match expression
+      [(_ clause **1)
+        (map 
+          (lambda (clause-index-node) (private-clause-process index-node clause-index-node))
+          (cdr children))]
+      [else '()])))
 
 (define (private-clause-process root-index-node clause-index-node)
   (let* ([ann (index-node-datum/annotations clause-index-node)]

@@ -4,7 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (ufo-try)
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
@@ -18,20 +17,17 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
-    (try
-      (match expression
-        [(_ (identifiers ...) fuzzy **1 ) 
-          (let* ([return-index-node (car (reverse children))]
+    (match expression
+      [(_ (identifiers ...) fuzzy **1 ) 
+        (let* ([return-index-node (car (reverse children))]
 
-              ;(identifier **1) index-nodes
-              [parameter-index-nodes (lambda*-parameter-index-node-extract (cadr children) document)]
-              [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)])
-            (map 
-              (lambda (t) (extend-index-node-substitution-list index-node t))
-              (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)))]
-        [else '()])
-      (except c
-        [else '()]))))
+            ;(identifier **1) index-nodes
+            [parameter-index-nodes (lambda*-parameter-index-node-extract (cadr children) document)]
+            [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)])
+          (map 
+            (lambda (t) (extend-index-node-substitution-list index-node t))
+            (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)))]
+      [else '()])))
 
 (define (lambda*-parameter-index-node-extract parameter-index-nodes current-document)
   ;; for lambda*, the parameter could be (identifier1 identifier2 ...)

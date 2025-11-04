@@ -248,27 +248,22 @@
                     (lambda () #t)
                     thread-pool)
                   '())])
-            (try
-              (if (not (null? thread-pool)) 
-                (begin 
-                  (start-timer interval-timer)
-                  (thread-pool-add-job thread-pool 
-                    (lambda () 
-                      (let loop ()
-                        ((request-queue-pop request-queue request-processor))
-                        (loop))))))
-              (let loop ([request-message (read-message server-instance)])
-                (cond 
-                  [(null? request-message) '()]
-                  [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
-                  [(null? thread-pool) 
-                    (request-processor request-message)
-                    (loop (read-message server-instance))]
-                  [else
-                    (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
-                    (loop (read-message server-instance))]))
-              (except c 
-                [else 
-                  (display-condition c log-port)
-                  (do-log-timestamp server-instance)])))]))
+            (if (not (null? thread-pool)) 
+              (begin 
+                (start-timer interval-timer)
+                (thread-pool-add-job thread-pool 
+                  (lambda () 
+                    (let loop ()
+                      ((request-queue-pop request-queue request-processor))
+                      (loop))))))
+            (let loop ([request-message (read-message server-instance)])
+              (cond 
+                [(null? request-message) '()]
+                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
+                [(null? thread-pool) 
+                  (request-processor request-message)
+                  (loop (read-message server-instance))]
+                [else
+                  (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
+                  (loop (read-message server-instance))])))]))
 )

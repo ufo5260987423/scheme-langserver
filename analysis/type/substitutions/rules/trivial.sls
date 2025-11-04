@@ -9,7 +9,6 @@
     (scheme-langserver util dedupe)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
-    (ufo-try)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
@@ -181,11 +180,7 @@
 (define (private-unquote-splicing? index-node document current-expression)
   (if (pair? current-expression)
     (if (equal? unquote-splicing? (car current-expression))
-      (try
-        (guard-for document index-node 'unquote-splicing '(chezscheme) '(rnrs) '(rnrs base) '(scheme)) 
-        #t
-      (except c
-        [else #f]))
+      (meta-for? index-node document 'unquote-splicing)
       #f)
     #f))
 )

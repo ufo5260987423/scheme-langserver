@@ -13,7 +13,6 @@
 
     (scheme-langserver util association)
     (scheme-langserver util path) 
-    (ufo-try) 
     (scheme-langserver util text) 
     (scheme-langserver util io)
 
@@ -83,10 +82,8 @@
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
                   (string-replace text temp-text start end))))))])
-    (try
-      (if (null? (workspace-mutex workspace))
-        (body)
-        (with-mutex (workspace-mutex workspace)
-          (body)))
-      (except e [else '()]))))
+    (if (null? (workspace-mutex workspace))
+      (body)
+      (with-mutex (workspace-mutex workspace)
+        (body)))))
 )
