@@ -84,14 +84,14 @@
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
       ["private:publish-diagnoses"
-        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+        (let* ([predicator (lambda (task) (string=? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
       ["$/cancelRequest"
         (let* ([id (assq-ref (request-params request) 'id)]
             ;here, id is cancel target id
-            [predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
+            [predicator (lambda (task) (= id (request-id (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           ;must cancel in local thread.
           (when tickal-task 
@@ -99,7 +99,7 @@
             (potential-request-processor 
               (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
       ["textDocument/didChange"
-        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+        (let* ([predicator (lambda (task) (string=? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when tickal-task
             (tickal-task-stop?-set! tickal-task #t))
