@@ -41,13 +41,6 @@
         (test-equal 'scheme-langserver (library-node-name (car (library-node-children root-library-node)))))
 (test-end)
 
-(test-begin "pick-test")
-    (test-equal 'library 
-        (annotation-stripped 
-            (index-node-datum/annotations 
-            (car (pick (init-index-node '() (car (source-file->annotations "./util/path.sls"))) 0 8)))))
-(test-end)
-
 (test-begin "refresh-workspace-for+update-file-node-with-tail test")
     (let* ([workspace (init-workspace (string-append (current-directory) "/util/"))]
             [root-file-node (workspace-file-node workspace)]

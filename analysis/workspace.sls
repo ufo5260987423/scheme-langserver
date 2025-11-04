@@ -25,10 +25,7 @@
     update-file-node-with-tail
 
     attach-new-file
-    remove-new-file
-
-    pick
-    generate-library-node)
+    remove-new-file)
   (import 
     (ufo-match)
     (ufo-threaded-function)
@@ -206,7 +203,7 @@
           (map 
             (lambda (library-identifiers)
               (if (walk-library library-identifiers root-library-node)
-                (generate-library-node library-identifiers root-library-node target-file-node)))
+                (make-library-node library-identifiers root-library-node target-file-node)))
             new-library-identifiers-list)
           (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node (workspace-top-environment workspace-instance)))
 ;;For new dependency
@@ -265,7 +262,6 @@
         (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
         node)
       '())]))
-
 
 (define (remove-new-file path parent my-filter)
   (let ([f (walk-file parent path)])
@@ -340,49 +336,7 @@
           (lambda (child-node) (init-library-node child-node top-environment root-library-node))
           (file-node-children file-node))
         (map 
-          (lambda (library-identifiers) (generate-library-node library-identifiers root-library-node file-node))
+          (lambda (library-identifiers) (make-library-node library-identifiers root-library-node file-node))
           (get-library-identifiers-list (file-node-document file-node) top-environment)))
       root-library-node]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define pick
-  (case-lambda 
-    ([node start-position end-position] 
-      (let ([pick-with-range (lambda (node-new) (pick node-new start-position end-position))])
-        (cond
-          ((and 
-              (<= start-position (index-node-start node))
-              (>= end-position (index-node-end node)))
-            `(,node))
-          (else (apply append (map pick-with-range (index-node-children node)))))))
-    ([node position] 
-        (let ([in? (and 
-              (<= position (index-node-end node))
-              (>= position (index-node-start node)))]
-              [has-children? (not (null? (index-node-children node)))]
-              [pick-with-position (lambda (node-new) (pick node-new position))])
-          (cond
-            [(and in? has-children?) (apply append (map pick-with-position (index-node-children node)))] 
-            [(and in? (not has-children?)) `(,node)] 
-            [else '()] )))))
-
-(define (generate-library-node list-instance library-node virtual-file-node)
-  (if (null? list-instance)
-    (begin
-      (library-node-file-nodes-set! library-node (append (library-node-file-nodes library-node) `(,virtual-file-node)))
-      library-node)
-    (let* ([head (car list-instance)]
-          [rest (cdr list-instance)]
-          [child (find 
-              (lambda (child-node) (equal? head (library-node-name child-node))) 
-              (library-node-children library-node))])
-      (generate-library-node
-        rest 
-        (if child
-          child
-          (let ([child (make-library-node head library-node '() '())])
-            (library-node-children-set! library-node 
-              (append (library-node-children library-node) `(,child)))
-            child))
-        virtual-file-node))))
 )
