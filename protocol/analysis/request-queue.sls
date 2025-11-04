@@ -84,14 +84,12 @@
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
       ["private:publish-diagnoses"
-        (let* ([pure-queue (request-queue-queue queue)]
-            [predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
       ["$/cancelRequest"
         (let* ([id (assq-ref (request-params request) 'id)]
-            [pure-queue (request-queue-queue queue)]
             ;here, id is cancel target id
             [predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
