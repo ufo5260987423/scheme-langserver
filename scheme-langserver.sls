@@ -67,7 +67,7 @@
       (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (case method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
-        ["initialized" (private:publish-diagnostics server-instance)] 
+        ["initialized" '()] 
         ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
 
         ["textDocument/didOpen" (did-open workspace params)]
