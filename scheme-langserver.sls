@@ -255,7 +255,7 @@
                   (lambda () 
                     (let loop ()
                       ((request-queue-pop request-queue request-processor))
-                      (loop))))))
+                      (if (not (server-shutdown? server-instance)) (loop)))))))
             (let loop ([request-message (read-message server-instance)])
               (cond 
                 [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
