@@ -258,7 +258,6 @@
                       (loop))))))
             (let loop ([request-message (read-message server-instance)])
               (cond 
-                [(null? request-message) '()]
                 [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
                 [(null? thread-pool) 
                   (request-processor request-message)
