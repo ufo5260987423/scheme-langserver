@@ -245,7 +245,7 @@
                     (make-time 'time-duration 0 1)
                     (lambda () 
                       (request-queue-push request-queue (make-request '() "private:publish-diagnoses" '()) request-processor (server-workspace server-instance)))
-                    (lambda () #t)
+                    (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
                   '())])
             (if (not (null? thread-pool)) 
