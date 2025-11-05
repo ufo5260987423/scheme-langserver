@@ -258,11 +258,13 @@
                       (if (not (server-shutdown? server-instance)) (loop)))))))
             (let loop ([request-message (read-message server-instance)])
               (cond 
+                [(null? request-message) '()]
                 [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
                 [(null? thread-pool) 
                   (request-processor request-message)
                   (loop (read-message server-instance))]
                 [else
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
-                  (loop (read-message server-instance))])))]))
+                  (loop (read-message server-instance))]))
+            server-instance)]))
 )

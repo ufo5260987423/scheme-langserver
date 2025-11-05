@@ -2,7 +2,8 @@
   (export 
     make-request-queue
     request-queue-pop
-    request-queue-push)
+    request-queue-push
+    await-request-queue-empty)
   (import 
     (chezscheme)
     (slib queue)
@@ -59,20 +60,27 @@
 
           new-task)))))
 
+(define (await-request-queue-empty queue)
+  (with-mutex (request-queue-mutex queue)
+    (do ()
+      ((not (queue-empty? (request-queue-queue queue)))
+        '())
+      (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))))
+
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
-      (if (queue-empty? (request-queue-queue queue))
-        ;by default, this will release request-queue-mutex 
-        ;and re-enter when request-queue-condition is signed.
-        (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
-      (letrec* ([task (dequeue! (request-queue-queue queue))]
-          [request (tickal-task-request task)]
-          [job (lambda () 
-                (if (tickal-task-stop? task)
-                  (remove:from-request-tickal-task-list queue task)
-                  (request-processor request)))])
-        ;will be in another thread
-        (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
+    (if (queue-empty? (request-queue-queue queue))
+      ;by default, this will release request-queue-mutex 
+      ;and re-enter when request-queue-condition is signed.
+      (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
+    (letrec* ([task (dequeue! (request-queue-queue queue))]
+        [request (tickal-task-request task)]
+        [job (lambda () 
+              (if (tickal-task-stop? task)
+                (remove:from-request-tickal-task-list queue task)
+                (request-processor request)))])
+      ;will be in another thread
+      (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
 
 (define (remove:from-request-tickal-task-list queue task)
   (with-mutex (request-queue-mutex queue)
@@ -84,14 +92,14 @@
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
       ["private:publish-diagnoses"
-        (let* ([predicator (lambda (task) (string=? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
       ["$/cancelRequest"
         (let* ([id (assq-ref (request-params request) 'id)]
             ;here, id is cancel target id
-            [predicator (lambda (task) (= id (request-id (tickal-task-request task))))]
+            [predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           ;must cancel in local thread.
           (when tickal-task 
@@ -99,7 +107,7 @@
             (potential-request-processor 
               (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
       ["textDocument/didChange"
-        (let* ([predicator (lambda (task) (string=? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when tickal-task
             (tickal-task-stop?-set! tickal-task #t))

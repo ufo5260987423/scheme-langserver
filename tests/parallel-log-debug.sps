@@ -4,10 +4,12 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 ;;to read log and reproduce similar action for debug
-(import (rnrs (6)) 
+(import (chezscheme) 
     (srfi :64 testing) 
     (scheme-langserver) 
-    (scheme-langserver util io) )
+    (scheme-langserver protocol server) 
+    (scheme-langserver util io)
+    (ufo-thread-pool))
 
 (test-begin "log-debug")
 (let loop ([lines (read-lines "~/ready-for-analyse.log")]
@@ -42,6 +44,7 @@
                 ; special for ss/scm enabled
                 ; [server-instance (init-server input-port output-port log-port #t #t)]
                 [server-instance (init-server input-port output-port log-port #t)])
+            (thread-pool-stop! (server-thread-pool server-instance))
             (test-equal #f (server-shutdown? server-instance)))
         ))
 (test-end)
