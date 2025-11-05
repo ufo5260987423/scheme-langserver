@@ -3,7 +3,7 @@
     make-request-queue
     request-queue-pop
     request-queue-push
-    await-request-queue-empty)
+    request-queue-empty?)
   (import 
     (chezscheme)
     (slib queue)
@@ -60,12 +60,8 @@
 
           new-task)))))
 
-(define (await-request-queue-empty queue)
-  (with-mutex (request-queue-mutex queue)
-    (do ()
-      ((not (queue-empty? (request-queue-queue queue)))
-        '())
-      (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))))
+(define (request-queue-empty? queue)
+  (queue-empty? (request-queue-queue queue)))
 
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
