@@ -150,15 +150,11 @@
         (construct-substitutions-for document)
         (except c 
           [(or (string? c) (symbol? c))
-            (pretty-print target-path)
-            (pretty-print 'workspace-error)
-            (pretty-print c)]
+            (warning 'init-warning0 target-path '(,c))]
+          [(condition? c)
+            (warning 'init-warning1 target-path `(,(condition-who c) ,(condition-message c) ,(condition-irritants c)))]
           [else 
-            (display-condition c)
-            (pretty-print target-path)
-            (pretty-print 'workspace-error)
-            (pretty-print `(format ,(condition-message c) ,@(condition-irritants c)))
-            '()])))
+            (error 'init-error target-path '())])))
     (document-refreshable?-set! document #f)))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)

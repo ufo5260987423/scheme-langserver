@@ -32,7 +32,6 @@
 (define (private:try-catch server-instance request)
   (let ([method (request-method request)]
       [id (request-id request)])
-    (pretty-print method)
     (try 
       (process-request server-instance request)
       (except c 
