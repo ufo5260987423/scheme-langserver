@@ -32,6 +32,7 @@
 (define (private:try-catch server-instance request)
   (let ([method (request-method request)]
       [id (request-id request)])
+    (pretty-print method)
     (try 
       (process-request server-instance request)
       (except c 
@@ -259,7 +260,9 @@
             (let loop ([request-message (read-message server-instance)])
               (cond 
                 [(null? request-message) '()]
-                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
+                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) 
+                  (server-shutdown?-set! server-instance #t)
+                  '()]
                 [(null? thread-pool) 
                   (request-processor request-message)
                   (loop (read-message server-instance))]
