@@ -67,7 +67,7 @@
       (send-message server-instance (fail-response id server-not-initialized "not initialized"))
       (case method
         ["initialize" (send-message server-instance (initialize server-instance id params))] 
-        ["initialized" (private:publish-diagnostics server-instance)] 
+        ["initialized" '()] 
         ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
 
         ["textDocument/didOpen" (did-open workspace params)]
@@ -245,7 +245,7 @@
                     (make-time 'time-duration 0 1)
                     (lambda () 
                       (request-queue-push request-queue (make-request '() "private:publish-diagnoses" '()) request-processor (server-workspace server-instance)))
-                    (lambda () #t)
+                    (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
                   '())])
             (if (not (null? thread-pool)) 
@@ -255,15 +255,18 @@
                   (lambda () 
                     (let loop ()
                       ((request-queue-pop request-queue request-processor))
-                      (loop))))))
+                      (if (not (and (server-shutdown? server-instance) (request-queue-empty? request-queue))) (loop)))))))
             (let loop ([request-message (read-message server-instance)])
               (cond 
                 [(null? request-message) '()]
-                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) '()]
+                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) 
+                  (server-shutdown?-set! server-instance #t)
+                  '()]
                 [(null? thread-pool) 
                   (request-processor request-message)
                   (loop (read-message server-instance))]
                 [else
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
-                  (loop (read-message server-instance))])))]))
+                  (loop (read-message server-instance))]))
+            server-instance)]))
 )

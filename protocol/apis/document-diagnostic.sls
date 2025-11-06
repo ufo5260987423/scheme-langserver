@@ -29,11 +29,13 @@
             (make-alist
               'uri (document-uri d)
               'diagnostics (private:document->diagnostic-vec d)))
-          (map file-node-document 
-            (map 
-              (lambda (s)
-                (walk-file (workspace-file-node workspace) s))
-              (workspace-undiagnosed-paths workspace))))])
+          (filter 
+            (lambda (d) (not (null? (document-diagnoses d))))
+            (map file-node-document 
+              (map 
+                (lambda (s)
+                  (walk-file (workspace-file-node workspace) s))
+                (workspace-undiagnosed-paths workspace)))))])
     (if (null? (workspace-mutex workspace))
       (workspace-undiagnosed-paths-set! workspace '())
       (with-mutex (workspace-mutex workspace)

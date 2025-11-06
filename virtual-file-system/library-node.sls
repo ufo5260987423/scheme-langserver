@@ -19,7 +19,30 @@
     (immutable name)
     (immutable parent)
     (mutable children)
-    (mutable file-nodes)))
+    (mutable file-nodes))
+  (protocol 
+    (lambda (new)
+      (case-lambda 
+        [(name parent children file-nodes) (new name parent children file-nodes)]
+        [(list-instance library-node virtual-file-node)
+          (if (null? list-instance)
+            (begin
+              (library-node-file-nodes-set! library-node (append (library-node-file-nodes library-node) `(,virtual-file-node)))
+              library-node)
+            (let* ([head (car list-instance)]
+                  [rest (cdr list-instance)]
+                  [child (find 
+                      (lambda (child-node) (equal? head (library-node-name child-node))) 
+                      (library-node-children library-node))])
+              (make-library-node
+                rest 
+                (if child
+                  child
+                  (let ([child (make-library-node head library-node '() '())])
+                    (library-node-children-set! library-node 
+                      (append (library-node-children library-node) `(,child)))
+                    child))
+                virtual-file-node)))]))))
 
 (define (library-node-name->string target-library-node)
   (cond 

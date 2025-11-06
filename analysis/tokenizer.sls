@@ -76,12 +76,7 @@
                   [rest (string-take-right source (- (string-length source) position l))]
                   [blank (make-string l #\space)])
                 (private:tolerant-parse->patch (string-append head blank rest)))]
-            [else 
-              (display-condition e)
-              (newline)
-              (pretty-print (condition-irritants e))
-              (pretty-print (car (condition-irritants e)))
-            (raise 'can-not-tolerant0)]))]
+            [else (warning 'tokenizer-warning1 "" `(,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]))]
         [(and (condition? e) (string? (caar (condition-irritants e))))
           (case (caar (condition-irritants e))
             [("unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
@@ -102,8 +97,8 @@
                   [what (vector-ref (list->vector (string->list source)) position)]
                   [rest (string-take-right source (- (string-length source) position 1))])
                 (private:tolerant-parse->patch (string-append head ")" rest)))]
-            [else (raise 'can-not-tolerant1)])]
-        [else (raise 'can-not-tolerant2)]))))
+            [else (warning 'tokenizer-warning2 "" `(,(condition-who e) ,(condition-message e) ,(condition-irritants e)))])]
+        [else (warning 'tokenizer-warning2 "" `(,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]))))
 
 (define source-file->annotations
   (case-lambda
@@ -125,14 +120,9 @@
                   (let ([after (private:tolerant-parse->patch source)])
                     (if (= (string-length after) (string-length source))
                       (source-file->annotations after path start-position #f)
-                      (raise 'can-not-tolerant)))]
-                [(condition? e) 
-                  (pretty-print `(format ,(condition-message e) ,@(condition-irritants e)))
-                  (pretty-print path)]
-                [else 
-                  (pretty-print e)
-                  (pretty-print path)
-                  '()]))))))))
+                      (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
+                [(condition? e) (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
+                [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]))))))))
 ;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
 ; consume
 ; #!/usr/bin/env scheme-script
