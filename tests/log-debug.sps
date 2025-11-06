@@ -8,6 +8,7 @@
   (chezscheme)
   (srfi :64 testing) 
   (scheme-langserver) 
+  (scheme-langserver protocol server) 
   (scheme-langserver util io) )
 
 (define (process result target)
