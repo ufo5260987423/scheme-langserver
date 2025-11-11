@@ -105,24 +105,27 @@
     ([path] (source-file->annotations (read-string path) path))
     ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t))
     ([source path start-position tolerant?]
-      (let ([port (open-string-input-port source)]
-          [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
-        (set-port-position! port start-position)
-        (filter annotation? 
-          (let loop ([position start-position])
-            (try
-              (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
-                (if (= position (port-position port))
-                  '()
-                  `(,ann . ,(loop (port-position port)))))
-              (except e
-                [(and tolerant? (condition? e))
-                  (let ([after (private:tolerant-parse->patch source)])
-                    (if (= (string-length after) (string-length source))
-                      (source-file->annotations after path start-position #f)
-                      (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
-                [(condition? e) (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
-                [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]))))))))
+      (if (file-exists? path)
+        (let ([port (open-string-input-port source)]
+            [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+          (set-port-position! port start-position)
+          (filter annotation? 
+            (let loop ([position start-position])
+              (try
+                (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
+                  (if (= position (port-position port))
+                    '()
+                    `(,ann . ,(loop (port-position port)))))
+                (except e
+                  [(and tolerant? (condition? e))
+                    (let ([after (private:tolerant-parse->patch source)])
+                      (if (= (string-length after) (string-length source))
+                        (source-file->annotations after path start-position #f)
+                        (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
+                  [(condition? e) (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
+                  [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))])))))
+          (warning 'no-such-file-warning path '())))))
+
 ;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
 ; consume
 ; #!/usr/bin/env scheme-script
