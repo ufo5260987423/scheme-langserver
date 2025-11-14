@@ -34,7 +34,7 @@ I do this open source work just in my spare time and I can contribute many splen
 I'll keep fixing bugs, profiling the code, and collecting information for my giant book on homemade type inference system. This will take me about 1 years. Further developments including a [VScode](https://code.visualstudio.com/) plugin and data flow analysis. But actually, I'm now setting this open source work a part-time job, and I can not guarantee a schedule.
 
 ## Release 
-2.0.2 Publish diagnoses, though now only can figure out "fail to find library".
+2.0.3 Fix wrongly pretty-print bugs, they mixtured with standard IO.
 
 Previous releases please refer to [this file](./doc/release-log.md).
 
