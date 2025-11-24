@@ -23,7 +23,7 @@
       (lambda ()
         (new (make-mutex) (make-condition) (make-queue) '())))))
 
-(define ticks 10000)
+(define ticks 100000)
 
 (define-record-type tickal-task 
   (fields 
