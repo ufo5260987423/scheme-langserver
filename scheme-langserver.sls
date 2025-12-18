@@ -248,12 +248,11 @@
                   (server-shutdown?-set! server-instance #t)
                   (thread-pool-stop! thread-pool)]
 
-                [(not request-message) '()]
+                [(not request-message) 
+                  (server-shutdown?-set! server-instance #t)]
                 [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) 
                   (server-shutdown?-set! server-instance #t)
-                  (if (and thread-pool debug?)
-                    (thread-pool-stop! thread-pool)
-                    '())]
+                  (if (and thread-pool debug?) (thread-pool-stop! thread-pool))]
                 [thread-pool
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
                   (loop (read-message server-instance))]
