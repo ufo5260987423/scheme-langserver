@@ -10,15 +10,16 @@
   ~a [option] ...
 
 Options:
-  -l, --log-path                Path to write log output (default: current-project-directory/.scheme-langserver.log)
-  -m, --multi-thread            Enable multi thread (default: enable).
+  -l, --log-path                Path to write log output. (default: current-project-directory/.scheme-langserver.log)
+  -m, --multi-thread            Enable multi thread. (default: enable)
 
-  -t, --type-inference          Enable type inference (default: enable).
+  -t, --type-inference          Enable type inference. (default: enable)
 
+  -h, --help                    Print help information.
 
-  -h, --help                    Print help information
+  -e, --top-environment         Switch between different top environments, for example R6RS, R7RS, s7, goldfish, etc.(default: R6RS)
 
-  -e, --top-environment         Switch to support different top environment, for example R6RS, R7RS, s7, goldfish, etc.(default: R6RS)
+  -d, --debug                   Enable debug mode. (default:disable)
 
 
 Example Usage:
@@ -29,6 +30,7 @@ Example Usage:
 (define default-multi-thread #t)
 (define default-type-inference #t)
 (define default-top-environment 'r6rs)
+(define default-debug #f)
 
 (define (make-default-options)
   (let ((ht (make-hashtable string-hash equal?)))
@@ -36,6 +38,7 @@ Example Usage:
     (hashtable-set! ht "multi-thread" default-multi-thread)
     (hashtable-set! ht "type-inference" default-type-inference)
     (hashtable-set! ht "top-environment" default-top-environment)
+    (hashtable-set! ht "debug" default-debug)
     ht))
 
 (define (log-path-proc option name arg seeds)
@@ -48,6 +51,14 @@ Example Usage:
       (hashtable-set! seeds "multi-thread" #t))
     ((string-ci=? arg "disable")
       (hashtable-set! seeds "multi-thread" #f)))
+  seeds)
+
+(define (debug-proc option name arg seeds)
+  (cond
+    ((string-ci=? arg "enable")
+      (hashtable-set! seeds "debug" #t))
+    ((string-ci=? arg "disable")
+      (hashtable-set! seeds "debug" #f)))
   seeds)
 
 (define (type-inference-proc option name arg seeds)
@@ -91,18 +102,20 @@ Example Usage:
            type-inference-proc)
     (option '(#\e "top-environment") #t #f
            top-environment-proc)
-))
+    (option '(#\d "debug") #t #f
+           debug-proc)))
 
-(let* ([args (args-fold
-              (command-line-arguments)
-              options
-              (lambda (opt name arg seeds)
-                (format (current-error-port) "Unrecognized option: ~a\n" name)
-                (display-help)
-                (exit 0))
-              (lambda (operand seeds)
-                seeds)
-              (make-default-options))])
+(let* ([args 
+        (args-fold
+          (command-line-arguments)
+          options
+          (lambda (opt name arg seeds)
+            (format (current-error-port) "Unrecognized option: ~a\n" name)
+            (display-help)
+            (exit 0))
+          (lambda (operand seeds)
+            seeds)
+          (make-default-options))])
   ;; TODO: use options
   ;; (apply init-server operands)
   (init-server

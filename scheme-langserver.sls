@@ -215,25 +215,11 @@
             #f
             #f
             'r6rs)]
-        [(log-path enable-multi-thread?) 
-          (init-server log-path enable-multi-thread? #f)]
-        [(log-path enable-multi-thread? type-inference?)
-          (init-server 
-            (standard-input-port) 
-            (standard-output-port) 
-            (open-file-output-port 
-              log-path 
-              (file-options replace) 
-              'block 
-              (make-transcoder (utf-8-codec))) 
-            (equal? enable-multi-thread? "enable")
-            (equal? type-inference? "enable")
-            'r6rs)]
-        [(input-port output-port log-port enable-multi-thread?) 
-          (init-server input-port output-port log-port enable-multi-thread? #f 'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference?) 
           (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment)
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs #f)]
+        [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug?)
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) '())]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
