@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
-;; Copyright (c) 2022 WANG Zheng
+;; Copyright (c) 2022-NOW WANG Zheng
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
@@ -13,7 +13,7 @@
     (scheme-langserver analysis tokenizer))
 
 (test-begin "read ss")
-    (test-equal 14 (length (source-file->annotations "./run.ss")))
+    (test-equal 16 (length (source-file->annotations "./run.ss")))
 (test-end)
 
 (test-begin "read sps")

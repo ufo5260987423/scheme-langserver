@@ -221,8 +221,8 @@
           (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs #f)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug?)
           ;The thread-pool size just limits how many threads to process requests;
-          (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) '())]
-              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) '())]
+          (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) #f)]
+              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) #f)]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
               [request-processor (lambda (r) (private:try-catch server-instance r))]
               [interval-timer 
@@ -233,26 +233,32 @@
                       (request-queue-push request-queue (make-request '() "private:publish-diagnoses" '()) request-processor (server-workspace server-instance)))
                     (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
-                  '())])
-            (if (not (null? thread-pool)) 
-              (begin 
-                (start-timer interval-timer)
-                (thread-pool-add-job thread-pool 
-                  (lambda () 
-                    (let loop ()
-                      ((request-queue-pop request-queue request-processor))
-                      (if (not (and (server-shutdown? server-instance) (request-queue-empty? request-queue))) (loop)))))))
+                  #f)])
+            (when thread-pool
+              (start-timer interval-timer)
+              (thread-pool-add-job thread-pool 
+                (lambda () 
+                  (let loop ()
+                    ((request-queue-pop request-queue request-processor))
+                    (if (not (and (server-shutdown? server-instance) (request-queue-empty? request-queue))) (loop))))))
             (let loop ([request-message (read-message server-instance)])
               (cond 
-                [(null? request-message) '()]
+                ;in case of specific parallel-log-debug.sps trouble
+                [(and debug? thread-pool (not request-message)) 
+                  (server-shutdown?-set! server-instance #t)
+                  (thread-pool-stop! thread-pool)]
+
+                [(not request-message) '()]
                 [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) 
                   (server-shutdown?-set! server-instance #t)
-                  '()]
-                [(null? thread-pool) 
-                  (request-processor request-message)
+                  (if (and thread-pool debug?)
+                    (thread-pool-stop! thread-pool)
+                    '())]
+                [thread-pool
+                  (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
                   (loop (read-message server-instance))]
                 [else
-                  (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
+                  (request-processor request-message)
                   (loop (read-message server-instance))]))
             server-instance)]))
 )

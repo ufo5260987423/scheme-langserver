@@ -9,7 +9,9 @@
     (scheme-langserver) 
     (scheme-langserver protocol server) 
     (scheme-langserver util io)
-    (ufo-thread-pool))
+    (ufo-thread-pool)
+    (ufo-try)
+    )
 
 (test-begin "log-debug")
 (let loop ([lines (read-lines "~/ready-for-analyse.log")]
@@ -41,10 +43,7 @@
         (let* ([input-port (open-bytevector-input-port (string->utf8 (apply string-append result)))]
                 [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
                 [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-                ; special for ss/scm enabled
-                ; [server-instance (init-server input-port output-port log-port #t #t)]
-                [server-instance (init-server input-port output-port log-port #t)])
-            (thread-pool-stop! (server-thread-pool server-instance))
+                [server-instance (init-server input-port output-port log-port #t #t 'r6rs #t)])
             (test-equal #f (server-shutdown? server-instance)))
         ))
 (test-end)

@@ -30,7 +30,7 @@
         (do-log-timestamp  server-instance)
         (do-log json-content server-instance)
         (if (equal? "" json-content)
-            '()
+            #f
             (parse-content json-content))))
 
 ;; header

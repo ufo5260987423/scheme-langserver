@@ -49,7 +49,7 @@
             output-port 
             log-port 
             thread-pool
-            (if (null? thread-pool) '() (make-mutex))
+            (if thread-pool (make-mutex) '())
             request-queue
             type-inference?
             workspace
@@ -63,7 +63,7 @@
             output-port 
             log-port 
             thread-pool
-            (if (null? thread-pool) '() (make-mutex))
+            (if thread-pool (make-mutex) '())
             request-queue
             type-inference?
             workspace
