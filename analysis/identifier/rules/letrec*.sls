@@ -21,10 +21,8 @@
       [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
-              (index-node-excluded-references-set! identifier-parent-index-node exclude-list)
-              extended-exclude-list))
+            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))])
+              (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable)))
           '()
           (reverse (index-node-children (cadr (index-node-children index-node)))))]
       [else '()])))

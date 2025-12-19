@@ -19,56 +19,63 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [(_ (? symbol? loop-identifier) () fuzzy ... ) 
-        (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)]
-      [(_ (? symbol? loop-identifier) (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
+      [(_ (? symbol? loop-identifier) (fuzzy0 **1) fuzzy ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
             (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list 
-                  (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
-              (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
+                [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable)]
+                [extended-exclude-list (append exclude-list target-identifier-reference)])
+              (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list))
               extended-exclude-list))
           (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)
-          (index-node-children (caddr (index-node-children index-node))))]
-      [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
+          (filter 
+            (lambda (i) (not (null? (index-node-children i))))
+            (index-node-children (caddr (index-node-children index-node)))))]
+      [(_ (? symbol? loop-identifier) fuzzy **1 ) 
+        (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)]
+      [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
             (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list 
-                  (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
-              (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
+                [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable)]
+                [extended-exclude-list (append exclude-list target-identifier-reference)])
+              (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list))
               extended-exclude-list))
           '()
-          (index-node-children (cadr (index-node-children index-node))))]
+          (filter 
+            (lambda (i) (not (null? (index-node-children i)))) 
+            (index-node-children (cadr (index-node-children index-node)))))]
       [else '()])))
 
 (define (let-parameter-process initialization-index-node index-node let-node exclude document type)
   (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [reference 
-        (make-identifier-reference
-          expression
-          document
-          index-node
-          initialization-index-node
-          '()
-          type
-          '()
-          '())])
-    (index-node-references-export-to-other-node-set! 
-      index-node
-      (append 
-        (index-node-references-export-to-other-node index-node)
-          `(,reference)))
+      [expression (annotation-stripped ann)])
+    (if (not (symbol? expression))
+      '()
+      (let (
+        [reference 
+          (make-identifier-reference
+            expression
+            document
+            index-node
+            initialization-index-node
+            '()
+            type
+            '()
+            '())])
+      (index-node-references-export-to-other-node-set! 
+        index-node
+        (append 
+          (index-node-references-export-to-other-node index-node)
+            `(,reference)))
 
-    (append-references-into-ordered-references-for document let-node `(,reference))
+      (append-references-into-ordered-references-for document let-node `(,reference))
 
-    ; (index-node-excluded-references-set! 
-    ;   (index-node-parent index-node)
-    ;   (append 
-    ;     (index-node-excluded-references (index-node-parent index-node))
-    ;     exclude))
+      ; (index-node-excluded-references-set! 
+      ;   (index-node-parent index-node)
+      ;   (append 
+      ;     (index-node-excluded-references (index-node-parent index-node))
+      ;     exclude))
 
-    `(,reference)))
+      `(,reference)))))
 )

@@ -18,14 +18,15 @@
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
+      [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
             (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
-              (index-node-excluded-references-set! identifier-parent-index-node extended-exclude-list)
-              extended-exclude-list))
+                [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable)])
+              (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) target-identifier-reference))))
           '()
-          (reverse (index-node-children (cadr (index-node-children index-node)))))]
+          (filter 
+            (lambda (i) (not (null? (index-node-children i)))) 
+            (reverse (index-node-children (cadr (index-node-children index-node))))))]
       [else '()])))
 )
