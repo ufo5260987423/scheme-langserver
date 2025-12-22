@@ -23,7 +23,7 @@
           (fold-left 
             (lambda (exclude-list identifier-parent-index-node)
               (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                  [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node exclude-list document type)]
+                  [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
                   [extended-exclude-list (append exclude-list target-identifier-reference)])
                 (index-node-excluded-references-set! (cadr (index-node-children index-node)) extended-exclude-list)
                 extended-exclude-list))
@@ -43,18 +43,18 @@
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
             (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
+                [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
               (index-node-excluded-references-set! (caddr (index-node-children index-node)) extended-exclude-list)
               extended-exclude-list))
-          (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)
+          (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
           (filter 
             (lambda (i) (not (null? (index-node-children i))))
             (index-node-children (caddr (index-node-children index-node)))))]
       [(_ (? symbol? loop-identifier) fuzzy **1 ) 
-        (let-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document 'procedure)]
+        (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)]
       [else ((generate-naive-let-process-with 'variable) root-file-node root-library-node document index-node)])))
 
-(define (let-parameter-process initialization-index-node index-node let-node exclude document type)
+(define (let-parameter-process initialization-index-node index-node let-node document type)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (if (not (symbol? expression))
@@ -77,12 +77,6 @@
             `(,reference)))
 
       (append-references-into-ordered-references-for document let-node `(,reference))
-
-      ; (index-node-excluded-references-set! 
-      ;   (index-node-parent index-node)
-      ;   (append 
-      ;     (index-node-excluded-references (index-node-parent index-node))
-      ;     exclude))
 
       `(,reference)))))
 )

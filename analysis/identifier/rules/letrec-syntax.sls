@@ -22,9 +22,10 @@
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
             (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node exclude-list document 'syntax-variable)]
+                [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document 'syntax-variable)]
                 [extended-exclude-list (append exclude-list target-identifier-reference)])
-              (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) exclude-list))
+              (index-node-excluded-references-set! (cadr (index-node-children index-node)) exclude-list)
+              (append-references-into-ordered-references-for document identifier-index-node target-identifier-reference)
               extended-exclude-list))
           '()
           (filter 

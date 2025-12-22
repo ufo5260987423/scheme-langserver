@@ -23,7 +23,7 @@
           (lambda (exclude-list identifier-parent-index-node)
             (fold-left 
               (lambda (exclude-list identifier-index-node)
-                (let ([extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node exclude-list document 'continuation))])
+                (let ([extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'continuation))])
                   (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
                   extended-exclude-list))
               exclude-list
