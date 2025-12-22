@@ -27,6 +27,8 @@
               (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list))
               extended-exclude-list))
           '()
-          (index-node-children (cadr (index-node-children index-node))))]
+          (filter 
+            (lambda (i) (not (null? (index-node-children i)))) 
+            (index-node-children (cadr (index-node-children index-node)))))]
       [else '()])))
 )
