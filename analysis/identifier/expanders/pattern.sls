@@ -10,7 +10,8 @@
     context:ellipsed?)
   (import 
     (chezscheme)
-    (scheme-langserver util contain))
+    (scheme-langserver util contain)
+    (scheme-langserver util sub-list))
 
 (define-record-type pattern 
   (fields 
@@ -40,7 +41,7 @@
           [(pair? successed-matched-pattern-expression) 
             (let ([p
                   (new 
-                    (let loop [rest successed-matched-pattern-expression] 
+                    (let loop ([rest successed-matched-pattern-expression])
                       (if (pair? rest)
                         (if (equal? '... (car rest)) 
                           'ellipse-pair-form
@@ -66,20 +67,21 @@
           [else (new 'equal?-datum successed-matched-pattern-expression '() #f)])))))
 
 (define (gather-context pattern)
-  (case pattern-type
+  (case (pattern-type pattern)
     [pattern-variable/literal-identifier `((,(pattern-content pattern) . ,pattern))]
     [(ellipse-list-form list-form ellipse-vector-form vector-form ellipse-pair-form pair-form) (apply append (map gather-context (pattern-children pattern)))]
     [else '()]))
 
 (define (context:ellipsed? context pattern-variable/literal-identifier)
-  (let ([p (assoc pattern-variable/literal-identifier context)])
+  (let* ([v-p (assoc pattern-variable/literal-identifier context)]
+      [p (cdr v-p)])
     (if p
       (let loop ([current-pattern p] [parent-pattern (pattern-parent p)])
         (cond
           [(not parent-pattern) #f]
           [(contain? '(ellipse-list-form ellipse-vector-form ellipse-pair-form) (pattern-type parent-pattern)) 
-            (let ([rest (memq current-pattern (pattern-children parent-pattern))])
-              (if rest
+            (let ([rest (list-after (pattern-children parent-pattern) current-pattern)])
+              (if (not (null? rest))
                 (equal? 'ellipse (pattern-type (car rest)))
                 #f))]
           [else (loop parent-pattern (pattern-parent parent-pattern))]))
