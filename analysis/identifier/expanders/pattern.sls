@@ -75,15 +75,19 @@
 (define (context:ellipsed? context pattern-variable/literal-identifier)
   (let* ([v-p (assoc pattern-variable/literal-identifier context)]
       [p (cdr v-p)])
-    (if p
-      (let loop ([current-pattern p] [parent-pattern (pattern-parent p)])
-        (cond
-          [(not parent-pattern) #f]
-          [(contain? '(ellipse-list-form ellipse-vector-form ellipse-pair-form) (pattern-type parent-pattern)) 
-            (let ([rest (list-after (pattern-children parent-pattern) current-pattern)])
-              (if (not (null? rest))
-                (equal? 'ellipse (pattern-type (car rest)))
-                #f))]
-          [else (loop parent-pattern (pattern-parent parent-pattern))]))
-      #f)))
+    (private:pattern-ellipsed? p)))
+
+(define (private:pattern-ellipsed? pattern)
+  (cond 
+    [(not pattern) #f]
+    [(not (pattern-parent pattern)) #f]
+    [(contain? '(ellipse-list-form ellipse-vector-form ellipse-pair-form) (pattern-type (pattern-parent pattern)))
+        (let* ([parent (pattern-parent pattern)]
+            [rest (list-after (pattern-children parent) pattern)])
+          (if (not (null? rest))
+            (if (equal? 'ellipse (pattern-type (car rest)))
+              #t
+              (private:pattern-ellipsed? parent))
+            #f))]
+    [else #f]))
 )
