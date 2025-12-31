@@ -42,6 +42,14 @@
                   [what (vector-ref (list->vector (string->list source)) position)]
                   [rest (string-take-right source (- (string-length source) position 1))])
                 (private:tolerant-parse->patch (string-append head " " rest)))]
+            ["invalid syntax #!~a" 
+              (let* ([position (caddr (condition-irritants e))]
+                  [head (if (zero? position) "" (string-take source position))]
+                  [what (caadr (condition-irritants e))]
+                  [l 2]
+                  [rest (string-take-right source (- (string-length source) position l))]
+                  [blank (make-string l #\space)])
+                (private:tolerant-parse->patch (string-append head blank rest)))]
             ["invalid character name #\\~a" 
               (let* ([position (- (caddr (condition-irritants e)) 2)]
                   [head (if (zero? position) "" (string-take source position))]
