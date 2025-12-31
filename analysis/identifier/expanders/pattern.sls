@@ -66,6 +66,31 @@
               p)]
           [else (new 'equal?-datum successed-matched-pattern-expression '() #f)])))))
 
+;the pattern must match the index-node.
+(define (capture-form pattern index-node)
+  (let ([p-c (pattern-children pattern)]
+      [i-c (index-node-children index-node)])
+    `((,pattern . ,index-node) . 
+      ,(let loop ([rest-patterns p-c] [rest-index-nodes i-c])
+          (cond 
+            [(null? rest-patterns) '()]
+            [(null? rest-index-nodes) (raise 'step-back)]
+            [else 
+              (case (pattern-type (car rest-patterns))
+                [underscore (loop (cdr rest-patterns) (cdr rest-index-nodes))]
+                [ellipse 
+                  (try 
+                    (loop (cdr rest-patterns) rest-index-nodes)
+                    (except c
+                      [else (raise 'step-forward)]))]
+                [else
+                  `(,@(capture-form (car rest-patterns) (car rest-index-nodes)) . 
+                    ,(try
+                      (loop (cdr rest-patterns) (cdr rest-index-nodes))
+                      (except c
+                        [(equal? c 'step-forward) (loop (rest-patterns (cdr rest-index-nodes)))]
+                        [else (raise 'step-back)])))])])))))
+
 (define (gather-context pattern)
   (case (pattern-type pattern)
     [pattern-variable/literal-identifier `((,(pattern-content pattern) . ,pattern))]
