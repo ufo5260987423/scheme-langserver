@@ -123,7 +123,7 @@
                         (source-file->annotations after path start-position #f)
                         (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
                   [(condition? e) (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
-                  [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))])))))
+                  [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant?))])))))
           (warning 'no-such-file-warning path '())))))
 
 ;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280

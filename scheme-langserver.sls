@@ -37,7 +37,7 @@
       (except c 
         [(condition? c) 
           (do-log 
-            (string-append "error: " (with-output-to-string (lambda () (pretty-print `(format ,(condition-message c) ,@(condition-irritants c))))))
+            (string-append "error: " (with-output-to-string (lambda () (pretty-print `(,(condition-message c) ,@(condition-irritants c))))))
             server-instance)
           (do-log-timestamp server-instance)
           (send-message server-instance (fail-response id unknown-error-code method))]
