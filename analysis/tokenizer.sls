@@ -46,7 +46,6 @@
             ["expected one item after dot (.)" 
               (let* ([position (caddr (condition-irritants e))]
                   [head (if (zero? position) "" (string-take source position))]
-                  [what (caadr (condition-irritants e))]
                   [l 1]
                   [rest (string-take-right source (- (string-length source) position l))]
                   [blank (make-string l #\space)])
@@ -54,7 +53,6 @@
             ["more than one item found after dot (.)" 
               (let* ([position (caddr (condition-irritants e))]
                   [head (if (zero? position) "" (string-take source position))]
-                  [what (caadr (condition-irritants e))]
                   [l 1]
                   [rest (string-take-right source (- (string-length source) position l))]
                   [blank (make-string l #\space)])
@@ -63,7 +61,6 @@
             ["invalid syntax #!~a" 
               (let* ([position (caddr (condition-irritants e))]
                   [head (if (zero? position) "" (string-take source position))]
-                  [what (caadr (condition-irritants e))]
                   [l 2]
                   [rest (string-take-right source (- (string-length source) position l))]
                   [blank (make-string l #\space)])
