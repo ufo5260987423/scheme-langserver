@@ -74,9 +74,7 @@
 (define (pattern+index-node->pair-list pattern index-node)
   `((,pattern . ,index-node) .
     ,(let ([p-c (pattern-children pattern)]
-        [i-c (index-node-children index-node)]
-        [p-p (pattern-parent pattern)]
-        [i-p (index-node-parent index-node)])
+        [i-c (index-node-children index-node)])
       (case (pattern-type pattern)
         [(list-form vector-form pair-form)
           (let loop ([rest-patterns p-c] [rest-index-nodes i-c])
@@ -86,19 +84,20 @@
         [(ellipse-list-form ellipse-vector-form ellipse-pair-form)
           (let loop (
               [rest-patterns (reverse p-c)] 
-              [rest-index-nodes (reverse i-c)]
-              [current-result '()])
+              [rest-index-nodes (reverse i-c)])
             (case (pattern-type (car rest-patterns))
               [ellipse 
                 (let curr-loop ([head-patterns (reverse (cddr rest-patterns))]
                     [head-index-nodes (reverse rest-index-nodes)])
                   (if (null? head-patterns)
-                    (map 
-                      (lambda (i) `(,(cadr rest-patterns) . ,i))
-                      head-index-nodes)
-                    `(,@(pattern+index-node->pair-list (car head-patterns) (car head-index-nodes)) ,@(curr-loop (cdr head-patterns) (cdr head-index-nodes)) . , current-result)))]
+                    (apply append 
+                      (map 
+                        (lambda (i) (pattern+index-node->pair-list (cadr rest-patterns) i))
+                        head-index-nodes))
+                    `(,@(pattern+index-node->pair-list (car head-patterns) (car head-index-nodes)) . ,(curr-loop (cdr head-patterns) (cdr head-index-nodes)))))]
               [else 
-                (loop (cdr rest-patterns) (cdr rest-index-nodes) `(,@(pattern+index-node->pair-list (car rest-patterns) (car rest-index-nodes)) . ,current-result))]))]
+                `(,@(loop (cdr rest-patterns) (cdr rest-index-nodes)) .
+                  ,(pattern+index-node->pair-list (car rest-patterns) (car rest-index-nodes)))]))]
         [else '()]))))
 
 (define (gather-context pattern)

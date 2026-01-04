@@ -41,7 +41,10 @@
             [pattern-expression '(match atom (pat . body) ...)]
             [pattern (make-pattern pattern-expression)]
             [context (gather-context pattern)])
-      ; (pretty-print (map (lambda (p) `(,(pattern-content (car p)) . ,(annotation-stripped (index-node-datum/annotations (cdr p)))))))
+      ; (pretty-print 
+      ;   (map 
+      ;     (lambda (p) `(,(pattern-content (car p)) . ,(annotation-stripped (index-node-datum/annotations (cdr p)))))
+      ;     (pattern+index-node->pair-list pattern index-node)))
       (test-equal 
         (map (lambda (p) `(,(pattern-content (car p)) . ,(annotation-stripped (index-node-datum/annotations (cdr p))))) (pattern+index-node->pair-list pattern index-node))
         '(((match atom [pat . body] ...)
@@ -67,9 +70,7 @@
           (lambda (i) (not (null? (index-node-children i))))
           (index-node-children
             (cadr (index-node-children index-node))))))
-    (else '()))
-    (match . match)
-    (atom . expression)
+    (else '())) (match . match) (atom . expression)
     ((pat . body)
       (_ (fuzzy0 **1) fuzzy1 ...)
       (fold-left
@@ -91,6 +92,29 @@
           (lambda (i) (not (null? (index-node-children i))))
           (index-node-children
             (cadr (index-node-children index-node))))))
-    ((pat . body) else '()))))
+    (pat _ (fuzzy0 **1) fuzzy1 ...)
+    (body
+      fold-left
+      (lambda (exclude-list identifier-parent-index-node)
+        (let* ([identifier-index-node (car (index-node-children
+                                            identifier-parent-index-node))]
+              [target-identifier-reference (let-parameter-process index-node
+                                              identifier-index-node
+                                              index-node document type)]
+              [extended-exclude-list (append
+                                        exclude-list
+                                        target-identifier-reference)])
+          (index-node-excluded-references-set!
+            (cadr (index-node-children index-node))
+            extended-exclude-list)
+          extended-exclude-list))
+      '()
+      (filter
+        (lambda (i) (not (null? (index-node-children i))))
+        (index-node-children
+          (cadr (index-node-children index-node)))))
+    ((pat . body) else '()) 
+    (pat . else) 
+    (body quote ()))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
