@@ -17,6 +17,12 @@
 
     (scheme-langserver virtual-file-system index-node))
 
+;This is based on a rough idea that R6RS syntax-rules and syntax-case mainly consist of patterns and templates. 
+;Considering with the incomplete code faced by scheme-langserver, it's necessarey to facilatate some fault tolerante features as followings:
+;First, patterns are supposed to be strictly correct.
+;Second, templates are not supposed to be strictly correct and this will give some tolerance. 
+;Or in other words, though R6RS says the template is literalliy a pattern variable, here we can't just do so.
+
 (define-record-type pattern 
   (fields 
 ;r6rs 11.19
@@ -70,6 +76,59 @@
               p)]
           [else (new 'equal?-datum successed-matched-pattern-expression '() #f)])))))
 
+; (define (fuzzy context pair-list) '())
+
+; (define (pattern+template->generator pattern template)
+;   (case (pattern-type template)
+;     [underscore fuzzy]
+;     [(list-form vector-form pair-form)
+;       (lambda (context pair-list) 
+;         (let ([r (map (lambda (child) ((pattern+template->generator child) context pair-list)) (pattern-children template))])
+;           (case (pattern-type template)
+;             [list-form r]
+;             [vector-form (list->vector r)]
+;             [pair-form `(,@(reverse (cdr (reverse r))) . ,(car (reverse r)))])))]
+;     [ellipse-list-form 
+;       (lambda (context pair-list) 
+;       ;Here, we need to be ready for sequentially subtemplates processing.
+;         (let* ([children-vector (list->vector (pattern-children template))]
+;             [l (vector-length children-vector)])
+;           (let loop ([i 0])
+;             (cond 
+;               [(< (+ 1 i) l)
+;                 (if (equal? 'ellipse (pattern-type (vector-ref children-vector (+ 1 i))))
+;                   ;process subtemplate
+;                   `()
+;                   `(,((pattern+template->generator pattern (vector-ref children-vector i)) context pair-list) . ,((loop (+ 1 i)) context pair-list)))]
+;               [(< i l)
+;                 `(,(pattern+template->generator pattern (vector-ref children-vector i)))]
+;               [else fuzzy]))))]
+;     [pattern-variable/literal-identifier 
+;       (lambda (context pair-list)
+;         (let ([target-pattern (assoc context (pattern-content template))])
+;           (if target-pattern
+;             (let ([result (find (lambda (p) (equal? (car target-pattern) p)) pair-list)])
+;               (if result
+;                 (cdr result)
+;                 (pattern-content template)))
+;             (pattern-content template))))]
+;     [else fuzzy]))
+
+; (define (private:subtemplate->generator ellipsed-pattern context pair-list)
+;   (case (pattern-type ellipsed-pattern)
+;     (pattern-variable/literal-identifier 
+;       (lambda (context pair-list)
+;         (let* ([target-pattern (assoc context (pattern-content template))])
+;           (if target-pattern
+;             (let ([result (find (lambda (p) (equal? (car target-pattern) p)) pair-list)])
+;               (if result
+;                 (cdr result)
+;                 (pattern-content template)))
+;             (pattern-content template))))
+;     )
+;   )
+; )
+
 ;the pattern must match the index-node.
 (define (pattern+index-node->pair-list pattern index-node)
   `((,pattern . ,index-node) .
@@ -109,7 +168,21 @@
 (define (context:ellipsed? context pattern-variable/literal-identifier)
   (let* ([v-p (assoc pattern-variable/literal-identifier context)]
       [p (cdr v-p)])
-    (private:pattern-ellipsed? p)))
+    (recursive:pattern-ellipsed? p)))
+
+(define (recursive:pattern-ellipsed? pattern)
+  (cond 
+    [(not pattern) #f]
+    [(not (pattern-parent pattern)) #f]
+    [(private:pattern-ellipsed? pattern) #t]
+    [else (recursive:pattern-ellipsed? (pattern-parent pattern))]))
+
+(define (private:count-ellipse-level pattern)
+  (cond 
+    [(not pattern) 0]
+    [(not (pattern-parent pattern)) 0]
+    [(private:pattern-ellipsed? pattern) (+ 1 (private:count-ellipse-level (pattern-parent pattern)))]
+    [else (+ 0 (private:count-ellipse-level (pattern-parent pattern)))]))
 
 (define (private:pattern-ellipsed? pattern)
   (cond 
@@ -119,9 +192,7 @@
       (let* ([parent (pattern-parent pattern)]
           [rest (list-after (pattern-children parent) pattern)])
         (if (not (null? rest))
-          (if (equal? 'ellipse (pattern-type (car rest)))
-            #t
-            (private:pattern-ellipsed? parent))
+          (equal? 'ellipse (pattern-type (car rest)))
           #f))]
-    [else (private:pattern-ellipsed? (pattern-parent pattern))]))
+    [else #f]))
 )

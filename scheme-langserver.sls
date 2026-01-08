@@ -43,7 +43,7 @@
           (send-message server-instance (fail-response id unknown-error-code method))]
         [else 
           (do-log 
-            (with-output-to-string (lambda () (pretty-print c)))
+            (string-append "error: " (with-output-to-string (lambda () (pretty-print c))))
             server-instance)
           (do-log-timestamp server-instance) 
           (send-message server-instance (fail-response id unknown-error-code method))]))))
