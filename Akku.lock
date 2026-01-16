@@ -72,6 +72,11 @@
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.4_repack.tar.xz"))
   (content
    (sha256 "bbcafe03f57784e85c6a37b99d678670a93c464df2bc14d576e2e608519f90a3")))
+ ((name "ufo-coroutines")
+  (location
+   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-coroutines_1.0.3_repack.tar.xz"))
+  (content
+   (sha256 "16b8aa3a449ba4cc91bd435ad0a97be9776c9dca24323b31f7f64e1f68c4b342")))
  ((name "ufo-timer")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-timer_1.0.0_repack.tar.xz"))

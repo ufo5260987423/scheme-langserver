@@ -12,6 +12,7 @@
     pattern+index-node->pair-list)
   (import 
     (chezscheme)
+    (ufo-coroutines)
     (scheme-langserver util contain)
     (scheme-langserver util sub-list)
 
@@ -116,7 +117,7 @@
 
 ; (define (private:subtemplate->generator ellipsed-pattern context pair-list)
 ;   (case (pattern-type ellipsed-pattern)
-;     (pattern-variable/literal-identifier 
+;     [pattern-variable/literal-identifier 
 ;       (lambda (context pair-list)
 ;         (let* ([target-pattern (assoc context (pattern-content template))])
 ;           (if target-pattern
@@ -125,9 +126,55 @@
 ;                 (cdr result)
 ;                 (pattern-content template)))
 ;             (pattern-content template))))
-;     )
+;     ]
 ;   )
 ; )
+
+(define (pattern->generator-pairs pattern)
+  (lambda (pair-list)
+    (if (recursive:pattern-ellipsed? pattern)
+      (let* ([ancestor-vector (list->vector (private:ancestors pattern))]
+          [pair-vector (list->vector pair-list)]
+          [max-i (vector-length pair-vector)]
+          [max-j (vector-length ancestor-vector)])
+        (let loop ([i 1] [j 1])
+          (cond 
+            [(= i max-i) '()]
+
+            ;(= j (- max-j 1)) appends result whether its equal condition is satisfied.
+            [(and 
+                (= j (- max-j 1))
+                (equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
+              `(,(cdr (vector-ref pair-vector i)) . ,(loop (+ 1 i) j))]
+            [(and 
+                (= j (- max-j 1))
+                (recursive:ancestor? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
+              `(... . ,(loop i 1))]
+            ;todo
+            ; [(= j (- max-j 1))]
+
+            ;(= j (- max-j 1)) doesn't work
+            [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
+            [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j))]
+
+            [(recursive:ancestor? (vector-ref ancestor-vector 1) (car (vector-ref pair-vector i)))
+            ]
+
+            [else (loop (+ 1 i) 1)])))))
+      (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
+        (lambda () t)))
+
+(define (private:ancestors pattern)
+  (if (pattern? pattern)
+    `(,@(private:ancestors (pattern-parent pattern)) ,pattern)
+    '()))
+
+(define (recursive:ancestor? ancestor child)
+  (cond 
+    [(not (pattern? ancestor)) #f]
+    [(not (pattern? child)) #f]
+    [(equal? ancestor (pattern-parent child)) #t]
+    [else (recursive:ancestor? ancestor (pattern-parent child))]))
 
 ;the pattern must match the index-node.
 (define (pattern+index-node->pair-list pattern index-node)
