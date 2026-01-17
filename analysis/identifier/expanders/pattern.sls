@@ -131,35 +131,40 @@
 ; )
 
 ;suppose pattern-type is pattern-variable/literal-identifier 
-(define (pattern->generator-pairs pattern)
-  (lambda (pair-list)
-    (if (recursive:pattern-ellipsed? pattern)
+(define (pattern->pairs->generator pattern)
+  (if (recursive:pattern-ellipsed? pattern)
+    (lambda (pair-list)
       (let* ([ancestor-vector (list->vector (private:ancestors pattern))]
           [pair-vector (list->vector pair-list)]
           [max-i (vector-length pair-vector)]
           [max-j (vector-length ancestor-vector)])
-        (let loop ([i 1] [j 1])
-          (cond 
-            [(= i max-i) '()]
+        (init-coroutine
+          (lambda (yield)
+            (let loop ([i 1] [j 1])
+              (cond 
+                [(= i max-i) (yield '())]
 
-            ;(= j (- max-j 1)) appends result whether its equal condition is satisfied.
-            [(and 
-                (= j (- max-j 1))
-                (equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
-              `(,(cdr (vector-ref pair-vector i)) . ,(loop (+ 1 i) j))]
-            [(and 
-                (= j (- max-j 1))
-                (recursive:ancestor? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
-              `(... . ,(loop i 1))]
-            [(= j (- max-j 1)) (loop (+ 1 i) 1)]
+                ;(= j (- max-j 1)) appends result whether its equal condition is satisfied.
+                [(and 
+                    (= j (- max-j 1))
+                    (equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
+                  (yield (cdr (vector-ref pair-vector i)))
+                  (loop (+ 1 i) j)]
+                [(and 
+                    (= j (- max-j 1))
+                    (recursive:ancestor? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
+                  (yield '...)
+                  (loop i 1)]
+                [(= j (- max-j 1)) (loop (+ 1 i) 1)]
 
-            ;(= j (- max-j 1)) doesn't work
-            [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j))]
-            [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
+                ;(= j (- max-j 1)) doesn't work
+                [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j))]
+                [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
 
-            [else (loop (+ 1 i) 1)])))))
+                [else (loop (+ 1 i) 1)])))))))
+    (lambda (pair-list)
       (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
-        (lambda () t)))
+        (lambda () t))))
 
 (define (private:ancestors pattern)
   (if (pattern? pattern)
