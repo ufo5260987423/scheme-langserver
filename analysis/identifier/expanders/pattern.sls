@@ -130,6 +130,7 @@
 ;   )
 ; )
 
+;suppose pattern-type is pattern-variable/literal-identifier 
 (define (pattern->generator-pairs pattern)
   (lambda (pair-list)
     (if (recursive:pattern-ellipsed? pattern)
@@ -150,15 +151,11 @@
                 (= j (- max-j 1))
                 (recursive:ancestor? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
               `(... . ,(loop i 1))]
-            ;todo
-            ; [(= j (- max-j 1))]
+            [(= j (- max-j 1)) (loop (+ 1 i) 1)]
 
             ;(= j (- max-j 1)) doesn't work
-            [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
             [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j))]
-
-            [(recursive:ancestor? (vector-ref ancestor-vector 1) (car (vector-ref pair-vector i)))
-            ]
+            [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
 
             [else (loop (+ 1 i) 1)])))))
       (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
