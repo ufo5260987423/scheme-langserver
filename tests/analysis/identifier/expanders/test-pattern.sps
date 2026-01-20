@@ -117,4 +117,32 @@
     (pat . else) 
     (body quote ()))))
 (test-end)
+
+(test-begin "pattern->pairs->generator")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/analysis/identifier/rules/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
+            [document (file-node-document target-file-node)]
+            [text (document-text document)]
+            [index-node-list (document-index-node-list document)]
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [expression (annotation-stripped (index-node-datum/annotations index-node))]
+            [pattern-expression '(match atom (pat . body) ...)]
+            [pattern (make-pattern pattern-expression)]
+            [context (gather-context pattern)]
+            [pairs (pattern+index-node->pair-list pattern index-node)]
+            [pat-pattern (cdr (assoc 'pat context))]
+            [generator ((pattern->pairs->generator pat-pattern) pairs)])
+      (test-equal '(_ (fuzzy0 **1) fuzzy1 ...) (annotation-stripped (index-node-datum/annotations (generator))))
+      (test-equal 'else (annotation-stripped (index-node-datum/annotations (generator))))
+      (test-equal 'stop-iteration (generator))
+      ; (pretty-print 
+      ;   (map 
+      ;     (lambda (p) `(,(pattern-content (car p)) . ,(annotation-stripped (index-node-datum/annotations (cdr p)))))
+      ;     (pattern+index-node->pair-list pattern index-node)))
+      ; (pretty-print (generator))
+      ; (test-equal (generator))
+      )
+(test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

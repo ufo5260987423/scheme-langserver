@@ -9,7 +9,8 @@
     gather-context
 
     context:ellipsed?
-    pattern+index-node->pair-list)
+    pattern+index-node->pair-list
+    pattern->pairs->generator)
   (import 
     (chezscheme)
     (ufo-coroutines)
@@ -138,11 +139,11 @@
           [pair-vector (list->vector pair-list)]
           [max-i (vector-length pair-vector)]
           [max-j (vector-length ancestor-vector)])
-        (init-coroutine
+        (init-iterator
           (lambda (yield)
             (let loop ([i 1] [j 1])
               (cond 
-                [(= i max-i) (yield '())]
+                [(= i max-i) '()]
 
                 ;(= j (- max-j 1)) appends result whether its equal condition is satisfied.
                 [(and 
@@ -161,10 +162,11 @@
                 [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j))]
                 [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
 
-                [else (loop (+ 1 i) 1)])))))))
+                [else (loop (+ 1 i) 1)]))))))
     (lambda (pair-list)
       (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
-        (lambda () t))))
+        (lambda () 
+          (if t (cdr t) #f))))))
 
 (define (private:ancestors pattern)
   (if (pattern? pattern)
