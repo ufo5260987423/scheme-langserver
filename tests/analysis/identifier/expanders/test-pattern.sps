@@ -136,13 +136,6 @@
             [generator ((pattern->pairs->generator pat-pattern) pairs)])
       (test-equal '(_ (fuzzy0 **1) fuzzy1 ...) (annotation-stripped (index-node-datum/annotations (generator))))
       (test-equal 'else (annotation-stripped (index-node-datum/annotations (generator))))
-      (test-equal 'stop-iteration (generator))
-      ; (pretty-print 
-      ;   (map 
-      ;     (lambda (p) `(,(pattern-content (car p)) . ,(annotation-stripped (index-node-datum/annotations (cdr p)))))
-      ;     (pattern+index-node->pair-list pattern index-node)))
-      ; (pretty-print (generator))
-      ; (test-equal (generator))
-      )
+      (test-equal 'stop-iteration (generator)))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
