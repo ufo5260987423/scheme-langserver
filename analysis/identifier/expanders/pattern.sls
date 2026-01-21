@@ -141,28 +141,22 @@
           [max-j (vector-length ancestor-vector)])
         (init-iterator
           (lambda (yield)
-            (let loop ([i 1] [j 1])
+            (let loop ([i 0] [j 0] [yielded? #f] [backwarded? #f])
               (cond 
                 [(= i max-i) '()]
 
-                ;(= j (- max-j 1)) appends result whether its equal condition is satisfied.
                 [(and 
                     (= j (- max-j 1))
                     (equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
+                  (if (and yielded? backwarded?) (yield '...))
                   (yield (cdr (vector-ref pair-vector i)))
-                  (loop (+ 1 i) j)]
-                [(and 
-                    (= j (- max-j 1))
-                    (recursive:ancestor? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
-                  (yield '...)
-                  (loop i 1)]
-                [(= j (- max-j 1)) (loop (+ 1 i) 1)]
+                  (loop (+ 1 i) j #t #f)]
+                [(= j (- max-j 1)) (loop (+ 1 i) 0 yielded? #t)]
 
-                ;(= j (- max-j 1)) doesn't work
-                [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j))]
-                [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
+                [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j) yielded? yielded?)]
+                [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j) yielded? backwarded?)]
 
-                [else (loop (+ 1 i) 1)]))))))
+                [else (loop (+ 1 i) 0 yielded? #t)]))))))
     (lambda (pair-list)
       (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
         (lambda () 

@@ -135,6 +135,7 @@
             [pat-pattern (cdr (assoc 'pat context))]
             [generator ((pattern->pairs->generator pat-pattern) pairs)])
       (test-equal '(_ (fuzzy0 **1) fuzzy1 ...) (annotation-stripped (index-node-datum/annotations (generator))))
+      (test-equal '... (generator))
       (test-equal 'else (annotation-stripped (index-node-datum/annotations (generator))))
       (test-equal 'stop-iteration (generator)))
 (test-end)
