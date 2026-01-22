@@ -45,11 +45,16 @@
             ;it shouldn't be supposed that it interrupt the workspace refreshing procedure.
             [expire 
               (lambda (remains) 
-                (if (tickal-task-stop? new-task)
-                  ;because this may happend during workspace refreshing
-                  (with-mutex (workspace-mutex workspace)
-                    (remove:from-request-tickal-task-list request-queue new-task))
-                  (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))))])
+                (cond 
+                  [(or 
+                    (equal? "textDocument/didChange" (request-method request))
+                    (equal? "textDocument/didOpen" (request-method request))
+                    (equal? "textDocument/didClose" (request-method request)))
+                    (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]
+                  [(tickal-task-stop? new-task)
+                    (with-mutex (workspace-mutex workspace)
+                      (remove:from-request-tickal-task-list request-queue new-task))]
+                  [else (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]))])
           (enqueue! (request-queue-queue request-queue) new-task)
           (request-queue-tickal-task-list-set! 
             request-queue
