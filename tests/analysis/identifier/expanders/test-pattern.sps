@@ -118,7 +118,7 @@
     (body quote ()))))
 (test-end)
 
-(test-begin "pattern->pairs->generator")
+(test-begin "pattern+context->pairs->iterator")
     (let* ([workspace (init-workspace (string-append (current-directory) "/analysis/identifier/rules/") '() #f #f)]
             [root-file-node (workspace-file-node workspace)]
             [root-library-node (workspace-library-node workspace)]
@@ -132,11 +132,15 @@
             [pattern (make-pattern pattern-expression)]
             [context (gather-context pattern)]
             [pairs (pattern+index-node->pair-list pattern index-node)]
-            [pat-pattern (cdr (assoc 'pat context))]
-            [generator ((pattern->pairs->generator pat-pattern) pairs)])
-      (test-equal '(_ (fuzzy0 **1) fuzzy1 ...) (annotation-stripped (index-node-datum/annotations (generator))))
-      (test-equal '... (generator))
-      (test-equal 'else (annotation-stripped (index-node-datum/annotations (generator))))
-      (test-equal 'stop-iteration (generator)))
+            [iterator ((pattern+context->pairs->iterator 'pat context) pairs)])
+      (test-equal '(dive-into-an-ellipsed-form . 1) (iterator))
+      ;it can repeat
+      (test-equal '(dive-into-an-ellipsed-form . 1) (iterator 'repeat))
+      (test-equal '(_ (fuzzy0 **1) fuzzy1 ...) (annotation-stripped (index-node-datum/annotations (iterator))))
+      (test-equal 'escape-from-target-form (iterator))
+      (test-equal '(dive-into-an-ellipsed-form . 1) (iterator))
+      (test-equal 'else (annotation-stripped (index-node-datum/annotations (iterator))))
+      (test-equal 'escape-from-target-form (iterator))
+      (test-equal 'stop-iteration (iterator)))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

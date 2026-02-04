@@ -10,10 +10,11 @@
 
     context:ellipsed?
     pattern+index-node->pair-list
-    pattern->pairs->generator)
+    pattern+context->pairs->iterator)
   (import 
     (chezscheme)
     (ufo-coroutines)
+    (ufo-try)
     (scheme-langserver util contain)
     (scheme-langserver util sub-list)
 
@@ -78,94 +79,156 @@
               p)]
           [else (new 'equal?-datum successed-matched-pattern-expression '() #f)])))))
 
-; (define (fuzzy context pair-list) '())
+; (define context+template+pairs->expansion
+;   (case-lambda 
+;     [(pattern-context template-pattern pair-list)
+;       (context+template+pairs->expansion pattern-context `(,template-pattern) pair-list '() '() 0)]
+;     [(pattern-context template-patterns pair-list iterators context ellipsed-level)
+;       (if (null? template-patterns)
+;         '()
+;         (let* ([pattern (car tempalte-patterns)]
+;             [type (pattern-type pattern)]
+;             [content (pattern-content pattern)])
+;           (case type
+;             [pattern-variable/literal-identifier 
+;               (or 
+;                 ;previous value
+;                 (assoc context content)
+;                 (let* ([pre-iterator (assoc iterators content)]
+;                     [iterator 
+;                       (if pre-iterator
+;                         (cdr pre-iterator)
+;                         ((pattern->pairs->iterator content pattern-context) pair-list))]
+;                     [value (iterator)])
+;                   (cond 
+;                     [(equal? 'have-no-such-pattern-refference value) 
+;                       `(,content . ,(context+template+pairs->expansion pattern-context (cdr template-patterns) pair-list iterators context ellipsed-level))]
+;                     ; [(and (index-node? value) (= ellipsed-level (private:count-ellipse-level )))]
+;                     [(index-node? value)
+;                       `(,value . 
+;                         ,(context+template+pairs->expansion pattern-context (cdr template-patterns) pair-list 
+;                           (if pre-iterator
+;                             iterators 
+;                             `((,content . ,iterator) . ,iterators))
+;                           `((,content . ,value) . ,context) ellipsed-level))]
+;                     ;(dive-into-an-ellipsed-form . 1)
+;                     ; [(and (private:dive-into? value) (not (zero? ellipsed-level)))
+;                     ;   (context+template+pairs->expansion pattern-context (cdr template-patterns) pair-list 
+;                     ;     (if pre-iterator
+;                     ;       iterators 
+;                     ;       `((,content . ,iterator) . ,iterators))
+;                     ;     context ellipsed-level)]
+;                     [(private:dive-into? value) 
+;                       (cond 
+;                         [(= ellipsed-level (cdr value))
+;                           (context+template+pairs->expansion pattern-context template-patterns pair-list 
+;                             (if pre-iterator
+;                               iterators 
+;                               `((,content . ,iterator) . ,iterators))
+;                             context ellipsed-level)]
+;                         [(< ellipsed-level (cdr value)) 
 
-; (define (pattern+template->generator pattern template)
-;   (case (pattern-type template)
-;     [underscore fuzzy]
-;     [(list-form vector-form pair-form)
-;       (lambda (context pair-list) 
-;         (let ([r (map (lambda (child) ((pattern+template->generator child) context pair-list)) (pattern-children template))])
-;           (case (pattern-type template)
-;             [list-form r]
-;             [vector-form (list->vector r)]
-;             [pair-form `(,@(reverse (cdr (reverse r))) . ,(car (reverse r)))])))]
-;     [ellipse-list-form 
-;       (lambda (context pair-list) 
-;       ;Here, we need to be ready for sequentially subtemplates processing.
-;         (let* ([children-vector (list->vector (pattern-children template))]
-;             [l (vector-length children-vector)])
-;           (let loop ([i 0])
-;             (cond 
-;               [(< (+ 1 i) l)
-;                 (if (equal? 'ellipse (pattern-type (vector-ref children-vector (+ 1 i))))
-;                   ;process subtemplate
-;                   `()
-;                   `(,((pattern+template->generator pattern (vector-ref children-vector i)) context pair-list) . ,((loop (+ 1 i)) context pair-list)))]
-;               [(< i l)
-;                 `(,(pattern+template->generator pattern (vector-ref children-vector i)))]
-;               [else fuzzy]))))]
-;     [pattern-variable/literal-identifier 
-;       (lambda (context pair-list)
-;         (let ([target-pattern (assoc context (pattern-content template))])
-;           (if target-pattern
-;             (let ([result (find (lambda (p) (equal? (car target-pattern) p)) pair-list)])
-;               (if result
-;                 (cdr result)
-;                 (pattern-content template)))
-;             (pattern-content template))))]
-;     [else fuzzy]))
-
-; (define (private:subtemplate->generator ellipsed-pattern context pair-list)
-;   (case (pattern-type ellipsed-pattern)
-;     [pattern-variable/literal-identifier 
-;       (lambda (context pair-list)
-;         (let* ([target-pattern (assoc context (pattern-content template))])
-;           (if target-pattern
-;             (let ([result (find (lambda (p) (equal? (car target-pattern) p)) pair-list)])
-;               (if result
-;                 (cdr result)
-;                 (pattern-content template)))
-;             (pattern-content template))))
-;     ]
-;   )
-; )
+;                         ]
+;                         [(> ellipsed-level (cdr value)) (raise 'auxillary-ellipse-in-template)])
+;                     ]
+;                     [else (raise value)]
+;                     ))
+;                     )]
+;             [(list-form vector-form pair-form)
+;               ((case type 
+;                   [list-form (lambda (a) a)]
+;                   [vector-form list->vector]
+;                   [pair-form (lambda (a) `(,(car a) . ,@(cdr a)))])
+;                 (context+template+pairs->expansion pattern-context (pattern-children pattern) pair-list iterators context ellipsed-level))]
+;             [(ellipse-list-form ellipse-vector-form ellipse-pair-form)
+;               ((case type 
+;                   [list-form (lambda (a) a)]
+;                   [vector-form list->vector]
+;                   [pair-form (lambda (a) `(,(car a) . ,@(cdr a)))])
+;                 (let* ([children (pattern-children pattern)]
+;                     [children-vec (list->vector children)]
+;                     [max-l (length children)])
+;                   (let loop ([i 0] [repeat-i #f])
+;                     (cond 
+;                       [(zero? max-l) '()]
+;                       [(= i max-l) '()]
+;                       [(equal? 'ellipse (pattern-type (vector-ref children-vec i))) '()]
+;                       [else 
+;                         (let loop ([current-ellipse-index (+ 1 i)])
+;                           (cond 
+;                             [(or 
+;                               (= current-ellipse-index max-l) 
+;                               (not (equal? 'ellipse (pattern-type (vector-ref children-vec current-ellipse-index)))))
+;                             (try 
+;                               `(,@(context+template+pairs->expansion pattern-context `(,(vector-ref children-vec i)) pair-list iterators context (+ ellipsed-level (- current-ellipse-index i 1))) . ,(loop i))
+;                               (except c
+;                                 ;escape from current ellipse-form to outter ellipse-form
+;                                 [(equal? c '...) (loop (+ 2 i))]
+;                                 ;stop current iteration
+;                                 [(equal? c 'stop-iteration) (loop (+ 2 i))]
+;                                 [else ]))
+;                             ]
+;                             [(equal? 'ellipse (pattern-type (vector-ref children-vec current-ellipse-index)))
+;                               (loop (+ 1 i))]))]))))])))]))
 
 ;suppose pattern-type is pattern-variable/literal-identifier 
-(define (pattern->pairs->generator pattern)
-  (if (recursive:pattern-ellipsed? pattern)
-    (lambda (pair-list)
-      (let* ([ancestor-vector (list->vector (private:ancestors pattern))]
-          [pair-vector (list->vector pair-list)]
-          [max-i (vector-length pair-vector)]
-          [max-j (vector-length ancestor-vector)])
-        (init-iterator
-          (lambda (yield)
-            (let loop ([i 0] [j 0] [yielded? #f] [backwarded? #f])
-              (cond 
-                [(= i max-i) '()]
+(define (pattern+context->pairs->iterator pattern-content context)
+  (let* ([pre-pattern (assoc pattern-content context)]
+      [pattern (if pre-pattern (cdr pre-pattern) pre-pattern)])
+    (cond 
+      [(not pre-pattern) (lambda (pair-list) 'have-no-such-pattern-refference)]
+      [(recursive:pattern-ellipsed? pattern)
+        (lambda (pair-list)
+          (let* ([ancestor-vector (list->vector (private:ancestors pattern))]
+              [pair-vector (list->vector pair-list)]
+              [max-i (vector-length pair-vector)]
+              [max-j (vector-length ancestor-vector)]
+              [level (private:count-ellipse-level pattern)])
+            (init-iterator
+              (lambda (yield)
+                (let loop ([i 0] [j 0])
+                  (cond 
+                    [(= i max-i) '()]
 
-                [(and 
-                    (= j (- max-j 1))
-                    (equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
-                  (if (and yielded? backwarded?) (yield '...))
-                  (yield (cdr (vector-ref pair-vector i)))
-                  (loop (+ 1 i) j #t #f)]
-                [(= j (- max-j 1)) (loop (+ 1 i) 0 yielded? #t)]
+                    [(and 
+                        (= j (- max-j 1))
+                        (equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)))
+                      (if (and 
+                          (private:pattern-ellipsed? pattern) 
+                          (yield `(dive-into-an-ellipsed-form . ,level)))
+                        (loop i j)
+                        ;procedure
+                        (if (yield (cdr (vector-ref pair-vector i)))
+                          (loop i j)
+                          (loop (+ 1 i) j)))]
+                    [(= j (- max-j 1)) 
+                      ;list
+                      (if (yield 'escape-from-target-form)
+                        (loop i j)
+                        (loop (+ 1 i) 0))]
 
-                [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) (loop (+ 1 i) (+ 1 j) yielded? yielded?)]
-                [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j) yielded? backwarded?)]
+                    [(equal? (car (vector-ref pair-vector i)) (vector-ref ancestor-vector j)) 
+                      ;list
+                      (if (and 
+                          (private:pattern-ellipsed? (vector-ref ancestor-vector j)) 
+                          (yield `(dive-into-an-ellipsed-form . ,(private:count-ellipse-level (vector-ref ancestor-vector j)))))
+                        (loop i j)
+                        (loop (+ 1 i) (+ 1 j)))]
+                    [(recursive:ancestor? (vector-ref ancestor-vector j) (car (vector-ref pair-vector i))) (loop i (+ 1 j))]
 
-                [else (loop (+ 1 i) 0 yielded? #t)]))))))
-    (lambda (pair-list)
-      (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
-        (lambda () 
-          (if t (cdr t) #f))))))
+                    [else (loop (+ 1 i) 0)]))))))]
+      [else 
+        (lambda (pair-list)
+          (let ([t (find (lambda (p) (equal? (car p) pattern)) pair-list)])
+            (if t (cdr t) (raise 'pattern-not-match))))])))
 
 (define (private:ancestors pattern)
   (if (pattern? pattern)
     `(,@(private:ancestors (pattern-parent pattern)) ,pattern)
     '()))
+
+(define (private:dive-into? ready)
+  (and (pair? ready) (integer? (cdr ready)) (equal? 'dive-into-an-ellipsed-form (car ready))))
 
 (define (recursive:ancestor? ancestor child)
   (cond 
