@@ -164,4 +164,29 @@
         '((_ (fuzzy0 **1) fuzzy1 ...) else)
         (map (lambda (i) (annotation-stripped (index-node-datum/annotations i))) (cdr binding))))
 (test-end)
+
+(test-begin "expand:index-node-compound-list")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/analysis/identifier/rules/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
+            [document (file-node-document target-file-node)]
+            [text (document-text document)]
+            [index-node-list (document-index-node-list document)]
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [expression (annotation-stripped (index-node-datum/annotations index-node))]
+            [pattern-expression '(match atom (pat . body) ...)]
+            [pattern (make-pattern pattern-expression)]
+            [context (gather-context pattern)]
+            [pairs (pattern+index-node->pair-list pattern index-node)]
+            [template (make-pattern '(let ((v atom)) (match-next v (atom (set! atom)) (pat . body) ...)))]
+            [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template))]
+            [expansion (expand->index-node-compound-list template bindings)])
+      (pretty-print (expansion->printable-object expansion))
+      ; (pretty-print index-compound-list)
+      ; (test-equal 
+      ;   '((_ (fuzzy0 **1) fuzzy1 ...) else)
+      ;   (map (lambda (i) (annotation-stripped (index-node-datum/annotations i))) (cdr binding)))
+        )
+(test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
