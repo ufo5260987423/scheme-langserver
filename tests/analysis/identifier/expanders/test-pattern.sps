@@ -181,7 +181,7 @@
             [pairs (pattern+index-node->pair-list pattern index-node)]
             [template (make-pattern '(let ((v atom)) (match-next v (atom (set! atom)) (pat . body) ...)))]
             [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template))]
-            [expansion (expand->index-node-compound-list template bindings)])
+            [expansion (expand->index-node-compound-list template bindings context)])
       (pretty-print (expansion->printable-object expansion))
       ; (pretty-print index-compound-list)
       ; (test-equal 

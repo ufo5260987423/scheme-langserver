@@ -105,7 +105,7 @@
       (annotation-stripped (index-node-datum/annotations expansion))]
     [else expansion]))
 
-(define (expand->index-node-compound-list template-pattern bindings)
+(define (expand->index-node-compound-list template-pattern bindings pattern-context)
   (let* ([type (pattern-type template-pattern)]
       [content (pattern-content template-pattern)]
       [children (pattern-children template-pattern)])
@@ -122,7 +122,7 @@
             [list-form (lambda (a) a)]
             [vector-form list->vector]
             [pair-form (lambda (a) `(,(car a) . ,(cadr a)))])
-          (map (lambda (c) (expand->index-node-compound-list c bindings)) children))]
+          (map (lambda (c) (expand->index-node-compound-list c bindings pattern-context)) children))]
       [(ellipse-list-form ellipse-vector-form ellipse-pair-form)
         ((case type 
             [ellipse-list-form (lambda (a) a)]
@@ -146,21 +146,21 @@
                             j))]
                       [exposed-literals (pattern-exposed-literals current-template-pattern)]
                       [pre-new-bindings (filter (lambda (p) (contain? exposed-literals (car p))) bindings)]
-                      [new-bindings-list (private:bindings-product->list template-ellipsed-level pre-new-bindings)])
-                    `(,@(map (lambda (c) (expand->index-node-compound-list (vector-ref children-vec i) c)) new-bindings-list) . ,(loop (+ 1 template-ellipsed-level i))))]
-                [else `(,(expand->index-node-compound-list (vector-ref children-vec i) bindings) . ,(loop (+ 1 i)))]))))]
+                      [new-bindings-list (private:bindings-product->list template-ellipsed-level pre-new-bindings pattern-context)])
+                    `(,@(map (lambda (c) (expand->index-node-compound-list (vector-ref children-vec i) c pattern-context)) new-bindings-list) . ,(loop (+ 1 template-ellipsed-level i))))]
+                [else `(,(expand->index-node-compound-list (vector-ref children-vec i) bindings pattern-context) . ,(loop (+ 1 i)))]))))]
       [else (raise 'illegal-tempate)])))
 
-(define (private:bindings-product->list times bindings)
+;need cdr? paramter
+(define (private:bindings-product->list times bindings pattern-context)
   (if (zero? times)
     bindings
     (map 
-      (lambda (new-bindings) (private:bindings-product->list (- times 1) new-bindings))
+      (lambda (new-bindings) (private:bindings-product->list (- times 1) new-bindings pattern-context))
       (fold-left 
         (lambda (left right)
           (cond 
-            [(null? left) 
-            right]
+            [(null? left) right]
             [(= 1 (length left))
               (map 
                 (lambda (r) (append (car left) r))
@@ -169,19 +169,23 @@
               (map 
                 (lambda (l) (append l (car right)))
                 left)]
-            [else 
-            (map append left right)]))
+            [else (map append left right)]))
         '()
         (map 
           (lambda (kv-pair)
-            (let ([k (car kv-pair)]
-                [vs (cdr kv-pair)])
-              (if (list? vs)
+            (let* ([k (car kv-pair)]
+                [vs (cdr kv-pair)]
+                [pre-origin-pattern (assoc k pattern-context)]
+                [origin-pattern (if pre-origin-pattern (cdr pre-origin-pattern) #f)]
+                [cdr? (if origin-pattern (pattern-cdr? origin-pattern) #f)]
+                [split? (and cdr? (find index-node? vs))])
+              (if (and (list? vs) (not split?))
                 (map (lambda (v) `((,k . ,v))) vs)
                 `((,kv-pair)))))
           bindings)))))
 
 (define (generate-binding literal iterator)
+  ;In ellipsed pair form, won't cdr cause error? I don't think so.
   (if (procedure? iterator)
     (let* ([l 
           (let loop ([var (iterator)])
