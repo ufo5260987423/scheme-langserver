@@ -182,11 +182,54 @@
             [template (make-pattern '(let ((v atom)) (match-next v (atom (set! atom)) (pat . body) ...)))]
             [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template))]
             [expansion (expand->index-node-compound-list template bindings context)])
-      (pretty-print (expansion->printable-object expansion))
-      ; (pretty-print index-compound-list)
-      ; (test-equal 
-      ;   '((_ (fuzzy0 **1) fuzzy1 ...) else)
-      ;   (map (lambda (i) (annotation-stripped (index-node-datum/annotations i))) (cdr binding)))
-        )
+      ; (pretty-print (expansion->printable-object expansion))
+      (test-equal 
+'(let ([v expression])
+  (match-next
+    v
+    (expression (set! expression))
+    ((_ (fuzzy0 **1) fuzzy1 ...)
+      (fold-left
+        (lambda (exclude-list identifier-parent-index-node)
+          (let* ([identifier-index-node (car (index-node-children
+                                               identifier-parent-index-node))]
+                 [target-identifier-reference (let-parameter-process index-node
+                                                identifier-index-node
+                                                index-node document type)]
+                 [extended-exclude-list (append
+                                          exclude-list
+                                          target-identifier-reference)])
+            (index-node-excluded-references-set!
+              (cadr (index-node-children index-node))
+              extended-exclude-list)
+            extended-exclude-list))
+        '()
+        (filter
+          (lambda (i) (not (null? (index-node-children i))))
+          (index-node-children
+            (cadr (index-node-children index-node)))))
+      '())
+    (else
+      (fold-left
+        (lambda (exclude-list identifier-parent-index-node)
+          (let* ([identifier-index-node (car (index-node-children
+                                               identifier-parent-index-node))]
+                 [target-identifier-reference (let-parameter-process index-node
+                                                identifier-index-node
+                                                index-node document type)]
+                 [extended-exclude-list (append
+                                          exclude-list
+                                          target-identifier-reference)])
+            (index-node-excluded-references-set!
+              (cadr (index-node-children index-node))
+              extended-exclude-list)
+            extended-exclude-list))
+        '()
+        (filter
+          (lambda (i) (not (null? (index-node-children i))))
+          (index-node-children
+            (cadr (index-node-children index-node)))))
+      '())))
+        (expansion->printable-object expansion)))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

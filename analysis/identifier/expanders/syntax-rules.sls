@@ -3,6 +3,9 @@
   (import 
     (chezscheme)
     (ufo-match)
+
+    (scheme-langserver analysis identifier expanders pattern)
+
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis identifier reference))
 
@@ -20,13 +23,18 @@
 
             [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
             [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
-            [expansion (cdr index+expansion)]
+            [expansion-expression (cdr index+expansion)]
 
-            ;we'll use these following
             [pattern-expression (cdar clause-expression)]
+            [pattern (make-pattern pattern-expression)]
             [template-expression (car (reverse clause-expression))]
-            [pattern-expansion (car expansion)]
-            [template-expansion (cdr expansion)])
+            [template-pattern (make-pattern template-expression)]
+            [pattern-context (gather-context pattern)]
+            [pairs (pattern+index-node->pair-list pattern local-index-node)]
+            [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template-pattern))]
+            [expansion (expand->index-node-compound-list template bindings context)]
+            ;todo: match index-nodes in expansion and its expression form.
+            )
           ()
         )
     )]
