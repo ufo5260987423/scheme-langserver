@@ -33,12 +33,39 @@
             [pairs (pattern+index-node->pair-list pattern local-index-node)]
             [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template-pattern))]
             [expansion (expand->index-node-compound-list template bindings context)]
-            ;todo: match index-nodes in expansion and its expression form.
-            )
+
+            ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
+            [expansion-index-node 
+              (init-index-node 
+                local-index-node
+                (car 
+                  (source-file->annotations 
+                    (with-output-to-string (lambda () (pretty-print expansion-expression)))
+                    (uri->path (document-uri local-document)))))]
+            [pairs (private:expansion+index-node->pairs expansion expansion-index-node)])
           ()
         )
     )]
     [else '()]))
+
+;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
+(define (private:expansion+index-node->pairs compound-list index-node)
+  (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+      [children (index-node-children index-node)])
+    (cond 
+      [(index-node? compound-list) `((,index-node . ,compound-list))]
+      [(list? compound-list) 
+        (apply append 
+          (map 
+            (lambda (left right) (private:expansion+index-node->pairs left right))
+            children
+            compound-list))]
+      [(vector? compound-list) 
+        (private:expansion+index-node->pairs (vector->list compound-list) index-node)]
+      [(pair? compound-list) 
+        (private:expansion+index-node->pairs `(,(car compound-list) ,(cdr compound-list)) index-node) ]
+      ;symbol won't get pairs
+      [else '()])))
 
 (define (private:confirm-clause literals clause-index-nodes input-expression)
   (let loop ([rest clause-index-nodes] [index 0])
