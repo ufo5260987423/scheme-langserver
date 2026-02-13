@@ -1,5 +1,6 @@
 (library (scheme-langserver analysis identifier expanders syntax-rules)
-  (export )
+  (export 
+    syntax-rules->generator:map+expansion)
   (import 
     (chezscheme)
     (ufo-match)
@@ -10,7 +11,7 @@
     (scheme-langserver analysis identifier reference))
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
-(define (syntax-rules root-file-node root-library-node document input-index-node)
+(define (syntax-rules->generator:map+expansion root-file-node root-library-node document input-index-node)
   (match (annotation-stripped (index-node-datum/annotations input-index-node))
   ;clause means pattern and template
     [(_ (literals ...) clauses **1) 
@@ -32,7 +33,7 @@
             [pattern-context (gather-context pattern)]
             [pairs (pattern+index-node->pair-list pattern local-index-node)]
             [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template-pattern))]
-            [expansion (expand->index-node-compound-list template bindings context)]
+            [callee-compound-index-node-list (expand->index-node-compound-list template bindings context)]
 
             ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
             [expansion-index-node 
@@ -42,10 +43,8 @@
                   (source-file->annotations 
                     (with-output-to-string (lambda () (pretty-print expansion-expression)))
                     (uri->path (document-uri local-document)))))]
-            [pairs (private:expansion+index-node->pairs expansion expansion-index-node)])
-          ()
-        )
-    )]
+            [pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+          `(,pairs . ,expansion-index-node)))]
     [else '()]))
 
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
