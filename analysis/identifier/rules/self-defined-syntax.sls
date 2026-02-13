@@ -12,7 +12,6 @@
     (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis tokenizer)
-    (scheme-langserver analysis local-expand)
 
     (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier meta)
