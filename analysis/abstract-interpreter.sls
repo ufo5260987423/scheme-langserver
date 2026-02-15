@@ -14,6 +14,8 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier primitive-variable)
 
+    (scheme-langserver analysis identifier expanders syntax-rules)
+
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver analysis identifier rules define)
@@ -211,7 +213,7 @@
 
             [(and (equal? r '(syntax-case)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,syntax-case-process) . ,identifier))]
-            [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process) . ,identifier))]
+            [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process . ,syntax-rules->generator:map+expansion) . ,identifier))]
             [(and (equal? r '(identifier-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,identifier-syntax-process) . ,identifier))]
             [(and (equal? r '(with-syntax)) (private:top-env=? 'r6rs top))

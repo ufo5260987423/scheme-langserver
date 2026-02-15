@@ -6,8 +6,11 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier expanders pattern)
+    (scheme-langserver analysis tokenizer)
+    (scheme-langserver util path)
 
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
     (scheme-langserver analysis identifier reference))
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
@@ -15,36 +18,36 @@
   (match (annotation-stripped (index-node-datum/annotations input-index-node))
   ;clause means pattern and template
     [(_ (literals ...) clauses **1) 
-      ;return a procedure
-      (lambda (local-root-file-node local-root-library-node local-document local-index-node)
-        (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
-            [clause-index-nodes (cddr (index-node-children input-index-node))]
-            [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)]
-            [index (car index+expansion)]
+      (index-node-expansions-set! input-index-node
+        (lambda (local-root-file-node local-root-library-node local-document local-index-node)
+          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
+              [clause-index-nodes (cddr (index-node-children input-index-node))]
+              [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)]
+              [index (car index+expansion)]
 
-            [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
-            [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
-            [expansion-expression (cdr index+expansion)]
+              [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
+              [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+              [expansion-expression (cdr index+expansion)]
 
-            [pattern-expression (cdar clause-expression)]
-            [pattern (make-pattern pattern-expression)]
-            [template-expression (car (reverse clause-expression))]
-            [template-pattern (make-pattern template-expression)]
-            [pattern-context (gather-context pattern)]
-            [pairs (pattern+index-node->pair-list pattern local-index-node)]
-            [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template-pattern))]
-            [callee-compound-index-node-list (expand->index-node-compound-list template bindings context)]
+              [pattern-expression (cdar clause-expression)]
+              [pattern (make-pattern pattern-expression)]
+              [template-expression (car (reverse clause-expression))]
+              [template-pattern (make-pattern template-expression)]
+              [pattern-context (gather-context pattern)]
+              [pairs (pattern+index-node->pair-list pattern local-index-node)]
+              [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
+              [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
-            ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
-            [expansion-index-node 
-              (init-index-node 
-                local-index-node
-                (car 
-                  (source-file->annotations 
-                    (with-output-to-string (lambda () (pretty-print expansion-expression)))
-                    (uri->path (document-uri local-document)))))]
-            [pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-          `(,pairs . ,expansion-index-node)))]
+              ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
+              [expansion-index-node 
+                (init-index-node 
+                  local-index-node
+                  (car 
+                    (source-file->annotations 
+                      (with-output-to-string (lambda () (pretty-print expansion-expression)))
+                      (uri->path (document-uri local-document)))))]
+              [pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+            `(,pairs . ,expansion-index-node))))]
     [else '()]))
 
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
