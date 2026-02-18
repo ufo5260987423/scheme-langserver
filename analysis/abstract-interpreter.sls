@@ -181,7 +181,7 @@
               (private-add-rule rules `((,define-process) . ,identifier))]
             [(and (equal? r '(define)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,define-r7rs-process) . ,identifier))]
-            [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
+            [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process . ,define-syntax:attach-generator) . ,identifier))]
             [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
             [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
             [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]

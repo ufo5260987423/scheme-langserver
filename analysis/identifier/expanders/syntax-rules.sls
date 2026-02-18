@@ -18,7 +18,7 @@
   (match (annotation-stripped (index-node-datum/annotations input-index-node))
   ;clause means pattern and template
     [(_ (literals ...) clauses **1) 
-      (index-node-expansions-set! input-index-node
+      (index-node-expansion-generator-set! input-index-node
         (lambda (local-root-file-node local-root-library-node local-document local-index-node)
           (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
               [clause-index-nodes (cddr (index-node-children input-index-node))]

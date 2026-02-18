@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis identifier rules define-syntax)
-  (export define-syntax-process)
+  (export 
+    define-syntax-process
+    define-syntax:attach-generator)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -12,6 +14,18 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+(define (define-syntax:attach-generator root-file-node root-library-node document index-node)
+  (let* ([ann (index-node-datum/annotations index-node)]
+      [library-identifiers (get-nearest-ancestor-library-identifier index-node)]
+      [expression (annotation-stripped ann)]
+      [children (index-node-children index-node)])
+    (match expression
+      [(_ (? symbol? identifier) only-one) 
+        (if (not (null?  (index-node-references-export-to-other-node (cadr children))))
+          (identifier-reference-syntax-expander-set!
+            (index-node-references-export-to-other-node (cadr children))
+            (index-node-expansion-generator (car (reverse children)))))]
+      [else '()])))
 ; reference-identifier-type include 
 ; syntax-parameter syntax-variable syntax parameter
 (define (define-syntax-process root-file-node root-library-node document index-node)

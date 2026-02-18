@@ -35,8 +35,8 @@
     index-node-substitution-list-set!
     index-node-import-file-nodes
     index-node-import-file-nodes-set!
-    index-node-expansions
-    index-node-expansions-set!
+    index-node-expansion-generator
+    index-node-expansion-generator-set!
 
     extend-index-node-substitution-list 
 
@@ -79,7 +79,7 @@
     (mutable excluded-references)
     (mutable substitution-list)
     (mutable import-file-nodes)
-    (mutable expansions))
+    (mutable expansion-generator))
   (protocol
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
