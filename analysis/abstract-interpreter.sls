@@ -258,6 +258,7 @@
       (lambda (identifier) 
         (not 
           (or 
+            ; (equal? 'syntax-variable (identifier-reference-type identifier))
             (equal? 'parameter (identifier-reference-type identifier))
             (equal? 'syntax-parameter (identifier-reference-type identifier))
             (equal? 'procedure (identifier-reference-type identifier))

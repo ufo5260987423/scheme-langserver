@@ -46,6 +46,12 @@
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
         (add-rule-procedure rules `((,match-process) . ,target-identifier))]
+      [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
+        (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
+      [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
+        (add-rule-procedure rules `((,define-case-class-process) . ,target-identifier))]
+      [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
+        (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
       [(and (contain? (map identifier-reference-type top) 'syntax-variable) (not (contain? memory (car (reverse possible-new-memory))))) 
         ; (fold-left add-rule-procedure rules
         ;   (map 
@@ -62,12 +68,5 @@
         ;not now to delete
         rules
         ]
-      [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
-        (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
-      [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
-        (add-rule-procedure rules `((,define-case-class-process) . ,target-identifier))]
-      [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
-        (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
-
       [else rules])))
 )
