@@ -14,6 +14,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules begin)
+    (scheme-langserver analysis identifier expanders expansion-wrap)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
     (scheme-langserver analysis identifier self-defined-rules ufo-match match)
@@ -53,9 +54,9 @@
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
       [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
-        (let ([expander-proc (identifier-reference-syntax-expander (car top))])
-          ; (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))
-        )
+        ; (let ([expander-proc (identifier-reference-syntax-expander (car top))])
+        ;   ; (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))
+        ; )
         ; (fold-left add-rule-procedure rules
         ;   (map 
         ;     (lambda (t)

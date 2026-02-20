@@ -46,11 +46,11 @@
                         document 
                         single-compound-export-index-node
                         initialization-index-node 
-                        (identifier-reference-library-identifier ni)
-                        (identifier-reference-type ni)
+                        (identifier-reference-library-identifier current-identifier)
+                        (identifier-reference-type current-identifier)
                         '()
                         '()
-                        (identifier-reference-top-environment ni))])
+                        (identifier-reference-top-environment current-identifier))])
                     (index-node-references-export-to-other-node-set!
                       compound-export-list
                       (append 

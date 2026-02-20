@@ -46,7 +46,7 @@
                     (source-file->annotations 
                       (with-output-to-string (lambda () (pretty-print expansion-expression)))
                       (uri->path (document-uri local-document)))))]
-              [maching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+              [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
             `(,matching-pairs . ,expansion-index-node))))]
     [else '()]))
 
