@@ -54,7 +54,7 @@
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
       [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
         (let ([expander-proc (identifier-reference-syntax-expander (car top))])
-          (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))
+          ; (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))
         )
         ; (fold-left add-rule-procedure rules
         ;   (map 
