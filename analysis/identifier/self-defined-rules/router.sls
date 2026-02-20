@@ -52,19 +52,25 @@
         (add-rule-procedure rules `((,define-case-class-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
-      [(and (contain? (map identifier-reference-type top) 'syntax-variable) (not (contain? memory (car (reverse possible-new-memory))))) 
+      [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
+        (let ([expander-proc (identifier-reference-syntax-expander (car top))])
+          (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))
+        )
         ; (fold-left add-rule-procedure rules
         ;   (map 
         ;     (lambda (t)
-        ;       `((,(lambda (root-file-node root-library-node document index-node)
-        ;           (self-defined-syntax-process t index-node document expanded+callee-list 
-        ;             (lambda (specific-document generated-index-node new-expanded+callee-list)
-        ;               (step root-file-node root-library-node file-linkage specific-document generated-index-node new-expanded+callee-list 
-        ;               ;看起来在处理identifier-list的时候，因为一开始没加,导致了一些问题。可能出在source->annotaiton的过程中，也可能出在step过程中
-        ;                 ; `(,@(reverse (cdr (reverse memory))) (,(car (reverse memory)) . ,identifier-list))
-        ;                 possible-new-memory))))) 
-        ;         . ,t))
-        ;     top))
+        ;       (let* ([expander-proc (identifier-reference-syntax-expander t)]
+        ;           [result-proc 
+        ;             (lambda (root-file-node root-library-node document index-node)
+        ;               (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+        ;                   [pairs+expansion (expander-proc root-file-node root-library-node document index-node)]
+        ;                   [pairs (car pairs+expansion)]
+        ;                   [expansion-index-node (cdr pairs+expansion)])
+        ;               )
+        ;             )]
+        ;           )
+        ;       `((,result-proc) . ,t))
+        ;     top)))
         ;not now to delete
         rules
         ]

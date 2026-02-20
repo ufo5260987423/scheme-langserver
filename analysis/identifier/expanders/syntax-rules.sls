@@ -46,8 +46,8 @@
                     (source-file->annotations 
                       (with-output-to-string (lambda () (pretty-print expansion-expression)))
                       (uri->path (document-uri local-document)))))]
-              [pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-            `(,pairs . ,expansion-index-node))))]
+              [maching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+            `(,matching-pairs . ,expansion-index-node))))]
     [else '()]))
 
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
