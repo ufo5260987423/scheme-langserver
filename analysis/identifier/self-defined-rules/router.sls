@@ -53,27 +53,17 @@
         (add-rule-procedure rules `((,define-case-class-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
-      [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
-        ; (let ([expander-proc (identifier-reference-syntax-expander (car top))])
-        ;   ; (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))
-        ; )
-        ; (fold-left add-rule-procedure rules
-        ;   (map 
-        ;     (lambda (t)
-        ;       (let* ([expander-proc (identifier-reference-syntax-expander t)]
-        ;           [result-proc 
-        ;             (lambda (root-file-node root-library-node document index-node)
-        ;               (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
-        ;                   [pairs+expansion (expander-proc root-file-node root-library-node document index-node)]
-        ;                   [pairs (car pairs+expansion)]
-        ;                   [expansion-index-node (cdr pairs+expansion)])
-        ;               )
-        ;             )]
-        ;           )
-        ;       `((,result-proc) . ,t))
-        ;     top)))
-        ;not now to delete
-        rules
-        ]
+
+      ;only for test
+      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      ;   (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
+      ;       [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])
+      ;     (display (document-uri current-document))
+      ;     (newline)
+      ;     (add-rule-procedure rules `((,rule) . ,target-identifier)))]
+      ; [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
+      ;   (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
+      ;       [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])
+      ;     (add-rule-procedure rules `((,rule) . ,target-identifier)))]
       [else rules])))
 )

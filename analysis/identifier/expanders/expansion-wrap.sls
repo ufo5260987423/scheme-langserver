@@ -1,5 +1,6 @@
 (library (scheme-langserver analysis identifier expanders expansion-wrap)
-  (export)
+  (export
+    expansion-generator->rule)
   (import 
     (chezscheme)
     (scheme-langserver virtual-file-system index-node)
