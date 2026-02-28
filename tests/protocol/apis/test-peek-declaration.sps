@@ -4,12 +4,14 @@
 #!r6rs
 
 (import
+  (chezscheme)
   (rnrs (6))
   (srfi :64 testing)
   (scheme-langserver)
   (scheme-langserver util io)
   (scheme-langserver util json)
-  (scheme-langserver util association))
+  (scheme-langserver util association)
+  (scheme-langserver util path))
 
 (define (ensure-trailing-slash path)
   (if (and (> (string-length path) 0)
@@ -69,9 +71,12 @@
 (test-begin "peek declaration test")
 
 (let* ([root (ensure-trailing-slash (current-directory))]
-       [workspace-path (string-append root "tests/resources")]
-       [workspace-uri (string-append "file://" workspace-path)]
-       [file-uri (string-append "file://" workspace-path "/peek-fixture.scm")]
+       [fixture-path (string-append root "tests/resources/peek-fixture.scm.txt")]
+       [fixture-content (read-string fixture-path)]
+       [workspace-path "/tmp/scheme-langserver-test-peek-declaration"]
+       [file-path (string-append workspace-path "/peek-fixture.scm")]
+       [workspace-uri (path->uri workspace-path)]
+       [file-uri (path->uri file-path)]
 
        [init-json
          (string-append
@@ -100,6 +105,17 @@
            "\"position\":{\"line\":0,\"character\":12},"
            "\"context\":{\"includeDeclaration\":false}"
            "}}")]
+
+       [mkdir-ok (guard (c [else #f]) (mkdir workspace-path))]
+       [write-ok
+         (let ([p (open-file-output-port
+                    file-path
+                    (file-options replace)
+                    'block
+                    (make-transcoder (utf-8-codec)))])
+           (put-string p fixture-content)
+           (close-port p)
+           #t)]
 
        [stream (string->utf8 (string-append (wrap init-json) (wrap cfg-json) (wrap def-json) (wrap refs-json)))]
        [input-port (open-bytevector-input-port stream)])
