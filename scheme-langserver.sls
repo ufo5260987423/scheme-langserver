@@ -77,6 +77,9 @@
         ["workspace/didCreateFiles" (did-create workspace params)]
         ["workspace/didRenameFiles" (did-rename workspace params)]
         ["workspace/didDeleteFiles" (did-delete workspace params)]
+        ;; lsp-bridge (and many other clients) send this after `initialized`.
+        ;; It's a notification so we must not reply even if we ignore it.
+        ["workspace/didChangeConfiguration" '()]
 
         ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
         ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
@@ -112,7 +115,12 @@
           ; ["textDocument/onTypeFormatting"
           ;  (text-document/on-type-formatting! id params)]
           ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))]))))
+        [else
+          ;; For JSON-RPC notifications, `id` is absent => `#f`.
+          ;; LSP requires servers to ignore unknown notifications and not respond.
+          (if id
+            (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
+            '())]))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";
