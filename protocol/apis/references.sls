@@ -34,13 +34,25 @@
       [index-node-list (document-index-node-list document)]
       [text (document-text document)]
       [bias (document+position->bias document (position-line position) (position-character position))]
-      [target-index-node (pick-index-node-from index-node-list bias)]
-      [prefix 
-        (if target-index-node 
-          (if (null? (index-node-children target-index-node)) 
-            (annotation-stripped (index-node-datum/annotations target-index-node))
-            #f))])
-    (if prefix
+      [pre-target-index-node (pick-index-node-from index-node-list bias)]
+      ;; Be tolerant when the client reports a position right *after* an identifier.
+      ;; In that case `pick-index-node-from` often returns the parent list node.
+      [target-index-node
+        (if (null? pre-target-index-node)
+          pre-target-index-node
+          (if (null? (index-node-children pre-target-index-node))
+            pre-target-index-node
+            (if (> bias 0)
+              (pick-index-node-from index-node-list (- bias 1))
+              pre-target-index-node)))]
+      [prefix
+        (if (and
+              (index-node? target-index-node)
+              (null? (index-node-children target-index-node)))
+          (let ([expr (annotation-stripped (index-node-datum/annotations target-index-node))])
+            (if (symbol? expr) expr #f))
+          #f)])
+    (if (symbol? prefix)
       (let* ([available-references 
             (if (null? (index-node-references-export-to-other-node target-index-node))
               (find-available-references-for document target-index-node prefix)
