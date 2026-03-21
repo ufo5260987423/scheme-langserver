@@ -2,9 +2,10 @@
   (export 
     generate-paths-file-filter)
   (import 
-    (rnrs)
-    (only (srfi :13 strings) string-prefix?))
+    (chezscheme)
+    (scheme-langserver virtual-file-system file-node)
+    (only (srfi :13 strings) string-suffix? string-prefix?))
 
-(define (generate-paths-file-filter paths)
-  (lambda (path) (not (not (find (lambda (s) (string-prefix? s path)) paths)))))
+(define (generate-paths-file-filter root paths)
+  (lambda (path) (not (not (find (lambda (s) (equal? s path)) `(,root . ,paths))))))
 )

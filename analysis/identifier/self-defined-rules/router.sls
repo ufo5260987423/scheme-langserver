@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis identifier self-defined-rules router)
   (export route&add)
   (import 
-    (rnrs)
+    (chezscheme)
     (scheme-langserver util path)
     (scheme-langserver util contain)
 

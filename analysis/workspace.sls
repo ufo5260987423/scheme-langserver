@@ -109,7 +109,7 @@
               [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])])
         (init-workspace path identifier top-environment threaded? type-inference? facet))]
     [(path identifier top-environment threaded? type-inference? facet)
-    ;; (pretty-print `(DEBUG: function: init-workspace))
+    ; (pretty-print `(DEBUG: function: init-workspace))
       (let* ([root-file-node (init-virtual-file-system path '() facet top-environment)]
           [root-library-node (init-library-node root-file-node top-environment)]
           [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
