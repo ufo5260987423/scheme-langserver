@@ -309,18 +309,14 @@
                   ['s7 '(s7)]
                   ['goldfish '(s7)]
                   [else '(chezscheme)])])
-    (try
-      (cond 
-        [(string? s) 
-          (let ([d (make-document uri s (find-meta meta-lib top-environment))])
-            (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))) 
-            d)]
-        [(eof-object? s) 
-          (make-document uri "" (find-meta meta-lib top-environment))]
-        [else '()])
-      (except c
-        [(equal? c 'can-not-tolerant) '()]
-        [else '()]))))
+    (cond 
+      [(string? s) 
+        (let ([d (make-document uri s (find-meta meta-lib top-environment))])
+          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))) 
+          d)]
+      [(eof-object? s) 
+        (make-document uri "" (find-meta meta-lib top-environment))]
+      [else '()])))
 
 (define init-library-node
   (case-lambda 
