@@ -20,35 +20,53 @@
     [(_ (literals ...) clauses **1) 
       (index-node-expansion-generator-set! input-index-node
         (lambda (local-root-file-node local-root-library-node local-document local-index-node)
-          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
-              [clause-index-nodes (cddr (index-node-children input-index-node))]
-              [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)]
-              [index (car index+expansion)]
+          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))])
+            (if (private:tree-has? local-expression '...)
+              '()
+              (let* ([clause-index-nodes (cddr (index-node-children input-index-node))]
+                  [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)]
+                  [index (car index+expansion)]
 
-              [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
-              [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
-              [expansion-expression (cdr index+expansion)]
+                  [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
+                  [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+                  [expansion-expression (cdr index+expansion)]
 
-              [pattern-expression (cdar clause-expression)]
-              [pattern (make-pattern pattern-expression)]
-              [template-expression (car (reverse clause-expression))]
-              [template-pattern (make-pattern template-expression)]
-              [pattern-context (gather-context pattern)]
-              [pairs (pattern+index-node->pair-list pattern local-index-node)]
-              [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
-              [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
+                  [pattern-expression (car clause-expression)]
+                  [pattern (make-pattern pattern-expression)]
+                  [template-expression (car (reverse clause-expression))]
+                  [template-pattern (make-pattern template-expression)]
+                  [pattern-context (gather-context pattern)]
+                  [pairs (pattern+index-node->pair-list pattern local-index-node)]
+                  [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
+                  [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
-              ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
-              [expansion-index-node 
-                (init-index-node 
-                  local-index-node
-                  (car 
-                    (source-file->annotations 
-                      (with-output-to-string (lambda () (pretty-print expansion-expression)))
-                      (uri->path (document-uri local-document)))))]
-              [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-            `(,matching-pairs . ,expansion-index-node))))]
+                  ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
+                  [expansion-index-node 
+                    (init-index-node 
+                      local-index-node
+                      (car 
+                        (source-file->annotations 
+                          (with-output-to-string (lambda () (pretty-print expansion-expression)))
+                          (uri->path (document-uri local-document)))))]
+                  [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+                `(,matching-pairs . ,expansion-index-node))))))]
     [else '()]))
+
+(define (private:tree-has? ready target)
+  (cond 
+    [(equal? ready target) #t]
+    [(list? ready) (find (lambda (item) (private:tree-has? item target)) ready)]
+    [(vector? ready) (private:tree-has? (vector->list ready) target)]
+    [(pair? ready) (or (private:tree-has? (car ready) target) (private:tree-has? (cdr ready) target))]
+    [else #f]))
+
+(define (compound-list->printable-list compound-list)
+  (cond
+    [(index-node? compound-list) (annotation-stripped (index-node-datum/annotations compound-list))]
+    [(list? compound-list) (map compound-list->printable-list compound-list)]
+    [(vector? compound-list) (vector-map compound-list->printable-list compound-list)]
+    [(pair? compound-list) `(,(compound-list->printable-list (car compound-list)) . ,(compound-list->printable-list (cdr compound-list)))]
+    [else compound-list]))
 
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
 (define (private:expansion+index-node->pairs compound-list index-node)
@@ -59,9 +77,10 @@
       [(list? compound-list) 
         (apply append 
           (map 
-            (lambda (left right) (private:expansion+index-node->pairs left right))
-            children
-            compound-list))]
+            (lambda (left right) 
+            (private:expansion+index-node->pairs left right))
+            compound-list
+            children))]
       [(vector? compound-list) 
         (private:expansion+index-node->pairs (vector->list compound-list) index-node)]
       [(pair? compound-list) 
@@ -73,13 +92,15 @@
   (let loop ([rest clause-index-nodes] [index 0])
     (let* ([current-clause-index-node (car rest)]
         [current-clause-expression (annotation-stripped (index-node-datum/annotations current-clause-index-node))]
-      [target (syntax->datum (eval 
-        `(syntax-case ',input-expression ,literals 
-          (,(car current-clause-expression) 
-            ;result
-            '(,index . #'(,(cdar current-clause-expression) . ,(car (reverse current-clause-expression)))))
-          (else  #f))))])
+        [pre-target 
+          `(syntax-case ',input-expression ,literals 
+            (,(car current-clause-expression) 
+              ;result
+              #'(,index . ,(car (reverse current-clause-expression))))
+            (else  #f))]
+        [target (syntax->datum (eval pre-target))])
       (if target
+        target
         (if (null? rest)
           #f
           (loop (cdr rest) (+ 1 index)))))))

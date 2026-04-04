@@ -45,8 +45,8 @@
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
-      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-        (add-rule-procedure rules `((,match-process) . ,target-identifier))]
+      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      ;   (add-rule-procedure rules `((,match-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
         (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
@@ -55,12 +55,10 @@
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
       ;only for test
-      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-      ;   (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
-      ;       [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])
-      ;     (display (document-uri current-document))
-      ;     (newline)
-      ;     (add-rule-procedure rules `((,rule) . ,target-identifier)))]
+      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+        (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
+            [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])
+          (add-rule-procedure rules `((,rule) . ,target-identifier)))]
       ; [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
       ;   (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
       ;       [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])

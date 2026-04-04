@@ -21,10 +21,10 @@
       [children (index-node-children index-node)])
     (match expression
       [(_ (? symbol? identifier) only-one) 
-        (if (not (null?  (index-node-references-export-to-other-node (cadr children))))
-          (identifier-reference-syntax-expander-set!
-            (index-node-references-export-to-other-node (cadr children))
-            (index-node-expansion-generator (car (reverse children)))))]
+        (if (not (null? (index-node-references-export-to-other-node (cadr children))))
+            (identifier-reference-syntax-expander-set!
+              (car (index-node-references-export-to-other-node (cadr children)))
+              (index-node-expansion-generator (car (reverse children)))))]
       [else '()])))
 ; reference-identifier-type include 
 ; syntax-parameter syntax-variable syntax parameter
