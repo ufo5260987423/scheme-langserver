@@ -53,6 +53,7 @@
     find-leaves 
     ancestor-recursion:index-node-import-file-nodes
 
+    get-biggest-sibling
     init-index-node
     is-first-child?
     is-leaf?
@@ -280,4 +281,9 @@
       '()
       (ancestor-recursion:index-node-import-file-nodes (index-node-parent index-node)))
     (index-node-import-file-nodes index-node)))
+
+(define (get-biggest-sibling index-node)
+  (if (null? (index-node-parent index-node))
+    #f
+    (car (index-node-children (index-node-parent index-node)))))
 )
