@@ -30,8 +30,7 @@
   add-rule-procedure step)
   (let* ([top (root-ancestor target-identifier)]
         [expressions (map identifier-reference-identifier top)]
-        [library-identifiers (map identifier-reference-library-identifier top)]
-        [possible-new-memory `(,@(reverse (cdr (reverse memory))) (,(car (reverse memory)) . ,identifier-list))])
+        [library-identifiers (map identifier-reference-library-identifier top)])
     (cond 
       [(and (equal? library-identifiers '((srfi :23 error tricks))) (equal? expressions '(SRFI-23-error->R6RS)))
         (add-rule-procedure rules `((,do-nothing . ,begin-process) . ,target-identifier))]
@@ -56,8 +55,19 @@
 
       ;only for test
       [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+        (pretty-print 'import-or-origin)
+        (pretty-print (document-uri current-document))
+        (pretty-print (map identifier-reference-syntax-expander top))
+        ; (pretty-print (identifier-reference-syntax-expander target-identifier))
+        ; (map 
+        ;   debug:print-expression
+        ;   (map identifier-reference-initialization-index-node top))
+        ; (map 
+        ;   debug:print-expression
+        ;   (map identifier-reference-index-node top))
+
         (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
-            [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])
+            [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list memory)])
           (add-rule-procedure rules `((,rule) . ,target-identifier)))]
       ; [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
       ;   (let* ([expander-proc (identifier-reference-syntax-expander (car top))]

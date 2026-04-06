@@ -83,6 +83,7 @@
         '() 
         (document-index-node-list current-document))
       (document-ordered-reference-list current-document)]
+    ;memory: its target is to avoid infinite recursion, and now we know, only macro expander may cause this case.
     [(root-file-node root-library-node file-linkage current-document expanded+callee-list memory)
       (fold-left
         (lambda (l current-index-node)
@@ -123,7 +124,7 @@
                       (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
                       current-document
                       expanded+callee-list 
-                      `(,memory (,(annotation-stripped (index-node-datum/annotations current-index-node)))))]
+                      memory)]
                   [else '()])])
             (try 
               (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)

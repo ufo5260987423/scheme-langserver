@@ -21,10 +21,12 @@
       [children (index-node-children index-node)])
     (match expression
       [(_ (? symbol? identifier) only-one) 
-        (if (not (null? (index-node-references-export-to-other-node (cadr children))))
-            (identifier-reference-syntax-expander-set!
-              (car (index-node-references-export-to-other-node (cadr children)))
-              (index-node-expansion-generator (car (reverse children)))))]
+        (map 
+          (lambda (id)
+            (identifier-reference-syntax-expander-set! id
+              (lambda x 
+                (apply (index-node-expansion-generator (car (reverse children))) x))))
+          (index-node-references-export-to-other-node (cadr children)))]
       [else '()])))
 ; reference-identifier-type include 
 ; syntax-parameter syntax-variable syntax parameter
