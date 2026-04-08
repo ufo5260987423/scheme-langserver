@@ -117,4 +117,119 @@
     (pat . else) 
     (body quote ()))))
 (test-end)
+
+(test-begin "pattern+context->pairs->iterator")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/analysis/identifier/rules/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
+            [document (file-node-document target-file-node)]
+            [text (document-text document)]
+            [index-node-list (document-index-node-list document)]
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [expression (annotation-stripped (index-node-datum/annotations index-node))]
+            [pattern-expression '(match atom (pat . body) ...)]
+            [pattern (make-pattern pattern-expression)]
+            [context (gather-context pattern)]
+            [pairs (pattern+index-node->pair-list pattern index-node)]
+            [iterator ((pattern+context->pairs->iterator 'pat context) pairs)])
+      (test-equal '(dive-into-an-ellipsed-form . 1) (iterator))
+      ;it can repeat
+      (test-equal '(dive-into-an-ellipsed-form . 1) (iterator 'repeat))
+      (test-equal '(_ (fuzzy0 **1) fuzzy1 ...) (annotation-stripped (index-node-datum/annotations (iterator))))
+      (test-equal 'escape-from-target-form (iterator))
+      (test-equal '(dive-into-an-ellipsed-form . 1) (iterator))
+      (test-equal 'else (annotation-stripped (index-node-datum/annotations (iterator))))
+      (test-equal 'escape-from-target-form (iterator))
+      (test-equal 'stop-iteration (iterator)))
+(test-end)
+
+(test-begin "generate-binding")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/analysis/identifier/rules/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
+            [document (file-node-document target-file-node)]
+            [text (document-text document)]
+            [index-node-list (document-index-node-list document)]
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [expression (annotation-stripped (index-node-datum/annotations index-node))]
+            [pattern-expression '(match atom (pat . body) ...)]
+            [pattern (make-pattern pattern-expression)]
+            [context (gather-context pattern)]
+            [pairs (pattern+index-node->pair-list pattern index-node)]
+            [iterator ((pattern+context->pairs->iterator 'pat context) pairs)]
+            [binding (generate-binding 'pat iterator)])
+      (test-equal 
+        '((_ (fuzzy0 **1) fuzzy1 ...) else)
+        (map (lambda (i) (annotation-stripped (index-node-datum/annotations i))) (cdr binding))))
+(test-end)
+
+(test-begin "expand:index-node-compound-list")
+    (let* ([workspace (init-workspace (string-append (current-directory) "/analysis/identifier/rules/") '() #f #f)]
+            [root-file-node (workspace-file-node workspace)]
+            [root-library-node (workspace-library-node workspace)]
+            [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
+            [document (file-node-document target-file-node)]
+            [text (document-text document)]
+            [index-node-list (document-index-node-list document)]
+            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [expression (annotation-stripped (index-node-datum/annotations index-node))]
+            [pattern-expression '(match atom (pat . body) ...)]
+            [pattern (make-pattern pattern-expression)]
+            [context (gather-context pattern)]
+            [pairs (pattern+index-node->pair-list pattern index-node)]
+            [template (make-pattern '(let ((v atom)) (match-next v (atom (set! atom)) (pat . body) ...)))]
+            [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal context) pairs))) (pattern-exposed-literals template))]
+            [expansion (expand->index-node-compound-list template bindings context)])
+      ; (pretty-print (expansion->printable-object expansion))
+      (test-equal 
+'(let ([v expression])
+  (match-next
+    v
+    (expression (set! expression))
+    ((_ (fuzzy0 **1) fuzzy1 ...)
+      (fold-left
+        (lambda (exclude-list identifier-parent-index-node)
+          (let* ([identifier-index-node (car (index-node-children
+                                               identifier-parent-index-node))]
+                 [target-identifier-reference (let-parameter-process index-node
+                                                identifier-index-node
+                                                index-node document type)]
+                 [extended-exclude-list (append
+                                          exclude-list
+                                          target-identifier-reference)])
+            (index-node-excluded-references-set!
+              (cadr (index-node-children index-node))
+              extended-exclude-list)
+            extended-exclude-list))
+        '()
+        (filter
+          (lambda (i) (not (null? (index-node-children i))))
+          (index-node-children
+            (cadr (index-node-children index-node)))))
+      '())
+    (else
+      (fold-left
+        (lambda (exclude-list identifier-parent-index-node)
+          (let* ([identifier-index-node (car (index-node-children
+                                               identifier-parent-index-node))]
+                 [target-identifier-reference (let-parameter-process index-node
+                                                identifier-index-node
+                                                index-node document type)]
+                 [extended-exclude-list (append
+                                          exclude-list
+                                          target-identifier-reference)])
+            (index-node-excluded-references-set!
+              (cadr (index-node-children index-node))
+              extended-exclude-list)
+            extended-exclude-list))
+        '()
+        (filter
+          (lambda (i) (not (null? (index-node-children i))))
+          (index-node-children
+            (cadr (index-node-children index-node)))))
+      '())))
+        (expansion->printable-object expansion)))
+(test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

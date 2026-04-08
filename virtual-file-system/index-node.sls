@@ -35,8 +35,8 @@
     index-node-substitution-list-set!
     index-node-import-file-nodes
     index-node-import-file-nodes-set!
-    index-node-expansions
-    index-node-expansions-set!
+    index-node-expansion-generator
+    index-node-expansion-generator-set!
 
     extend-index-node-substitution-list 
 
@@ -53,6 +53,7 @@
     find-leaves 
     ancestor-recursion:index-node-import-file-nodes
 
+    get-biggest-sibling
     init-index-node
     is-first-child?
     is-leaf?
@@ -79,7 +80,7 @@
     (mutable excluded-references)
     (mutable substitution-list)
     (mutable import-file-nodes)
-    (mutable expansions))
+    (mutable expansion-generator))
   (protocol
     (lambda (new)
       (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
@@ -280,4 +281,9 @@
       '()
       (ancestor-recursion:index-node-import-file-nodes (index-node-parent index-node)))
     (index-node-import-file-nodes index-node)))
+
+(define (get-biggest-sibling index-node)
+  (if (null? (index-node-parent index-node))
+    #f
+    (car (index-node-children (index-node-parent index-node)))))
 )

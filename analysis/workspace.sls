@@ -101,14 +101,16 @@
     [(path threaded?) (init-workspace path 'akku 'r6rs threaded? #f)]
     [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference?)]
     [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
-    [(path identifier top-environment threaded? type-inference?)
-    ;; (pretty-print `(DEBUG: function: init-workspace))
+    [(path identifier top-environment threaded? type-inference?) 
       (let* ([facet 
             (case identifier
               [txt (generate-txt-file-filter)]
               [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-              [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])]
-          [root-file-node (init-virtual-file-system path '() facet top-environment)]
+              [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])])
+        (init-workspace path identifier top-environment threaded? type-inference? facet))]
+    [(path identifier top-environment threaded? type-inference? facet)
+    ; (pretty-print `(DEBUG: function: init-workspace))
+      (let* ([root-file-node (init-virtual-file-system path '() facet top-environment)]
           [root-library-node (init-library-node root-file-node top-environment)]
           [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
           [batches (get-init-reference-batches file-linkage)]

@@ -14,6 +14,8 @@
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier primitive-variable)
 
+    (scheme-langserver analysis identifier expanders syntax-rules)
+
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver analysis identifier rules define)
@@ -81,6 +83,7 @@
         '() 
         (document-index-node-list current-document))
       (document-ordered-reference-list current-document)]
+    ;memory: its target is to avoid infinite recursion, and now we know, only macro expander may cause this case.
     [(root-file-node root-library-node file-linkage current-document expanded+callee-list memory)
       (fold-left
         (lambda (l current-index-node)
@@ -121,10 +124,10 @@
                       (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
                       current-document
                       expanded+callee-list 
-                      `(,memory (,(annotation-stripped (index-node-datum/annotations current-index-node)))))]
+                      memory)]
                   [else '()])])
             (try 
-              (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
+              (map (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
               (except c 
                 [else 
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warnning: Fail to catch identifiers"))]))
@@ -136,8 +139,8 @@
             (try 
               (map 
                 (lambda (f) 
-                  (if (not (null? (cdr (cdr f))))
-                    ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
+                  (if (not (null? (cddr f)))
+                    ((cddr f) root-file-node root-library-node current-document current-index-node))) 
                 target-rules)
               (except c 
                 [else 
@@ -179,7 +182,7 @@
               (private-add-rule rules `((,define-process) . ,identifier))]
             [(and (equal? r '(define)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,define-r7rs-process) . ,identifier))]
-            [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
+            [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process . ,define-syntax:attach-generator) . ,identifier))]
             [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
             [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
             [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
@@ -211,7 +214,7 @@
 
             [(and (equal? r '(syntax-case)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,syntax-case-process) . ,identifier))]
-            [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process) . ,identifier))]
+            [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process . ,syntax-rules->generator:map+expansion) . ,identifier))]
             [(and (equal? r '(identifier-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,identifier-syntax-process) . ,identifier))]
             [(and (equal? r '(with-syntax)) (private:top-env=? 'r6rs top))
@@ -256,6 +259,7 @@
       (lambda (identifier) 
         (not 
           (or 
+            ; (equal? 'syntax-variable (identifier-reference-type identifier))
             (equal? 'parameter (identifier-reference-type identifier))
             (equal? 'syntax-parameter (identifier-reference-type identifier))
             (equal? 'procedure (identifier-reference-type identifier))

@@ -46,15 +46,19 @@
         [else '()]))))
 
 (define (import-process root-file-node root-library-node document index-node)
-  (filter-empty-list 
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [(_ dummy **1 ) 
-          (map 
-            (lambda (child-node) (match-clause index-node root-file-node root-library-node document child-node)) 
-            (cdr (index-node-children index-node)))]
-        [else '()]))))
+  (let* ([biggest (get-biggest-sibling index-node)]
+      [flag (if (not biggest) #t (not (meta-for? document biggest 'library)))])
+    (if flag 
+      (filter-empty-list 
+        (let* ([ann (index-node-datum/annotations index-node)]
+            [expression (annotation-stripped ann)])
+          (match expression
+            [(_ dummy **1 ) 
+              (map 
+                (lambda (child-node) (match-clause index-node root-file-node root-library-node document child-node)) 
+                (cdr (index-node-children index-node)))]
+            [else '()])))
+      '())))
 
 (define process-library-identifier-excluded-references 
   (case-lambda 
