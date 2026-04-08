@@ -9,21 +9,17 @@
 
 (define (expansion-generator->rule proc step file-linkage expanded+callee-list memory)
   (lambda (root-file-node root-library-node document index-node)
-    (newline)
-    (pretty-print 'expansion)
-    (pretty-print (annotation-stripped (index-node-datum/annotations index-node)))
-    (pretty-print proc)
     (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
         ;taking analysis/identifier/expanders/syntax-rules as an example
-        [pairs+expansion (proc root-file-node root-library-node document index-node)]
-        [pairs (car pairs+expansion)]
-        [expansion-index-node (cdr pairs+expansion)]
-        [possible-new-memory `(,expression . ,memory)])
-      (if (not (contain? memory expression))
-        (begin
-          (pretty-print 'next-step)
-          (step root-file-node root-library-node file-linkage document expanded+callee-list possible-new-memory)))
-      (private:shallow-copy pairs expansion-index-node document index-node))))
+        [pairs+expansion (proc root-file-node root-library-node document index-node)])
+      (if pairs+expansion
+        (let* ([pairs (car pairs+expansion)]
+            [expansion-index-node (cdr pairs+expansion)]
+            [possible-new-memory `(,expression . ,memory)])
+          (if (not (contain? memory expression))
+            (step root-file-node root-library-node file-linkage document expanded+callee-list possible-new-memory))
+          (private:shallow-copy pairs expansion-index-node document index-node))
+        '()))))
 
 (define (private:shallow-copy pairs expansion-index-node document initialization-index-node)
   (let* ([local-identifiers+export-index-node (private:recursive-collect expansion-index-node index-node-references-export-to-other-node)]

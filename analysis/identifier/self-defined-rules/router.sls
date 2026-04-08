@@ -40,12 +40,12 @@
               (include-resolve-process root-file-node root-library-node document index-node 
                 (lambda (current-document) 
                   (file-linkage-set! file-linkage (uri->path (document-uri document)) (uri->path (document-uri current-document)))
-                  (step root-file-node root-library-node file-linkage current-document expanded+callee-list (reverse (cdr (reverse memory)))))))])
+                  (step root-file-node root-library-node file-linkage current-document expanded+callee-list memory))))])
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
-      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-      ;   (add-rule-procedure rules `((,match-process) . ,target-identifier))]
+      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+        (add-rule-procedure rules `((,match-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
         (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
@@ -54,24 +54,9 @@
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
       ;only for test
-      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-        (pretty-print 'import-or-origin)
-        (pretty-print (document-uri current-document))
-        (pretty-print (map identifier-reference-syntax-expander top))
-        ; (pretty-print (identifier-reference-syntax-expander target-identifier))
-        ; (map 
-        ;   debug:print-expression
-        ;   (map identifier-reference-initialization-index-node top))
-        ; (map 
-        ;   debug:print-expression
-        ;   (map identifier-reference-index-node top))
-
-        (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
-            [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list memory)])
-          (add-rule-procedure rules `((,rule) . ,target-identifier)))]
-      ; [(and (equal? (map identifier-reference-type top) '(syntax-variable)) (not (contain? memory (car (reverse possible-new-memory))))) 
-      ;   (let* ([expander-proc (identifier-reference-syntax-expander (car top))]
-      ;       [rule (expansion-generator->rule expander-proc step file-linkage expanded+callee-list possible-new-memory)])
-      ;     (add-rule-procedure rules `((,rule) . ,target-identifier)))]
+      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)) (identifier-reference-syntax-expander (car top)))
+      ;   (add-rule-procedure rules 
+      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander (car top)) step file-linkage expanded+callee-list memory)) . 
+      ;       ,target-identifier))]
       [else rules])))
 )

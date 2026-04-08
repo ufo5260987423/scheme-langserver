@@ -20,13 +20,12 @@
     [(_ (literals ...) clauses **1) 
       (index-node-expansion-generator-set! input-index-node
         (lambda (local-root-file-node local-root-library-node local-document local-index-node)
-          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))])
-            (if (private:tree-has? local-expression '...)
-              '()
-              (let* ([clause-index-nodes (cddr (index-node-children input-index-node))]
-                  [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)]
-                  [index (car index+expansion)]
-
+          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
+              [clause-index-nodes (cddr (index-node-children input-index-node))]
+              [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)])
+            (if (or (private:tree-has? local-expression '...) (not index+expansion))
+              #f
+              (let* ([index (car index+expansion)]
                   [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
                   [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
                   [expansion-expression (cdr index+expansion)]
@@ -50,12 +49,12 @@
                           (uri->path (document-uri local-document)))))]
                   [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
                 `(,matching-pairs . ,expansion-index-node))))))]
-    [else '()]))
+    [else #f]))
 
 (define (private:tree-has? ready target)
   (cond 
     [(equal? ready target) #t]
-    [(list? ready) (find (lambda (item) (private:tree-has? item target)) ready)]
+    [(null? ready) #f]
     [(vector? ready) (private:tree-has? (vector->list ready) target)]
     [(pair? ready) (or (private:tree-has? (car ready) target) (private:tree-has? (cdr ready) target))]
     [else #f]))
@@ -90,18 +89,16 @@
 
 (define (private:confirm-clause literals clause-index-nodes input-expression)
   (let loop ([rest clause-index-nodes] [index 0])
-    (let* ([current-clause-index-node (car rest)]
-        [current-clause-expression (annotation-stripped (index-node-datum/annotations current-clause-index-node))]
-        [pre-target 
-          `(syntax-case ',input-expression ,literals 
-            (,(car current-clause-expression) 
-              ;result
-              #'(,index . ,(car (reverse current-clause-expression))))
-            (else  #f))]
-        [target (syntax->datum (eval pre-target))])
-      (if target
-        target
-        (if (null? rest)
-          #f
-          (loop (cdr rest) (+ 1 index)))))))
+    (if (null? rest) 
+      #f
+      (let* ([current-clause-index-node (car rest)]
+          [current-clause-expression (annotation-stripped (index-node-datum/annotations current-clause-index-node))]
+          [pre-target 
+            `(syntax-case ',input-expression ,literals 
+              (,(car current-clause-expression) 
+                ;result
+                #'(,index . ,(car (reverse current-clause-expression))))
+              (else #f))]
+          [target (syntax->datum (eval pre-target))])
+        (if target target (loop (cdr rest) (+ 1 index)))))))
 )

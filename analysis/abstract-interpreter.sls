@@ -127,7 +127,7 @@
                       memory)]
                   [else '()])])
             (try 
-              (map (lambda (f) ((car (cdr f)) root-file-node root-library-node current-document current-index-node)) target-rules)
+              (map (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
               (except c 
                 [else 
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warnning: Fail to catch identifiers"))]))
@@ -139,8 +139,8 @@
             (try 
               (map 
                 (lambda (f) 
-                  (if (not (null? (cdr (cdr f))))
-                    ((cdr (cdr f)) root-file-node root-library-node current-document current-index-node))) 
+                  (if (not (null? (cddr f)))
+                    ((cddr f) root-file-node root-library-node current-document current-index-node))) 
                 target-rules)
               (except c 
                 [else 
