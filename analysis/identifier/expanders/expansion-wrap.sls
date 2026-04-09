@@ -75,7 +75,7 @@
     [(predicate? compound-list) `(,compound-list)]
     [(null? compound-list) '()]
     [(pair? compound-list) 
-      `(,(private:recursive-filter (car compound-list) predicate?) . ,(private:recursive-filter (cdr compound-list predicate?)))]
+      `(,(private:recursive-filter (car compound-list) predicate?) . ,(private:recursive-filter (cdr compound-list) predicate?))]
     [(vector? compound-list)
       (private:recursive-filter (vector->list compound-list) predicate?)]))
 
