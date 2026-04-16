@@ -55,6 +55,7 @@
 
       ;only for test
       ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)) (identifier-reference-syntax-expander (car top)))
+      ; (pretty-print 'trigger)
       ;   (add-rule-procedure rules 
       ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander (car top)) step file-linkage expanded+callee-list memory)) . 
       ;       ,target-identifier))]

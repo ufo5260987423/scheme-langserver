@@ -16,8 +16,8 @@
         (let* ([pairs (car pairs+expansion)]
             [expansion-index-node (cdr pairs+expansion)]
             [possible-new-memory `(,expression . ,memory)])
-          (if (not (contain? memory expression))
-            (step root-file-node root-library-node file-linkage document expanded+callee-list possible-new-memory))
+          (if (not (contain? memory expression)) 
+            (step root-file-node root-library-node file-linkage document expansion-index-node expanded+callee-list possible-new-memory))
           (private:shallow-copy pairs expansion-index-node document index-node))
         '()))))
 
@@ -83,5 +83,5 @@
   (if (null? (proc expansion-index-node))
     '()
     `((,expansion-index-node . ,(proc expansion-index-node)) .
-      ,(apply append (map private:recursive-collect (index-node-children expansion-index-node) proc)))))
+      ,(apply append (map (lambda (child) (private:recursive-collect child proc)) (index-node-children expansion-index-node))))))
 )
