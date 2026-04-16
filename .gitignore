@@ -26,6 +26,8 @@ output-type-analysis
 *.generated.c
 *.wpo
 
+/dist
+
 # IntelliJ
 out/
 
