@@ -124,17 +124,16 @@
 ;; init define let ...
 ;; export
 (define (init-references workspace-instance target-paths) 
-  (fold-left 
-    (lambda (left batch)
+  (for-each 
+    (lambda (batch)
       (if (workspace-threaded? workspace-instance)
         (with-mutex (workspace-mutex workspace-instance)
           (threaded-map 
             (lambda (path) (private-init-references workspace-instance path))
             (filter string? batch)))
-        (map 
+        (for-each 
           (lambda (path) (private-init-references workspace-instance path))
           (filter string? batch))))
-    '()
     target-paths))
 
 (define (private-init-references workspace-instance target-path)
@@ -184,8 +183,8 @@
     (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (not (equal? new-library-identifiers-list old-library-identifiers-list))
         (begin 
-;; BEGINE: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
-          (map 
+;; BEGIN: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
+          (for-each 
             (lambda (old-library-node)
               (library-node-file-nodes-set! 
                 old-library-node 
@@ -198,7 +197,7 @@
                 (delete-library-node-from-tree old-library-node)))
             old-library-node-list)
 ;; END
-          (map 
+          (for-each 
             (lambda (library-identifiers)
               (if (walk-library library-identifiers root-library-node)
                 (make-library-node library-identifiers root-library-node target-file-node)))
@@ -287,15 +286,16 @@
                     (file-node-children parent))])
               (if maybe-parent
                 (attach-new-file path maybe-parent my-filter top-environment)
-                (let ([new-node
-                      (init-virtual-file-system 
-                        (find (lambda (p) (string-prefix? p path))
-                          (map 
-                            (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
-                            (directory-list (file-node-path parent))))
-                        parent my-filter top-environment)])
-                  (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
-                  new-node)))]
+                (let ([prefix-path
+                      (find (lambda (p) (string-prefix? p path))
+                        (map 
+                          (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
+                          (directory-list (file-node-path parent))))])
+                  (if prefix-path
+                    (let ([new-node (init-virtual-file-system prefix-path parent my-filter top-environment)])
+                      (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
+                      new-node)
+                    '()))))]
           [else 
             (let* ([name (path->name path)] 
                 [document (init-document path top-environment)]
@@ -326,7 +326,7 @@
     [(file-node top-environment) (init-library-node file-node top-environment (make-library-node '() '() '() '()))]
     [(file-node top-environment root-library-node)
       (if (file-node-folder? file-node)
-        (map 
+        (for-each 
           (lambda (child-node) (init-library-node child-node top-environment root-library-node))
           (file-node-children file-node))
         (map 
