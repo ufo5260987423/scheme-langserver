@@ -93,6 +93,7 @@
     (workspace-file-node-set! workspace-instance root-file-node)
     (workspace-library-node-set! workspace-instance root-library-node)
     (workspace-file-linkage-set! workspace-instance file-linkage)
+    (workspace-undiagnosed-paths-set! workspace-instance (apply append batches))
     workspace-instance))
 
 (define init-workspace
@@ -216,7 +217,10 @@
         [root-library-node (workspace-library-node workspace-instance)]
         [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (null? library-identifiers-list)
-        (init-references workspace-instance `((,(file-node-path target-file-node))))
+        (let ([target-path (file-node-path target-file-node)])
+          (workspace-undiagnosed-paths-set! workspace-instance 
+            (ordered-dedupe (merge string<? (workspace-undiagnosed-paths workspace-instance) (sort string<? `(,target-path))) string=?))
+          (init-references workspace-instance `((,target-path))))
         (let* ([path 
             (refresh-file-linkage&get-refresh-path 
               linkage root-library-node target-file-node 

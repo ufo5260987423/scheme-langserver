@@ -150,7 +150,7 @@ This is the most expensive path; in practice library-header edits are rare compa
 Performs the actual re-analysis after a document has been marked refreshable.
 
 1. If the document is not refreshable, does nothing.
-2. If the file has no library identifiers, re-analyses that single file only.
+2. If the file has no library identifiers, appends its path to `undiagnosed-paths` and re-analyses that single file only.
 3. Otherwise:
    - Calls `refresh-file-linkage&get-refresh-path` to update the linkage row for this file and obtain the transitive closure of affected files (backwards along dependency edges).
    - Restricts the closure to files that are currently marked refreshable.
@@ -160,7 +160,7 @@ Performs the actual re-analysis after a document has been marked refreshable.
 
 ### 4.3 `refresh-workspace`
 
-A blunt but safe escape hatch: rebuilds the VFS, library tree, and linkage graph from scratch, then re-analyses everything. Used when the server detects a situation that incremental logic cannot handle reliably.
+A blunt but safe escape hatch: rebuilds the VFS, library tree, and linkage graph from scratch, then re-analyses everything and resets `undiagnosed-paths` to the full set of analysed paths. Used when the server detects a situation that incremental logic cannot handle reliably.
 
 ---
 
