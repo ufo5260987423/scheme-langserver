@@ -143,25 +143,66 @@
       shrinked-ids)))
 
 (define (shrink-ids matrix ids)
-  (let ([tmp 
-      (filter
-        (lambda (current-from) 
-          (zero? 
-            (apply + 
-              (map 
-                (lambda (to) (matrix-take matrix current-from to))
-                ids))))
-        ids)])
-    (cond 
-      [(null? ids) '()]
-      [(null? tmp) 
-        ;here, the ids is basically a super node representing cycles
-        ;so, ramdom remove one to break
-        `(,@(shrink-ids matrix (cdr ids))
-          (,(car ids)))]
-      [else 
-        `(,tmp 
-          ,@(shrink-ids matrix (filter (lambda (id) (not (memq id tmp))) ids)))])))
+  (if (null? ids)
+      '()
+      (let* ([id-set (make-eq-hashtable)]
+          [out-degrees (make-eq-hashtable)]
+          [in-adj (make-eq-hashtable)])
+        ; Build id-set for O(1) membership test
+        (for-each (lambda (id) (hashtable-set! id-set id #t)) ids)
+        
+        ; Build adjacency lists and out-degrees for the subgraph induced by ids
+        (for-each 
+          (lambda (from)
+            (let ([neighbors '()])
+              (for-each 
+                (lambda (to)
+                  (when (and (hashtable-ref id-set to #f) (not (zero? (matrix-take matrix from to))))
+                    (set! neighbors (cons to neighbors))))
+                ids)
+              (hashtable-set! out-degrees from (length neighbors))
+              (for-each 
+                (lambda (to)
+                  (hashtable-set! in-adj to 
+                    (cons from (hashtable-ref in-adj to '()))))
+                neighbors)))
+          ids)
+        
+        ; Kahn's algorithm: peel layers of nodes with zero out-degree.
+        ; Each layer can be analysed in parallel because its members no
+        ; longer depend on any remaining node in the current set.
+        (let loop ([queue (filter (lambda (id) (zero? (hashtable-ref out-degrees id 0))) ids)]
+            [remaining (length ids)]
+            [batches '()])
+          (cond
+            [(null? queue)
+              (if (zero? remaining)
+                (reverse batches)
+                ; Remaining nodes form one or more SCCs.  Rather than
+                ; serialising them one-by-one (which destroys parallelism),
+                ; pack the whole SCC as a single batch so that all its
+                ; members are processed concurrently.
+                (let ([scc (filter (lambda (id) (> (hashtable-ref out-degrees id 0) 0)) ids)])
+                  (reverse (cons scc batches))))]
+            [else
+              (let peel ([q queue] [next-q '()] [batch '()] [rem remaining])
+                (if (null? q)
+                    (loop next-q rem (cons batch batches))
+                    (let* ([node (car q)]
+                            [in-neighbors (hashtable-ref in-adj node '())])
+                      ; Decrement out-degree of every node that has an edge to node.
+                      ; When a node's out-degree drops to zero it becomes ready for
+                      ; the next batch.
+                      (for-each 
+                        (lambda (neighbor)
+                          (let ([deg (hashtable-ref out-degrees neighbor 0)])
+                            (when (> deg 0)
+                              (let ([new-deg (- deg 1)])
+                                (hashtable-set! out-degrees neighbor new-deg)
+                                (when (zero? new-deg)
+                                  (set! next-q (cons neighbor next-q)))))))
+                        in-neighbors)
+                      (peel (cdr q) next-q (cons node batch) (- rem 1)))))])))))
 
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]
