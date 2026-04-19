@@ -7,7 +7,8 @@
         matrix-from
         find-cycle
         encode 
-        decode)
+        decode
+        matrix-shrink)
     (import (rnrs))
 
 (define (matrix-from matrix from-id)
@@ -36,16 +37,34 @@
 
 (define (matrix-expand target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]
-      [result (make-vector (* (+ 1 node-count) (+ 1 node-count)))]
+      [new-count (+ 1 node-count)]
+      [result (make-vector (* new-count new-count))]
       [current-length (vector-length result)])
     (let loop ([index 0])
       (if (< index current-length)
-        (let* ([indexes (decode node-count index)]
+        (let* ([indexes (decode new-count index)]
             [row-id (car indexes)]
             [column-id (cadr indexes)])
-          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) (matrix-take target-matrix row-id column-id) 0))
+          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) 0 (matrix-take target-matrix row-id column-id)))
           (loop (+ index 1)))
         result))))
+
+(define (matrix-shrink target-matrix removed-id)
+  (let* ([node-count (sqrt (vector-length target-matrix))]
+         [new-count (- node-count 1)])
+    (if (<= new-count 0)
+      (make-vector 0)
+      (let ([result (make-vector (* new-count new-count) 0)])
+        (let loop ([new-row 0])
+          (if (< new-row new-count)
+            (let ([old-row (if (< new-row removed-id) new-row (+ new-row 1))])
+              (let loop2 ([new-col 0])
+                (if (< new-col new-count)
+                  (let ([old-col (if (< new-col removed-id) new-col (+ new-col 1))])
+                    (matrix-set! result new-row new-col (matrix-take target-matrix old-row old-col))
+                    (loop2 (+ 1 new-col)))
+                  (loop (+ 1 new-row)))))
+            result))))))
 
 (define (encode columns-number n m)
   (+ (* n columns-number) m))

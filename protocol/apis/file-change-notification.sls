@@ -8,6 +8,7 @@
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -59,16 +60,19 @@
 (define (did-delete workspace params)
   (let* ([files (vector->list (assq-ref params 'files))]
       [uris (map (lambda (file) (assq-ref file 'uri)) files)]
-      [paths (map uri->path uris)])
+      [paths (map uri->path uris)]
+      [linkage (workspace-file-linkage workspace)])
     (map 
       (lambda (file-node)
         (if (file-node? file-node)
-          (file-node-children-set!
-            (file-node-parent file-node)
-            (filter 
-              (lambda (siblins)
-                (not (equal? file-node siblins)))
-              (file-node-children (file-node-parent file-node))))))
+          (begin
+            (shrink-file-linkage! linkage (file-node-path file-node))
+            (file-node-children-set!
+              (file-node-parent file-node)
+              (filter 
+                (lambda (siblins)
+                  (not (equal? file-node siblins)))
+                (file-node-children (file-node-parent file-node)))))))
       (map 
         (lambda (path) (walk-file (workspace-file-node workspace) path))
         paths))))

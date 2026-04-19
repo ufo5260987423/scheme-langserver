@@ -145,7 +145,22 @@ Steps:
    - The file itself
    - All files that this file (directly or indirectly) **depends on** (`reference-id-to`)
 
-> Note: In the current implementation, if a file is deleted and `new-library-identifier-list` is empty, an empty list is returned (TODO: matrix shrink).
+### 5.2 `shrink-file-linkage!`
+
+When a file is physically deleted from the workspace, its row and column must be removed from the linkage matrix to keep the graph consistent. This function performs a **matrix shrink**:
+
+```scheme
+(shrink-file-linkage! linkage removed-path)
+```
+
+Steps:
+
+1. Look up the integer `id` of `removed-path` in `path->id-map`.
+2. Build new `path->id-map` / `id->path-map` pairs, skipping the removed id and renumbering all higher ids down by one so ids stay contiguous.
+3. Call `matrix-shrink` to produce a new `(N-1) × (N-1)` matrix that copies every value except the removed row and column.
+4. Replace the old maps and matrix in the `file-linkage` record.
+
+This is called from `protocol/apis/file-change-notification.sls` (`did-delete`) so that deletions are reflected immediately in the dependency graph.
 
 ---
 
@@ -259,6 +274,15 @@ Coverage includes:
 - `get-init-inference-path`: Verifies that `get-init-reference-batches` includes the specified file.
 - `file-linkage-to`: Verifies reverse lookup (who depends on `error-code.sls`).
 - `r7rs` / `s7` environment support: Verifies import parsing and dependency graph construction under different Scheme dialects.
+
+**Expanded coverage (Groups A–E)** using dedicated workspace fixtures under `tests/resources/workspace-fixtures/`:
+
+- **Group A – Basic query API**: Verifies `file-linkage-from` (outgoing deps), `file-linkage-head` (in-degree-0 nodes), `file-linkage-set!` / `file-linkage-take` (matrix mutation), and accessor non-empty validation (`path->id-map`, `id->path-map`, `matrix`).
+- **Group B – Transitive closure**: Verifies `get-reference-path-from` and `get-reference-path-to` on `simple-lib` and `two-libs` fixtures, including self-inclusion behavior.
+- **Group C – Topological batching**: Verifies `shrink-paths` (direct ordering, single-file, empty input) and `get-init-reference-batches` (full-project layering) on acyclic fixtures.
+- **Group D – Incremental refresh**: Verifies `refresh-file-linkage&get-refresh-path` returns correct refresh set for an existing file, and `matrix-expand` correctly grows a square adjacency matrix while preserving old values and zeroing the new row/column. Also fixes a `decode` bug in `matrix-expand` where the old node count was used instead of `new-count`.
+- **Group E – Edge cases**: Verifies empty-project linkage (zero-length matrix), script-only project (no file-to-file deps), and cyclic dependencies (SCC packed into a single batch by `shrink-ids`).
+- **Group F – Matrix shrink**: Verifies `shrink-file-linkage!` removes a file from the linkage maps and matrix, renumbers remaining ids, and is a no-op for non-existent paths. Also verifies `matrix-shrink` produces correct smaller matrices and handles the 1×1 → 0×0 edge case.
 
 ---
 

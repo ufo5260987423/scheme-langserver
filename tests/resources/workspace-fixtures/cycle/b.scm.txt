@@ -1,0 +1,5 @@
+(library (fixtures cycle b)
+  (export b-fn)
+  (import (rnrs)
+          (fixtures cycle a))
+  (define (b-fn x) (+ x 1)))

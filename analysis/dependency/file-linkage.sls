@@ -19,7 +19,8 @@
     
     refresh-file-linkage&get-refresh-path
     get-init-reference-batches
-    shrink-paths)
+    shrink-paths
+    shrink-file-linkage!)
   (import 
     (chezscheme)
     (scheme-langserver analysis util)
@@ -96,12 +97,38 @@
                   (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node top-environment))
                   new-index-node-list)))])
         (if (null? id)
-          ;;todo shrink matrix
-          '()
+          (begin
+            ;; File is not in the linkage (script file or already removed)
+            '())
           (begin 
             (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
             (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
             (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to)))))]))
+
+(define (shrink-file-linkage! linkage removed-path)
+  (let* ([path->id-map (file-linkage-path->id-map linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [removed-id (hashtable-ref path->id-map removed-path #f)])
+    (if removed-id
+      (let* ([old-node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
+          [new-path->id-map (make-hashtable string-hash equal?)]
+          [new-id->path-map (make-eq-hashtable)]
+          [next-id 0])
+        (let loop ([id 0])
+          (if (< id old-node-count)
+            (begin
+              (when (not (= id removed-id))
+                (let ([path (hashtable-ref id->path-map id #f)])
+                  (when path
+                    (hashtable-set! new-path->id-map path next-id)
+                    (hashtable-set! new-id->path-map next-id path)
+                    (set! next-id (+ 1 next-id)))))
+              (loop (+ 1 id)))
+            (void)))
+        (file-linkage-path->id-map-set! linkage new-path->id-map)
+        (file-linkage-id->path-map-set! linkage new-id->path-map)
+        (file-linkage-matrix-set! linkage (matrix-shrink (file-linkage-matrix linkage) removed-id)))
+      (void))))
 
 (define (get-reference-path-to linkage to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
