@@ -1,0 +1,4 @@
+(library (fixtures two-libs helper)
+  (export helper-fn)
+  (import (rnrs))
+  (define (helper-fn x) (* x 2)))

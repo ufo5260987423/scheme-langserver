@@ -24,8 +24,7 @@
 
     update-file-node-with-tail
 
-    attach-new-file
-    remove-new-file)
+    attach-new-file)
   (import 
     (ufo-match)
     (ufo-threaded-function)
@@ -194,14 +193,14 @@
                     (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
                   (library-node-file-nodes old-library-node)))
               (if (and (null? (library-node-file-nodes old-library-node)) 
-                  (null? (library-node-children old-library-node)))
+                  (null? (library-node-children old-library-node))
+                  (not (null? (library-node-parent old-library-node))))
                 (delete-library-node-from-tree old-library-node)))
             old-library-node-list)
 ;; END
           (for-each 
             (lambda (library-identifiers)
-              (if (walk-library library-identifiers root-library-node)
-                (make-library-node library-identifiers root-library-node target-file-node)))
+              (make-library-node library-identifiers root-library-node target-file-node))
             new-library-identifiers-list)
           (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node (workspace-top-environment workspace-instance)))
 ;;For new dependency
@@ -263,17 +262,6 @@
         (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
         node)
       '())]))
-
-(define (remove-new-file path parent my-filter)
-  (let ([f (walk-file parent path)])
-    (cond 
-      [(not (null? f)) '()]
-      [else 
-        (file-node-children-set!
-          (file-node-parent f)
-          (filter 
-            (lambda (x) (not (equal? x f)))
-            (file-node-children (file-node-parent f))))])))
 
 (define attach-new-file
   (case-lambda
