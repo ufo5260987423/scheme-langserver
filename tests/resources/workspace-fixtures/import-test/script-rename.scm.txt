@@ -1,0 +1,3 @@
+(import (rnrs)
+        (rename (fixtures import-test lib) (foo renamed-foo)))
+renamed-foo

@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-rename)
+  (export consumer-rename)
+  (import (rnrs)
+          (rename (fixtures import-test lib) (foo renamed-foo)))
+  (define (consumer-rename) renamed-foo))

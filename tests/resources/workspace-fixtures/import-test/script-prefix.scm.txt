@@ -1,0 +1,3 @@
+(import (rnrs)
+        (prefix (fixtures import-test lib) t:))
+t:foo

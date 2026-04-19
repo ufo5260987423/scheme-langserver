@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-plain)
+  (export consumer-plain)
+  (import (rnrs)
+          (fixtures import-test lib))
+  (define (consumer-plain) foo))

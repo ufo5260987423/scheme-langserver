@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-alias)
+  (export consumer-alias)
+  (import (rnrs)
+          (alias (fixtures import-test lib) (foo aliased-foo)))
+  (define (consumer-alias) aliased-foo))
