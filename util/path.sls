@@ -9,7 +9,7 @@
       (chezscheme)
       (only (chibi pathname) path-strip-directory)
       (scheme-langserver util environment) 
-      (only (srfi :13 strings) string-index string-prefix? string-suffix? string-drop string-drop-right string-contains)
+      (only (srfi :13 strings) string-index string-prefix? string-suffix? string-drop string-drop-right string-contains string-join)
       (srfi :14))
 
 ;; reserved = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | "," | "$"
@@ -18,6 +18,37 @@
 ;;                       "a" | "b" | "c" | "d" | "e" | "f"
 ;;%= %25
 ;; reserved = "/" | "?" | ";" | "="
+
+;; Split a string by a single character delimiter.
+(define (private:string-split str char)
+  (let loop ([start 0] [result '()])
+    (let ([pos (string-index str char start)])
+      (if pos
+        (loop (+ 1 pos) (cons (substring str start pos) result))
+        (reverse (cons (substring str start (string-length str)) result))))))
+
+;; Resolve a relative path against a base directory, normalising "." and "..".
+;; Both base and the result are absolute paths.
+(define (private:resolve-relative-path base path)
+  (let* ([base-parts (private:string-split base #\/)]
+         ;; Remove empty strings caused by leading or trailing slashes
+         [clean-base (filter (lambda (s) (not (string=? s ""))) base-parts)]
+         [path-parts (private:string-split path #\/)]
+         [stack clean-base])
+    (for-each
+      (lambda (seg)
+        (cond
+          [(or (string=? seg "") (string=? seg "."))
+           (void)]
+          [(string=? seg "..")
+           (if (null? stack)
+             (void)
+             (set! stack (reverse (cdr (reverse stack)))))]
+          [else
+            (set! stack (append stack (list seg)))]))
+      path-parts)
+    (string-append "/" (string-join stack "/"))))
+
 (define (private:path->uri-transformation path)
   (let ([token-vector (list->vector (string->list path))]
       [start-position (string-index path (list->char-set 
@@ -39,12 +70,7 @@
     (private:path->uri-transformation
       (if (path-absolute? path)
         path
-        ;; FIXME: breaks for any non-trivial relative path i.e. ones with dot(s)
-        ;;        also assumes (getcwd) to be absolute (which might not be true?)
-        (let ((pwd (current-directory)))
-          (if (equal? path ".") ;; special case "." so at least that works
-            pwd
-            (string-append pwd "/" path)))))))
+        (private:resolve-relative-path (current-directory) path)))))
 
 (define (uri->path uri)
   (let* ([rest (substring uri (+ 3 (string-contains uri "://")) (string-length uri))]
