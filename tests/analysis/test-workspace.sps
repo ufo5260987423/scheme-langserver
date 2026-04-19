@@ -207,8 +207,8 @@
          [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
          [root (workspace-file-node workspace)]
          [script-node (walk-file root (string-append fixture "/hello.scm.txt"))])
-    ;; Script files have no library identifiers (get-library-identifiers-list returns '(()))
-    (test-equal '(()) (get-library-identifiers-list (file-node-document script-node) 'r6rs))
+    ;; Script files have no library identifiers
+    (test-equal '() (get-library-identifiers-list (file-node-document script-node) 'r6rs))
     ;; Clear undiagnosed-paths
     (workspace-undiagnosed-paths-set! workspace '())
     (test-equal '() (workspace-undiagnosed-paths workspace))
@@ -257,9 +257,8 @@
          [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
          [root (workspace-file-node workspace)]
          [script-node (walk-file root (string-append fixture "/hello.scm.txt"))])
-    ;; Script files have no real library identifier; get-library-identifiers-list
-    ;; returns '(()) so the file is still attached to the root library-node.
-    (test-equal '(()) (get-library-identifiers-list (file-node-document script-node) 'r6rs))
+    ;; Script files have no real library identifier
+    (test-equal '() (get-library-identifiers-list (file-node-document script-node) 'r6rs))
     ;; Add a library header
     (update-file-node-with-tail workspace script-node
       "(library (fixtures script-only hello)\n  (export greet)\n  (import (rnrs))\n  (define (greet) 'hi))\n")

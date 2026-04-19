@@ -21,7 +21,7 @@
     (case-lambda
         [(document) (get-library-identifiers-list document 'r6rs)]
         [(document top-environment)
-            (let [(func (case top-environment
+            (let ([func (case top-environment
                             ['r6rs
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
@@ -36,12 +36,11 @@
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
                                     [('define-library (name **1) _ ... ) name]
-                                    [else '()]))]))]
+                                    [else '()]))])])
                 (if (null? document)
                     '()
-                    (let ([index-node-list (document-index-node-list document)])
-                        (dedupe
-                            (map func index-node-list)))))]))
+                    (let ([result (dedupe (map func (document-index-node-list document)))])
+                        (filter (lambda (x) (not (null? x))) result))))]))
 
 (define (get-nearest-ancestor-library-identifier index-node)
     (if (null? index-node)

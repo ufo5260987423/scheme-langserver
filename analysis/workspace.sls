@@ -306,7 +306,7 @@
     (cond 
       [(string? s) 
         (let ([d (make-document uri s (find-meta meta-lib top-environment))])
-          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations path))) 
+          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path))) 
           d)]
       [(eof-object? s) 
         (make-document uri "" (find-meta meta-lib top-environment))]
@@ -321,8 +321,11 @@
         (for-each 
           (lambda (child-node) (init-library-node child-node top-environment root-library-node))
           (file-node-children file-node))
-        (map 
-          (lambda (library-identifiers) (make-library-node library-identifiers root-library-node file-node))
-          (get-library-identifiers-list (file-node-document file-node) top-environment)))
+        (let ([library-identifiers-list (get-library-identifiers-list (file-node-document file-node) top-environment)])
+          (if (null? library-identifiers-list)
+            (make-library-node '() root-library-node file-node)
+            (map 
+              (lambda (library-identifiers) (make-library-node library-identifiers root-library-node file-node))
+              library-identifiers-list))))
       root-library-node]))
 )
