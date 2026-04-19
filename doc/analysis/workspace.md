@@ -93,14 +93,14 @@ Performs the first parse of a source file:
 1. Reads the file as a string (`read-string`).
 2. Chooses a meta-library based on `top-environment` (`(scheme base)` for r7rs, `(chezscheme)` for r6rs, etc.).
 3. Creates a `document` with URI, text, and the meta-library’s identifier table.
-4. Runs `source-file->annotations` (the tolerant tokenizer) to produce a list of annotated AST nodes.
+4. Runs `source-file->annotations` on the already-read string (not re-reading from disk) to produce a list of annotated AST nodes.
 5. Wraps each annotation in an `index-node` and stores the list in the document.
 
 If the file cannot be read, an empty document is produced.
 
 ### 3.4 `init-library-node`
 
-Walks the VFS tree and, for every file that contains a `(library ...)` form, extracts its identifier list and inserts it into a hierarchical `library-node` tree. This tree is used later to map import clauses back to the files that provide them.
+Walks the VFS tree and extracts library identifiers from every file. Files that contain a `(library ...)` form are inserted under their identifier path in the hierarchical `library-node` tree. Files without a library declaration (script files) are attached directly to the root library node so that they still participate in the dependency graph and incremental refresh pipeline.
 
 The root library node is created automatically; children are attached by `make-library-node`.
 
