@@ -63,7 +63,7 @@
           (enqueue! (request-queue-queue request-queue) new-task)
           (request-queue-tickal-task-list-set! 
             request-queue
-            `(,@(request-queue-tickal-task-list request-queue) ,new-task))
+            (cons new-task (request-queue-tickal-task-list request-queue)))
 
           (tickal-task-expire-set! new-task expire)
           (tickal-task-complete-set! new-task complete)
