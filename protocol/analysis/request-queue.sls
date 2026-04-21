@@ -23,6 +23,11 @@
       (lambda ()
         (new (make-mutex) (make-condition) (make-queue) '())))))
 
+;ticks is an empirical constant for Chez Scheme's engine time-slicing.
+;It bounds how many abstract instructions a single task may execute before
+;entering the expire callback.  The value 100000 was chosen to let typical
+;LSP requests finish in one slice while forcing long-running analysis
+;(e.g. type inference) to yield periodically so that cancellation can be checked.
 (define ticks 100000)
 
 (define-record-type tickal-task 
@@ -36,7 +41,7 @@
     ;must have request-queue-mutex
     (lambda (new)
       (lambda (request request-queue workspace)
-        (letrec* ([new-task (new request request-queue #f '() '())]
+        (let* ([new-task (new request request-queue #f '() '())]
             [complete 
               (lambda (ticks value) 
                 (remove:from-request-tickal-task-list request-queue new-task)
@@ -47,9 +52,9 @@
               (lambda (remains) 
                 (cond 
                   [(or 
-                    (equal? "textDocument/didChange" (request-method request))
-                    (equal? "textDocument/didOpen" (request-method request))
-                    (equal? "textDocument/didClose" (request-method request)))
+                    (string=? "textDocument/didChange" (request-method request))
+                    (string=? "textDocument/didOpen" (request-method request))
+                    (string=? "textDocument/didClose" (request-method request)))
                     (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]
                   [(tickal-task-stop? new-task)
                     (with-mutex (workspace-mutex workspace)
@@ -74,7 +79,7 @@
       ;by default, this will release request-queue-mutex 
       ;and re-enter when request-queue-condition is signed.
       (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
-    (letrec* ([task (dequeue! (request-queue-queue queue))]
+    (let* ([task (dequeue! (request-queue-queue queue))]
         [request (tickal-task-request task)]
         [job (lambda () 
               (if (tickal-task-stop? task)
