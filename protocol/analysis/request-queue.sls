@@ -100,7 +100,7 @@
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
       ["private:publish-diagnoses"
-        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+        (let* ([predicator (lambda (task) (string=? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
