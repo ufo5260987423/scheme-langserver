@@ -4,104 +4,104 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import 
-    ; (rnrs (6)) 
-    (chezscheme) 
-    (srfi :64 testing) 
-    (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system library-node)
+(import
+  ; (rnrs (6))
+  (chezscheme)
+  (srfi :64 testing)
+  (scheme-langserver virtual-file-system file-node)
+  (scheme-langserver virtual-file-system index-node)
+  (scheme-langserver virtual-file-system document)
+  (scheme-langserver virtual-file-system library-node)
 
-    (scheme-langserver util contain)
-    (scheme-langserver util text)
-    (scheme-langserver util test)
+  (scheme-langserver util contain)
+  (scheme-langserver util text)
+  (scheme-langserver util test)
 
-    (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis workspace)
-    (scheme-langserver analysis tokenizer)
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier meta)
+  (scheme-langserver analysis package-manager akku)
+  (scheme-langserver analysis workspace)
+  (scheme-langserver analysis tokenizer)
+  (scheme-langserver analysis identifier reference)
+  (scheme-langserver analysis identifier meta)
 
-    (scheme-langserver analysis type domain-specific-language interpreter)
-    (scheme-langserver analysis type domain-specific-language inner-type-checker)
+  (scheme-langserver analysis type domain-specific-language interpreter)
+  (scheme-langserver analysis type domain-specific-language inner-type-checker)
 
-    (scheme-langserver analysis type substitutions util)
-    (scheme-langserver analysis type substitutions generator)
+  (scheme-langserver analysis type substitutions util)
+  (scheme-langserver analysis type substitutions generator)
 
-    (scheme-langserver protocol alist-access-object))
+  (scheme-langserver protocol alist-access-object))
 
 (test-begin "index-node/variable declaration")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list target-document))]
-            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
-            [loop-node (find-named-let matrix-from-node 'loop)]
-            [binding-node (find-binding-node loop-node 'column-id)]
-            [target-index-node (car (index-node-children binding-node))]
-            [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitutions-for target-document)
-        (test-equal #t 
-            (contain? 
-                (type:interpret-result-list target-index-node) 
-                check-base)))
+  (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+      [loop-node (find-named-let matrix-from-node 'loop)]
+      [binding-node (find-binding-node loop-node 'column-id)]
+      [target-index-node (car (index-node-children binding-node))]
+      [check-base (construct-type-expression-with-meta 'fixnum?)])
+    (construct-substitutions-for target-document)
+    (test-equal #t
+      (contain?
+        (type:interpret-result-list target-index-node)
+        check-base)))
 (test-end)
 
 (test-begin "variable access")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list target-document))]
-            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
-            [loop-node (find-named-let matrix-from-node 'loop)]
-            [target-index-node (find-symbol-in-body loop-node 'column-id)]
-            [check-base (construct-type-expression-with-meta 'fixnum?)])
-        (construct-substitutions-for target-document)
-        (test-equal #t 
-            (contain? 
-                (type:interpret-result-list target-index-node) 
-                check-base)))
-    (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list target-document))]
-            [define-node (find-define-with-params root-index-node 'is-leaf?)]
-            [name-list-node (cadr (index-node-children define-node))]
-            [target-index-node (car (index-node-children name-list-node))]
-            [check-base (construct-type-expression-with-meta 'boolean?)])
-        (construct-substitutions-for target-document)
-        ; (debug:print-expression&uuid target-index-node)
-        ; (pretty-print (map inner:type->string (type:interpret-result-list target-index-node)))
-        (test-equal #t 
-            (contain? 
-                (map car (filter list? (type:interpret-result-list target-index-node)))
-                check-base)))
+  (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+      [loop-node (find-named-let matrix-from-node 'loop)]
+      [target-index-node (find-symbol-in-body loop-node 'column-id)]
+      [check-base (construct-type-expression-with-meta 'fixnum?)])
+    (construct-substitutions-for target-document)
+    (test-equal #t
+      (contain?
+        (type:interpret-result-list target-index-node)
+        check-base)))
+  (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [define-node (find-define-with-params root-index-node 'is-leaf?)]
+      [name-list-node (cadr (index-node-children define-node))]
+      [target-index-node (car (index-node-children name-list-node))]
+      [check-base (construct-type-expression-with-meta 'boolean?)])
+    (construct-substitutions-for target-document)
+    ; (debug:print-expression&uuid target-index-node)
+    ; (pretty-print (map inner:type->string (type:interpret-result-list target-index-node)))
+    (test-equal #t
+      (contain?
+        (map car (filter list? (type:interpret-result-list target-index-node)))
+        check-base)))
 (test-end)
 
 (test-begin "loop declaration")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
-            [target-document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list target-document))]
-            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
-            [let-loop-node (find-named-let matrix-from-node 'loop)]
-            [target-index-node (cadr (index-node-children let-loop-node))]
-            [check-base (construct-type-expression-with-meta '((inner:list?) <- (inner:list? fixnum? (inner:list?))))])
-        (construct-substitutions-for target-document)
-        ; (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
-        (test-equal #t 
-            (contain? 
-                (type:recursive-interpret-result-list target-index-node)
-                check-base)))
+  (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+      [let-loop-node (find-named-let matrix-from-node 'loop)]
+      [target-index-node (cadr (index-node-children let-loop-node))]
+      [check-base (construct-type-expression-with-meta '((inner:list?) <- (inner:list? fixnum? (inner:list?))))])
+    (construct-substitutions-for target-document)
+    ; (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
+    (test-equal #t
+      (contain?
+        (type:recursive-interpret-result-list target-index-node)
+        check-base)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

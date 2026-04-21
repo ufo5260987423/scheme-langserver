@@ -163,7 +163,26 @@ Or use `walk-file` for recursive lookup:
 
 Observed conventions in existing code:
 
-- **Indentation**: 2 spaces (no tabs).
+- **Indentation**: 2 spaces (no tabs). Indent by nesting level only; never align across lines.
+  - General nesting: +2 spaces per level.
+  - `let` / `let*` bindings: +4 spaces from the `let` keyword.
+  - `let` / `let*` body: +2 spaces from the `let` keyword.
+  ```scheme
+  (import
+    (chezscheme)
+    (srfi :64 testing))
+
+  (test-begin "group-name")
+    (let* ([foo (init-foo)]
+        [bar (workspace-bar foo)]
+        [baz (construct-baz bar)])
+      (process-baz baz)
+      (test-equal #t
+        (contain?
+          (type:interpret-result-list baz)
+          check-base)))
+  (test-end)
+  ```
 - **Naming**:
   - Functions / variables: `kebab-case`
   - Record type accessors: `<record>-<field>` (e.g. `file-node-path`)
