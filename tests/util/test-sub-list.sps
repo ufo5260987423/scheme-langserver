@@ -7,7 +7,7 @@
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver util sub-list))
 
 (test-begin "find-intersection test")
-    (test-equal '(c) (find-intersection '(b a bc c) '(c d) equal? ))
+  (test-equal '(c) (find-intersection '(b a bc c) '(c d) equal? ))
 (test-end)
 
 

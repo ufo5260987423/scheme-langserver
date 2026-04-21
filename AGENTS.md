@@ -167,6 +167,7 @@ Observed conventions in existing code:
   - General nesting: +2 spaces per level.
   - `let` / `let*` bindings: +4 spaces from the `let` keyword.
   - `let` / `let*` body: +2 spaces from the `let` keyword.
+  - Function-call arguments inside `let` body: continue +2 per nesting level (do **not** flatten everything to the same column).
   ```scheme
   (import
     (chezscheme)

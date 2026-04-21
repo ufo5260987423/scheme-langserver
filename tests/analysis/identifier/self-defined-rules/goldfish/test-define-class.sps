@@ -5,44 +5,44 @@
 #!r6rs
 
 (import (rnrs (6)) (srfi :64 testing) 
-    (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
-    (scheme-langserver analysis identifier rules let)
-    (scheme-langserver analysis identifier rules library-import)
-    (scheme-langserver analysis package-manager akku)
+  (scheme-langserver analysis workspace)
+  (scheme-langserver analysis identifier reference)
+  (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
+  (scheme-langserver analysis identifier rules let)
+  (scheme-langserver analysis identifier rules library-import)
+  (scheme-langserver analysis package-manager akku)
 
-    (scheme-langserver util text)
-    (scheme-langserver util test)
-    (scheme-langserver protocol alist-access-object)
+  (scheme-langserver util text)
+  (scheme-langserver util test)
+  (scheme-langserver protocol alist-access-object)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system document))
+  (scheme-langserver virtual-file-system index-node)
+  (scheme-langserver virtual-file-system file-node)
+  (scheme-langserver virtual-file-system document))
 
 (test-begin "define-case-class-process")
-    (let* ( [root-file-node (init-virtual-file-system "./tests/resources/r7rs" '() (lambda (fuzzy) #t) 's7)]
-            [root-library-node '()]
-            [target-file-node (walk-file root-file-node "./tests/resources/r7rs/liii/logging.scm.txt")]
-            [document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list document))]
-            [target-index-node (find-index-node-recursive
-                                 (lambda (n)
-                                   (let ([expr (annotation-stripped-expression n)])
-                                     (and (list? expr) (>= (length expr) 2)
-                                          (eq? 'define-class (car expr))
-                                          (eq? 'logging (cadr expr)))))
-                                 root-index-node)])
+  (let* ( [root-file-node (init-virtual-file-system "./tests/resources/r7rs" '() (lambda (fuzzy) #t) 's7)]
+      [root-library-node '()]
+      [target-file-node (walk-file root-file-node "./tests/resources/r7rs/liii/logging.scm.txt")]
+      [document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list document))]
+      [target-index-node (find-index-node-recursive
+        (lambda (n)
+          (let ([expr (annotation-stripped-expression n)])
+            (and (list? expr) (>= (length expr) 2)
+              (eq? 'define-class (car expr))
+              (eq? 'logging (cadr expr)))))
+        root-index-node)])
 
-            (define-case-class-process root-file-node root-library-node document target-index-node)
+      (define-case-class-process root-file-node root-library-node document target-index-node)
 
-            (test-equal #f
-                (not 
-                    (find 
-                        (lambda (reference) 
-                            (equal? 'log-path (identifier-reference-identifier reference)))
-                        (index-node-references-import-in-this-node target-index-node)))))
-            
+      (test-equal #f
+      (not 
+      (find 
+        (lambda (reference) 
+          (equal? 'log-path (identifier-reference-identifier reference)))
+        (index-node-references-import-in-this-node target-index-node)))))
+
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

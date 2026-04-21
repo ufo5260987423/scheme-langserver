@@ -5,29 +5,29 @@
 #!r6rs
 
 (import 
-    (chezscheme) 
-    (srfi :64 testing) 
-    (scheme-langserver util text)
-    (scheme-langserver util test)
-    (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
+  (chezscheme) 
+  (srfi :64 testing) 
+  (scheme-langserver util text)
+  (scheme-langserver util test)
+  (scheme-langserver virtual-file-system file-node)
+  (scheme-langserver virtual-file-system index-node)
+  (scheme-langserver virtual-file-system document)
+  (scheme-langserver analysis package-manager akku)
+  (scheme-langserver analysis workspace)
+  (scheme-langserver analysis identifier reference)
 
-    (scheme-langserver protocol alist-access-object))
+  (scheme-langserver protocol alist-access-object))
 
 (test-begin "pick-index-node")
-    (let* ([workspace (init-workspace (string-append (current-directory) "/protocol") '() #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [root-library-node (workspace-library-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/request.sls"))]
-            [document (file-node-document target-file-node)]
-            [index-node-list (document-index-node-list document)]
-            [root-index-node (car index-node-list)]
-            [index-node (find-define-with-params root-index-node 'read-message)])
-        (test-equal #f (null? index-node)))
+  (let* ([workspace (init-workspace (string-append (current-directory) "/protocol") '() #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/request.sls"))]
+      [document (file-node-document target-file-node)]
+      [index-node-list (document-index-node-list document)]
+      [root-index-node (car index-node-list)]
+      [index-node (find-define-with-params root-index-node 'read-message)])
+    (test-equal #f (null? index-node)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

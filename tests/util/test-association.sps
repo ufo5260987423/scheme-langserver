@@ -7,12 +7,12 @@
 (import (rnrs (6)) (srfi :64 testing) (scheme-langserver util association))
 
 (let ([a-list '((b . 2) (a . 1))])
-    (test-begin "make-alist")
-        (test-equal a-list (make-alist 'b 2 'a 1))
-    (test-end)
-    (test-begin "assq-ref")
-        (test-equal 1 (assq-ref a-list 'a))
-    (test-end))
+  (test-begin "make-alist")
+    (test-equal a-list (make-alist 'b 2 'a 1))
+  (test-end)
+  (test-begin "assq-ref")
+    (test-equal 1 (assq-ref a-list 'a))
+  (test-end))
 
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

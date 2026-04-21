@@ -25,105 +25,105 @@
 
 (test-begin "expand:step-by-step & generate-pair:template+callee & generate-pair:template+expanded for syntax-rules")
   (let* ([workspace-instance (init-workspace (current-directory))]
-      [root-file-node (workspace-file-node workspace-instance)]
-      [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/dependency/rules/library-import.sls"))]
-      [document (file-node-document target-file-node)]
-      [root-index-node (car (document-index-node-list document))]
-      [match-clause-node (find-define-with-params root-index-node 'match-clause)]
-      [target-index-node (find-index-node-recursive
-                           (lambda (n)
-                             (let ([expr (annotation-stripped-expression n)])
-                               (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
-                           match-clause-node)]
-      [identifier-reference (car (find-available-references-for document target-index-node 'match))]
-      [template+callees (generate-pair:template+callee identifier-reference target-index-node document)]
-      [expanded-expression (car (expand:step-by-step identifier-reference target-index-node document))]
-      [expanded-index-node 
-        (init-index-node 
-          (identifier-reference-initialization-index-node identifier-reference) 
-          (car 
-            (source-file->annotations 
-              (with-output-to-string (lambda () (pretty-print expanded-expression)))
-              (uri->path (document-uri (identifier-reference-document identifier-reference))))))]
-      [template+expanded (generate-pair:template+expanded identifier-reference expanded-index-node target-index-node document template+callees)])
-    (test-equal 
-      '(let ([v expression])
-        (match-next v (expression (set! expression))
-          (('only (identifier **1) _ ...) identifier)
-          (('except (identifier **1) _ ...) identifier)
-          (('prefix (identifier **1) _ ...) identifier)
-          (('rename (identifier **1) _ ...) identifier)
-          (('for (identifier **1) 'run ...) identifier)
-          (('for (identifier **1) '(meta 0) ...) identifier)
-          ((identifier **1) identifier) (else '())))
-      expanded-expression)
-    (test-equal
-      '((match . match)
-        (atom . expression)
-        ((pat ...) ('only (identifier **1) _ ...)
-            ('except (identifier **1) _ ...)
-            ('prefix (identifier **1) _ ...)
-            ('rename (identifier **1) _ ...)
-            ('for (identifier **1) 'run ...)
-            ('for (identifier **1) '(meta 0) ...) (identifier **1) else)
-        ((body ...) identifier identifier identifier identifier identifier identifier identifier '()))
-      (map 
-        (lambda (p)
-          `(,(car p) .
+     [root-file-node (workspace-file-node workspace-instance)]
+     [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/dependency/rules/library-import.sls"))]
+     [document (file-node-document target-file-node)]
+     [root-index-node (car (document-index-node-list document))]
+     [match-clause-node (find-define-with-params root-index-node 'match-clause)]
+     [target-index-node (find-index-node-recursive
+        (lambda (n)
+          (let ([expr (annotation-stripped-expression n)])
+            (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
+        match-clause-node)]
+     [identifier-reference (car (find-available-references-for document target-index-node 'match))]
+     [template+callees (generate-pair:template+callee identifier-reference target-index-node document)]
+     [expanded-expression (car (expand:step-by-step identifier-reference target-index-node document))]
+     [expanded-index-node 
+      (init-index-node 
+        (identifier-reference-initialization-index-node identifier-reference) 
+        (car 
+          (source-file->annotations 
+            (with-output-to-string (lambda () (pretty-print expanded-expression)))
+            (uri->path (document-uri (identifier-reference-document identifier-reference))))))]
+     [template+expanded (generate-pair:template+expanded identifier-reference expanded-index-node target-index-node document template+callees)])
+     (test-equal 
+     '(let ([v expression])
+      (match-next v (expression (set! expression))
+        (('only (identifier **1) _ ...) identifier)
+        (('except (identifier **1) _ ...) identifier)
+        (('prefix (identifier **1) _ ...) identifier)
+        (('rename (identifier **1) _ ...) identifier)
+        (('for (identifier **1) 'run ...) identifier)
+        (('for (identifier **1) '(meta 0) ...) identifier)
+        ((identifier **1) identifier) (else '())))
+     expanded-expression)
+     (test-equal
+     '((match . match)
+      (atom . expression)
+      ((pat ...) ('only (identifier **1) _ ...)
+        ('except (identifier **1) _ ...)
+        ('prefix (identifier **1) _ ...)
+        ('rename (identifier **1) _ ...)
+        ('for (identifier **1) 'run ...)
+        ('for (identifier **1) '(meta 0) ...) (identifier **1) else)
+      ((body ...) identifier identifier identifier identifier identifier identifier identifier '()))
+     (map 
+      (lambda (p)
+        `(,(car p) .
           ,(if (index-node? (cdr p))
             (annotation-stripped (index-node-datum/annotations (cdr p)))
             (map (lambda (px) (annotation-stripped (index-node-datum/annotations px))) (cdr p)))))
-        template+callees))
+      template+callees))
 
-    (test-equal 
-      '(((atom ...) expression expression)
-        (((pat ...) ...) 
-          ('only (identifier **1) _ ...)
-          ('except (identifier **1) _ ...)
-          ('prefix (identifier **1) _ ...)
-          ('rename (identifier **1) _ ...)
-          ('for (identifier **1) 'run ...)
-          ('for (identifier **1) '(meta 0) ...) 
-          (identifier **1) 
-          else)
-        (((body ...) ...) identifier identifier identifier identifier
-          identifier identifier identifier '()))
-      (map 
-        (lambda (p)
-          `(,(car p) . 
-            ,(if (find index-node? (cdr p)) 
-              (map 
-                (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
-                (cdr p))
-              (map 
-                (lambda (a) 
-                  (map 
-                    (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
-                    a))
-                (cdr p)))))
-        template+expanded))
+     (test-equal 
+     '(((atom ...) expression expression)
+      (((pat ...) ...) 
+        ('only (identifier **1) _ ...)
+        ('except (identifier **1) _ ...)
+        ('prefix (identifier **1) _ ...)
+        ('rename (identifier **1) _ ...)
+        ('for (identifier **1) 'run ...)
+        ('for (identifier **1) '(meta 0) ...) 
+        (identifier **1) 
+        else)
+      (((body ...) ...) identifier identifier identifier identifier
+        identifier identifier identifier '()))
+     (map 
+      (lambda (p)
+        `(,(car p) . 
+          ,(if (find index-node? (cdr p)) 
+            (map 
+              (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
+              (cdr p))
+            (map 
+              (lambda (a) 
+                (map 
+                  (lambda (a) (annotation-stripped (index-node-datum/annotations a)))
+                  a))
+              (cdr p)))))
+      template+expanded))
 
-    (test-equal
-      '((match) (expression expression expression)
-        (('only (identifier **1) _ ...)
-          ('only (identifier **1) _ ...))
-        (('except (identifier **1) _ ...)
-          ('except (identifier **1) _ ...))
-        (('prefix (identifier **1) _ ...)
-          ('prefix (identifier **1) _ ...))
-        (('rename (identifier **1) _ ...)
-          ('rename (identifier **1) _ ...))
-        (('for (identifier **1) 'run ...)
-          ('for (identifier **1) 'run ...))
-        (('for (identifier **1) '(meta 0) ...)
-          ('for (identifier **1) '(meta 0) ...))
-        ((identifier **1) (identifier **1)) (else else)
-        (identifier identifier) (identifier identifier)
-        (identifier identifier) (identifier identifier)
-        (identifier identifier) (identifier identifier)
-        (identifier identifier) ('() '()))
-      (map (lambda (l) (map (lambda (p) (annotation-stripped (index-node-datum/annotations p))) l))
-        (car (generate-pair:callee+expanded identifier-reference target-index-node document)))))
+     (test-equal
+     '((match) (expression expression expression)
+      (('only (identifier **1) _ ...)
+        ('only (identifier **1) _ ...))
+      (('except (identifier **1) _ ...)
+        ('except (identifier **1) _ ...))
+      (('prefix (identifier **1) _ ...)
+        ('prefix (identifier **1) _ ...))
+      (('rename (identifier **1) _ ...)
+        ('rename (identifier **1) _ ...))
+      (('for (identifier **1) 'run ...)
+        ('for (identifier **1) 'run ...))
+      (('for (identifier **1) '(meta 0) ...)
+        ('for (identifier **1) '(meta 0) ...))
+      ((identifier **1) (identifier **1)) (else else)
+      (identifier identifier) (identifier identifier)
+      (identifier identifier) (identifier identifier)
+      (identifier identifier) (identifier identifier)
+      (identifier identifier) ('() '()))
+     (map (lambda (l) (map (lambda (p) (annotation-stripped (index-node-datum/annotations p))) l))
+      (car (generate-pair:callee+expanded identifier-reference target-index-node document)))))
 (test-end)
 
 ; (test-begin "expand:step-by-step & generate-pair:template+callee & generate-pair:template+expanded for syntax-case")

@@ -19,7 +19,7 @@
       "\r\n\r\n" target)))
 
 (test-begin "log-debug")
-(let loop ([lines (read-lines "~/ready-for-analyse.log")]
+  (let loop ([lines (read-lines "~/ready-for-analyse.log")]
     [result '()]
     [read? #f])
   (if (not (null? lines))
@@ -30,9 +30,9 @@
           (loop (cddr lines) result #t)]
         [else (loop (cdr lines) result #f)]))
     (let* ( [input-port (open-bytevector-input-port (string->utf8 (apply string-append result)))]
-        [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
-        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-        [server-instance (init-server input-port output-port log-port #f #t 'r6rs)])
+      [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
+      [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
+      [server-instance (init-server input-port output-port log-port #f #t 'r6rs)])
       (test-equal #f (server-shutdown? server-instance)))))
 (test-end)
 

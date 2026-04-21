@@ -5,70 +5,70 @@
 #!r6rs
 
 (import (rnrs (6)) (srfi :64 testing) 
-    (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules syntax-case)
-    (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis abstract-interpreter)
+  (scheme-langserver analysis workspace)
+  (scheme-langserver analysis identifier reference)
+  (scheme-langserver analysis identifier rules syntax-case)
+  (scheme-langserver analysis package-manager akku)
+  (scheme-langserver analysis identifier meta)
+  (scheme-langserver analysis abstract-interpreter)
 
-    (scheme-langserver analysis package-manager akku)
+  (scheme-langserver analysis package-manager akku)
 
-    (scheme-langserver util text)
-    (scheme-langserver util test)
-    (scheme-langserver protocol alist-access-object)
+  (scheme-langserver util text)
+  (scheme-langserver util test)
+  (scheme-langserver protocol alist-access-object)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system document))
+  (scheme-langserver virtual-file-system index-node)
+  (scheme-langserver virtual-file-system file-node)
+  (scheme-langserver virtual-file-system document))
 
 (test-begin "syntax-case-process")
-    (let* ( [workspace (init-workspace (string-append (current-directory) "/.akku/src/ufo-try/") #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/src/ufo-try/ufo-try.sls"))]
-            [root-library-node (workspace-library-node workspace)]
-            [document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list document))]
-            ; a syntax-case node
-            [ready-index-node (find-index-node-recursive
-                                (lambda (n)
-                                  (let ([expr (annotation-stripped-expression n)])
-                                    (and (list? expr) (>= (length expr) 3)
-                                         (eq? 'syntax-case (car expr))
-                                         (eq? 'first (cadr expr))
-                                         (equal? '(else =>) (caddr expr)))))
-                                root-index-node)]
-            [target-index-node (list-ref (index-node-children ready-index-node) 4)])
-            (syntax-case-process root-file-node root-library-node document ready-index-node)
-            (test-equal #f
-                (not 
-                    (find 
-                        (lambda (reference) 
-                            (equal? 'tst (identifier-reference-identifier reference)))
-                        (index-node-references-import-in-this-node target-index-node)))))
+  (let* ( [workspace (init-workspace (string-append (current-directory) "/.akku/src/ufo-try/") #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/src/ufo-try/ufo-try.sls"))]
+      [root-library-node (workspace-library-node workspace)]
+      [document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list document))]
+    ; a syntax-case node
+      [ready-index-node (find-index-node-recursive
+        (lambda (n)
+          (let ([expr (annotation-stripped-expression n)])
+            (and (list? expr) (>= (length expr) 3)
+              (eq? 'syntax-case (car expr))
+              (eq? 'first (cadr expr))
+              (equal? '(else =>) (caddr expr)))))
+        root-index-node)]
+      [target-index-node (list-ref (index-node-children ready-index-node) 4)])
+      (syntax-case-process root-file-node root-library-node document ready-index-node)
+      (test-equal #f
+      (not 
+      (find 
+        (lambda (reference) 
+          (equal? 'tst (identifier-reference-identifier reference)))
+        (index-node-references-import-in-this-node target-index-node)))))
 (test-end)
 
 (test-begin "syntax-case-process for quasisyntaxand unsyntax")
-    (let* ( [workspace (init-workspace (string-append (current-directory) "/.akku/src/ufo-try/") #f #f)]
-            [root-file-node (workspace-file-node workspace)]
-            [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/src/ufo-try/ufo-try.sls"))]
-            [root-library-node (init-library-node root-file-node)]
-            [file-linkage (workspace-file-linkage workspace)]
-            [document (file-node-document target-file-node)]
-            [root-index-node (car (document-index-node-list document))]
-            [syntax-case-node (find-index-node-recursive
-                                (lambda (n)
-                                  (let ([expr (annotation-stripped-expression n)])
-                                    (and (list? expr) (>= (length expr) 3)
-                                         (eq? 'syntax-case (car expr))
-                                         (eq? 'first (cadr expr))
-                                         (equal? '(=>) (caddr expr)))))
-                                root-index-node)]
-            [loop-index-node (find-index-node-recursive
-                               (lambda (n)
-                                 (eq? 'loop (annotation-stripped-expression n)))
-                               syntax-case-node)])
-        (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
-        (test-equal '(loop) (map identifier-reference-identifier (find-available-references-for document loop-index-node 'loop))))
+  (let* ( [workspace (init-workspace (string-append (current-directory) "/.akku/src/ufo-try/") #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/.akku/src/ufo-try/ufo-try.sls"))]
+      [root-library-node (init-library-node root-file-node)]
+      [file-linkage (workspace-file-linkage workspace)]
+      [document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list document))]
+      [syntax-case-node (find-index-node-recursive
+        (lambda (n)
+          (let ([expr (annotation-stripped-expression n)])
+            (and (list? expr) (>= (length expr) 3)
+              (eq? 'syntax-case (car expr))
+              (eq? 'first (cadr expr))
+              (equal? '(=>) (caddr expr)))))
+        root-index-node)]
+      [loop-index-node (find-index-node-recursive
+        (lambda (n)
+          (eq? 'loop (annotation-stripped-expression n)))
+        syntax-case-node)])
+      (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
+      (test-equal '(loop) (map identifier-reference-identifier (find-available-references-for document loop-index-node 'loop))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

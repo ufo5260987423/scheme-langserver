@@ -9,9 +9,9 @@
 
 (test-begin "path->uri & uri->path")
   (let ([path "/.akku/lib/srfi/%3a13/srfi-13.scm"]
-      [uri "file:///.akku/lib/srfi/%253a13/srfi-13.scm"])
-    (test-equal uri (path->uri path))
-    (test-equal path (uri->path uri)))
+     [uri "file:///.akku/lib/srfi/%253a13/srfi-13.scm"])
+   (test-equal uri (path->uri path))
+   (test-equal path (uri->path uri)))
 (test-end)
 
 

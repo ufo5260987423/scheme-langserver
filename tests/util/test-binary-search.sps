@@ -5,18 +5,18 @@
 #!r6rs
 
 (import 
-    (rnrs (6)) 
-    (srfi :64 testing) 
-    (scheme-langserver util binary-search))
+  (rnrs (6)) 
+  (srfi :64 testing) 
+  (scheme-langserver util binary-search))
 
 (test-begin "simple binary-search ")
-    (test-equal 
-        (binary-search '#(request server-instance)
-            (lambda (reference0 reference1)
-                (string<=?
-                    (symbol->string reference0)
-                    (symbol->string reference1)))
-            'server-instance)
-        '(server-instance))
+  (test-equal 
+  (binary-search '#(request server-instance)
+    (lambda (reference0 reference1)
+      (string<=?
+        (symbol->string reference0)
+        (symbol->string reference1)))
+    'server-instance)
+  '(server-instance))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

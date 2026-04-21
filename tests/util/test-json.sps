@@ -11,10 +11,10 @@
 
 (let ([a-list '((a . 1) (b . 2))])
   (test-begin "read-json")
-      (test-equal a-list (read-json "{\"a\":1,\"b\":2}"))
+    (test-equal a-list (read-json "{\"a\":1,\"b\":2}"))
   (test-end)
   (test-begin "generate-json")
-      (test-equal "{\"a\":1,\"b\":2}" (generate-json a-list))
+    (test-equal "{\"a\":1,\"b\":2}" (generate-json a-list))
   (test-end))
 
 
