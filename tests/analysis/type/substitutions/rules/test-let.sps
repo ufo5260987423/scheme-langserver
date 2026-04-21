@@ -15,6 +15,7 @@
 
     (scheme-langserver util contain)
     (scheme-langserver util text)
+    (scheme-langserver util test)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -36,8 +37,11 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 40 17))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+            [loop-node (find-named-let matrix-from-node 'loop)]
+            [binding-node (find-binding-node loop-node 'column-id)]
+            [target-index-node (car (index-node-children binding-node))]
             [check-base (construct-type-expression-with-meta 'fixnum?)])
         (construct-substitutions-for target-document)
         (test-equal #t 
@@ -52,8 +56,10 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 41 14))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+            [loop-node (find-named-let matrix-from-node 'loop)]
+            [target-index-node (find-symbol-in-body loop-node 'column-id)]
             [check-base (construct-type-expression-with-meta 'fixnum?)])
         (construct-substitutions-for target-document)
         (test-equal #t 
@@ -65,8 +71,10 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 173 9))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [define-node (find-define-with-params root-index-node 'is-leaf?)]
+            [name-list-node (cadr (index-node-children define-node))]
+            [target-index-node (car (index-node-children name-list-node))]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitutions-for target-document)
         ; (debug:print-expression&uuid target-index-node)
@@ -83,8 +91,10 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 10))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+            [let-loop-node (find-named-let matrix-from-node 'loop)]
+            [target-index-node (cadr (index-node-children let-loop-node))]
             [check-base (construct-type-expression-with-meta '((inner:list?) <- (inner:list? fixnum? (inner:list?))))])
         (construct-substitutions-for target-document)
         ; (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
