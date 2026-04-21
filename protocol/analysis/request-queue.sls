@@ -94,7 +94,7 @@
   (with-mutex (request-queue-mutex queue)
     (request-queue-tickal-task-list-set! 
       queue
-      (remove task (request-queue-tickal-task-list queue)))))
+      (remq task (request-queue-tickal-task-list queue)))))
 
 (define (request-queue-push queue request potential-request-processor workspace)
   (with-mutex (request-queue-mutex queue)
@@ -105,15 +105,15 @@
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
       ["$/cancelRequest"
-        (let* ([id (assq-ref (request-params request) 'id)]
-            ;here, id is cancel target id
-            [predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
-            [tickal-task (find predicator (request-queue-tickal-task-list queue))])
-          ;must cancel in local thread.
-          (when tickal-task 
-            (tickal-task-stop?-set! tickal-task #t)
-            (potential-request-processor 
-              (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
+        (let ([id (assq-ref (request-params request) 'id)])
+          (when id
+            (let* ([predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
+                [tickal-task (find predicator (request-queue-tickal-task-list queue))])
+              ;must cancel in local thread.
+              (when tickal-task 
+                (tickal-task-stop?-set! tickal-task #t)
+                (potential-request-processor 
+                  (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))))]
       ["textDocument/didChange"
         (let ([predicator 
                 (lambda (task)
