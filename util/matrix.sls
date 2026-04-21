@@ -51,7 +51,7 @@
 
 (define (matrix-shrink target-matrix removed-id)
   (let* ([node-count (sqrt (vector-length target-matrix))]
-         [new-count (- node-count 1)])
+      [new-count (- node-count 1)])
     (if (<= new-count 0)
       (make-vector 0)
       (let ([result (make-vector (* new-count new-count) 0)])
