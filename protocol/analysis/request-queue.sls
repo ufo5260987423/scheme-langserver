@@ -108,10 +108,27 @@
             (potential-request-processor 
               (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
       ["textDocument/didChange"
-        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
-            [tickal-task (find predicator (request-queue-tickal-task-list queue))])
-          (when tickal-task
-            (tickal-task-stop?-set! tickal-task #t))
+        (let ([predicator 
+                (lambda (task)
+                  (let ([method (request-method (tickal-task-request task))])
+                    (or
+                      (string=? method "private:publish-diagnoses")
+                      (string=? method "textDocument/hover")
+                      (string=? method "textDocument/completion")
+                      (string=? method "textDocument/references")
+                      (string=? method "textDocument/definition")
+                      (string=? method "textDocument/documentSymbol")
+                      (string=? method "textDocument/diagnostic")
+                      (string=? method "textDocument/documentHighlight")
+                      (string=? method "textDocument/signatureHelp")
+                      (string=? method "textDocument/formatting")
+                      (string=? method "textDocument/prepareRename")
+                      (string=? method "textDocument/rangeFormatting")
+                      (string=? method "textDocument/onTypeFormatting"))))])
+          (for-each 
+            (lambda (task)
+              (tickal-task-stop?-set! task #t))
+            (filter predicator (request-queue-tickal-task-list queue)))
           (make-tickal-task request queue workspace))]
       [else (make-tickal-task request queue workspace)])
       ;because the pool is limited to have only one thread.
