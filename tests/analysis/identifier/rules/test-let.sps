@@ -12,6 +12,7 @@
     (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver util text)
+    (scheme-langserver util test)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -24,9 +25,9 @@
             [root-library-node '()]
             [target-file-node (walk-file root-file-node "./util/matrix.sls")]
             [document (file-node-document target-file-node)]
-            ;; a let node
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 13 2))])
+            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+            [target-index-node (find-let-node matrix-from-node)])
             (let-process root-file-node root-library-node document target-index-node)
             (test-equal #f
                 (not 

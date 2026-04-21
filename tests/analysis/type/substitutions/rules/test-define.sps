@@ -15,12 +15,14 @@
 
     (scheme-langserver util contain)
     (scheme-langserver util text)
+    (scheme-langserver util test)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis tokenizer)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
+
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
 
@@ -35,8 +37,9 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 49 10))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [encode-node (find-define-with-params root-index-node 'encode)]
+            [target-index-node (define-node->name-node encode-node)]
             [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitutions-for target-document)
         ; (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))
@@ -48,8 +51,9 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/contain.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 12))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [contain-node (find-define-by-name root-index-node 'contain?)]
+            [target-index-node (define-node->name-node contain-node)]
             [check-base (construct-type-expression-with-meta 'boolean?)])
         (construct-substitutions-for target-document)
         ; (pretty-print (map inner:type->string (type:recursive-interpret-result-list variable (make-type:environment (document-substitution-list target-document)))))
@@ -64,8 +68,9 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/index-node.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 130 10))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [debug-node (find-define-with-params root-index-node 'debug:print-expression)]
+            [target-index-node (define-node->name-node debug-node)]
             [check-base 'void?])
         (construct-substitutions-for target-document)
         ; (debug:print-expression&uuid target-index-node)
@@ -90,7 +95,7 @@
 ;         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
 ;         (test-equal #t 
 ;             (contain? 
-;                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base)))
+;                 (map car (filter list? (type:interpret-result-list variable (make-type:environment (document-substitution-list target-document))))) check-base))
 ; (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

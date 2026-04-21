@@ -16,6 +16,7 @@
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
     (scheme-langserver util text)
+    (scheme-langserver util test)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -35,8 +36,10 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 49 16))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [encode-node (find-define-with-params root-index-node 'encode)]
+            [name-list-node (cadr (index-node-children encode-node))]
+            [target-index-node (caddr (index-node-children name-list-node))]
             [check-base (construct-type-expression-with-meta 'number?)])
         (construct-substitutions-for target-document)
         (test-equal #t 
@@ -92,8 +95,10 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/natural-order-compare.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 6 14))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [target-index-node (find-index-node-recursive
+                                 (lambda (n) (eq? 'string-a (annotation-stripped-expression n)))
+                                 root-index-node)]
             [check-base (construct-type-expression-with-meta 'string? )])
         (construct-substitutions-for target-document)
         ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))

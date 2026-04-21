@@ -13,6 +13,7 @@
     (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver util text)
+    (scheme-langserver util test)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -25,7 +26,13 @@
             [target-file-node (walk-file root-file-node "./tests/resources/r7rs/liii/rich-vector.scm.txt")]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 22 0))])
+            [target-index-node (find-index-node-recursive
+                                 (lambda (n)
+                                   (let ([expr (annotation-stripped-expression n)])
+                                     (and (list? expr) (>= (length expr) 2)
+                                          (eq? 'define-case-class (car expr))
+                                          (eq? 'rich-vector (cadr expr)))))
+                                 root-index-node)])
 
             (define-case-class-process root-file-node root-library-node document target-index-node)
             

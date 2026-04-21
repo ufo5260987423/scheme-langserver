@@ -13,6 +13,7 @@
     (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver util text)
+    (scheme-langserver util test)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -25,7 +26,13 @@
             [target-file-node (walk-file root-file-node "./tests/resources/r7rs/liii/base64.scm.txt")]
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 77 2))])
+            [target-index-node (find-index-node-recursive
+                                 (lambda (n)
+                                   (let ([expr (annotation-stripped-expression n)])
+                                     (and (list? expr) (>= (length expr) 2)
+                                          (eq? 'let1 (car expr))
+                                          (eq? 'byte2base64-N (cadr expr)))))
+                                 root-index-node)])
             
             (let1-process root-file-node root-library-node document target-index-node)
             (test-equal #f

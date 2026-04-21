@@ -15,6 +15,7 @@
 
     (scheme-langserver util contain)
     (scheme-langserver util text)
+    (scheme-langserver util test)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -42,8 +43,11 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 15 26))])
+            [root-index-node (car (document-index-node-list target-document))]
+            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+            [loop-node (find-named-let matrix-from-node 'loop)]
+            [binding-node (find-binding-node loop-node 'column-id)]
+            [target-index-node (cadr (index-node-children binding-node))])
         (construct-substitutions-for target-document)
         (test-equal 
             #t 
@@ -58,8 +62,10 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/matrix.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 16 11))]
+            [root-index-node (car (document-index-node-list target-document))]
+            [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
+            [loop-node (find-named-let matrix-from-node 'loop)]
+            [target-index-node (find-symbol-in-body loop-node '<)]
             [check-base (construct-type-expression-with-meta '(boolean? <- (inner:list? real? real? **1)))])
         (construct-substitutions-for target-document)
         (test-equal #t 

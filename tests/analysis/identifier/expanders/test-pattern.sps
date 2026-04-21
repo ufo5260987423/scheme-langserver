@@ -15,6 +15,7 @@
   (scheme-langserver protocol alist-access-object)
 
   (scheme-langserver util text)
+  (scheme-langserver util test)
 
   (scheme-langserver analysis identifier expanders pattern)
   (scheme-langserver analysis workspace))
@@ -34,9 +35,13 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
             [document (file-node-document target-file-node)]
-            [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [root-index-node (car index-node-list)]
+            [index-node (find-index-node-recursive
+                          (lambda (n)
+                            (let ([expr (annotation-stripped-expression n)])
+                              (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
+                          root-index-node)]
             [expression (annotation-stripped (index-node-datum/annotations index-node))]
             [pattern-expression '(match atom (pat . body) ...)]
             [pattern (make-pattern pattern-expression)]
@@ -124,9 +129,13 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
             [document (file-node-document target-file-node)]
-            [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [root-index-node (car index-node-list)]
+            [index-node (find-index-node-recursive
+                          (lambda (n)
+                            (let ([expr (annotation-stripped-expression n)])
+                              (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
+                          root-index-node)]
             [expression (annotation-stripped (index-node-datum/annotations index-node))]
             [pattern-expression '(match atom (pat . body) ...)]
             [pattern (make-pattern pattern-expression)]
@@ -150,9 +159,13 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
             [document (file-node-document target-file-node)]
-            [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [root-index-node (car index-node-list)]
+            [index-node (find-index-node-recursive
+                          (lambda (n)
+                            (let ([expr (annotation-stripped-expression n)])
+                              (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
+                          root-index-node)]
             [expression (annotation-stripped (index-node-datum/annotations index-node))]
             [pattern-expression '(match atom (pat . body) ...)]
             [pattern (make-pattern pattern-expression)]
@@ -171,9 +184,13 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/let.sls"))]
             [document (file-node-document target-file-node)]
-            [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 22 6)))]
+            [root-index-node (car index-node-list)]
+            [index-node (find-index-node-recursive
+                          (lambda (n)
+                            (let ([expr (annotation-stripped-expression n)])
+                              (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
+                          root-index-node)]
             [expression (annotation-stripped (index-node-datum/annotations index-node))]
             [pattern-expression '(match atom (pat . body) ...)]
             [pattern (make-pattern pattern-expression)]

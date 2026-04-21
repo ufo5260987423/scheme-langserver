@@ -9,6 +9,7 @@
   (srfi :64 testing) 
   (scheme-langserver util text)
   (scheme-langserver util path)
+  (scheme-langserver util test)
 
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system index-node)
@@ -27,7 +28,13 @@
       [root-file-node (workspace-file-node workspace-instance)]
       [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/dependency/rules/library-import.sls"))]
       [document (file-node-document target-file-node)]
-      [target-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 37 6))]
+      [root-index-node (car (document-index-node-list document))]
+      [match-clause-node (find-define-with-params root-index-node 'match-clause)]
+      [target-index-node (find-index-node-recursive
+                           (lambda (n)
+                             (let ([expr (annotation-stripped-expression n)])
+                               (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
+                           match-clause-node)]
       [identifier-reference (car (find-available-references-for document target-index-node 'match))]
       [template+callees (generate-pair:template+callee identifier-reference target-index-node document)]
       [expanded-expression (car (expand:step-by-step identifier-reference target-index-node document))]

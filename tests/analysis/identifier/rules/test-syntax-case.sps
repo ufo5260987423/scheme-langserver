@@ -15,6 +15,7 @@
     (scheme-langserver analysis package-manager akku)
 
     (scheme-langserver util text)
+    (scheme-langserver util test)
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver virtual-file-system index-node)
@@ -29,8 +30,15 @@
             [document (file-node-document target-file-node)]
             [root-index-node (car (document-index-node-list document))]
             ; a syntax-case node
-            [ready-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 104 16))]
-            [target-index-node (pick-index-node-from `(,root-index-node) (text+position->int (document-text document) 106 18))])
+            [ready-index-node (find-index-node-recursive
+                                (lambda (n)
+                                  (let ([expr (annotation-stripped-expression n)])
+                                    (and (list? expr) (>= (length expr) 3)
+                                         (eq? 'syntax-case (car expr))
+                                         (eq? 'first (cadr expr))
+                                         (equal? '(else =>) (caddr expr)))))
+                                root-index-node)]
+            [target-index-node (list-ref (index-node-children ready-index-node) 4)])
             (syntax-case-process root-file-node root-library-node document ready-index-node)
             (test-equal #f
                 (not 
@@ -47,7 +55,19 @@
             [root-library-node (init-library-node root-file-node)]
             [file-linkage (workspace-file-linkage workspace)]
             [document (file-node-document target-file-node)]
-            [loop-index-node (pick-index-node-from (document-index-node-list document) (text+position->int (document-text document) 110 74))])
+            [root-index-node (car (document-index-node-list document))]
+            [syntax-case-node (find-index-node-recursive
+                                (lambda (n)
+                                  (let ([expr (annotation-stripped-expression n)])
+                                    (and (list? expr) (>= (length expr) 3)
+                                         (eq? 'syntax-case (car expr))
+                                         (eq? 'first (cadr expr))
+                                         (equal? '(=>) (caddr expr)))))
+                                root-index-node)]
+            [loop-index-node (find-index-node-recursive
+                               (lambda (n)
+                                 (eq? 'loop (annotation-stripped-expression n)))
+                               syntax-case-node)])
         (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
         (test-equal '(loop) (map identifier-reference-identifier (find-available-references-for document loop-index-node 'loop))))
 (test-end)

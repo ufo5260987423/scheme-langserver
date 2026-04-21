@@ -3,6 +3,9 @@
     annotation-stripped-expression
     find-index-node-recursive
     find-define-with-params
+    find-define-by-name
+    define-node->name-node
+    find-let-node
     find-named-let
     find-binding-node
     let-body-nodes
@@ -31,6 +34,40 @@
              (eq? 'define (car expr))
              (list? (cadr expr))
              (eq? name (car (cadr expr))))))
+    root-node))
+
+;; Matches both (define (name ...) ...) and (define name ...)
+(define (find-define-by-name root-node name)
+  (find-index-node-recursive
+    (lambda (node)
+      (let ([expr (annotation-stripped-expression node)])
+        (and (list? expr) (not (null? expr))
+             (eq? 'define (car expr))
+             (or (and (list? (cadr expr)) (eq? name (car (cadr expr))))
+                 (and (symbol? (cadr expr)) (eq? name (cadr expr)))))))
+    root-node))
+
+;; Extract the name symbol-node from either
+;;   (define (name ...) ...) or (define name ...)
+(define (define-node->name-node define-node)
+  (let ([expr (annotation-stripped-expression define-node)])
+    (if (and (list? expr) (not (null? expr)) (eq? 'define (car expr)))
+        (let ([name-part (cadr expr)])
+          (if (list? name-part)
+              ;; (define (name ...) ...) -> name is first child of params list
+              (car (index-node-children (cadr (index-node-children define-node))))
+              ;; (define name ...) -> name is second child of define
+              (cadr (index-node-children define-node))))
+        #f)))
+
+(define (find-let-node root-node)
+  (find-index-node-recursive
+    (lambda (node)
+      (let ([expr (annotation-stripped-expression node)])
+        (and (list? expr) (not (null? expr))
+             (eq? 'let (car expr))
+             (>= (length expr) 2)
+             (list? (cadr expr)))))
     root-node))
 
 (define (find-named-let root-node name)

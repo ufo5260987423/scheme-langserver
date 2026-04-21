@@ -15,6 +15,7 @@
 
     (scheme-langserver util contain)
     (scheme-langserver util text)
+    (scheme-langserver util test)
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis workspace)
@@ -36,8 +37,11 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/alist-access-object.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 115 21))])
+            [root-index-node (car (document-index-node-list target-document))]
+            [position->alist-node (find-define-with-params root-index-node 'position->alist)]
+            [target-index-node (find-index-node-recursive
+                                 (lambda (n) (eq? 'position-line (annotation-stripped-expression n)))
+                                 position->alist-node)])
         (construct-substitutions-for target-document)
         (test-equal #t
             (contain? 
@@ -51,11 +55,11 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/virtual-file-system/document.sls"))]
             [target-document (file-node-document target-file-node)]
-            [target-text (document-text target-document)]
-            [target-index-node (pick-index-node-from (document-index-node-list target-document) (text+position->int target-text 35 0))])
+            [root-index-node (car (document-index-node-list target-document))]
+            [ref (car (find-available-references-for target-document root-index-node 'document-text-set!))])
         (construct-substitutions-for target-document)
         (test-equal 
-            (inner:type->string (car (identifier-reference-type-expressions (car (find-available-references-for target-document target-index-node 'document-text-set!)))))
+            (inner:type->string (car (identifier-reference-type-expressions ref)))
             "(void? <- (inner:list? [identifier-reference document?] something? ) ) "))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

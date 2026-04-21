@@ -8,6 +8,7 @@
     (chezscheme) 
     (srfi :64 testing) 
     (scheme-langserver util text)
+    (scheme-langserver util test)
     (scheme-langserver virtual-file-system file-node)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -23,9 +24,9 @@
             [root-library-node (workspace-library-node workspace)]
             [target-file-node (walk-file root-file-node (string-append (current-directory) "/protocol/request.sls"))]
             [document (file-node-document target-file-node)]
-            [text (document-text document)]
             [index-node-list (document-index-node-list document)]
-            [index-node (index-node-parent (pick-index-node-from index-node-list (text+position->int text 25 12)))])
+            [root-index-node (car index-node-list)]
+            [index-node (find-define-with-params root-index-node 'read-message)])
         (test-equal #f (null? index-node)))
 (test-end)
 
