@@ -335,4 +335,133 @@
   (test-equal "req-b ran" "textDocument/hover" (cadr calls)))
 (test-end)
 
+;; ------------------------------------------------------------------
+;; 15. long generic task survives engine expiry and completes
+;; ------------------------------------------------------------------
+(test-begin "request-queue-long-task-resumes")
+(let* ([queue (make-request-queue)]
+    [counter 0]
+    [processor (lambda (r)
+                 (let loop ([i 0])
+                   (set! counter i)
+                   (if (= i 500000)
+                       'done
+                       (loop (+ i 1)))))]
+    [req (make-request 400 "textDocument/hover" '())])
+  (request-queue-push queue req processor workspace)
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; The loop ran 500000 iterations.  Chez engine expires every ~100000
+  ; reductions, so this verifies the "else" branch of expire (remains).
+  (test-equal "long task finished after engine expires" 500000 counter))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 16. didChange is never interrupted by engine expiry
+;; ------------------------------------------------------------------
+(test-begin "request-queue-didChange-resumes-on-expire")
+(let* ([queue (make-request-queue)]
+    [counter 0]
+    [processor (lambda (r)
+                 (let loop ([i 0])
+                   (set! counter i)
+                   (if (= i 500000)
+                       'done
+                       (loop (+ i 1)))))]
+    [req (make-request '() "textDocument/didChange" '())])
+  (request-queue-push queue req processor workspace)
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; didChange's expire callback unconditionally calls remains, so it
+  ; must reach the final iteration no matter how many times it expires.
+  (test-equal "didChange finished despite engine expires" 500000 counter))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 17. cancelRequest stops a running long task via expire
+;; ------------------------------------------------------------------
+(test-begin "request-queue-cancel-stops-running-task")
+(let* ([queue (make-request-queue)]
+    [counter 0]
+    [consumer-done #f]
+    ; Distinguish cancelRequest handling (fast) from the long job.
+    [processor (lambda (r)
+                 (if (string=? "$/cancelRequest" (request-method r))
+                     'ok
+                     (let loop ([i 0])
+                       (set! counter i)
+                       (if (= i 50000000)
+                           'done
+                           (loop (+ i 1))))))]
+    [req (make-request 500 "textDocument/hover" '())]
+    [cancel (make-request '() "$/cancelRequest" (list (cons 'id 500)))])
+  ; Consumer thread pops and executes.
+  (fork-thread
+    (lambda ()
+      (let ([th (request-queue-pop queue processor)])
+        (th))
+      (set! consumer-done #t)))
+
+  (request-queue-push queue req processor workspace)
+
+  ; Wait until the engine has actually started running (counter >= 100000).
+  (let loop ([i 0])
+    (cond
+      [(>= counter 100000) 'ok]
+      [(< i 100)
+        (sleep (make-time 'time-duration 1000000 0))
+        (loop (+ i 1))]
+      [else (error 'test "engine did not start in time")]))
+
+  ; Now cancel while the engine is inside the long loop.
+  (request-queue-push queue cancel processor workspace)
+
+  ; Wait for the consumer thread to finish (engine terminated or completed).
+  (let loop ([i 0])
+    (cond
+      [consumer-done 'ok]
+      [(< i 300)
+        (sleep (make-time 'time-duration 1000000 0))
+        (loop (+ i 1))]
+      [else (error 'test "consumer thread hung")]))
+
+  ; If cancel worked, counter never reached 50000000.
+  (test-equal "cancel stopped task before completion" #f (= counter 50000000)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 18. pop on empty queue blocks until push wakes it up
+;; ------------------------------------------------------------------
+(test-begin "request-queue-pop-blocks-and-wakes")
+(let* ([queue (make-request-queue)]
+    [result #f]
+    [processor (lambda (r)
+                 (if (string=? "$/cancelRequest" (request-method r))
+                     'ok
+                     (set! result (request-method r))))]
+    [req (make-request 600 "textDocument/hover" '())])
+  ; Consumer thread starts first and blocks on empty queue.
+  (fork-thread
+    (lambda ()
+      (let ([th (request-queue-pop queue processor)])
+        (th))))
+
+  ; Give the consumer a moment to enter condition-wait.
+  (sleep (make-time 'time-duration 10000000 0))
+
+  ; Producer pushes a request; this should signal the condition.
+  (request-queue-push queue req processor workspace)
+
+  ; Wait for the consumer to be woken and process the request.
+  (let loop ([i 0])
+    (cond
+      [result 'ok]
+      [(< i 200)
+        (sleep (make-time 'time-duration 1000000 0))
+        (loop (+ i 1))]
+      [else (error 'test "timeout waiting for pop to wake up")]))
+
+  (test-equal "pop was woken and processed request" "textDocument/hover" result))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
