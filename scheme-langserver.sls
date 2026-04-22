@@ -57,70 +57,72 @@
 
 (define (process-request server-instance request)
   (let* ([method (request-method request)]
-        [id (request-id request)]
-        [params (request-params request)]
-        [workspace (server-workspace server-instance)])
-    (if 
-      (and 
-        (server-shutdown? server-instance)
-        (not (equal? "initialize" method)))
-      (send-message server-instance (fail-response id server-not-initialized "not initialized"))
-      (case method
-        ["initialize" (send-message server-instance (initialize server-instance id params))] 
-        ["initialized" '()] 
-        ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
+      [id (request-id request)]
+      [params (request-params request)]
+      [workspace (server-workspace server-instance)])
+    (if (equal? "exit" method)
+      (exit (if (server-shutdown? server-instance) 0 1))
+      (if (server-shutdown? server-instance)
+        (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
+        (case method
+          ["initialize" (send-message server-instance (initialize server-instance id params))] 
+          ["initialized" '()] 
+          ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
 
-        ["textDocument/didOpen" (did-open workspace params)]
-        ["textDocument/didClose" (did-close workspace params)]
-        ["textDocument/didChange" (did-change workspace params)]
+          ["textDocument/didOpen" (did-open workspace params)]
+          ["textDocument/didClose" (did-close workspace params)]
+          ["textDocument/didChange" (did-change workspace params)]
 
-        ["workspace/didCreateFiles" (did-create workspace params)]
-        ["workspace/didRenameFiles" (did-rename workspace params)]
-        ["workspace/didDeleteFiles" (did-delete workspace params)]
-        ;; lsp-bridge (and many other clients) send this after `initialized`.
-        ;; It's a notification so we must not reply even if we ignore it.
-        ["workspace/didChangeConfiguration" '()]
+          ["workspace/didCreateFiles" (did-create workspace params)]
+          ["workspace/didRenameFiles" (did-rename workspace params)]
+          ["workspace/didDeleteFiles" (did-delete workspace params)]
+          ;; lsp-bridge (and many other clients) send this after `initialized`.
+          ;; It's a notification so we must not reply even if we ignore it.
+          ["workspace/didChangeConfiguration" '()]
 
-        ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
-        ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
-        ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
-        ; ["textDocument/documentHighlight" 
-        ;   (try
-        ;     (send-message server-instance (success-response id (find-highlight workspace params)))
-        ;     (except c
-        ;       [else 
-        ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                ; (do-log-timestamp server-instance)
-        ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
-          ; ["textDocument/signatureHelp"
-          ;  (text-document/signatureHelp id params)]
-        ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
-        ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
-        ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
-        ;TODO: pretty-format with comments
-        ; ["textDocument/formatting"
-        ;   (try
-        ;     (send-message server-instance (success-response id (formatting workspace params)))
-        ;     (except c
-        ;       [else 
-        ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-        ;         (do-log-timestamp server-instance)
-        ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
+          ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
+          ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
+          ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
+          ; ["textDocument/documentHighlight" 
+          ;   (try
+          ;     (send-message server-instance (success-response id (find-highlight workspace params)))
+          ;     (except c
+          ;       [else 
+          ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+            ; (do-log-timestamp server-instance)
+          ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
+            ; ["textDocument/signatureHelp"
+            ;  (text-document/signatureHelp id params)]
+          ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
+          ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
+          ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
+          ;TODO: pretty-format with comments
+          ; ["textDocument/formatting"
+          ;   (try
+          ;     (send-message server-instance (success-response id (formatting workspace params)))
+          ;     (except c
+          ;       [else 
+          ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
+          ;         (do-log-timestamp server-instance)
+          ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
 
-        ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
-          ; ["textDocument/prepareRename"
-          ;  (text-document/prepareRename id params)]
-          ; ["textDocument/rangeFormatting"
-          ;  (text-document/range-formatting! id params)]
-          ; ["textDocument/onTypeFormatting"
-          ;  (text-document/on-type-formatting! id params)]
-          ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else
-          ;; For JSON-RPC notifications, `id` is absent => `#f`.
-          ;; LSP requires servers to ignore unknown notifications and not respond.
-          (if id
-            (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
-            '())]))))
+          ["shutdown"
+            (server-shutdown?-set! server-instance #t)
+            (send-message server-instance (success-response id 'null))]
+          ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
+            ; ["textDocument/prepareRename"
+            ;  (text-document/prepareRename id params)]
+            ; ["textDocument/rangeFormatting"
+            ;  (text-document/range-formatting! id params)]
+            ; ["textDocument/onTypeFormatting"
+            ;  (text-document/on-type-formatting! id params)]
+            ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
+          [else
+            ;; For JSON-RPC notifications, `id` is absent => `#f`.
+            ;; LSP requires servers to ignore unknown notifications and not respond.
+            (if id
+              (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
+              '())])))))
 	; public static final string text_document_code_lens = "textdocument/codelens";
 	; public static final string text_document_signature_help = "textdocument/signaturehelp";
 	; public static final string text_document_rename = "textdocument/rename";
@@ -258,9 +260,7 @@
 
                 [(not request-message) 
                   (server-shutdown?-set! server-instance #t)]
-                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) 
-                  (server-shutdown?-set! server-instance #t)
-                  (if (and thread-pool debug?) (thread-pool-stop! thread-pool))]
+
                 [thread-pool
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
                   (loop (read-message server-instance))]
