@@ -127,6 +127,11 @@
   (for-each 
     (lambda (batch)
       (if (workspace-threaded? workspace-instance)
+        ;; Cancel-barrier: did-change may mark completion/hover/definition
+        ;; tasks as stop?=#t in the tickal-task-list. Their expire callbacks
+        ;; will try to acquire workspace-mutex. Holding it for the entire
+        ;; batch ensures expire cannot interrupt the engine mid-analysis,
+        ;; which would leave document-* fields in an inconsistent state.
         (with-mutex (workspace-mutex workspace-instance)
           (threaded-map 
             (lambda (path) (private-init-references workspace-instance path))

@@ -36,10 +36,11 @@
                 (lambda (s)
                   (walk-file (workspace-file-node workspace) s))
                 (workspace-undiagnosed-paths workspace)))))])
-    (if (null? (workspace-mutex workspace))
-      (workspace-undiagnosed-paths-set! workspace '())
-      (with-mutex (workspace-mutex workspace)
-        (workspace-undiagnosed-paths-set! workspace '())))
+    ; No workspace-mutex needed here. All requests (including this one
+    ; and init-references) are serialized by the single-consumer
+    ; request-queue. interval-timer only pushes into the queue; it
+    ; never directly accesses undiagnosed-paths.
+    (workspace-undiagnosed-paths-set! workspace '())
     result))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_pullDiagnostics

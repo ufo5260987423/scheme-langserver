@@ -42,23 +42,23 @@
       (lambda (request request-queue workspace)
         (let ([new-task #f])
           (letrec ([complete 
-              (lambda (ticks value) 
-                (remove:from-request-tickal-task-list request-queue new-task)
-                value)]
+                (lambda (ticks value) 
+                  (remove:from-request-tickal-task-list request-queue new-task)
+                  value)]
             ; This expire mainly aims to interrupt type inference, so that acquires workspace mutex.
             ; It shouldn't be supposed that it interrupt the workspace refreshing procedure.
               [expire 
                 (lambda (remains) 
-                (cond 
-                  [(or 
-                    (string=? "textDocument/didChange" (request-method request))
-                    (string=? "textDocument/didOpen" (request-method request))
-                    (string=? "textDocument/didClose" (request-method request)))
-                    (remains ticks complete expire)]
-                  [(tickal-task-stop? new-task)
-                    (with-mutex (workspace-mutex workspace)
-                      (remove:from-request-tickal-task-list request-queue new-task))]
-                  [else (remains ticks complete expire)]))])
+                  (cond 
+                    [(or 
+                        (string=? "textDocument/didChange" (request-method request))
+                        (string=? "textDocument/didOpen" (request-method request))
+                        (string=? "textDocument/didClose" (request-method request)))
+                      (remains ticks complete expire)]
+                    [(tickal-task-stop? new-task)
+                      (with-mutex (workspace-mutex workspace)
+                        (remove:from-request-tickal-task-list request-queue new-task))]
+                    [else (remains ticks complete expire)]))])
             (set! new-task (new request #f expire complete))
             (enqueue! (request-queue-queue request-queue) new-task)
             (request-queue-tickal-task-list-set! 
