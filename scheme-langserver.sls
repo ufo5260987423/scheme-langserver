@@ -29,6 +29,13 @@
     (scheme-langserver util association)
     (scheme-langserver util path))
 
+(define (private:send-error-response server-instance id method)
+  (try
+    (send-message server-instance (fail-response id unknown-error-code method))
+    (except c
+      [(condition? c)
+        (do-log "Failed to send error response" server-instance)])))
+
 (define (private:try-catch server-instance request)
   (let ([method (request-method request)]
       [id (request-id request)])
@@ -40,13 +47,13 @@
             (string-append "error: " (with-output-to-string (lambda () (pretty-print `(,(condition-message c) ,@(condition-irritants c))))))
             server-instance)
           (do-log-timestamp server-instance)
-          (send-message server-instance (fail-response id unknown-error-code method))]
+          (private:send-error-response server-instance id method)]
         [else 
           (do-log 
             (string-append "error: " (with-output-to-string (lambda () (pretty-print c))))
             server-instance)
           (do-log-timestamp server-instance) 
-          (send-message server-instance (fail-response id unknown-error-code method))]))))
+          (private:send-error-response server-instance id method)]))))
 
 (define (private:publish-diagnostics server-instance)
   (if (not (null? (server-workspace server-instance)))
@@ -109,7 +116,7 @@
           ["shutdown"
             (server-shutdown?-set! server-instance #t)
             (send-message server-instance (success-response id 'null))]
-          ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
+          ["$/cancelRequest" '()]
             ; ["textDocument/prepareRename"
             ;  (text-document/prepareRename id params)]
             ; ["textDocument/rangeFormatting"
@@ -259,7 +266,8 @@
                   (thread-pool-stop! thread-pool)]
 
                 [(not request-message) 
-                  (server-shutdown?-set! server-instance #t)]
+                  (server-shutdown?-set! server-instance #t)
+                  (when thread-pool (thread-pool-stop! thread-pool))]
 
                 [thread-pool
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))

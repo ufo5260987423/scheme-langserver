@@ -46,7 +46,7 @@
                 (loop (read-to-CRNL port) header-hashtable)))))
 
 (define (get-content-length header-hashtable)
-    (let ([content-length (hashtable-ref header-hashtable "Content-Length" string=?)])
+    (let ([content-length (hashtable-ref header-hashtable "Content-Length" #f)])
         (if (string? content-length)
             (string->number content-length)
             0)))

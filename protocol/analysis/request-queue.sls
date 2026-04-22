@@ -106,11 +106,10 @@
           (when id
             (let* ([predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
                 [tickal-task (find predicator (request-queue-tickal-task-list queue))])
-              ;must cancel in local thread.
+              ; Mark the target task as cancelled. Its expire callback will
+              ; remove it from the tickal-task-list when the engine slice ends.
               (when tickal-task 
-                (tickal-task-stop?-set! tickal-task #t)
-                (potential-request-processor 
-                  (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))))]
+                (tickal-task-stop?-set! tickal-task #t)))))]
       ["textDocument/didChange"
         (for-each
           (lambda (task)
