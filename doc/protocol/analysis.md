@@ -29,6 +29,8 @@ A `request-queue` consists of the following parts:
 | `queue` | Underlying `slib queue`, holding pending `tickal-task`s |
 | `tickal-task-list` | List of all **enqueued or running** tasks, used for lookup, deduplication, and cancellation |
 
+> **Why a linked list instead of a hash table?** `request-id` is not guaranteed to be unique. A client may send multiple requests with the same `id` (e.g., retries after a timeout), or the server may internally reuse IDs. A hash table keyed by `id` would either overwrite earlier tasks or require complex multi-value handling. A simple list with `find`/`remq` correctly handles duplicates at the small scale typical of an LSP request queue (usually < 10 items).
+
 ---
 
 ### 3. Tickal task and engine mechanism

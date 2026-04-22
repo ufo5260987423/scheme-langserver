@@ -33,20 +33,19 @@
 (define-record-type tickal-task 
   (fields 
     (immutable request)
-    (immutable request-queue)
     (mutable stop?)
-    (mutable expire)
-    (mutable complete))
+    (immutable expire)
+    (immutable complete))
   (protocol
     ;must have request-queue-mutex
     (lambda (new)
       (lambda (request request-queue workspace)
-        (let* ([new-task (new request request-queue #f '() '())]
-            [complete 
+        (let ([new-task #f])
+          (letrec ([complete 
               (lambda (ticks value) 
                 (remove:from-request-tickal-task-list request-queue new-task)
                 value)]
-            ;this expire mainly aims to interrupt type infernece, so that acquires workspace mutex.
+            ;this expire mainly aims to interrupt type inference, so that acquires workspace mutex.
             ;it shouldn't be supposed that it interrupt the workspace refreshing procedure.
             [expire 
               (lambda (remains) 
@@ -55,23 +54,22 @@
                     (string=? "textDocument/didChange" (request-method request))
                     (string=? "textDocument/didOpen" (request-method request))
                     (string=? "textDocument/didClose" (request-method request)))
-                    (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]
+                    (remains ticks complete expire)]
                   [(tickal-task-stop? new-task)
                     (with-mutex (workspace-mutex workspace)
                       (remove:from-request-tickal-task-list request-queue new-task))]
-                  [else (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]))])
+                  [else (remains ticks complete expire)]))])
+            (set! new-task (new request #f expire complete))
           (enqueue! (request-queue-queue request-queue) new-task)
           (request-queue-tickal-task-list-set! 
             request-queue
             (cons new-task (request-queue-tickal-task-list request-queue)))
 
-          (tickal-task-expire-set! new-task expire)
-          (tickal-task-complete-set! new-task complete)
-
-          new-task)))))
+          new-task))))))
 
 (define (request-queue-empty? queue)
-  (queue-empty? (request-queue-queue queue)))
+  (with-mutex (request-queue-mutex queue)
+    (queue-empty? (request-queue-queue queue))))
 
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
@@ -115,28 +113,26 @@
                 (potential-request-processor 
                   (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))))]
       ["textDocument/didChange"
-        (let ([predicator 
-                (lambda (task)
-                  (let ([method (request-method (tickal-task-request task))])
-                    (or
-                      (string=? method "private:publish-diagnoses")
-                      (string=? method "textDocument/hover")
-                      (string=? method "textDocument/completion")
-                      (string=? method "textDocument/references")
-                      (string=? method "textDocument/definition")
-                      (string=? method "textDocument/documentSymbol")
-                      (string=? method "textDocument/diagnostic")
-                      (string=? method "textDocument/documentHighlight")
-                      (string=? method "textDocument/signatureHelp")
-                      (string=? method "textDocument/formatting")
-                      (string=? method "textDocument/prepareRename")
-                      (string=? method "textDocument/rangeFormatting")
-                      (string=? method "textDocument/onTypeFormatting"))))])
-          (for-each 
-            (lambda (task)
-              (tickal-task-stop?-set! task #t))
-            (filter predicator (request-queue-tickal-task-list queue)))
-          (make-tickal-task request queue workspace))]
+        (for-each
+          (lambda (task)
+            (let ([method (request-method (tickal-task-request task))])
+              (when (or
+                (string=? method "private:publish-diagnoses")
+                (string=? method "textDocument/hover")
+                (string=? method "textDocument/completion")
+                (string=? method "textDocument/references")
+                (string=? method "textDocument/definition")
+                (string=? method "textDocument/documentSymbol")
+                (string=? method "textDocument/diagnostic")
+                (string=? method "textDocument/documentHighlight")
+                (string=? method "textDocument/signatureHelp")
+                (string=? method "textDocument/formatting")
+                (string=? method "textDocument/prepareRename")
+                (string=? method "textDocument/rangeFormatting")
+                (string=? method "textDocument/onTypeFormatting"))
+                (tickal-task-stop?-set! task #t))))
+          (request-queue-tickal-task-list queue))
+        (make-tickal-task request queue workspace)]
       [else (make-tickal-task request queue workspace)])
       ;because the pool is limited to have only one thread.
     (condition-signal (request-queue-condition queue))))
