@@ -191,7 +191,7 @@ path:		./tests/protocol/apis/test-references.sps
 library:	()
 path:		./tests/protocol/apis/test-document-sync.sps
 library:	()
-path:		./tests/parallel-log-debug.sps
+path:		./bin/parallel-log-debug.sps
 library:	()
 path:		./tests/virtual-file-system/test-file-node.sps
 library:	()
@@ -201,7 +201,7 @@ path:		./tests/virtual-file-system/test-library-node.sps
 library:	()
 path:		./tests/virtual-file-system/test-index-node.sps
 library:	()
-path:		./tests/log-debug.sps
+path:		./bin/log-debug.sps
 library:	()
 path:		./bin/scheme-langserver.sps
 library:	( industria der)

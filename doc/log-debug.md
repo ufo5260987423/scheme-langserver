@@ -1,6 +1,6 @@
 ## scheme-langserver log replay debugging tools
 
-`tests/log-debug.sps` and `tests/parallel-log-debug.sps` are **log replay utilities**. They read a previously captured LSP session log and feed it back into a fresh server instance, allowing you to reproduce crashes or misbehavior offline without a real language client.
+`bin/log-debug.sps` and `bin/parallel-log-debug.sps` are **log replay utilities**. They read a previously captured LSP session log and feed it back into a fresh server instance, allowing you to reproduce crashes or misbehavior offline without a real language client.
 
 ---
 
@@ -20,7 +20,7 @@ Content-Length: <byte-length>\r\n\r\n<json-payload>
 
 ---
 
-### 2. `tests/log-debug.sps` — single-threaded replay
+### 2. `bin/log-debug.sps` — single-threaded replay
 
 | Aspect | Behaviour |
 |--------|-----------|
@@ -33,7 +33,7 @@ Use this when you want a deterministic, linear replay without engine preemption 
 
 ---
 
-### 3. `tests/parallel-log-debug.sps` — multi-threaded replay
+### 3. `bin/parallel-log-debug.sps` — multi-threaded replay
 
 | Aspect | Behaviour |
 |--------|-----------|
@@ -53,8 +53,8 @@ This version runs the full threaded pipeline: thread-pool, request-queue, interv
 3. Run the appropriate replay script:
    ```bash
    source .akku/bin/activate
-   scheme --script tests/log-debug.sps          # single-threaded
-   scheme --script tests/parallel-log-debug.sps # multi-threaded
+   scheme --script bin/log-debug.sps          # single-threaded
+   scheme --script bin/parallel-log-debug.sps # multi-threaded
    ```
 4. The script creates `~/scheme-langserver.log` (server output log) and `~/scheme-langserver.out` (raw server stdout) for inspection.
 
@@ -79,7 +79,7 @@ The most common way to use these scripts is **not** a one-shot replay. Instead, 
 3. **Verify reproduction.**
    ```bash
    source .akku/bin/activate
-   scheme --script tests/log-debug.sps
+   scheme --script bin/log-debug.sps
    ```
    If the bug involves threading (races, cancellation, request-queue ordering), use `parallel-log-debug.sps` instead.
 
@@ -103,7 +103,7 @@ The most common way to use these scripts is **not** a one-shot replay. Instead, 
 6. **Re-run the replay.**
    ```bash
    source .akku/bin/activate
-   scheme --script tests/log-debug.sps
+   scheme --script bin/log-debug.sps
    ```
    Your new prints appear on the console (or in `~/scheme-langserver.log` if the server redirects them).
 

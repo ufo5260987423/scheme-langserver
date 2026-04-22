@@ -48,13 +48,13 @@ Ok, you can make an issue [here](https://github.com/ufo5260987423/scheme-langser
 
 If you're an expert, you may recur the bug with log `{path-to-log}` and `log-debug.sps`. 
 
-1. You should have scheme-langserver's source in `{path-to-scheme-langserver}` and you can find out `{path-to-scheme-langserver/tests/log-debug.sps}`;
+1. You should have scheme-langserver's source in `{path-to-scheme-langserver}` and you can find out `{path-to-scheme-langserver/bin/log-debug.sps}`;
 2. Rename `{path-to-log}`, usually `~/scheme-langserver.log`, as `~/ready-for-analyse.log`;
-> If your log is not `~/ready-for-analyse.log`, you should do few modification to `{path-to-scheme-langserver/tests/log-debug.sps}`
+> If your log is not `~/ready-for-analyse.log`, you should do few modification to `{path-to-scheme-langserver/bin/log-debug.sps}`
 3. Run 
 ```bash
 cd {path-to-scheme-langserver}
-scheme --script tests/log-debug.sps
+scheme --script bin/log-debug.sps
 ```
 or run `log-debug.sps` in Scheme REPL. Mostly bugs will cause exceptions on screen.
 
