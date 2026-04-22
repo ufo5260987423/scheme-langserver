@@ -47,8 +47,8 @@
                 value)]
             ; This expire mainly aims to interrupt type inference, so that acquires workspace mutex.
             ; It shouldn't be supposed that it interrupt the workspace refreshing procedure.
-            [expire 
-              (lambda (remains) 
+              [expire 
+                (lambda (remains) 
                 (cond 
                   [(or 
                     (string=? "textDocument/didChange" (request-method request))
@@ -79,11 +79,11 @@
         (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
         (loop)))
     (let* ([task (dequeue! (request-queue-queue queue))]
-          [request (tickal-task-request task)]
-          [job (lambda () 
-              (if (tickal-task-stop? task)
-                (remove:from-request-tickal-task-list queue task)
-                (request-processor request)))])
+        [request (tickal-task-request task)]
+        [job (lambda () 
+          (if (tickal-task-stop? task)
+            (remove:from-request-tickal-task-list queue task)
+            (request-processor request)))])
       ; May be called in the consumer thread or directly
       (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
 
