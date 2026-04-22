@@ -37,7 +37,7 @@
     (immutable expire)
     (immutable complete))
   (protocol
-    ;must have request-queue-mutex
+    ; Must have request-queue-mutex
     (lambda (new)
       (lambda (request request-queue workspace)
         (let ([new-task #f])
@@ -45,8 +45,8 @@
               (lambda (ticks value) 
                 (remove:from-request-tickal-task-list request-queue new-task)
                 value)]
-            ;this expire mainly aims to interrupt type inference, so that acquires workspace mutex.
-            ;it shouldn't be supposed that it interrupt the workspace refreshing procedure.
+            ; This expire mainly aims to interrupt type inference, so that acquires workspace mutex.
+            ; It shouldn't be supposed that it interrupt the workspace refreshing procedure.
             [expire 
               (lambda (remains) 
                 (cond 
@@ -60,12 +60,11 @@
                       (remove:from-request-tickal-task-list request-queue new-task))]
                   [else (remains ticks complete expire)]))])
             (set! new-task (new request #f expire complete))
-          (enqueue! (request-queue-queue request-queue) new-task)
-          (request-queue-tickal-task-list-set! 
-            request-queue
-            (cons new-task (request-queue-tickal-task-list request-queue)))
-
-          new-task))))))
+            (enqueue! (request-queue-queue request-queue) new-task)
+            (request-queue-tickal-task-list-set! 
+              request-queue
+              (cons new-task (request-queue-tickal-task-list request-queue)))
+            new-task))))))
 
 (define (request-queue-empty? queue)
   (with-mutex (request-queue-mutex queue)
@@ -75,17 +74,17 @@
   (with-mutex (request-queue-mutex queue)
     (let loop ()
       (when (queue-empty? (request-queue-queue queue))
-        ;by default, this will release request-queue-mutex 
-        ;and re-enter when request-queue-condition is signed.
+        ; By default, this will release request-queue-mutex 
+        ; and re-enter when request-queue-condition is signed.
         (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
         (loop)))
     (let* ([task (dequeue! (request-queue-queue queue))]
-        [request (tickal-task-request task)]
-        [job (lambda () 
+          [request (tickal-task-request task)]
+          [job (lambda () 
               (if (tickal-task-stop? task)
                 (remove:from-request-tickal-task-list queue task)
                 (request-processor request)))])
-      ;will be in another thread
+      ; May be called in the consumer thread or directly
       (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
 
 (define (remove:from-request-tickal-task-list queue task)
@@ -134,6 +133,6 @@
           (request-queue-tickal-task-list queue))
         (make-tickal-task request queue workspace)]
       [else (make-tickal-task request queue workspace)])
-      ;because the pool is limited to have only one thread.
-    (condition-signal (request-queue-condition queue))))
+      ; Because the pool is limited to have only one thread.
+      (condition-signal (request-queue-condition queue))))
 )
