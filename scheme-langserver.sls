@@ -27,6 +27,8 @@
     (scheme-langserver protocol apis file-change-notification)
     (only (scheme-langserver protocol apis file-change-notification) did-change-watched-files)
 
+    (scheme-langserver virtual-file-system file-node)
+
     (scheme-langserver util association)
     (scheme-langserver util path))
 
@@ -80,6 +82,7 @@
           ["textDocument/didOpen" (did-open workspace params)]
           ["textDocument/didClose" (did-close workspace params)]
           ["textDocument/didChange" (did-change workspace params)]
+          ["textDocument/didSave" (did-save workspace params)]
 
           ["workspace/didCreateFiles" (did-create workspace params)]
           ["workspace/didRenameFiles" (did-rename workspace params)]
@@ -88,6 +91,31 @@
           ;; lsp-bridge (and many other clients) send this after `initialized`.
           ;; It's a notification so we must not reply even if we ignore it.
           ["workspace/didChangeConfiguration" '()]
+          ["workspace/didChangeWorkspaceFolders"
+            (let* ([event (assq-ref params 'event)]
+                [added (vector->list (assq-ref event 'added))])
+              ; For now, scheme-langserver supports a single root workspace.
+              ; When new folders are added, re-init the workspace to pick them up.
+              (when (and (not (null? added)) (not (null? (server-workspace server-instance))))
+                (let* ([first-added (car added)]
+                    [new-uri (assq-ref first-added 'uri)]
+                    [new-path (uri->path new-uri)]
+                    [current-path (file-node-path (workspace-file-node (server-workspace server-instance)))])
+                  (when (not (string=? new-path current-path))
+                    (server-workspace-set! server-instance 
+                      (init-workspace 
+                        new-path 
+                        'akku 
+                        (server-top-environment server-instance)
+                        (not (null? (server-mutex server-instance)))
+                        (server-type-inference? server-instance)))))))
+            '()]
+
+          ; Defensive: some clients (e.g. certain VS Code extensions, lsp-bridge)
+          ; send codeAction requests even when the server does not advertise
+          ; codeActionProvider. Returning an empty vector avoids method-not-found
+          ; noise in client logs.
+          ["textDocument/codeAction" (send-message server-instance (success-response id (vector)))]
 
           ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
           ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
