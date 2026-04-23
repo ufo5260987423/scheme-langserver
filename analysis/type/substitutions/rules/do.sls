@@ -14,7 +14,7 @@
       [(_ ((var init update ...) **1) (test result ...) _ ... ) 
         (let* ([children (index-node-children index-node)]
             [var-index-node (cadr children)])
-          (map private-process (index-node-children var-index-node)))]
+          (for-each private-process (index-node-children var-index-node)))]
       [else '()])))
 
 (define (private-process target-index-node)

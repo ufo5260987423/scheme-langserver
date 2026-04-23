@@ -103,10 +103,10 @@
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
             ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))]
             [else #f])
-          (map
+          (for-each
             (lambda (current) (step current-document current expanded+callee-list))
             (index-node-children current-index-node))
-          (map
+          (for-each
             (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed expanded+callee-list))
             (index-node-children current-index-node)))]))
 
