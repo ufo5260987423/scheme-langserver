@@ -169,7 +169,7 @@
   (let ([e (annotation-stripped (index-node-datum/annotations index-node))])
     (if (symbol? e)
       (let* ([as (find-available-references-for document index-node e)]
-          [ras (apply append (map root-ancestor as))]
+          [ras (fold-left append '() (map root-ancestor as))]
           [metas (filter meta? ras)])
         (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) metas)))))
 
@@ -198,14 +198,14 @@
       #t
       (let loop ([body 
             (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-              (apply append (map identifier-reference-parents (find-available-references-for document current-index-node))))])
+              (fold-left append '() (map identifier-reference-parents (find-available-references-for document current-index-node))))])
         (if (null? body)
           (raise "no such identifier for specific libraries")
           (if (private-check-library-identifier? body library-identifier-rest)
             #t
             (loop 
               (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-                (apply append (map identifier-reference-parents body))))))))))
+                (fold-left append '() (map identifier-reference-parents body))))))))))
 
 (define (private-check-library-identifier? candidates library-identifier-rest)
   (if (null? candidates)
@@ -307,7 +307,7 @@
 (define (root-ancestor identifier-reference)
   (if (null? (identifier-reference-parents identifier-reference))
     `(,identifier-reference)
-    (apply append (map root-ancestor (identifier-reference-parents identifier-reference)))))
+    (fold-left append '() (map root-ancestor (identifier-reference-parents identifier-reference)))))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]
@@ -332,6 +332,6 @@
       [else 
         (if (null? children)
           '()
-          (apply append
+          (fold-left append '()
             (map (lambda (child-index-node) (find-references-in document child-index-node available-references predicate?)) children)))])))
 )

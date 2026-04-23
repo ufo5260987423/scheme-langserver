@@ -214,7 +214,7 @@
               [((? inner:macro? l) params ...)
                 (type:environment-result-list-set! 
                   env 
-                  (apply append 
+                  (fold-left append '()
                     (map 
                       (lambda (for-template) 
                         ;avoid nested macros
@@ -250,7 +250,7 @@
                 env 
                 (if (null? tmp)
                   `(,expression)
-                  (apply append 
+                  (fold-left append '()
                     (map 
                       (lambda (reified)
                         (if (equal? reified expression) 
@@ -280,7 +280,7 @@
                 env 
                 (if (null? filtered)
                   `(,expression)
-                  (apply append 
+                  (fold-left append '()
                     (map 
                       (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
                       filtered)))))]
