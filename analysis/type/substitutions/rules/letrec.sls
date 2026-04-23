@@ -26,6 +26,6 @@
             [key-value-index-nodes (index-node-children (cadr children))])
           (extend-index-node-substitution-list index-node return-index-node)
           (extend-index-node-substitution-list return-index-node index-node)
-          (map let:private-process-key-value key-value-index-nodes))]
+          (for-each let:private-process-key-value key-value-index-nodes))]
       [else '()])))
 )

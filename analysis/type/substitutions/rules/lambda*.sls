@@ -24,7 +24,7 @@
             ;(identifier **1) index-nodes
             [parameter-index-nodes (lambda*-parameter-index-node-extract (cadr children) document)]
             [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)])
-          (map 
+          (for-each 
             (lambda (t) (extend-index-node-substitution-list index-node t))
             (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)))]
       [else '()])))
@@ -41,7 +41,7 @@
             [(? symbol? expression)
               index-node]
             [((? symbol? param) (? symbol? type))
-              (map (lambda (id) (extend-index-node-substitution-list (car (index-node-children index-node)) id))
+              (for-each (lambda (id) (extend-index-node-substitution-list (car (index-node-children index-node)) id))
                 (map root-ancestor (find-available-references-for current-document index-node type)))
               (car (index-node-children index-node))])))
     (index-node-children parameter-index-nodes)))

@@ -23,7 +23,7 @@
             ;((? symbol? identifier) **1) index-nodes
             [parameter-index-nodes (index-node-children (cadr children))]
             [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)])
-          (map 
+          (for-each 
             (lambda (t) (extend-index-node-substitution-list index-node t))
             (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)))]
       [else '()])))

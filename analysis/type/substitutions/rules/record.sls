@@ -31,13 +31,13 @@
               (if (and predicator constructor)
                 (if (null? (identifier-reference-type-expressions predicator))
                   (begin
-                    (map 
+                    (for-each 
                       (lambda (getter)
                         (identifier-reference-type-expressions-set! 
                           getter
                           `((something? <- (inner:list? ,predicator)))))
                       getters)
-                    (map 
+                    (for-each 
                       (lambda (setter)
                         (identifier-reference-type-expressions-set! 
                           setter

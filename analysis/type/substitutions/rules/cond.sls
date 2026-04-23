@@ -16,7 +16,7 @@
       [children (index-node-children index-node)])
     (match expression
       [(_ clause **1)
-        (map 
+        (for-each 
           (lambda (clause-index-node) (private-clause-process index-node clause-index-node))
           (cdr children))]
       [else '()])))

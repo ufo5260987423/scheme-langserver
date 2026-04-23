@@ -20,14 +20,16 @@
         (let* ([clauses (cddr children)]
             [clauses-children (map index-node-children clauses)]
             [previous-index-nodes (map car clauses-children)]
-            [previous (map reverse clauses-children)]
-            [latters (map cadr reverse)]
+            [last-index-nodes (map (lambda (c) (car (reverse c))) clauses-children)]
             [expression-node (cadr children)])
-          (map 
+          (for-each 
             (lambda (t) (extend-index-node-substitution-list expression-node t))
             previous-index-nodes)
-          (map 
+          (for-each 
             (lambda (t) (extend-index-node-substitution-list index-node t))
-            latters))]
+            last-index-nodes)
+          (for-each 
+            (lambda (t) (extend-index-node-substitution-list t index-node))
+            last-index-nodes))]
       [else '()])))
 )

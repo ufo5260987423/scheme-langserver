@@ -5,9 +5,6 @@
     (chezscheme)
     (ufo-try)
 
-    (scheme-langserver util dedupe)
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -34,7 +31,7 @@
     (scheme-langserver analysis type substitutions self-defined-rules router))
 
 (define (construct-substitutions-for document)
-  (map
+  (for-each
     (lambda (index-node) (step document index-node '()))
     (document-index-node-list document)))
 
@@ -58,7 +55,7 @@
             current-index-node 
             (car (index-node-children current-index-node)))
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (map
+            (for-each
               (lambda (current)
                 (step current-document current available-identifiers 'quasiquoted expanded+callee-list))
               (index-node-children current-index-node)))]
@@ -67,7 +64,7 @@
             current-index-node 
             (car (index-node-children current-index-node)))
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (map
+            (for-each
               (lambda (current)
                 (step current-document current available-identifiers 'quasisyntax expanded+callee-list))
               (index-node-children current-index-node)))]
@@ -86,19 +83,21 @@
                   [else '()])])
             (if (symbol? head-expression)
               (try 
-                (map
+                (for-each
                   (lambda (current) ((car (cdr current)) current-document current-index-node))
                   target-rules)
                 (except c
-                  [else '()]))
+                  [(condition? c) '()]
+                  [else (raise c)]))
               ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
             (try 
-              (map
+              (for-each
                 (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
                 children)
               (except c 
-                [else '()])))])]
+                [(condition? c) '()]
+                [else (raise c)])))])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]

@@ -57,7 +57,7 @@
         [(number? expression) (extend-index-node-substitution-list index-node private-number?)]
 
         [(and (symbol? expression) (not quoted?))
-          (map 
+          (for-each 
             (lambda (identifier-reference) 
               (private-process document identifier-reference index-node))
             (find-available-references-for document index-node expression))]
@@ -101,7 +101,7 @@
           (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))]
         ;it's in r6rs library?
         [(null? target-index-node)
-          (map 
+          (for-each 
             (lambda (t) (extend-index-node-substitution-list index-node t))
             type-expressions)]
         ; this can't be excluded by identifier-catching rules
@@ -150,10 +150,10 @@
             (extend-index-node-substitution-list
               index-node
               (identifier-reference-index-node identifier-reference))
-            (map 
+            (for-each 
               (lambda (t) (extend-index-node-substitution-list index-node t))
               type-expressions))]))
-    (map 
+    (for-each 
       (lambda (parent) (private-process document parent index-node))
       (identifier-reference-parents identifier-reference))))
 

@@ -35,7 +35,7 @@
       [((? symbol? var) init update)
         (let* ([var-index-node (car children)]
             [init-index-node (cadr children)]
-            [update-index-node (caddr (children))])
+            [update-index-node (caddr children)])
           (extend-index-node-substitution-list var-index-node init-index-node)
           (extend-index-node-substitution-list var-index-node update-index-node))]
       [else '()])))
