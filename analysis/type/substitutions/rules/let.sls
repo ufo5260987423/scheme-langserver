@@ -6,9 +6,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
 

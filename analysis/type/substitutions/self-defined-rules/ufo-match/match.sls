@@ -6,9 +6,6 @@
     (only (srfi :13) string-suffix?)
 
     (scheme-langserver util dedupe)
-    (scheme-langserver util cartesian-product)
-
-    (scheme-langserver analysis util)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
 
