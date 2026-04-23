@@ -21,7 +21,6 @@
 
     (scheme-langserver virtual-file-system index-node)
 
-    (scheme-langserver util binary-search)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
     (scheme-langserver util dedupe)
@@ -29,7 +28,6 @@
 
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
@@ -79,10 +77,8 @@
         [(and (inner:record? right) (identifier-reference? right)) 
           (equal? right (cadr left))]
         [(and (identifier-reference? left) (identifier-reference? right)) 
-          (if (null? (identifier-reference-parents right))
-            #f
-            (if (contain? (identifier-reference-parents right) left)
-              #t
+          (and (not (null? (identifier-reference-parents right)))
+            (or (contain? (identifier-reference-parents right) left)
               (fold-left
                 (lambda (l r)
                   (if l
@@ -143,11 +139,11 @@
     [(expression) (type:partially-solved? expression 1)]
     [(expression minium-solved-leaves) 
       (letrec ([get-leaves 
-            (lambda (current-expression)
+            (lambda (current-expression acc)
               (if (list? current-expression)
-                (apply append (map get-leaves current-expression))
-                `(,current-expression)))])
-        (<= minium-solved-leaves (length (filter type:solved? (get-leaves expression))))) ]))
+                (fold-left get-leaves acc current-expression)
+                (cons current-expression acc)))])
+        (<= minium-solved-leaves (length (filter type:solved? (get-leaves expression '()))))) ]))
 
 (define type:recursive-interpret-result-list
   (case-lambda 
@@ -173,7 +169,7 @@
               (+ 1 i)
               (filter (lambda (maybe) (not (type:solved? maybe))) r0)
               env-iterator
-              (append result r1)))))]))
+              (fold-left (lambda (acc item) (cons item acc)) result r1)))))]))
 
 (define type:depature&interpret->result-list
   (case-lambda
