@@ -18,7 +18,7 @@
             [something-end-index-node (cadr (reverse children))]
             [branch-index-nodes (cddr except-children)])
           (extend-index-node-substitution-list index-node something-end-index-node)
-          (map 
+          (for-each 
             (lambda (i) (private:branch i index-node))
             branch-index-nodes))]
       [else '()])))
