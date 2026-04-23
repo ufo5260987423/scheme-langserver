@@ -2,7 +2,8 @@
   (export 
     did-create
     did-delete
-    did-rename)
+    did-rename
+    did-change-watched-files)
   (import 
     (chezscheme) 
 
@@ -55,6 +56,36 @@
           [new-file-node (attach-new-file new-path root-file-node facet)])
         (file-node-document-set! new-file-node (file-node-document old-file-node))))
     (vector->list (assq-ref params 'files))))
+
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeWatchedFiles
+(define (did-change-watched-files workspace params)
+  (let* ([changes (vector->list (assq-ref params 'changes))]
+      [root-file-node (workspace-file-node workspace)]
+      [facet (workspace-facet workspace)]
+      [top-env (workspace-top-environment workspace)]
+      [body (lambda ()
+              (for-each
+                (lambda (change)
+                  (let* ([uri (assq-ref change 'uri)]
+                      [type (assq-ref change 'type)]
+                      [path (uri->path uri)])
+                    (when (facet path)
+                      (case type
+                        [1 (attach-new-file path root-file-node facet top-env)]
+                        [2 (let ([file-node (walk-file root-file-node path)])
+                             (when (file-node? file-node)
+                               (let ([text (read-string path)])
+                                 (when (string? text)
+                                   (update-file-node-with-tail workspace file-node text)))))]
+                        [3 (let ([file-node (walk-file root-file-node path)])
+                             (when (file-node? file-node)
+                               (did-delete workspace 
+                                 (make-alist 'files (vector (make-alist 'uri uri))))))]))))
+                changes))])
+    (if (null? (workspace-mutex workspace))
+      (body)
+      (with-mutex (workspace-mutex workspace)
+        (body)))))
 
 ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didDeleteFiles
 (define (did-delete workspace params)

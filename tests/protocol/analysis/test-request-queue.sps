@@ -74,11 +74,10 @@
   (let ([thunk (request-queue-pop queue processor)])
     (thunk))
   
-  ; Note: current implementation invokes potential-request-processor for the
-  ; cancelRequest itself inside the push.  The original req is skipped because
-  ; stop? = #t, so the only call we see is the cancelRequest notification.
-  (test-equal "original request was cancelled" 1 (length calls))
-  (test-equal "cancelRequest invoked processor" "$/cancelRequest" (car calls)))
+  ; cancelRequest marks the target task as stop?=#t inside push.
+  ; The original req is skipped because stop? = #t.
+  ; cancelRequest itself is a notification and does not enter the queue.
+  (test-equal "original request was cancelled" 0 (length calls)))
 (test-end)
 
 ;; ------------------------------------------------------------------
@@ -172,16 +171,14 @@
   (request-queue-push queue req-b processor workspace)
   (request-queue-push queue cancel processor workspace)
 
-  ; cancelRequest itself is processed synchronously inside push.
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
   (let ([th2 (request-queue-pop queue processor)])
     (th2))
 
   (test-equal "queue empty after two pops" #t (request-queue-empty? queue))
-  (test-equal "two calls total (cancel + req-b)" 2 (length calls))
-  (test-equal "cancelRequest processed first" "$/cancelRequest" (car calls))
-  (test-equal "req-b ran after cancel" "textDocument/completion" (cadr calls)))
+  (test-equal "only req-b ran" 1 (length calls))
+  (test-equal "req-b method" "textDocument/completion" (car calls)))
 (test-end)
 
 ;; ------------------------------------------------------------------
@@ -294,7 +291,7 @@
     [cancel1 (make-request '() "$/cancelRequest" (list (cons 'id 200)))]
     [cancel2 (make-request '() "$/cancelRequest" (list (cons 'id 200)))])
   (request-queue-push queue req processor workspace)
-  ; First cancel sets stop? and invokes processor for the cancel itself.
+  ; First cancel sets stop?=#t.
   (request-queue-push queue cancel1 processor workspace)
   ; Pop the now-stopped task: job lambda sees stop?=#t and removes it.
   (let ([th (request-queue-pop queue processor)])
@@ -303,9 +300,8 @@
   (request-queue-push queue cancel2 processor workspace)
 
   (test-equal "queue empty" #t (request-queue-empty? queue))
-  ; Only cancel1 should have invoked the processor (once for itself).
-  (test-equal "only one cancel processed" 1 (length calls))
-  (test-equal "cancelRequest method" "$/cancelRequest" (car calls)))
+  ; cancelRequest is a notification and does not invoke the processor.
+  (test-equal "no calls" 0 (length calls)))
 (test-end)
 
 ;; ------------------------------------------------------------------
