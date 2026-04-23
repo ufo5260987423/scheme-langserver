@@ -130,7 +130,7 @@
                   [children (index-node-children ancestor)]
                   [head (car children)]
                   [rests (cdr children)]
-                  [index (index-of (list->vector rests) index-node)]
+                  [index (index-of rests index-node)]
                   [symbols (generate-symbols-with "d" (length rests))])
                 (if (= index (length rests))
                   '()
@@ -161,12 +161,12 @@
       (loop `(,@result ,(string->symbol (string-append base-string (number->string (length result))))))
       result)))
 
-(define (index-of target-vector target-index-node)
-  (let loop ([i 0])
+(define (index-of target-list target-index-node)
+  (let loop ([i 0] [lst target-list])
     (cond 
-      [(= i (vector-length target-vector)) i]
-      [(equal? (vector-ref target-vector i) target-index-node) i]
-      [else (loop (+ i 1))])))
+      [(null? lst) i]
+      [(equal? (car lst) target-index-node) i]
+      [else (loop (+ i 1) (cdr lst))])))
 
 (define (private-unquote-splicing? index-node document current-expression)
   (if (pair? current-expression)
