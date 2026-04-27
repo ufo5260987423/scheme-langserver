@@ -4,54 +4,41 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
+(import
+  (rnrs (6))
+  (srfi :64 testing)
+  (scheme-langserver analysis workspace)
+  (scheme-langserver virtual-file-system file-node)
+  (scheme-langserver protocol apis document-symbol)
+  (scheme-langserver util path)
+  (scheme-langserver util association))
 
-(test-begin "document-symbol test")
-  (let* ( [shutdown-json (read-string "./tests/resources/shutdown.json")]
-      [shutdown-header (string-append 
-        ; "GET /example.http HTTP/1.1\r\n"
-        "Content-Length: "
-        (number->string (bytevector-length (string->utf8 shutdown-json)))
-        "\r\n\r\n")]
+(test-begin "document-symbol on util/binary-search.sls")
 
-    [initialization-json (string-append
-        "{\n" 
-        "    \"id\": \"1\",\n" 
-        "    \"method\": \"initialize\",\n" 
-        "    \"params\": {\n" 
-        "        \"processId\": 1,\n"
-        "        \"rootPath\": \"" (current-directory) "\",\n"
-        "        \"rootUri\": \"file://" (current-directory) "\",\n"
-        "        \"capabilities\": {}\n"
-        "    },\n" 
-        "    \"jsonrpc\": \"2.0\"\n" 
-        "}")]
-    [init-header (string-append 
-        ; "GET /example.http HTTP/1.1\r\n"
-        "Content-Length: "
-        (number->string (bytevector-length (string->utf8 initialization-json)))
-        "\r\n\r\n")]
+(let* ([root (current-directory)]
+       [workspace (init-workspace root 'akku 'r6rs #f #f)]
+       [target-path (string-append root "/util/binary-search.sls")]
+       [uri (path->uri target-path)]
+       [params (make-alist 'textDocument (make-alist 'uri uri))]
+       [result (document-symbol workspace params)])
 
-    [document-symbol-json (format (read-string "./tests/resources/document-symbol.json") (current-directory))]
-    [document-symbol-header (string-append 
-        ; "GET /example.http HTTP/1.1\r\n"
-        "Content-Length: "
-        (number->string (bytevector-length (string->utf8 document-symbol-json)))
-        "\r\n\r\n")]
+  (test-assert "returns a vector" (vector? result))
+  (test-assert "non-empty" (> (vector-length result) 0))
 
-    [input-port (open-bytevector-input-port (string->utf8 
-          (string-append 
-            init-header initialization-json 
+  (let ([names (map (lambda (s) (assq-ref s 'name)) (vector->list result))])
+    (test-assert "contains exported symbol 'binary-search'"
+      (find (lambda (n) (string=? "binary-search" n)) names))
+    (test-assert "contains internal symbol 'private-collect'"
+      (find (lambda (n) (string=? "private-collect" n)) names))
 
-            document-symbol-header document-symbol-json 
+    (for-each
+      (lambda (sym)
+        (let ([name (assq-ref sym 'name)])
+          (test-assert (string-append name " has kind") (assq-ref sym 'kind))
+          (test-assert (string-append name " has range") (assq-ref sym 'range))
+          (test-assert (string-append name " has selectionRange") (assq-ref sym 'selectionRange))))
+      (vector->list result))))
 
-            shutdown-header shutdown-json)))]
-    [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
-    ; [output-port (standard-output-port)]
-    [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-    [server-instance (init-server input-port output-port log-port #f #f)])
-    (test-equal #f (server-shutdown? server-instance))
-    )
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
