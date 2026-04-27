@@ -292,7 +292,7 @@
                   (if prefix-path
                     (let ([new-node (init-virtual-file-system prefix-path parent my-filter top-environment)])
                       (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
-                      new-node)
+                      (attach-new-file path new-node my-filter top-environment))
                     '()))))]
           [else 
             (let* ([name (path->name path)] 
