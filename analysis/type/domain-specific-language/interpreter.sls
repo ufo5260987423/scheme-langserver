@@ -141,7 +141,7 @@
       (letrec ([get-leaves 
             (lambda (current-expression acc)
               (if (list? current-expression)
-                (fold-left get-leaves acc current-expression)
+                (fold-left (lambda (a e) (get-leaves e a)) acc current-expression)
                 (cons current-expression acc)))])
         (<= minium-solved-leaves (length (filter type:solved? (get-leaves expression '()))))) ]))
 
