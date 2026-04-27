@@ -4,51 +4,61 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
+(import
+  (rnrs (6))
+  (srfi :64 testing)
+  (scheme-langserver analysis workspace)
+  (scheme-langserver virtual-file-system file-node)
+  (scheme-langserver virtual-file-system document)
+  (scheme-langserver virtual-file-system index-node)
+  (scheme-langserver protocol apis definition)
+  (scheme-langserver util path)
+  (scheme-langserver util association)
+  (scheme-langserver util test))
 
-(test-begin "definition test")
-  (let* ( [shutdown-json (read-string "./tests/resources/shutdown.json") ]
-      [shutdown-header (string-append 
-        ; "GET /example.http HTTP/1.1\r\n"
-        "Content-Length: "
-        (number->string (bytevector-length (string->utf8 shutdown-json)))
-        "\r\n\r\n")]
-    [initialization-json (string-append
-        "{\n" 
-        "    \"id\": \"1\",\n" 
-        "    \"method\": \"initialize\",\n" 
-        "    \"params\": {\n" 
-        "        \"processId\": 1,\n"
-        "        \"rootPath\": \"" (current-directory) "\",\n"
-        "        \"rootUri\": \"file://" (current-directory) "\",\n"
-        "        \"capabilities\": {}\n"
-        "    },\n" 
-        "    \"jsonrpc\": \"2.0\"\n" 
-        "}")]
-    [init-header (string-append 
-        ; "GET /example.http HTTP/1.1\r\n"
-        "Content-Length: "
-        (number->string (bytevector-length (string->utf8 initialization-json)))
-        "\r\n\r\n")]
+(test-begin "definition on util/binary-search.sls")
 
-    [test-json (format (read-string "./tests/resources/definition.json") (current-directory)) ]
-    [test-header (string-append 
-        ; "GET /example.http HTTP/1.1\r\n"
-        "Content-Length: "
-        (number->string (bytevector-length (string->utf8 test-json)))
-        "\r\n\r\n")]
+(let* ([root (current-directory)]
+    [workspace (init-workspace root 'akku 'r6rs #f #f)]
+    [target-path (string-append root "/util/binary-search.sls")]
+    [uri (path->uri target-path)]
 
-    [input-port (open-bytevector-input-port (string->utf8 
-          (string-append 
-            init-header initialization-json 
-            test-header test-json 
-            shutdown-header shutdown-json)))]
-    [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
-    ; [output-port (standard-output-port)]
-    [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-    [server-instance (init-server input-port output-port log-port #f #f)])
-    (test-equal #f (server-shutdown? server-instance))
-    )
+    [file-node (walk-file (workspace-file-node workspace) target-path)]
+    [document (file-node-document file-node)]
+    [root-node (car (document-index-node-list document))]
+
+    ;; locate private-collect definition in AST
+    [def-node (find-define-by-name root-node 'private-collect)]
+    [name-node (define-node->name-node def-node)]
+
+    ;; derive cursor position from the name node (no hard-coding)
+    [cursor-pos (document+bias->position-list document (index-node-start name-node))]
+    [cursor-line (car cursor-pos)]
+    [cursor-char (cadr cursor-pos)]
+
+    ;; definition returns the identifier's precise range, not the whole define form
+    [expected-start (document+bias->position-list document (index-node-start name-node))]
+    [expected-end (document+bias->position-list document (index-node-end name-node))]
+
+    [params (make-alist
+              'textDocument (make-alist 'uri uri)
+              'position (make-alist 'line cursor-line 'character cursor-char))]
+    [result (definition workspace params)]
+    [loc (vector-ref result 0)]
+    [range (assq-ref loc 'range)]
+    [start-pos (assq-ref range 'start)]
+    [end-pos (assq-ref range 'end)])
+
+  (test-assert "returns a vector" (vector? result))
+  (test-assert "non-empty" (> (vector-length result) 0))
+
+  ;; correctness: the returned location must match the AST position of the identifier name
+  (test-equal "definition uri points to same file" uri (assq-ref loc 'uri))
+  (test-equal "definition start line" (car expected-start) (assq-ref start-pos 'line))
+  (test-equal "definition start character" (cadr expected-start) (assq-ref start-pos 'character))
+  (test-equal "definition end line" (car expected-end) (assq-ref end-pos 'line))
+  (test-equal "definition end character" (cadr expected-end) (assq-ref end-pos 'character)))
+
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
