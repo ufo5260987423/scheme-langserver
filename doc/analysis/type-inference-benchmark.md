@@ -125,9 +125,39 @@ The interpreter re-evaluates the same sub-expressions repeatedly. No hash table 
 | Priority | Fix | Est. Time | Expected Impact | Status |
 |----------|-----|-----------|-----------------|--------|
 | P0 | Pass `max-depth` through all 7 recursive sites in `interpreter.sls` | ~15 min | **Biggest** — directly caps the 21k explosion | Pending |
-| P1 | Rewrite `dedupe` with hash-sets (O(n²) → O(n)) | ~30 min | 2–5× speedup on large result lists | Pending |
+| P1 | Rewrite `dedupe` with hash-sets (O(n²) → O(n)) | ~30 min | 2–5× speedup on large result lists | **Done** |
 | P2 | Replace `fold-left append '()` with `(apply append ...)` | ~5 min | Small constant-factor win | Pending |
 | P3 | Add memoization to `type:interpret` | ~2 h | Eliminates redundant work | Pending |
+
+---
+
+## Optimization Results
+
+### P1 — Hash-Set `dedupe`
+
+**Change:** `util/dedupe.sls`
+- When the equality predicate is `equal?`, both `dedupe` and `dedupe-deduped` now use `make-hashtable` with `equal-hash` and `equal?`.
+- Custom equality predicates still fall back to the original O(n²) algorithm.
+
+**Tests:** `tests/util/test-dedupe.sps` passes (all 21 assertions).
+
+**Benchmark delta** (before → after):
+
+| Benchmark | Before (ms) | After (ms) | Δ | Notes |
+|-----------|-------------|------------|---|-------|
+| `type:interpret binary-search cl` | **158,682** | **100,016** | **−37%** | Main target — 21,603 items deduped |
+| `type:interpret binary-search def` | 40,849 | 42,548 | +4% | Only 1 result, dedupe not on hot path |
+| `type:interpret natural-order-compare cl` | 12,943 | 14,910 | +15% | 218 items; hashtable overhead > win |
+| `type:interpret assq-ref cl` | 17,722 | 15,073 | −15% | 1 result, minor variance |
+| `hover assq-ref (with ti)` | 72,285 | 71,130 | −2% | End-to-end; bottleneck elsewhere |
+| `init-workspace (no ti)` | 44,058 | 38,669 | −12% | Dedupe used heavily during linkage init |
+
+**Interpretation:**
+- The payoff is **proportional to list size**. For `binary-search cl` (21k results) the win is **−37%** (~58 s saved). For tiny lists the hash-table constant overhead can slightly regress performance.
+- `init-workspace (no ti)` also improves (~12%) because `dedupe` is called during file-linkage initialization.
+- This confirms the O(n²) hypothesis but also shows that **dedupe is not the only bottleneck**: even with O(n) dedupe, `binary-search cl` still takes **100 s**. The remaining time is dominated by the recursive interpreter generating 21k results in the first place.
+
+**Conclusion:** P1 is a solid incremental win, but P0 (fixing `max-depth`) is required to attack the root explosion.
 
 ---
 
