@@ -36,3 +36,4 @@ out/
 *.log
 
 
+benchmark-type-inference.json
