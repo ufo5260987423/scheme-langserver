@@ -7,7 +7,7 @@
 (import (chezscheme)  (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
 
 (time
-  (let* ( [shutdown-json (read-string "./tests/resources/shutdown.json") ]
+  (let* ( [shutdown-json "{\n    \"id\": \"2\",\n    \"method\": \"shutdown\",\n    \"jsonrpc\": \"2.0\"\n}"]
       [shutdown-header (string-append 
           ; "GET /example.http HTTP/1.1\r\n"
           "Content-Length: "

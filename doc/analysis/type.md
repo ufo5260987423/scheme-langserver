@@ -539,6 +539,17 @@ Currently the type system is used primarily for **hover information** (not yet f
 5. **Mutability is not tracked**
    `set!` and mutable data structures are not reflected in types. `(define x 1)` followed by `(set! x "hello")` may leave `x` with type `fixnum?` because the substitution graph does not model temporal mutation.
 
+6. **`max-depth` is not propagated through recursive calls**
+   `type:interpret` accepts a `max-depth` parameter, but every internal recursive call invokes the 3-arity `(type:interpret-result-list expr env memory)` which silently falls back to the hard-coded `PRIVATE-MAX-DEPTH` (10). Consequently:
+   - Specifying a shallow `max-depth` from the outside has no effect on nested expansions.
+   - Recursive functions with complex bodies (e.g. `binary-search` in `util/binary-search.sls`) are expanded to depth 10 regardless of the caller's intent.
+   - Because `memory`-based cycle detection only records expressions on the current call chain, cross-function recursion (e.g. `binary-search` → `private-collect` → self-call) is not caught when the recursive target is reached through a substitution rather than a direct `type:interpret-result-list` call.
+   - The combination of depth-10 expansion and missed cycle detection causes a **Cartesian-product explosion** that can produce millions of intermediate type expressions and hang the interpreter for minutes.
+   - `natural-order-compare` survives the same mechanism because its body is simple (`let` + `if` + one recursive call); `binary-search` fails because its clause-2 body contains `cond` with three branches, `let*`, `if`, multiple recursive call sites, and a mutual call to `private-collect`.
+   
+   **Short-term mitigation:** Lower `PRIVATE-MAX-DEPTH` from 10 to a smaller value (e.g. 3–4).  
+   **Proper fix:** Thread `max-depth` through every internal recursive call in `interpreter.sls` (lines 224, 231, 238, 258, 268, 278, 285).
+
 ---
 
 ## 11. File Map
