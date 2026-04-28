@@ -269,6 +269,9 @@ grep -r "library-import-process" tests/
 ### Checking if a symbol is exported
 Look at the `(export ...)` list at the top of the `.sls` file.
 
+### Pre-commit hook: never use `--no-verify`
+The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.
+
 ---
 
 ## 8. Known Issues (as of current branch)
