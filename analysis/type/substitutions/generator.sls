@@ -26,6 +26,7 @@
     (scheme-langserver analysis type substitutions rules define)
     (scheme-langserver analysis type substitutions rules application)
     (scheme-langserver analysis type substitutions rules begin)
+    (scheme-langserver analysis type substitutions rules unless)
     (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver analysis type substitutions self-defined-rules router))
@@ -136,7 +137,7 @@
 
               [(equal? r '(if)) (private-add-rule rules `((,if-process) . ,identifier))]
               [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
-              [(equal? r '(unless)) (private-add-rule rules `((,begin-process) . ,identifier))]
+              [(equal? r '(unless)) (private-add-rule rules `((,unless-process) . ,identifier))]
 
               [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
               [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
