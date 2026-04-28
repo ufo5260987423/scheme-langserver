@@ -552,6 +552,98 @@ Currently the type system is used primarily for **hover information** (not yet f
 
 ---
 
+## 10.3 Performance Optimization Attempts (Field Notes)
+
+This section records a systematic benchmarking and optimization effort on the type-inference subsystem. It is intended to prevent future developers from repeating the same dead ends.
+
+### Benchmarking Infrastructure
+
+A standalone benchmark runner was added at `bin/benchmark-type-inference.ss`. It measures wall-clock time, CPU time, GC time, and result-list size for:
+- `init-workspace` (with and without type inference)
+- `construct-substitutions-for` (Phase I)
+- `type:interpret-result-list` on specific functions (`binary-search`, `natural-order-compare`, `assq-ref`)
+- End-to-end API latency (`hover`)
+
+Key baseline numbers (before any optimization):
+
+| Benchmark | Real | Results |
+|-----------|------|---------|
+| `type:interpret binary-search cl` | **158.7 s** | **21,603** |
+| `type:interpret natural-order-compare cl` | 12.9 s | 218 |
+| `init-workspace (with ti)` | >600 s (timeout) | — |
+| `hover assq-ref (with ti)` | 72.3 s | 0 |
+
+The extreme gap between `binary-search` (21k results, 158s) and `natural-order-compare` (218 results, 13s) shows that the problem is not type inference per se, but the **branching factor** of recursive functions under the current depth limit.
+
+### Attempt 1 — Hash-Set `dedupe` (Success)
+
+**Change:** Rewrite `util/dedupe.sls` to use `make-hashtable` with `equal-hash` / `equal?` when the equality predicate is `equal?`. Custom predicates fall back to the original O(n²) filter.
+
+**Result:**
+- `type:interpret binary-search cl`: 158.7 s → **100.0 s** (−37%)
+- `init-workspace (no ti)`: 44.1 s → 38.7 s (−12%)
+
+**Lesson:** Deduplication is a real bottleneck when result lists grow to 20k+ items, but it is not the root cause. Even with O(n) dedupe, `binary-search` still takes ~100 s because the interpreter still **generates** 21k results.
+
+### Attempt 2 — Thread `max-depth` Through Internal Calls (Failure)
+
+**Hypothesis:** `type:interpret-result-list` drops `max-depth` in 7 internal recursive call sites, causing all nested expansions to fall back to `PRIVATE-MAX-DEPTH = 10`. Fixing this would cap the explosion.
+
+**Change:** Pass `max-depth` explicitly at lines 224, 231, 238, 258, 268, 278, 285.
+
+**Result:** **No measurable effect.** `binary-search cl` remained at ~100 s with 21,603 results.
+
+**Root cause analysis:** The external call `(type:interpret-result-list target-node)` already uses the default `PRIVATE-MAX-DEPTH = 10`. Internal calls falling back to 10 is therefore a no-op in this scenario. The real problem is that **depth 10 itself is too deep** for a highly branching recursive function.
+
+**Lesson:** Passing `max-depth` is a correct code hygiene fix, but it does not solve the `binary-search` timeout on its own.
+
+### Attempt 3 — Memoization in `type:interpret` (Failure → False Start → Safe but Ineffective)
+
+**Hypothesis:** The same sub-expressions are re-interpreted hundreds of times across cartesian-product branches. Caching `(expression, env) → result-list` should eliminate redundant work.
+
+**First implementation (at `type:interpret` level):** On cache hit, set `env.result-list` directly and skip `private:interpret-core`.
+
+**Result:** **Catastrophic.** Result count ballooned from 21,603 → **32,403**, and runtime increased from 100 s → **181 s**.
+
+**Root cause analysis:** `env` is a mutable record shared across the entire call chain. When an internal cache hit mutated `env.result-list`, outer `fold-left append` calls in `private:interpret-core` collected stale or duplicated values, corrupting the aggregation.
+
+**Second implementation (at `type:interpret-result-list` level):** Cache only the **returned value**, do not mutate `env`. Only `index-node?` expressions are cached (using `make-eq-hashtable` for O(1) identity lookup).
+
+**Result:** Semantically safe — result count stayed at **21,603**. But speedup was negligible (~1%).
+
+**Root cause analysis:** `binary-search` is deeply recursive. After the first encounter of an `index-node`, it is immediately appended to `memory`. Subsequent recursive references to the same node find it in `memory` and are truncated, so the cache condition `(not (contain? memory expression))` fails. Cache hits only occur for top-level expressions referenced from multiple distinct parents *before* they enter `memory` — a rare scenario for recursive functions.
+
+**Lesson:** Memoization is safe when implemented as a value cache outside the mutable `env`, but for recursive functions the `memory`-based truncation mechanism defeats it.
+
+### Attempt 4 — `private:interpret-core` Extraction (Unexpected Side Effect)
+
+**Change:** Refactor `type:interpret` by extracting its body into `private:interpret-core` and simplifying the `case-lambda` fallback chain so that 1-arity and 2-arity calls reach the 4-arity body directly instead of hopping through intermediate arities.
+
+**Result:** No semantic change, but `type:interpret binary-search cl` dropped from ~100 s → **82.8 s** and the full benchmark suite completed for the first time (previously it timed out at 600 s because earlier cases consumed too much time).
+
+**Lesson:** The improvement is likely attributable to reduced call-stack overhead and/or better compiler optimisation from smaller functions, not a fundamental algorithmic win.
+
+### Synthesis — What Actually Works
+
+Based on the above attempts, the following interventions are known to have real, measured impact:
+
+| Intervention | Status | Verified Impact |
+|--------------|--------|-----------------|
+| Hash-set `dedupe` | ✅ Merged | −37% on `binary-search cl` |
+| Simplify `case-lambda` fallbacks | ✅ Merged (as part of memoization revert) | ~−15–20% on `binary-search cl` |
+| Thread `max-depth` | ❌ Reverted | None (default depth = 10 anyway) |
+| Memoization (`type:interpret`) | ❌ Reverted | Negative (pollutes shared `env`) |
+| Memoization (`type:interpret-result-list`) | ❌ Reverted | ~0% (blocked by `memory` truncation) |
+
+The remaining bottleneck is the **depth-10 expansion of highly branching recursive functions**. The most promising fixes not yet attempted are:
+
+1. **Lower `PRIVATE-MAX-DEPTH`** (e.g. from 10 → 3–4) — trivial one-line change.
+2. **Result-size budget** — hard cap the number of items in `env.result-list` (e.g. 1,000) and truncate to `something?`.
+3. **Cache `type:partially-solved?`** — the cartesian-product pruner calls this predicate for every element on every tier; memoizing it would avoid repeated tree traversals.
+4. **Global visited set** — replace (or augment) chain-based `memory` with a per-top-level-call hash set so that cross-function recursion (`binary-search` ↔ `private-collect`) is detected regardless of call path.
+
+---
+
 ## 11. File Map
 
 | File | Responsibility |
