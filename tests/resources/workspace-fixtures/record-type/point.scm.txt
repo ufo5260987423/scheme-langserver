@@ -1,0 +1,13 @@
+(library (point)
+  (export make-point point? point-x point-x-set!)
+  (import (chezscheme))
+
+  (define-record-type point
+    (fields (mutable x)))
+
+  ;; Usage sites for testing substitution generation
+  (define p (make-point 10))
+  (define check (point? p))
+  (define x-val (point-x p))
+  (define set-result (point-x-set! p 20))
+)
