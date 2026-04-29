@@ -50,6 +50,36 @@
               (with-equal? inner:list? a (with-append (inner:list?) c)))
             (inner:list? fixnum? number? fixnum?))))
       (construct-type-expression-with-meta '(inner:list? number? fixnum?))))
+  ; cadr list?
+  (test-equal #t
+    (contain?
+      (type:interpret-result-list
+        (construct-type-expression-with-meta
+          '((with
+              ((a b c d **1))
+              (with-equal? inner:list? a c))
+            (inner:list? fixnum? number? string? boolean?))))
+      (construct-type-expression-with-meta 'number?)))
+  ; caddr list?
+  (test-equal #t
+    (contain?
+      (type:interpret-result-list
+        (construct-type-expression-with-meta
+          '((with
+              ((a b c d e **1))
+              (with-equal? inner:list? a d))
+            (inner:list? fixnum? number? string? boolean? symbol?))))
+      (construct-type-expression-with-meta 'string?)))
+  ; cadddr list?
+  (test-equal #t
+    (contain?
+      (type:interpret-result-list
+        (construct-type-expression-with-meta
+          '((with
+              ((a b c d e f **1))
+              (with-equal? inner:list? a e))
+            (inner:list? fixnum? number? string? boolean? symbol? char?))))
+      (construct-type-expression-with-meta 'boolean?)))
   (test-equal
     (inner:?->pair (construct-type-expression-with-meta '(inner:list? number? number?)))
     (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))))

@@ -414,20 +414,149 @@ Some R6RS primitives cannot be expressed as simple function types. `car`, for ex
 
 ### 6.3 Example: `car`
 
+`car` carries **two** signatures in `rnrs-meta-rules.sls`:
+
 ```scheme
-(car
-  (with ((a b c **1))
-    (with-equal? inner:list? a b)))
+(car (with ((a b c **1)) (with-equal? inner:list? a b)))
+(car (something? <- (inner:list? (inner:pair? something? something?))))
 ```
 
-When applied to `(inner:list? fixnum? number?)`:
+The first is a **macro** for `inner:list?` arguments; the second is a conservative function type for `inner:pair?` arguments. `type:interpret` tries them in order.
 
-- Pattern `((a b c **1))` matches the single argument.
-- `a = inner:list?`, `b = fixnum?`, `c = (number?)`.
-- `with-equal?` checks `a == inner:list?` → true.
-- Result is `b` → `fixnum?`.
+#### 6.3.1 Macro execution trace
 
-### 6.4 `candy:matchable?` – Dynamic-Programming Matcher
+Apply the macro to `(inner:list? fixnum? number?)`:
+
+1. `execute-macro` sees a `with` application:
+   ```scheme
+   ((with ((a b c **1)) (with-equal? inner:list? a b))
+    (inner:list? fixnum? number?))
+   ```
+2. `candy:matchable?` checks template `(a b c **1)` against argument `(inner:list? fixnum? number?)`.
+   - Segment `a` matches `inner:list?`.
+   - Segment `b` matches `fixnum?`.
+   - Segment `c **1` matches `(number?)` (one occurrence).
+   - Match succeeds.
+3. `candy:match-left` produces bindings:
+   ```scheme
+   ((a . inner:list?) (b . fixnum?) (c . (number?)))
+   ```
+4. `private-with` substitutes into body `(with-equal? inner:list? a b)`:
+   ```scheme
+   (with-equal? inner:list? inner:list? fixnum?)
+   ```
+5. `execute-macro` evaluates `with-equal?`:
+   - `(equal? inner:list? inner:list?)` → `#t`.
+   - Result is `fixnum?`.
+
+#### 6.3.2 Match-failure & fallback
+
+If the argument is **not** an `inner:list?` (e.g. an `inner:pair?`):
+
+- Step 2 still succeeds (any list-shaped argument matches the template).
+- Step 5 fails because `a` ≠ `inner:list?`.
+- `with-equal?` returns the **original macro expression** unchanged.
+- `type:interpret` sees the macro was not reduced, tries the next signature (the pair version), and returns `something?`.
+
+#### 6.3.3 Template length requirement
+
+The template `(a b c **1)` requires the argument to contain **at least three** elements (`a`, `b`, and at least one `c`). Therefore:
+
+| Argument shape | Macro matches? | Result |
+|---|---|---|
+| `(inner:list? fixnum? number?)` (3 elems) | ✅ | `fixnum?` |
+| `(inner:list? fixnum? number? string?)` (4 elems) | ✅ | `fixnum?` |
+| `(inner:list? fixnum?)` (2 elems) | ❌ | falls back to pair version → `something?` |
+| `(inner:pair? something? something?)` | ❌ (guard fails) | `something?` |
+
+The same pattern applies to all `c*r` macros listed below.
+
+### 6.4 Extending the `c*r` Macro Family
+
+The `cdr`/`cddr`/`cdddr`/`cddddr` macros already exist in `rnrs-meta-rules.sls`. They use `with-append (inner:list?)` to reconstruct the tail type:
+
+```scheme
+(cdr    (with ((a b c **1))       (with-equal? inner:list? a (with-append (inner:list?) c))))
+(cddr   (with ((a b c d **1))     (with-equal? inner:list? a (with-append (inner:list?) d))))
+(cdddr  (with ((a b c d e **1))   (with-equal? inner:list? a (with-append (inner:list?) e))))
+(cddddr (with ((a b c d e f **1)) (with-equal? inner:list? a (with-append (inner:list?) f))))
+```
+
+The following macros are **missing** their `inner:list?` versions. Adding them would improve hover-tooltip precision for code that uses `cadr`, `caddr`, etc. on known-length lists.
+
+#### 6.4.1 `cadr` – second element
+
+```scheme
+(cadr (with ((a b c d **1)) (with-equal? inner:list? a c)))
+```
+
+| Binding | Value for `(inner:list? τ₁ τ₂ τ₃ τ₄ …)` |
+|---|---|
+| `a` | `inner:list?` |
+| `b` | `τ₁` |
+| `c` | `τ₂` ← **returned** |
+| `d` | `(τ₃ τ₄ …)` |
+
+Requires the argument to contain at least **four** elements. Shorter lists fall back to the pair version.
+
+#### 6.4.2 `caddr` – third element
+
+```scheme
+(caddr (with ((a b c d e **1)) (with-equal? inner:list? a d)))
+```
+
+Requires at least **five** elements. `d` binds `τ₃`.
+
+#### 6.4.3 `cadddr` – fourth element
+
+```scheme
+(cadddr (with ((a b c d e f **1)) (with-equal? inner:list? a e)))
+```
+
+Requires at least **six** elements. `e` binds `τ₄`.
+
+#### 6.4.4 `caar`, `cdar`, `cadar` – nested-list macros (not yet supported)
+
+Macros whose template contains a **nested list pattern** (e.g. `(((a b c **1)) d ...)`) do **not** currently work in the interpreter. The reason is in `private-with` (`interpreter.sls`):
+
+```scheme
+[(and (list? denotion) (list? input)) 
+  (if (candy:matchable? denotion input)
+    (if (or (contain? input '**1) (contain? input '...))
+      (private-with body (candy:match-right denotion input))
+      (private-with body (candy:match-left denotion input)))
+    (raise 'macro-not-match:private-with-list?))]
+```
+
+When `denotion` is itself a list-template such as `((a b c **1))`, `candy:match-left` treats it as a **single segment** rather than expanding it into the sub-pattern `a b c **1`. Consequently the nested binding `(a . inner:list?) (b . τ₁) (c . (τ₂ …))` is never produced, and the macro falls back to the original expression unchanged.
+
+To support `caar`, `cdar`, `cadar`, etc., `private-with` needs to detect when a binding value is itself a list that should be further matched against a nested template, and call `execute-macro` recursively instead of `candy:match-left` directly.
+
+Until that fix lands, these functions should keep only their conservative pair fallback:
+
+```scheme
+(caar (something? <- (inner:list? (inner:pair? something? something?))))
+(cdar (something? <- (inner:list? (inner:pair? something? something?))))
+```
+
+#### 6.4.5 Summary table
+
+| Function | Template | Return variable | Min arg elems |
+|---|---|---|---|
+| `car` | `(a b c **1)` | `b` | 3 |
+| `cdr` | `(a b c **1)` | `(with-append (inner:list?) c)` | 3 |
+| `caar` | `((a b c **1) d ...)` | `b` | 3 (inner) |
+| `cdar` | `((a b c **1) d ...)` | `(with-append (inner:list?) c)` | 3 (inner) |
+| `cadr` | `(a b c d **1)` | `c` | 4 |
+| `cddr` | `(a b c d **1)` | `(with-append (inner:list?) d)` | 4 |
+| `caddr` | `(a b c d e **1)` | `d` | 5 |
+| `cdddr` | `(a b c d e **1)` | `(with-append (inner:list?) e)` | 5 |
+| `cadddr` | `(a b c d e f **1)` | `e` | 6 |
+| `cddddr` | `(a b c d e f **1)` | `(with-append (inner:list?) f)` | 6 |
+
+> **Note:** For all macros above, an additional fallback signature `(something? <- (inner:list? (inner:pair? something? something?)))` should be kept so that short lists and generic pairs still type-check conservatively.
+
+### 6.5 `candy:matchable?` – Dynamic-Programming Matcher
 
 The matcher lives in `syntax-candy.sls`. It segments a list into alternating **fixed** and **repeatable** sections. A segment is delimited by `...` or `**1`.
 
