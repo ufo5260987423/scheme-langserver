@@ -383,11 +383,11 @@ Either choice makes the no-duplication guarantee explicit rather than accidental
 
 ---
 
-### 9.2 Bug B — `candy:match-left` Compares Whole `segment` Records with `equal?`
+### 9.2 Bug B — `candy:match-left` Compared Whole `segment` Records with `equal?` ✅ Fixed
 
 #### Where
 
-`candy:match-left`, line 64:
+`private:group-match-pairs` (called by `candy:match-left`), previously line 64:
 
 ```scheme
 (if (equal? (car last-pair) (car match-segment-pair))
@@ -395,37 +395,37 @@ Either choice makes the no-duplication guarantee explicit rather than accidental
 
 #### Root Cause
 
-Both operands are `segment` record objects. Chez Scheme’s `equal?` on records compares every field recursively. Today `segment` has exactly two fields (`type` and `tail`), so this happens to work. But it creates a **fragile implicit dependency** on the record layout:
+Both operands were `segment` record objects. Chez Scheme's `equal?` on records compares every field recursively. While `segment` had only two fields (`type` and `tail`), this happened to work. But it created a **fragile implicit dependency** on the record layout:
 
-- If a third field is added (e.g. a hash cache, a source location, or a memoised `type:solved?` flag), `equal?` may suddenly return `#f` for segments that represent the same pattern variable.
-- If `tail` is mutated after creation (it is declared `mutable`), two segments that were `equal?` at one moment may cease to be `equal?` later, causing non-deterministic grouping failures.
+- If a third field is added, `equal?` could suddenly return `#f` for segments that represent the same pattern variable.
+- Because `tail` is mutable, two segments that were `equal?` at one moment could cease to be `equal?` later, causing non-deterministic grouping failures.
 
 #### Systemic Impact
 
-When `equal?` unexpectedly returns `#f`, `candy:match-left` treats two occurrences of the same repeat segment as **different** variables. Instead of producing:
+When `equal?` unexpectedly returned `#f`, the grouper treated two occurrences of the same repeat segment as **different** variables. Instead of producing:
 
 ```scheme
 '(b . (number? boolean? string?))
 ```
 
-it produces:
+it produced:
 
 ```scheme
 '(b . (number?)) (b . (boolean?)) (b . (string?))
 ```
 
-`private-with` then sees three separate bindings for `b`, and only the last one wins (or, depending on implementation, they overwrite each other unpredictably). The macro body ends up with a truncated or incorrect substitution.
+`private-with` then saw three separate bindings for `b`, and only the last one won. The macro body ended up with a truncated or incorrect substitution.
 
-#### Fix Direction
+#### Fix Applied
 
-Compare the **semantic identity** of the segment, not the record identity:
+`private:group-match-pairs` now compares the **semantic identity** of the segment via `segment-type`:
 
 ```scheme
 (if (equal? (segment-type (car last-pair))
             (segment-type (car match-segment-pair)))
 ```
 
-`segment-type` is immutable and represents the actual pattern variable symbol. It is the correct key for grouping.
+`segment-type` is immutable and represents the actual pattern variable symbol. It is the correct key for grouping, and the fix removes the implicit dependency on the full record layout.
 
 ---
 

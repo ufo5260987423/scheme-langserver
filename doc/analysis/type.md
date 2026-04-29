@@ -482,7 +482,7 @@ The `cdr`/`cddr`/`cdddr`/`cddddr` macros already exist in `rnrs-meta-rules.sls`.
 (cddddr (with ((a b c d e f **1)) (with-equal? inner:list? a (with-append (inner:list?) f))))
 ```
 
-The following macros are **missing** their `inner:list?` versions. Adding them would improve hover-tooltip precision for code that uses `cadr`, `caddr`, etc. on known-length lists.
+The following `inner:list?` macros have been added to `rnrs-meta-rules.sls`. They improve hover-tooltip precision for code that uses `cadr`, `caddr`, etc. on known-length lists.
 
 #### 6.4.1 `cadr` – second element
 
