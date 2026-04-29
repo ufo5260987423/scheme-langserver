@@ -314,10 +314,12 @@
 
 (define (execute-macro expression)
   (match expression
-    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
-      (if (candy:matchable? denotions inputs)
-        (execute-macro (private-with body (candy:match-left denotions inputs)))
-        expression)]
+    [(('with ((? inner:macro-template? denotions) **1) body) inputs ...)
+      (let ([expanded-inputs (map execute-macro inputs)])
+        (if (and (andmap inner:trivial? expanded-inputs)
+                 (candy:matchable? denotions expanded-inputs))
+          (execute-macro (private-with body (candy:match-left denotions expanded-inputs)))
+          expression))]
     ;only usable in with-macro
     [('with-append (? list? a) (? list? b)) (execute-macro (append a b))]
     ;only usable in with-macro

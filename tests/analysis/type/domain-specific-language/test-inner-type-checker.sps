@@ -126,6 +126,42 @@
                  b)))
             (inner:list? (inner:list? (inner:list? fixnum? number?) string?) boolean?))))
       (construct-type-expression-with-meta 'fixnum?)))
+  ; cadar list?
+  (test-equal #t
+    (contain?
+      (type:interpret-result-list
+        (construct-type-expression-with-meta
+          '((with
+              ((a b c ...))
+              (with-equal? inner:list? a
+                ((with
+                    ((d e f ...))
+                    (with-equal? inner:list? d
+                      ((with
+                          ((g h i ...))
+                          (with-equal? inner:list? g h))
+                       (with-append (inner:list?) f))))
+                 b)))
+            (inner:list? (inner:list? fixnum? number? string?) boolean?))))
+      (construct-type-expression-with-meta 'number?)))
+  ; cddar list?
+  (test-equal #t
+    (contain?
+      (type:interpret-result-list
+        (construct-type-expression-with-meta
+          '((with
+              ((a b c ...))
+              (with-equal? inner:list? a
+                ((with
+                    ((d e f ...))
+                    (with-equal? inner:list? d
+                      ((with
+                          ((g h i ...))
+                          (with-equal? inner:list? g (with-append (inner:list?) i)))
+                       (with-append (inner:list?) f))))
+                 b)))
+            (inner:list? (inner:list? fixnum? number? string?) boolean?))))
+      (construct-type-expression-with-meta '(inner:list? string?))))
   (test-equal
     (inner:?->pair (construct-type-expression-with-meta '(inner:list? number? number?)))
     (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))))

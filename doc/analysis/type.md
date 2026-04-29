@@ -515,9 +515,9 @@ Requires at least **five** elements. `d` binds `τ₃`.
 
 Requires at least **six** elements. `e` binds `τ₄`.
 
-#### 6.4.4 `caar`, `caaar` – nested-list macros (pure `car` chains only)
+#### 6.4.4 Nested-list macros (`caar`, `caaar`, `cadar`, `cddar`, …)
 
-Macros that need to decompose a **nested** list type (e.g. `caar` = `car` of `car`) can be written by nesting `with` macro applications inside the macro body. `execute-macro` recursively expands them, so the inner `with` is reduced after the outer one.
+Macros that decompose **nested** list types are written by nesting `with` macro applications inside the macro body. `execute-macro` recursively expands them, and since the interpreter pre-expands macro arguments (including `with-append` and `with-equal?`) before matching a macro head, inner `cdr` steps work as well.
 
 ```scheme
 (caar (with ((a b c ...))
@@ -530,20 +530,25 @@ Macros that need to decompose a **nested** list type (e.g. `caar` = `car` of `ca
               (with-equal? inner:list? d
                 ((with ((g h i **1)) (with-equal? inner:list? g h)) e)))
             b))))
+
+(cadar (with ((a b c ...))
+         (with-equal? inner:list? a
+           ((with ((d e f ...))
+              (with-equal? inner:list? d
+                ((with ((g h i ...)) (with-equal? inner:list? g h))
+                 (with-append (inner:list?) f))))
+            b))))
+
+(cddar (with ((a b c ...))
+         (with-equal? inner:list? a
+           ((with ((d e f ...))
+              (with-equal? inner:list? d
+                ((with ((g h i ...)) (with-equal? inner:list? g (with-append (inner:list?) i)))
+                 (with-append (inner:list?) f))))
+            b))))
 ```
 
-**Why this works:** the inner `with` is applied to `b` directly, and `b` is already a proper `inner:list?` type expression. `execute-macro` sees a normal macro application and expands it without trouble.
-
-**Limitation:** any `c*r` function that needs a `cdr` step **inside** a nested chain (e.g. `cadar` = `car` of `cdr` of `car`, or `cddar` = `cdr` of `cdr` of `car`) currently **cannot** be expressed this way. The reason is that a `cdr` step produces a raw tail list `(with-append (inner:list?) f)`, which is a `with-append` macro application. When this application appears as the *argument* of the next nested `with`, `execute-macro` does not pre-expand it before matching the outer macro head, so `inner:trivial?` rejects the argument and the macro falls back to the original expression.
-
-To support `cadar`, `cddar`, etc., `execute-macro` would need to pre-process its arguments (expanding any nested `with-append` / `with-equal?`) before attempting macro-head matching.
-
-Until that fix lands, functions requiring an inner `cdr` step keep only their conservative pair fallback:
-
-```scheme
-(cadar (something? <- (inner:list? (inner:pair? something? something?))))
-(cddar (something? <- (inner:list? (inner:pair? something? something?))))
-```
+The nesting depth is limited only by readability. In practice only `caar`, `cadar`, `cddar`, and `caaar` appear often enough in real code to justify the extra signature lines.
 
 #### 6.4.5 Summary table
 
