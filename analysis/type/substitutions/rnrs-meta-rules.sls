@@ -72,6 +72,7 @@
 (caaaar (something? <- (inner:list? (inner:pair? something? something?))))
 (caaadr (something? <- (inner:list? (inner:pair? something? something?))))
 (caaadr (something? <- (inner:list? (inner:pair? something? something?))))
+(caaar (with ((a b c ...)) (with-equal? inner:list? a ((with ((d e f ...)) (with-equal? inner:list? d ((with ((g h i **1)) (with-equal? inner:list? g h)) e))) b))))
 (caaar (something? <- (inner:list? (inner:pair? something? something?))))
 (caaar (something? <- (inner:list? (inner:pair? something? something?))))
 (caadar (something? <- (inner:list? (inner:pair? something? something?))))

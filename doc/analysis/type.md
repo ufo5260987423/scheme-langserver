@@ -515,28 +515,34 @@ Requires at least **five** elements. `d` binds `τ₃`.
 
 Requires at least **six** elements. `e` binds `τ₄`.
 
-#### 6.4.4 `caar`, `cdar`, `cadar` – nested-list macros (not yet supported)
+#### 6.4.4 `caar`, `caaar` – nested-list macros (pure `car` chains only)
 
-Macros whose template contains a **nested list pattern** (e.g. `(((a b c **1)) d ...)`) do **not** currently work in the interpreter. The reason is in `private-with` (`interpreter.sls`):
+Macros that need to decompose a **nested** list type (e.g. `caar` = `car` of `car`) can be written by nesting `with` macro applications inside the macro body. `execute-macro` recursively expands them, so the inner `with` is reduced after the outer one.
 
 ```scheme
-[(and (list? denotion) (list? input)) 
-  (if (candy:matchable? denotion input)
-    (if (or (contain? input '**1) (contain? input '...))
-      (private-with body (candy:match-right denotion input))
-      (private-with body (candy:match-left denotion input)))
-    (raise 'macro-not-match:private-with-list?))]
+(caar (with ((a b c ...))
+        (with-equal? inner:list? a
+          ((with ((d e f **1)) (with-equal? inner:list? d e)) b))))
+
+(caaar (with ((a b c ...))
+         (with-equal? inner:list? a
+           ((with ((d e f ...))
+              (with-equal? inner:list? d
+                ((with ((g h i **1)) (with-equal? inner:list? g h)) e)))
+            b))))
 ```
 
-When `denotion` is itself a list-template such as `((a b c **1))`, `candy:match-left` treats it as a **single segment** rather than expanding it into the sub-pattern `a b c **1`. Consequently the nested binding `(a . inner:list?) (b . τ₁) (c . (τ₂ …))` is never produced, and the macro falls back to the original expression unchanged.
+**Why this works:** the inner `with` is applied to `b` directly, and `b` is already a proper `inner:list?` type expression. `execute-macro` sees a normal macro application and expands it without trouble.
 
-To support `caar`, `cdar`, `cadar`, etc., `private-with` needs to detect when a binding value is itself a list that should be further matched against a nested template, and call `execute-macro` recursively instead of `candy:match-left` directly.
+**Limitation:** any `c*r` function that needs a `cdr` step **inside** a nested chain (e.g. `cadar` = `car` of `cdr` of `car`, or `cddar` = `cdr` of `cdr` of `car`) currently **cannot** be expressed this way. The reason is that a `cdr` step produces a raw tail list `(with-append (inner:list?) f)`, which is a `with-append` macro application. When this application appears as the *argument* of the next nested `with`, `execute-macro` does not pre-expand it before matching the outer macro head, so `inner:trivial?` rejects the argument and the macro falls back to the original expression.
 
-Until that fix lands, these functions should keep only their conservative pair fallback:
+To support `cadar`, `cddar`, etc., `execute-macro` would need to pre-process its arguments (expanding any nested `with-append` / `with-equal?`) before attempting macro-head matching.
+
+Until that fix lands, functions requiring an inner `cdr` step keep only their conservative pair fallback:
 
 ```scheme
-(caar (something? <- (inner:list? (inner:pair? something? something?))))
-(cdar (something? <- (inner:list? (inner:pair? something? something?))))
+(cadar (something? <- (inner:list? (inner:pair? something? something?))))
+(cddar (something? <- (inner:list? (inner:pair? something? something?))))
 ```
 
 #### 6.4.5 Summary table

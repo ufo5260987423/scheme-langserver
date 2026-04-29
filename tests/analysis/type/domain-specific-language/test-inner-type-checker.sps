@@ -108,6 +108,24 @@
                  b)))
             (inner:list? (inner:list? fixnum? number?) string?))))
       (construct-type-expression-with-meta '(inner:list? number?))))
+  ; caaar list?
+  (test-equal #t
+    (contain?
+      (type:interpret-result-list
+        (construct-type-expression-with-meta
+          '((with
+              ((a b c ...))
+              (with-equal? inner:list? a
+                ((with
+                    ((d e f ...))
+                    (with-equal? inner:list? d
+                      ((with
+                          ((g h i **1))
+                          (with-equal? inner:list? g h))
+                       e)))
+                 b)))
+            (inner:list? (inner:list? (inner:list? fixnum? number?) string?) boolean?))))
+      (construct-type-expression-with-meta 'fixnum?)))
   (test-equal
     (inner:?->pair (construct-type-expression-with-meta '(inner:list? number? number?)))
     (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))))
