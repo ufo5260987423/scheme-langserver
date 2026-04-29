@@ -668,3 +668,51 @@ The remaining bottleneck is the **depth-10 expansion of highly branching recursi
 | `analysis/type/domain-specific-language/inner-type-checker.sls` | Predicates: `inner:trivial?`, `inner:lambda?`, `inner:macro?`, `inner:executable?`, `inner:?->pair`. |
 | `analysis/type/domain-specific-language/syntax-candy.sls` | `candy:matchable?`, `candy:match-left`, `candy:match-right`, segment-based DP matcher. |
 | `analysis/identifier/meta.sls` | `construct-type-expression-with-meta`, loader for `rnrs-meta-rules`. |
+
+---
+
+## 12. Field Notes — `car` Macro & Synthetic-Repro Pitfall (2026-04)
+
+> **Retrospective note:** The original write-up of this section contained an incorrect root-cause analysis. The symptoms described below were real, but they stemmed from a flawed synthetic repro rather than from bugs in `interpreter.sls`. The section has been corrected to reflect what actually happened.
+
+### What Was Observed
+
+A hand-written test (`test-car-macro-bug.sps`) constructed a raw `car` macro application using **bare symbols** for type predicates:
+
+```scheme
+(type:interpret-result-list
+  `((with ((a b c **1)) (with-equal? inner:list? a b))
+    (inner:list? fixnum? string?))
+  env)
+```
+
+The interpreter returned the macro expression unchanged instead of `fixnum?`.
+
+### The Actual Root Cause
+
+**The synthetic repro was unrealistic.** In real substitution generation, every type predicate (`fixnum?`, `string?`, `number?`, etc.) is wrapped as an `identifier-reference` record by `construct-type-expression-with-meta`. `inner:trivial?` accepts `identifier-reference` objects, so real macro arguments pass the `(? inner:trivial? inputs) **1` guard in `macro-head-execute-with` without issue.
+
+In the synthetic repro, `fixnum?` and `string?` are **bare symbols**. They fail `inner:trivial?`, so `ufo-match` rejects the argument list **before** any macro logic runs. The macro never gets a chance to call `candy:matchable?`.
+
+### What the `syntax-candy.sls` Hardening Actually Fixed
+
+The `syntax-candy.sls` changes made during this investigation did not fix a `car` macro bug — the macro already worked in real code — but they did eliminate several latent risks in the matcher:
+
+| Change | Risk eliminated |
+|---|---|
+| `private-segment` now rejects templates with **more than one** repeat marker (`...` / `**1`) | Prevents ambiguous DP-matcher states that could silently produce wrong bindings. |
+| `candy:match` 2-arity now returns **grouped symbol results** directly | Removes the fragile `fold-left` grouping logic from `candy:match-left`; repeated segments can no longer be split into multiple bindings by accident. |
+| `private:group-match-pairs` compares **`segment-type`** instead of `equal?` on record objects | Removes an implicit dependency on Chez Scheme's default record equality, which could break if the `segment` record layout ever changes. |
+| `candy:match-right` expands grouped results back to flat `(rest-type . ready-type)` pairs | Keeps backward compatibility with `private-with` in `interpreter.sls`. |
+
+### Verified Status
+
+| Test | Status | Notes |
+|------|--------|-------|
+| `test-inner-type-checker.sps` — direct `car`/`cdr` macro assertions | ✅ Pass | `car` returns first element type; `cdr` returns tail type. |
+| `test-lambda.sps` — parameter-index-node type access | ✅ Pass | Implicitly exercises the same `with`/`with-equal?` path. |
+| `test-syntax-candy.sps` | ✅ Pass | No regressions after matcher hardening. |
+
+### Lesson
+
+When debugging macro expansion, always feed the interpreter **real type expressions** (via `construct-type-expression-with-meta` or through the full substitution generator). Hand-constructing bare-symbol repros is fast, but it bypasses the `identifier-reference` wrapping that the rest of the pipeline assumes, producing false negatives that look like macro bugs but are actually data-format mismatches.

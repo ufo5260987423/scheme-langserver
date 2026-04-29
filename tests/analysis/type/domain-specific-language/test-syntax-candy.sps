@@ -18,7 +18,8 @@
   (test-equal #t (candy:segmentable? '(a b **1 c)))
   (test-equal #f (candy:segmentable? '(... a)))
   (test-equal #f (candy:segmentable? '(**1 a)))
-  (test-equal #t (candy:segmentable? '(a **1 b **1)))
+  (test-equal #f (candy:segmentable? '(a **1 b **1)))
+  (test-equal #f (candy:segmentable? '(a ... b ...)))
   (test-equal #t (candy:segmentable? '()))
 (test-end)
 
@@ -32,8 +33,6 @@
   (test-equal #t (candy:matchable? '(a b **1 c) '(1 2 3 4 5)))
   (test-equal #f (candy:matchable? '(a b **1 c) '(1 2)))
   (test-equal #f (candy:matchable? '(a b) '(1)))
-  (test-equal #t (candy:matchable? '(a ... b ...) '(1 2 3)))
-  (test-equal #t (candy:matchable? '(a **1 b **1) '(1 2 3)))
 (test-end)
 
 ;; ---------------------------------------------------------------------------
@@ -92,20 +91,20 @@
 ;; E. segment record type
 ;; ---------------------------------------------------------------------------
 (test-begin "segment record")
-  ;; segment accessors through candy:match results
-  (let* ([pairs (candy:match '(a b c) '(1 2 3))]
-         [seg (car (car pairs))])
+  ;; segment accessors directly through make-segment
+  (let ([seg (make-segment 'a '())])
     (test-equal 'a (segment-type seg))
     (test-equal '() (segment-tail seg))
     (test-equal #t (segment? seg)))
 
-  (let* ([pairs (candy:match '(a **1 b) '(1 2 3))]
-         [seg-a (car (car pairs))]
-         [seg-b (car (caddr pairs))])
-    (test-equal 'a (segment-type seg-a))
-    (test-equal '**1 (segment-tail seg-a))
-    (test-equal 'b (segment-type seg-b))
-    (test-equal '() (segment-tail seg-b)))
+  (let ([seg (make-segment 'a '**1)])
+    (test-equal 'a (segment-type seg))
+    (test-equal '**1 (segment-tail seg))
+    (test-equal #t (segment? seg)))
+
+  (let ([seg (make-segment 'b '())])
+    (test-equal 'b (segment-type seg))
+    (test-equal '() (segment-tail seg)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

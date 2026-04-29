@@ -8,7 +8,8 @@
     
     segment?
     segment-type
-    segment-tail)
+    segment-tail
+    make-segment)
   (import 
     (chezscheme)
     (scheme-langserver util matrix)
@@ -31,43 +32,67 @@
   (equal? 'skipped 
     (vector-ref (private-segments->match-matrix (private-segment parameter-template) (private-segment argument-list)) 0)))
 
+(define (private:group-match-pairs match-segment-pairs)
+  (map 
+    (lambda (pair)
+      `(,(segment-type (car pair)) . ,(cdr pair)))
+    (reverse
+      (fold-left 
+        (lambda (result match-segment-pair)
+          (cond 
+            [(and 
+              (null? result)
+              (or 
+                (private-is-... (car match-segment-pair))
+                (private-is-**1 (car match-segment-pair))))
+              `((,(car match-segment-pair) . (,(segment-type (cdr match-segment-pair)))))]
+            [(null? result)
+              `((,(car match-segment-pair) . ,(segment-type (cdr match-segment-pair))))]
+            [(or 
+              (private-is-... (car match-segment-pair))
+              (private-is-**1 (car match-segment-pair)))
+              (let ([last-pair (car result)]
+                    [ahead (cdr result)])
+                (if (equal? (segment-type (car last-pair)) (segment-type (car match-segment-pair)))
+                  (cons `(,(car last-pair) . ,(append (cdr last-pair) (list (segment-type (cdr match-segment-pair))))) ahead)
+                  (cons `(,(car match-segment-pair) . (,(segment-type (cdr match-segment-pair)))) result)))]
+            [else (cons `(,(car match-segment-pair) . ,(segment-type (cdr match-segment-pair))) result)]))
+        '()
+        match-segment-pairs))))
+
 (define candy:match-right 
   (case-lambda 
-    [(parameter-template argument-list) (candy:match-right (candy:match parameter-template argument-list))]
+    [(parameter-template argument-list)
+      (let ([grouped (candy:match parameter-template argument-list)])
+        (apply append
+          (map (lambda (pair)
+                 (if (list? (cdr pair))
+                   (map (lambda (ready-type) `(,(car pair) . ,ready-type)) (cdr pair))
+                   (list pair)))
+               grouped)))]
     [(match-segment-pairs)
-      (map (lambda (match-segment-pair) `(,(segment-type (car match-segment-pair)) . ,(segment-type (cdr match-segment-pair)))) match-segment-pairs)]))
+      (apply append
+        (map (lambda (match-segment-pair)
+               (cond
+                 [(and (segment? (car match-segment-pair)) (segment? (cdr match-segment-pair)))
+                  (list `(,(segment-type (car match-segment-pair)) . ,(segment-type (cdr match-segment-pair))))]
+                 [(and (segment? (car match-segment-pair)) (list? (cdr match-segment-pair)))
+                  (map (lambda (item)
+                         (if (segment? item)
+                           `(,(segment-type (car match-segment-pair)) . ,(segment-type item))
+                           `(,(segment-type (car match-segment-pair)) . ,item)))
+                       (cdr match-segment-pair))]
+                 [(and (not (segment? (car match-segment-pair))) (list? (cdr match-segment-pair)))
+                  (map (lambda (item) `(,(car match-segment-pair) . ,item)) (cdr match-segment-pair))]
+                 [else (list match-segment-pair)]))
+             match-segment-pairs))]))
 
 (define candy:match-left
   (case-lambda 
-    [(parameter-template argument-list) (candy:match-left (candy:match parameter-template argument-list))]
+    [(parameter-template argument-list)
+      (candy:match parameter-template argument-list)]
     [(match-segment-pairs)
-      (map 
-        (lambda (pair)
-          `(,(segment-type (car pair)) . ,(cdr pair)))
-        (reverse
-          (fold-left 
-            (lambda (result match-segment-pair)
-              (cond 
-                [(and 
-                  (null? result)
-                  (or 
-                    (private-is-... (car match-segment-pair))
-                    (private-is-**1 (car match-segment-pair))))
-                  `((,(car match-segment-pair) . (,(segment-type (cdr match-segment-pair)))))]
-                [(null? result)
-                  `((,(car match-segment-pair) . ,(segment-type (cdr match-segment-pair))))]
-                [(or 
-                  (private-is-... (car match-segment-pair))
-                  (private-is-**1 (car match-segment-pair)))
-                  (let ([last-pair (car result)]
-                        [ahead (cdr result)])
-                    (if (equal? (car last-pair) (car match-segment-pair))
-                      (cons `(,(car last-pair) . ,(append (cdr last-pair) (list (segment-type (cdr match-segment-pair))))) ahead)
-                      (cons `(,(car match-segment-pair) . (,(segment-type (cdr match-segment-pair)))) result)))]
-                [else (cons `(,(car match-segment-pair) . ,(segment-type (cdr match-segment-pair))) result)]))
-            '()
-            match-segment-pairs)))
-        ]))
+      (private:group-match-pairs match-segment-pairs)]))
 
 ;NOTE: a complecated case is like regexes abc+ and ab...c
 (define candy:match 
@@ -75,8 +100,9 @@
     [(parameter-template argument-list)
       (let* ([rest-segment (private-segment parameter-template)]
           [ready-segment (private-segment argument-list)]
-          [matrix (private-segments->match-matrix rest-segment ready-segment)])
-        (candy:match matrix rest-segment ready-segment 0 0))]
+          [matrix (private-segments->match-matrix rest-segment ready-segment)]
+          [raw-pairs (candy:match matrix rest-segment ready-segment 0 0)])
+        (private:group-match-pairs raw-pairs))]
     [(matrix rest-segments ready-segments row-id column-id)
       (let ([rest-count (vector-length rest-segments)]
             [ready-count (vector-length ready-segments)]
@@ -299,7 +325,8 @@
             (if (null? result)
               (raise "wrong rule")
               (let ([current-segment (car result)])
-                (if (null? (segment-tail current-segment))
+                (if (and (null? (segment-tail current-segment))
+                         (fold-left (lambda (acc seg) (and acc (null? (segment-tail seg)))) #t (cdr result)))
                   (begin
                     (segment-tail-set! current-segment current-rule)
                     result)

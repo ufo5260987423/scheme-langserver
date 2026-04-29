@@ -161,15 +161,13 @@
 (define (inner:list? body)
   (match body
     [('inner:list? item ...) 
-      (and 
-        (candy:segmentable? item)
-        (fold-left 
-          (lambda (left right)
-            (and left (inner:trivial? right)))
-          #t
-          (filter 
-            (lambda (t) (and (not (equal? t '...)) (not (equal? t '**1)))) 
-            item)))]
+      (fold-left 
+        (lambda (left right)
+          (and left (inner:trivial? right)))
+        #t
+        (filter 
+          (lambda (t) (and (not (equal? t '...)) (not (equal? t '**1)))) 
+          item))]
     [else #f]))
 
 (define (inner:list-content body)
@@ -179,7 +177,14 @@
 
 (define (inner:vector? body)
   (match body
-    [('inner:vector? (? inner:trivial? item) ...) (candy:segmentable? item)]
+    [('inner:vector? inner:list? item ...) 
+      (fold-left 
+        (lambda (left right)
+          (and left (inner:trivial? right)))
+        #t
+        (filter 
+          (lambda (t) (and (not (equal? t '...)) (not (equal? t '**1)))) 
+          item))]
     [else #f]))
 
 (define (inner:pair? body)
