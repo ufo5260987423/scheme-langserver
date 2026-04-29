@@ -550,22 +550,51 @@ Macros that decompose **nested** list types are written by nesting `with` macro 
 
 The nesting depth is limited only by readability. In practice only `caar`, `cadar`, `cddar`, and `caaar` appear often enough in real code to justify the extra signature lines.
 
-#### 6.4.5 Summary table
+#### 6.4.5 Summary table – all `c*r` functions
 
-| Function | Template | Return variable | Min arg elems |
-|---|---|---|---|
-| `car` | `(a b c **1)` | `b` | 3 |
-| `cdr` | `(a b c **1)` | `(with-append (inner:list?) c)` | 3 |
-| `caar` | `((a b c **1) d ...)` | `b` | 3 (inner) |
-| `cdar` | `((a b c **1) d ...)` | `(with-append (inner:list?) c)` | 3 (inner) |
-| `cadr` | `(a b c d **1)` | `c` | 4 |
-| `cddr` | `(a b c d **1)` | `(with-append (inner:list?) d)` | 4 |
-| `caddr` | `(a b c d e **1)` | `d` | 5 |
-| `cdddr` | `(a b c d e **1)` | `(with-append (inner:list?) e)` | 5 |
-| `cadddr` | `(a b c d e f **1)` | `e` | 6 |
-| `cddddr` | `(a b c d e f **1)` | `(with-append (inner:list?) f)` | 6 |
+| Function | List macro? | Kind | Min elems | Notes |
+|---|---|---|---|---|
+| `car` | ✅ | flat `(a b c **1)` | 3 | returns `b` |
+| `cdr` | ✅ | flat `(a b c **1)` | 3 | returns `(with-append (inner:list?) c)` |
+| `caar` | ✅ | nested `with` | 3 (inner) | `car` of `car` |
+| `cadr` | ✅ | flat `(a b c d **1)` | 4 | returns `c` |
+| `cdar` | ✅ | nested `with` | 3 (inner) | `cdr` of `car` |
+| `cddr` | ✅ | flat `(a b c d **1)` | 4 | returns `(with-append (inner:list?) d)` |
+| `caaar` | ✅ | nested `with` | 3 (inner) | `car` of `car` of `car` |
+| `caadr` | ❌ | — | — | feasible (3-layer nested `with`), not yet added |
+| `cadar` | ✅ | nested `with` | 3 (inner) | `car` of `cdr` of `car` |
+| `caddr` | ✅ | flat `(a b c d e **1)` | 5 | returns `d` |
+| `cdaar` | ❌ | — | — | feasible, not yet added |
+| `cdadr` | ❌ | — | — | feasible, not yet added |
+| `cddar` | ✅ | nested `with` | 3 (inner) | `cdr` of `cdr` of `car` |
+| `cdddr` | ✅ | flat `(a b c d e **1)` | 5 | returns `(with-append (inner:list?) e)` |
+| `caaaar` | ❌ | — | — | feasible (4-layer nested `with`), extremely rare in practice |
+| `caaadr` | ❌ | — | — | feasible, not yet added |
+| `caadar` | ❌ | — | — | feasible, not yet added |
+| `caaddr` | ❌ | — | — | feasible, not yet added |
+| `cadaar` | ❌ | — | — | feasible, not yet added |
+| `cadadr` | ❌ | — | — | feasible, not yet added |
+| `caddar` | ❌ | — | — | feasible, not yet added |
+| `cadddr` | ✅ | flat `(a b c d e f **1)` | 6 | returns `e` |
+| `cdaaar` | ❌ | — | — | feasible, not yet added |
+| `cdaadr` | ❌ | — | — | feasible, not yet added |
+| `cdadar` | ❌ | — | — | feasible, not yet added |
+| `cdaddr` | ❌ | — | — | feasible, not yet added |
+| `cddaar` | ❌ | — | — | feasible, not yet added |
+| `cddadr` | ❌ | — | — | feasible, not yet added |
+| `cdddar` | ❌ | — | — | feasible, not yet added |
+| `cddddr` | ✅ | flat `(a b c d e f **1)` | 6 | returns `(with-append (inner:list?) f)` |
 
-> **Note:** For all macros above, an additional fallback signature `(something? <- (inner:list? (inner:pair? something? something?)))` should be kept so that short lists and generic pairs still type-check conservatively.
+> **Note:** For every function in the table, an additional fallback signature `(something? <- (inner:list? (inner:pair? something? something?)))` is kept in `rnrs-meta-rules.sls` so that short lists and generic pairs still type-check conservatively.
+
+#### 6.4.6 Why some `c*r` functions are not added
+
+After the `execute-macro` fix (§6.4.4), **all** `c*r` functions can theoretically receive a list macro—there is no longer a technical block. The remaining ones are omitted for two pragmatic reasons:
+
+1. **Readability.** A 4-layer nested `with` (e.g. `caaaar`) is ~10 lines of dense parenthesis soup. It is easy to get a bracket wrong and hard to review.
+2. **Frequency.** Functions beyond 3 layers (`caaaar`, `caaadr`, `caadar`, …) appear so rarely in real Scheme code that the pair fallback `(something? <- (inner:list? (inner:pair? something? something?)))` is sufficient for IDE use.
+
+If a project genuinely needs `caadr` or `cdaar`, the pattern is identical to `cadar`/`cddar`: nest `with` macros, use `with-append (inner:list?)` for every `cdr` step, and keep the outer `with-equal? inner:list?` guard at each level.
 
 ### 6.5 `candy:matchable?` – Dynamic-Programming Matcher
 
