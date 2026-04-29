@@ -78,8 +78,7 @@
 (caaddr (something? <- (inner:list? (inner:pair? something? something?))))
 (caadr (something? <- (inner:list? (inner:pair? something? something?))))
 (caadr (something? <- (inner:list? (inner:pair? something? something?))))
-; caar nested-list macro not supported by current private-with
-; (caar (with (((a b c **1)) d ...) (with-equal? inner:list? a b)))
+(caar (with ((a b c ...)) (with-equal? inner:list? a ((with ((d e f **1)) (with-equal? inner:list? d e)) b))))
 (caar (something? <- (inner:list? (inner:pair? something? something?))))
 (caar (something? <- (inner:list? (inner:pair? something? something?))))
 (cadaar (something? <- (inner:list? (inner:pair? something? something?))))
@@ -105,9 +104,7 @@
 (cdadar (something? <- (inner:list? (inner:pair? something? something?))))
 (cdaddr (something? <- (inner:list? (inner:pair? something? something?))))
 (cdadr (something? <- (inner:list? (inner:pair? something? something?))))
-; cdar nested-list macro not supported by current private-with
-; (cdar (with (((a b c **1)) d ...) (with-equal? inner:list? a (with-append (inner:list?) c))))
-(cdar (with (((a b **1)) c ...) b))
+(cdar (with ((a b c ...)) (with-equal? inner:list? a ((with ((d e f **1)) (with-equal? inner:list? d (with-append (inner:list?) f))) b))))
 (cdar (something? <- (inner:list? (inner:pair? something? something?))))
 (cddaar (something? <- (inner:list? (inner:pair? something? something?))))
 (cddadr (something? <- (inner:list? (inner:pair? something? something?))))
