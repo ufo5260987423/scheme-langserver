@@ -398,13 +398,20 @@ that walks `undiagnosed-paths` once, accumulating valid LSP diagnostic params.
 
 ---
 
-### 6.3 Re-queue publish immediately after `didChange`
+### 6.3 ❌ Won't do — Re-queue publish immediately after `didChange`
 
-Currently `didChange` only **cancels** the old publish task.  The client may
-wait up to 1 second for updated diagnostics.  A small enhancement would be to
-enqueue a fresh `private:publish-diagnostics` task right after `didChange`
-finishes processing (or, more conservatively, coalesce it with the next timer
-tick if one is already pending).
+**Status**: rejected.
+
+The 1-second interval timer provides **debounce** for rapid successive edits.
+If `didChange` immediately enqueued a publish task, fast typing would trigger
+repeated `refresh-workspace-for` / `init-references` calls, wasting CPU and
+slowing down the worker thread.
+
+Moreover, the dominant latency is not the timer wait but the **index update**
+itself (`refresh-workspace-for` → abstract interpreter → type inference).
+Even if publish were triggered instantly, the client would still wait for the
+analysis to finish.  The timer therefore offers a cheap, natural coalescing
+point without adding extra complexity.
 
 ---
 
