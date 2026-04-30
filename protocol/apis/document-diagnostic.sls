@@ -23,23 +23,28 @@
     (only (srfi :13 strings) string-replace))
 
 (define (unpublish-diagnostics->list workspace)
-  (let ([result 
-        (map 
+  (let ([result
+        (map
           (lambda (d)
             (make-alist
               'uri (document-uri d)
               'diagnostics (private:document->diagnostic-vec d)))
-          (filter 
-            (lambda (d) (not (null? (document-diagnoses d))))
-            (map file-node-document 
-              (map 
-                (lambda (s)
-                  (walk-file (workspace-file-node workspace) s))
-                (workspace-undiagnosed-paths workspace)))))])
+          (filter
+            (lambda (node) (not (null? node)))
+            (map
+              (lambda (s)
+                (let ([file-node (walk-file (workspace-file-node workspace) s)])
+                  (if (null? file-node) '() (file-node-document file-node))))
+              (workspace-undiagnosed-paths workspace))))])
     ; No workspace-mutex needed here. All requests (including this one
     ; and init-references) are serialized by the single-consumer
     ; request-queue. interval-timer only pushes into the queue; it
     ; never directly accesses undiagnosed-paths.
+    ;
+    ; Important: do NOT filter out documents with empty diagnoses.
+    ; If a document previously had diagnostics that are now fixed, we
+    ; must send an empty diagnostics array so the client clears them.
+    ; Otherwise stale diagnostics remain visible indefinitely.
     (workspace-undiagnosed-paths-set! workspace '())
     result))
 
