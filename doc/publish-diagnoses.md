@@ -179,12 +179,12 @@ to `unpublish-diagnostics->list`:
               'uri (document-uri d)
               'diagnostics (private:document->diagnostic-vec d)))
           (filter
-            (lambda (d) (not (null? (document-diagnoses d))))
-            (map file-node-document
-              (map
-                (lambda (s)
-                  (walk-file (workspace-file-node workspace) s))
-                (workspace-undiagnosed-paths workspace)))))])
+            (lambda (node) (not (null? node)))
+            (map
+              (lambda (s)
+                (let ([file-node (walk-file (workspace-file-node workspace) s)])
+                  (if (null? file-node) '() (file-node-document file-node))))
+              (workspace-undiagnosed-paths workspace))))])
     (workspace-undiagnosed-paths-set! workspace '())
     result))
 ```
@@ -192,18 +192,22 @@ to `unpublish-diagnostics->list`:
 Data transformation steps:
 
 1. **Path → file-node**: `walk-file` locates the `file-node` for each path.
+   If the path is stale (file deleted), `'()` is returned and skipped.
 2. **file-node → document**: `file-node-document` extracts the `document`.
-3. **Filter empty**: documents with no diagnoses are dropped.
-4. **Raw diagnose → LSP diagnostic**: `private:document->diagnostic-vec`
+3. **Raw diagnose → LSP diagnostic**: `private:document->diagnostic-vec`
    converts each 4-tuple into a JSON-serialisable alist with `range`,
    `severity`, and `message`.
-5. **Clear accumulator**: `undiagnosed-paths` is reset to `'()`.
+4. **Clear accumulator**: `undiagnosed-paths` is reset to `'()`.
+
+> **Note**: empty diagnostics are **not** filtered out.  When a document has
+> zero diagnoses, an empty `diagnostics` array is sent so the client clears
+> any stale errors.  See Bug 1 below.
 
 The resulting list of alists is then iterated by `private:publish-diagnostics`,
 which sends one `textDocument/publishDiagnostics` notification per document:
 
 ```scheme
-(map
+(for-each
   (lambda (params)
     (send-message server-instance
       (make-notification "textDocument/publishDiagnostics" params)
@@ -358,40 +362,30 @@ abort.
 
 ---
 
-### Bug 4: Same crash in pull diagnostics (`textDocument/diagnostic`)
+### Bug 4 (Fixed): Same crash in pull diagnostics (`textDocument/diagnostic`)
 
-**Location**: `protocol/apis/document-diagnostic.sls:51-53`.
+**Location**: `protocol/apis/document-diagnostic.sls` and seven other API files.
 
-```scheme
-[pre-file-node (walk-file ...)]
-[file-node (if (null? pre-file-node)
-               (walk-file ... (substring uri 7 ...))
-               pre-file-node)]
-[document (file-node-document file-node)]
-```
-
-If both `walk-file` calls return `'()`, `file-node-document` crashes.
-
-**Scope**: this exact pattern (`walk-file` + `substring` fallback +
-`file-node-document`) is copy-pasted into **eight** API files:
+**Problem**: the exact pattern (`walk-file` + `substring` fallback +
+`file-node-document`) was copy-pasted into **eight** API files:
 `hover`, `definition`, `completion`, `document-symbol`, `document-highlight`,
-`formatting`, `references`, and `document-diagnostic`.  It is a systematic
-foot-gun across the protocol layer.
+`formatting`, `references`, and `document-diagnostic`.  If both `walk-file`
+calls returned `'()`, `file-node-document` crashed.
+
+**Fix**: extracted the pattern into a shared helper `resolve-uri->file-node`
+in `virtual-file-system/file-node.sls`.  It guards against `'()` before
+returning, and all eight API files now use it.
 
 ---
 
 ## 6. Improvement opportunities
 
-### 6.1 Use `for-each` instead of `map` when the result is discarded
+### 6.1 ✅ Done — Use `for-each` instead of `map` when the result is discarded
 
 **Location**: `scheme-langserver.sls:63` (`private:publish-diagnostics`).
 
-```scheme
-(map (lambda (params) (send-message ...)) ...)
-```
-
-The list produced by `map` is never used.  Per project style (AGENTS.md),
-`for-each` is preferred for side-effect-only iteration.
+Changed from `map` to `for-each` since the list is discarded and only the
+side-effect (`send-message`) matters.
 
 ---
 
@@ -423,17 +417,19 @@ Aligning them would reduce confusion.
 
 ---
 
-### 6.5 Hard-coded `substring` offset in URI fallback
+### 6.5 ✅ Done — Centralise URI-to-file-node resolution
 
-Eight protocol API files contain:
+Eight protocol API files previously contained a hard-coded fallback:
 
 ```scheme
 (substring (text-document-uri text-document) 7 (string-length ...))
 ```
 
-This assumes the URI prefix is exactly `file://` (7 characters).  If the client
-sends `file:///` or a non-standard scheme, the fallback path is wrong.  A
-utility function `uri->path-fallback` should centralise this logic.
+This assumed the URI prefix is exactly `file://` (7 characters).  The logic has
+been extracted into `resolve-uri->file-node` in
+`virtual-file-system/file-node.sls`, which tries `uri->path` first and falls
+back to stripping the prefix only when the URI actually starts with `file://`.
+All eight API files now use the shared helper.
 
 ---
 
@@ -448,4 +444,4 @@ utility function `uri->path-fallback` should centralise this logic.
 | `analysis/abstract-interpreter.sls` | `step` — identifier resolution and warning generation |
 | `analysis/identifier/rules/library-import.sls` | Library-not-found diagnostics |
 | `virtual-file-system/document.sls` | `document-diagnoses`, `append-new-diagnoses` |
-| `virtual-file-system/file-node.sls` | `walk-file` |
+| `virtual-file-system/file-node.sls` | `walk-file`, `resolve-uri->file-node` |
