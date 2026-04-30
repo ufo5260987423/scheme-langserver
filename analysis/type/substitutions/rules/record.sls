@@ -38,9 +38,12 @@
                           setter
                           `((void? <- (inner:list? ,predicator something?)))))
                       setters)
-                    (identifier-reference-type-expressions-set! 
-                      predicator
-                      `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
+                    ;; Predicator type-expressions are handled by trivial.sls (hard-coded).
+                    ;; Keeping it here risks inconsistency because trivial.sls and record.sls
+                    ;; may run in different orders depending on Scheme library semantics.
+                    ;; (identifier-reference-type-expressions-set! 
+                    ;;   predicator
+                    ;;   `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
                     (identifier-reference-type-expressions-set! 
                       constructor 
                       `((,predicator <- (inner:list? something? ...)))))))))

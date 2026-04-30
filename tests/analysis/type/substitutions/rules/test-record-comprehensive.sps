@@ -84,15 +84,15 @@
       (inner:type->string (car tes)))))
 
 ;; Predicator
+;; NOTE: predicator type-expressions are now handled by trivial.sls (hard-coded).
+;; record.sls no longer sets them to avoid ordering inconsistencies.
 (let ([point?-ref (get-first-ref target-document root-index-node 'point?)])
   (test-assert "predicator ref exists" (identifier-reference? point?-ref))
   (test-equal "predicator type" 'predicator (identifier-reference-type point?-ref))
   (let ([tes (identifier-reference-type-expressions point?-ref)])
-    (test-equal "predicator has 1 type-expression" 1 (length tes))
-    ;; record.sls wraps boolean? with construct-type-expression-with-meta
-    (test-equal "predicator type string"
-      "([identifier-reference boolean?] <- (inner:list? something? ) ) "
-      (inner:type->string (car tes)))))
+    ;; record.sls no longer sets predicator type-expressions;
+    ;; trivial.sls handles it via hard-coded substitution.
+    (test-equal "predicator type-expressions is empty" 0 (length tes))))
 
 ;; Getter
 (let ([point-x-ref (get-first-ref target-document root-index-node 'point-x)])
@@ -164,8 +164,7 @@
 (let ([point?-node (find-usage-node root-index-node 'point?)])
   (let ([results (type:interpret-result-list point?-node)])
     (test-assert "predicator interpret result exists" (> (length results) 0))
-    ;; The result should be the hard-coded (boolean? <- (inner:list? something?))
-    ;; where boolean? is private-boolean? (an identifier-reference constructed by trivial.sls)
+    ;; The result comes from trivial.sls hard-coded (boolean? <- (inner:list? something?))
     (test-equal "predicator interpret string"
       "([identifier-reference boolean?] <- (inner:list? something? ) ) "
       (inner:type->string (car results)))))
@@ -210,26 +209,22 @@
 (test-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Group E: predicator type-expressions source mismatch
+;; Group E: predicator type-expressions source consistency
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-begin "predicator type-expressions source mismatch")
+(test-begin "predicator type-expressions source consistency")
 
-;; record.sls sets predicator's type-expressions with (construct-type-expression-with-meta 'boolean?)
-;; trivial.sls uses private-boolean? (also construct-type-expression-with-meta 'boolean? but cached in trivial.sls)
-;; They should be equivalent identifier-references, but they are created in different modules.
-(let ([point?-ref (get-first-ref target-document root-index-node 'point?)]
-      [point?-node (find-usage-node root-index-node 'point?)])
-  (let ([record-bool (car (car (identifier-reference-type-expressions point?-ref)))]
-        [trivial-subs (index-node-substitution-list point?-node)])
-    ;; record-bool is the boolean? identifier-reference from record.sls
-    ;; Find the boolean? in trivial.sls substitution (first element of the function type list)
+;; After removing record.sls predicator type-expressions, the only source
+;; of predicator type is trivial.sls hard-coded substitution.
+;; This test verifies that the usage-node substitution produces the expected
+;; identifier-reference-wrapped boolean?.
+(let ([point?-node (find-usage-node root-index-node 'point?)])
+  (let ([trivial-subs (index-node-substitution-list point?-node)])
     (let ([trivial-bool (car (find list? trivial-subs))])
-      (test-assert "record boolean? is identifier-reference" (identifier-reference? record-bool))
-      (test-assert "trivial boolean? is identifier-reference" (identifier-reference? trivial-bool))
-      ;; They should refer to the same chezscheme boolean?, but let's see if they are equal?
-      (test-assert "record and trivial boolean? are equal?"
-        (equal? record-bool trivial-bool)))))
+      (test-assert "trivial boolean? is identifier-reference"
+        (identifier-reference? trivial-bool))
+      (test-equal "trivial boolean? identifier is boolean?"
+        'boolean? (identifier-reference-identifier trivial-bool)))))
 
 (test-end)
 

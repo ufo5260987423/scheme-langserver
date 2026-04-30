@@ -97,11 +97,18 @@
           (extend-index-node-substitution-list index-node identifier-reference)]
         [(and (equal? 'predicator type) (not (null? target-index-node)))
           (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))]
-        ;it's in r6rs library?
+        ;it's in r6rs library or imported from another file
         [(null? target-index-node)
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list index-node t))
-            type-expressions)]
+          (if (null? type-expressions)
+            ;; When type-expressions are empty (e.g. predicator after record.sls
+            ;; stopped setting them), fall back to type-specific defaults so that
+            ;; imported identifiers still get useful hover information.
+            (if (equal? 'predicator type)
+              (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))
+              '())
+            (for-each 
+              (lambda (t) (extend-index-node-substitution-list index-node t))
+              type-expressions))]
         ; this can't be excluded by identifier-catching rules
         [(equal? index-node target-index-node) '()]
         ;local
