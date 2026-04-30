@@ -26,11 +26,10 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentRangeFormattingParams
 (define (formatting workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
-      ;why pre-file-node? because many LSP clients, they wrongly produce uri without processing escape character, and here I refer
-      ;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#uri
-      [pre-file-node (walk-file (workspace-file-node workspace) (uri->path (text-document-uri text-document)))]
-      [file-node (if (null? pre-file-node) (walk-file (workspace-file-node workspace) (substring (text-document-uri text-document) 7 (string-length (text-document-uri text-document)))) pre-file-node)]
-      [document (file-node-document file-node)]
+      [file-node (resolve-uri->file-node (workspace-file-node workspace) (text-document-uri text-document))])
+    (if (null? file-node)
+      '()
+      (let* ([document (file-node-document file-node)]
       [text (document-text document)]
       [range 
         (make-range (make-position 0 0) 
@@ -40,5 +39,5 @@
           (lambda (output-port)
             (pretty-print (read (open-string-input-port text)) output-port)))]
       [text-edit (make-text-edit range target)])
-    (vector (text-edit->alist-with-newText text-edit))))
+    (vector (text-edit->alist-with-newText text-edit))))))
 )

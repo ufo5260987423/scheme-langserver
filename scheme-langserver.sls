@@ -60,7 +60,7 @@
 
 (define (private:publish-diagnostics server-instance)
   (if (not (null? (server-workspace server-instance)))
-    (map 
+    (for-each 
       (lambda (params)
         (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params) 'publish))
       (unpublish-diagnostics->list (server-workspace server-instance)))))
