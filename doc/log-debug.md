@@ -133,7 +133,7 @@ For quick-and-dirty debugging, raw interleaved output is usually still readable 
 | Symptom | Use |
 |---------|-----|
 | Crash in abstract interpreter / identifier resolution / type inference | `log-debug.sps` first |
-| Wrong request order, missing cancellation, duplicated publish-diagnoses | `parallel-log-debug.sps` |
+| Wrong request order, missing cancellation, duplicated publish-diagnostics | `parallel-log-debug.sps` |
 | Hang or infinite loop | Try both; if `parallel-log-debug.sps` hangs but `log-debug.sps` does not, you have a threading bug |
 | `request-queue` assertion failure | `parallel-log-debug.sps` |
 

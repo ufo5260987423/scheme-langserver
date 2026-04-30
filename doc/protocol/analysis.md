@@ -12,7 +12,7 @@ The server initializes the following components only when both `enable-multi-thr
 
 - **Thread pool**: size 2 (provided by `ufo-thread-pool`).
 - **Request queue**: `make-request-queue` creates a queue with a mutex and a condition variable.
-- **Interval timer**: an `interval-timer` that pushes an internal notification `private:publish-diagnoses` into the queue once per second.
+- **Interval timer**: an `interval-timer` that pushes an internal notification `private:publish-diagnostics` into the queue once per second.
 
 **Key design**: despite the name "multi-threaded", there is effectively **only one worker thread** dedicated to consuming the request queue (the other thread typically serves the timer). The main thread (I/O thread) reads LSP JSON-RPC messages from standard input and calls `request-queue-push` to enqueue them. Therefore, all requests are processed **serially rather than in parallel**, which naturally avoids most data races.
 
@@ -53,7 +53,7 @@ Every enqueued LSP request is wrapped as a `tickal-task` and executed via Chez S
 
 `request-queue-push` adopts different enqueue logic depending on the request method:
 
-#### 4.1 `private:publish-diagnoses` (internal diagnostic publication)
+#### 4.1 `private:publish-diagnostics` (internal diagnostic publication)
 - **Deduplication**: if a task of the same kind already exists in `tickal-task-list`, it is not enqueued again.
 - This task is triggered once per second by the interval timer and is used to send accumulated diagnostic information to the client.
 
@@ -64,7 +64,7 @@ Every enqueued LSP request is wrapped as a `tickal-task` and executed via Chez S
 - The cancelled task will be safely removed on the next `expire`, after acquiring `workspace-mutex`.
 
 #### 4.3 `textDocument/didChange` (document change)
-- If there is a pending `private:publish-diagnoses` task in the queue, it is immediately marked as `stop?` (the document has changed, so the old diagnostics are no longer valid).
+- If there is a pending `private:publish-diagnostics` task in the queue, it is immediately marked as `stop?` (the document has changed, so the old diagnostics are no longer valid).
 - Then `didChange` itself is enqueued as a new `tickal-task`.
 
 #### 4.4 All other requests
@@ -187,7 +187,7 @@ If the server does not run in multi-threaded mode (`thread-pool` is `#f`), then 
 |------|----------|
 | Concurrency model | Single-consumer queue (logically serial) |
 | Task execution | Chez `make-engine`, cooperative time slicing based on ticks |
-| Deduplication | `private:publish-diagnoses` keeps at most one instance in the queue |
+| Deduplication | `private:publish-diagnostics` keeps at most one instance in the queue |
 | Cancellation | `$/cancelRequest` sets `stop?`; safe removal happens at the next `expire` (long tasks) or at job start (pending tasks) |
 | Document sync protection | `didOpen`/`didChange`/`didClose` are infinitely recharged in `expire`, ensuring they are never interrupted |
 | Timeout purpose | Mainly interrupts long-running computation such as type inference, not ordinary requests |

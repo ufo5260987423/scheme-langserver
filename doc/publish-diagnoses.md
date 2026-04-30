@@ -9,7 +9,7 @@ publishes diagnostics to the LSP client via `textDocument/publishDiagnostics`.
 
 scheme-langserver uses a **push model** for diagnostics: the server periodically
 publishes diagnostic notifications to the client.  The internal trigger is a
-request method named `private:publish-diagnoses`, which is produced by an
+request method named `private:publish-diagnostics`, which is produced by an
 interval timer and processed through the same single-consumer request queue as
 all other LSP requests.
 
@@ -33,36 +33,36 @@ When the server starts in multi-threaded mode (`thread-pool` is non-`#f`),
   (make-time 'time-duration 0 1)
   (lambda ()
     (request-queue-push request-queue
-      (make-request '() "private:publish-diagnoses" '())
+      (make-request '() "private:publish-diagnostics" '())
       request-processor
       (server-workspace server-instance)))
   ...)
 ```
 
-The timer callback simply pushes a `private:publish-diagnoses` request into the
+The timer callback simply pushes a `private:publish-diagnostics` request into the
 queue.  The actual publication happens later when the worker thread pops and
 executes it.
 
 ### 2.2 Deduplication in the queue
 
-`request-queue-push` treats `private:publish-diagnoses` specially:
+`request-queue-push` treats `private:publish-diagnostics` specially:
 
 ```scheme
-["private:publish-diagnoses"
+["private:publish-diagnostics"
   (let* ([predicator ...]
       [tickal-task (find predicator (request-queue-tickal-task-list queue))])
     (when (not tickal-task)
       (make-tickal-task request queue workspace)))]
 ```
 
-If a `private:publish-diagnoses` task already exists in `tickal-task-list`
+If a `private:publish-diagnostics` task already exists in `tickal-task-list`
 (either pending in the queue or currently running), the new request is **dropped**.
 This guarantees at most one publish task is alive at any moment.
 
 ### 2.3 Cancellation by `textDocument/didChange`
 
 When a `didChange` arrives, `request-queue-push` walks `tickal-task-list` and
-sets `stop? = #t` on every `private:publish-diagnoses` task it finds (among
+sets `stop? = #t` on every `private:publish-diagnostics` task it finds (among
 others).  The old publish task is therefore cancelled, because the document has
 changed and its diagnostics are stale.
 
@@ -166,7 +166,7 @@ The merge uses `ordered-dedupe` to keep the list sorted and unique:
 
 ### 3.3 Publication — `unpublish-diagnostics->list`
 
-When the worker thread eventually executes `private:publish-diagnoses`, it
+When the worker thread eventually executes `private:publish-diagnostics`, it
 calls `private:publish-diagnostics` in `scheme-langserver.sls`, which delegates
 to `unpublish-diagnostics->list`:
 
@@ -239,7 +239,7 @@ the same diagnostics are still available in-memory.
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  textDocument/didChange  →  request-queue-push                      │
-│  - cancels old publish-diagnoses tasks (stop? = #t)                 │
+│  - cancels old publish-diagnostics tasks (stop? = #t)                 │
 │  - enqueues didChange itself (non-interruptible)                    │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
@@ -261,13 +261,13 @@ the same diagnostics are still available in-memory.
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Interval timer (1 s) → push private:publish-diagnoses              │
+│  Interval timer (1 s) → push private:publish-diagnostics              │
 │  (dedup: skipped if one already exists)                             │
 └─────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Worker thread pops publish-diagnoses                               │
+│  Worker thread pops publish-diagnostics                               │
 │  → unpublish-diagnostics->list                                      │
 │    - walk-file  → file-node (or '() if deleted)                    │
 │    - file-node-document → document                                  │
@@ -297,7 +297,7 @@ empty:
 
 When a user fixes an error (e.g. corrects a misspelled library import), the
 server re-analyses the file, clears `document-diagnoses`, and places the path in
-`undiagnosed-paths`.  On the next timer tick `publish-diagnoses` runs, but
+`undiagnosed-paths`.  On the next timer tick `publish-diagnostics` runs, but
 because the document now has zero diagnoses, it is dropped from the publish
 list.  The client **never receives an update** for that document, so the old
 diagnostic remains visible forever.
@@ -307,7 +307,7 @@ diagnostic remains visible forever.
 2. Server publishes `"Fail to find library:nonexistent-lib"`.
 3. User fixes the import to a real library name.
 4. Server re-analyses → `document-diagnoses` becomes `'()`.
-5. `publish-diagnoses` sends nothing for this document.
+5. `publish-diagnostics` sends nothing for this document.
 6. Client still shows the old error.
 
 **Fix**: remove the `(not (null? (document-diagnoses d)))` filter.  An empty
@@ -336,14 +336,14 @@ raising a type error and crashing the server.
 **Trigger scenario**:
 1. File `a.scm` is opened → path added to `undiagnosed-paths`.
 2. File `a.scm` is deleted externally.
-3. Timer fires → `publish-diagnoses` tries to walk the stale path → **crash**.
+3. Timer fires → `publish-diagnostics` tries to walk the stale path → **crash**.
 
 **Fix**: guard each `walk-file` result and skip `'()` before calling
 `file-node-document`.
 
 ---
 
-### Bug 3: `undiagnosed-paths` is not cleared if publication fails
+### Bug 3 (Fixed): `undiagnosed-paths` is not cleared if publication fails
 
 **Location**: `protocol/apis/document-diagnostic.sls`.
 
@@ -356,9 +356,9 @@ execution, control never reaches the `set!`.  The stale paths remain in
 - On the next timer tick, the same paths are processed again.
 - If the failure was caused by a deleted file, the server may crash-loop.
 
-**Fix direction**: either guard the computation with `dynamic-wind`, or ensure
-invalid paths are filtered out at the very beginning so the computation cannot
-abort.
+**Fix**: snapshot `undiagnosed-paths` into a local variable and clear the
+workspace field *before* starting the traversal.  Even if an exception aborts
+the fold, the paths have already been removed from the accumulator.
 
 ---
 
@@ -389,13 +389,12 @@ side-effect (`send-message`) matters.
 
 ---
 
-### 6.2 Reduce nested traversals in `unpublish-diagnostics->list`
+### 6.2 ✅ Done — Reduce nested traversals in `unpublish-diagnostics->list`
 
 **Location**: `protocol/apis/document-diagnostic.sls:26-38`.
 
-Four nested `map`/`filter` passes create intermediate lists that are immediately
-discarded.  A single `fold-left` can walk `undiagnosed-paths` once, accumulating
-valid LSP diagnostic params.
+Replaced the four nested `map`/`filter` passes with a single `fold-right`
+that walks `undiagnosed-paths` once, accumulating valid LSP diagnostic params.
 
 ---
 
@@ -403,17 +402,17 @@ valid LSP diagnostic params.
 
 Currently `didChange` only **cancels** the old publish task.  The client may
 wait up to 1 second for updated diagnostics.  A small enhancement would be to
-enqueue a fresh `private:publish-diagnoses` task right after `didChange`
+enqueue a fresh `private:publish-diagnostics` task right after `didChange`
 finishes processing (or, more conservatively, coalesce it with the next timer
 tick if one is already pending).
 
 ---
 
-### 6.4 Naming inconsistency
+### 6.4 ✅ Done — Naming inconsistency
 
-The internal request method is `private:publish-diagnoses` (ends in **ses**),
-while the handler function is `private:publish-diagnostics` (ends in **tics**).
-Aligning them would reduce confusion.
+Aligned the internal request method and handler function to both use
+`private:publish-diagnostics` (ends in **tics**), matching the LSP standard
+`textDocument/publishDiagnostics`.
 
 ---
 
@@ -438,7 +437,7 @@ All eight API files now use the shared helper.
 | File | Role |
 |------|------|
 | `scheme-langserver.sls` | `private:publish-diagnostics` handler, interval timer setup |
-| `protocol/analysis/request-queue.sls` | Dedup, cancellation, and enqueue logic for `private:publish-diagnoses` |
+| `protocol/analysis/request-queue.sls` | Dedup, cancellation, and enqueue logic for `private:publish-diagnostics` |
 | `protocol/apis/document-diagnostic.sls` | `unpublish-diagnostics->list`, `diagnostic` (pull), and LSP formatting |
 | `analysis/workspace.sls` | `undiagnosed-paths` management, `init-references`, `refresh-workspace-for` |
 | `analysis/abstract-interpreter.sls` | `step` — identifier resolution and warning generation |

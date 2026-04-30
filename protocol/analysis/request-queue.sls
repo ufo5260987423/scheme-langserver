@@ -96,8 +96,8 @@
 (define (request-queue-push queue request potential-request-processor workspace)
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
-      ["private:publish-diagnoses"
-        (let* ([predicator (lambda (task) (string=? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+      ["private:publish-diagnostics"
+        (let* ([predicator (lambda (task) (string=? "private:publish-diagnostics" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
@@ -115,7 +115,7 @@
           (lambda (task)
             (let ([method (request-method (tickal-task-request task))])
               (when (or
-                (string=? method "private:publish-diagnoses")
+                (string=? method "private:publish-diagnostics")
                 (string=? method "textDocument/hover")
                 (string=? method "textDocument/completion")
                 (string=? method "textDocument/references")

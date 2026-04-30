@@ -77,7 +77,7 @@
         (case method
           ["initialize" (send-message server-instance (initialize server-instance id params))] 
           ["initialized" '()] 
-          ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
+          ["private:publish-diagnostics" (private:publish-diagnostics server-instance)] 
 
           ["textDocument/didOpen" (did-open workspace params)]
           ["textDocument/didClose" (did-close workspace params)]
@@ -279,7 +279,7 @@
                   (init-interval-timer 
                     (make-time 'time-duration 0 1)
                     (lambda () 
-                      (request-queue-push request-queue (make-request '() "private:publish-diagnoses" '()) request-processor (server-workspace server-instance)))
+                      (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance)))
                     (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
                   #f)])
