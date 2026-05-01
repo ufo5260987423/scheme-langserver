@@ -1,0 +1,6 @@
+(library (consumer)
+  (export test)
+  (import (chezscheme) (simple-macro))
+
+  (define (test)
+    (simple-let ((x 1)) x)))
