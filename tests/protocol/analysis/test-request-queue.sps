@@ -44,13 +44,13 @@
 (test-end)
 
 ;; ------------------------------------------------------------------
-;; 3. private:publish-diagnoses deduplication
+;; 3. private:publish-diagnostics deduplication
 ;; ------------------------------------------------------------------
 (test-begin "request-queue-dedup-publish-diagnoses")
 (let* ([queue (make-request-queue)]
     [processor (lambda (r) 'ok)]
-    [req1 (make-request '() "private:publish-diagnoses" '())]
-    [req2 (make-request '() "private:publish-diagnoses" '())])
+    [req1 (make-request '() "private:publish-diagnostics" '())]
+    [req2 (make-request '() "private:publish-diagnostics" '())])
   (request-queue-push queue req1 processor workspace)
   (request-queue-push queue req2 processor workspace)
   
@@ -87,7 +87,7 @@
 (let* ([queue (make-request-queue)]
     [calls '()]
     [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
-    [notif (make-request '() "private:publish-diagnoses" '())]
+    [notif (make-request '() "private:publish-diagnostics" '())]
     [bad-cancel (make-request '() "$/cancelRequest" '())])
   (request-queue-push queue notif processor workspace)
   (request-queue-push queue bad-cancel processor workspace)
@@ -97,7 +97,7 @@
     (thunk))
   (test-equal "queue empty after pop" #t (request-queue-empty? queue))
   (test-equal "notification ran" 1 (length calls))
-  (test-equal "notification method" "private:publish-diagnoses" (car calls)))
+  (test-equal "notification method" "private:publish-diagnostics" (car calls)))
 (test-end)
 
 ;; ------------------------------------------------------------------
@@ -108,7 +108,7 @@
     [calls '()]
     [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
     [hover (make-request 10 "textDocument/hover" '())]
-    [pub (make-request '() "private:publish-diagnoses" '())]
+    [pub (make-request '() "private:publish-diagnostics" '())]
     [change (make-request '() "textDocument/didChange" '())])
   (request-queue-push queue hover processor workspace)
   (request-queue-push queue pub processor workspace)
@@ -239,9 +239,9 @@
 (let* ([queue (make-request-queue)]
     [calls '()]
     [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
-    [pub1 (make-request '() "private:publish-diagnoses" '())]
+    [pub1 (make-request '() "private:publish-diagnostics" '())]
     [hover (make-request 30 "textDocument/hover" '())]
-    [pub2 (make-request '() "private:publish-diagnoses" '())])
+    [pub2 (make-request '() "private:publish-diagnostics" '())])
   (request-queue-push queue pub1 processor workspace)
   (request-queue-push queue hover processor workspace)
   (request-queue-push queue pub2 processor workspace)
@@ -253,7 +253,7 @@
 
   (test-equal "queue empty after two pops" #t (request-queue-empty? queue))
   (test-equal "two tasks executed" 2 (length calls))
-  (test-equal "first is publish-diagnoses" "private:publish-diagnoses" (car calls))
+  (test-equal "first is publish-diagnoses" "private:publish-diagnostics" (car calls))
   (test-equal "second is hover" "textDocument/hover" (cadr calls)))
 (test-end)
 
