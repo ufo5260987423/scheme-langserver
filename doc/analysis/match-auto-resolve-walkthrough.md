@@ -335,36 +335,31 @@ Exception in map: lists ... differ in length
 
 ## 🐛 Bug 1 发生点
 
-**位置**：`pattern.sls:126-151`（`expand->index-node-compound-list` 的 `ellipse-list-form` 分支）
+**位置**：`pattern.sls:151-154`（`expand->index-node-compound-list` 的 `ellipse-*-form` loop）
 
 ```scheme
-[(ellipse-list-form ellipse-vector-form ellipse-pair-form)
-  ((case type
-      [ellipse-list-form (lambda (a) a)]
-      ...)
-    (let* ([max-i (length children)]
-        [children-vec (list->vector children)])
-      (let loop ([i 0])
-        ...
-        [(and ... (equal? 'ellipse (pattern-type (vector-ref children-vec (+ 1 i)))))
-          (let* (... [new-bindings-list ...])
-            `(,@(map (lambda (c) (expand->index-node-compound-list ...)) new-bindings-list)
-              . ,(loop (+ 1 template-ellipsed-level i))))]
-        ...))))]
+[else 
+  (if (equal? 'ellipse (pattern-type (vector-ref children-vec i)))
+    (loop (+ 1 i))
+    `(,(expand->index-node-compound-list (vector-ref children-vec i) bindings pattern-context) 
+      . ,(loop (+ 1 i))))]
 ```
 
-**问题**：`loop` 对 `ellipse-list-form` 只展开第一个 child（`pair-form`），然后 flat 地插入到结果中。
+**问题**：`make-pattern` 会把 `...` 本身也作为一个 `ellipse` 类型的 child 放入 `children`。
+`loop` 的 `else` 分支没有跳过这些伪子节点，把它们当成普通 child 处理，生成 `'()`。
 
-具体到这个例子：
-- `children` = `(pair-form ellipse)`
-- `loop` 展开 `pair-form`，生成 `(pat1 . body1)` 和 `(pat2 . body2)`
-- 结果 = `((pat1 . body1) (pat2 . body2))`
-- 这个结果被 `ellipse-list-form` 的转换函数 `(lambda (a) a)` 原样返回
-- 然后被 `list-form` 的 `map` 当作一个元素
+具体到这个例子（`ellipse-pair-form`）：
+- `children` = `(pat body ellipse equal?-datum)`
+- `loop` 展开 `pat` → `pat-compound`
+- `loop` 展开 `body`（ellipsed）→ `(body1 body2)`
+- `loop` 处理 `ellipse` → `'()`（错误！这是伪子节点）
+- `loop` 处理 `equal?-datum` → `'()`（错误！这是伪子节点）
+- 结果 = `(pat-compound body1 body2 () ())`
 
-**后果**：`compound-list` 中 `match-next` 的第四个参数是一个包含两个 pair 的 list，
-而 `expansion-index-node` 中 `match-next` 的第四个参数是一个 `ellipse-list-form` 节点。
-两者的结构不同，导致 `private:expansion+index-node->pairs` 无法正确配对。
+**后果**：多余的 `'()` 被 `ellipse-pair-form` 的转换函数处理，产生错误的 pair 结构
+（如 `((pat body1 body2 ()) . ())` 而不是 `((pat1 . body1) (pat2 . body2))`）。
+
+**修复**：`else` 分支添加了对 `ellipse` child 的跳过逻辑，遇到 `ellipse` 直接 `loop (+ 1 i)`。
 
 ---
 
@@ -458,5 +453,5 @@ Exception in map: lists ... differ in length
 | Bug 3 | `private:shallow-copy` 只修改 `expansion-index-node`，不修改原始调用 | 局部变量引用无法回传 |
 
 **实际影响**：
-- `match` 宏（含 ellipses）→ Bug 1 + Bug 2 → crash
+- `match` 宏（含 ellipses）→ `tree-has?` 在入口处拒绝含 `...` 的调用，返回 `'()`；即使绕过该检查，Bug 3 也会导致引用无法回传
 - `simple-let` 宏（无 ellipses）→ Bug 3 → `auto-resolve` 返回空列表
