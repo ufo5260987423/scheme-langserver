@@ -148,7 +148,10 @@
                       [pre-new-bindings (filter (lambda (p) (contain? exposed-literals (car p))) bindings)]
                       [new-bindings-list (private:bindings-product->list template-ellipsed-level pre-new-bindings pattern-context)])
                     `(,@(map (lambda (c) (expand->index-node-compound-list (vector-ref children-vec i) c pattern-context)) new-bindings-list) . ,(loop (+ 1 template-ellipsed-level i))))]
-                [else `(,(expand->index-node-compound-list (vector-ref children-vec i) bindings pattern-context) . ,(loop (+ 1 i)))]))))]
+                [else 
+                  (if (equal? 'ellipse (pattern-type (vector-ref children-vec i)))
+                    (loop (+ 1 i))
+                    `(,(expand->index-node-compound-list (vector-ref children-vec i) bindings pattern-context) . ,(loop (+ 1 i))))]))))]
       [else (raise 'illegal-tempate)])))
 
 ;need cdr? paramter
