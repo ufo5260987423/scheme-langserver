@@ -67,7 +67,11 @@
                         (append-references-into-ordered-references-for document import-index-node `(,ni)))
                       (private:recursive-filter compound-import-list index-node?))))
                 lis))
-            (filter index-node? compound-export-list))))
+            (cond 
+              [(null? compound-export-list) '()]
+              [(list? compound-export-list) (filter index-node? compound-export-list)]
+              [(index-node? compound-export-list) `(,compound-export-list)]
+              [else '()]))))
       local-identifiers+export-index-node)))
 
 (define (private:recursive-filter compound-list predicate?)
@@ -80,8 +84,9 @@
       (private:recursive-filter (vector->list compound-list) predicate?)]))
 
 (define (private:recursive-collect expansion-index-node proc)
-  (if (null? (proc expansion-index-node))
-    '()
-    `((,expansion-index-node . ,(proc expansion-index-node)) .
-      ,(apply append (map (lambda (child) (private:recursive-collect child proc)) (index-node-children expansion-index-node))))))
+  (let ([current (proc expansion-index-node)]
+      [children-results (apply append (map (lambda (child) (private:recursive-collect child proc)) (index-node-children expansion-index-node)))])
+    (if (null? current)
+      children-results
+      `((,expansion-index-node . ,current) . ,children-results))))
 )

@@ -243,7 +243,7 @@ Exception in map: lists ... differ in length
 
 **位置**: `analysis/identifier/expanders/syntax-rules.sls:87-88`
 
-**状态**: ❌ 未修复
+**状态**: ✅ 已修复
 
 ```scheme
 ; symbol won't get pairs
@@ -254,6 +254,16 @@ Exception in map: lists ... differ in length
 
 `private:expansion+index-node->pairs` 对 atom（symbol、number 等）直接返回 `'()`，
 意味着展开后 AST 中的 **任何 symbol 都不会被映射回原始调用位置**。
+
+**修复**: 在 `private:expansion+index-node->pairs` 中添加 symbol 分支：
+```scheme
+[(and (symbol? compound-list) (symbol? expression))
+  `((,index-node . ,compound-list))]
+```
+同时修复了 `private:recursive-collect` 不递归子节点的问题，以及
+`private:shallow-copy` 中 `compound-export-list` 为 `index-node` 时 `filter` 崩溃的问题。
+此外，`route&add` 现在会为具有 `syntax-expander` 的自定义宏自动创建展开规则，
+使自动宏解析在 `init-workspace` 阶段就能触发。
 
 以 `simple-let` 为例：
 
@@ -271,7 +281,7 @@ Exception in map: lists ... differ in length
 ### 后果
 
 即使修复 Bug 1 和 Bug 2，让无 ellipses 的宏展开成功，**局部变量引用依然无法回传**。
-测试验证：`simple-let` 展开后 `x` 的 exports 为空。
+测试验证：`simple-let` 展开后 `x` 的 exports 现在正确包含 `x` 的引用。
 
 ---
 
@@ -281,9 +291,31 @@ Exception in map: lists ... differ in length
 |------|--------|------|------|
 | Bug 1 `ellipse-*-form` loop | 中 | ✅ 已修复 | loop 现在会跳过 `ellipse` 伪子节点 |
 | Bug 2 长度不匹配 | 高 | ⚠️ 潜在风险 | 代码层面未加防护，但当前测试路径不触发。需让配对器理解 ellipses 语义，或改用「展开后 AST ↔ 展开后 AST」配对 |
-| Bug 3 Symbol 不生成 pair | 高 | ❌ 未修复 | 需为 symbol 生成 `(expansion-symbol-node . compound-symbol-node)`，但可能破坏现有假设 |
+| Bug 3 Symbol 不生成 pair | 高 | ✅ 已修复 | symbol 分支已添加；`recursive-collect` 和 `shallow-copy` 的 index-node 处理也已修复 |
 
 ## 结论
 
-` syntax-rules->generator:map+expansion` 对 ellipses 和 symbol 引用的支持是**结构性缺失**，
-不是单点 patch 能修好的。当前手写规则（`match-process`、`let1-process` 等）仍然是必需的。
+` syntax-rules->generator:map+expansion` 对 ellipses 的支持仍是**结构性缺失**（Bug 2），
+但 symbol 引用的回传已通过单点修复解决。
+
+### 自动解析 vs 手写解析的效果对比
+
+| 维度 | 自动解析 (`expansion-generator->rule`) | 手写解析 (`match-process` 等) |
+|------|----------------------------------------|------------------------------|
+| **ellipses 支持** | ❌ 直接拒绝（返回 `#f`） | ✅ 完全支持 |
+| **复杂 pattern** | ❌ 展开后可能丢失语义 | ✅ 精确处理 |
+| **变量绑定** | ⚠️ 依赖 `shallow-copy`，仅浅层复制 | ✅ 精确绑定到 call site |
+| **性能** | 🐢 需要展开+重新解析+遍历 | ⚡ 直接分析 AST |
+| **适用场景** | 简单、无 ellipses 的宏（如 `simple-let`） | 复杂宏（如 `match`、`try`） |
+
+**`match` 不适合自动解析的原因：**
+1. `match` 模板包含 `...`，`syntax-rules->generator:map+expansion` 检测到 ellipses 直接拒绝展开
+2. `ufo-match` 内部有 `match-one`、`match-drop-ids` 等几十个辅助宏，自动解析会尝试为每个都创建规则，导致性能爆炸
+3. `shallow-copy` 是浅层复制，无法处理 `match` 的复杂嵌套 pattern（如 `quasiquote`、`and`/`or` pattern）
+
+### 当前部署状态
+
+- **Bug 3 核心修复**（`syntax-rules.sls` 的 symbol 分支、`expansion-wrap.sls` 的 `recursive-collect` 修复）已合入代码库
+- **`router.sls` 的自动规则**目前被**注释掉**，未正式启用。原因：会为 `.akku/lib/` 中的大量外部库宏创建规则，导致 `init-workspace` 性能急剧下降
+- **`test-simple-macro-auto-resolve.sps`** 通过手动调用 `rule` 来验证自动解析功能，不依赖 `router.sls` 的自动触发
+- **手写规则**（`match-process`、`let1-process`、`try-process` 等）仍然是处理复杂宏的主要方式

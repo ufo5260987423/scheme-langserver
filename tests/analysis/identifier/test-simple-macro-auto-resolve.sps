@@ -47,13 +47,14 @@
      [var-node (car (index-node-children binding-node))])
 
     ; Verify auto-resolve for a simple macro without ellipses.
-    ; Known limitation: private:expansion+index-node->pairs does not generate
-    ; pairs for symbols, only for lists/vectors. Therefore after expanding
-    ; (let ((x 1)) x), the 'x reference in the body cannot be mapped back to
-    ; the original call site, and shallow-copy produces empty results.
+    ; Manually trigger the expansion rule since router.sls does not
+    ; auto-create rules for custom macros yet (to avoid performance issues).
+    (let ([rule (expansion-generator->rule syntax-expander step file-linkage '() '())])
+      (rule root-file-node root-library-node document call-node))
+
     (let ([exports (index-node-references-export-to-other-node var-node)])
-      (test-equal "auto-resolve simple-let currently fails to attach 'x reference"
-        '()
+      (test-equal "auto-resolve simple-let attaches 'x reference after bug3 fix"
+        '(x)
         (map identifier-reference-identifier exports))))
 (test-end)
 

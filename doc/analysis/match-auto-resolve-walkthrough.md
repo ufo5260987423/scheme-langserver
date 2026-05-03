@@ -453,5 +453,19 @@ Exception in map: lists ... differ in length
 | Bug 3 | `private:shallow-copy` 只修改 `expansion-index-node`，不修改原始调用 | 局部变量引用无法回传 |
 
 **实际影响**：
-- `match` 宏（含 ellipses）→ `tree-has?` 在入口处拒绝含 `...` 的调用，返回 `'()`；即使绕过该检查，Bug 3 也会导致引用无法回传
-- `simple-let` 宏（无 ellipses）→ Bug 3 → `auto-resolve` 返回空列表
+- `match` 宏（含 ellipses）→ `tree-has?` 在入口处拒绝含 `...` 的调用，返回 `'()`。**`match` 不适合自动解析**：其模板包含 ellipses，内部还有 `match-one`、`match-drop-ids` 等几十个辅助宏，且 `shallow-copy` 的浅层复制无法处理复杂嵌套 pattern 的引用回传。`match-process` 等手写规则仍然是处理 `match` 的主要方式。
+- `simple-let` 宏（无 ellipses）→ Bug 3 已修复 → `auto-resolve` 现在可以正确回传 `x` 的引用。
+
+### 自动解析 vs 手写解析的适用边界
+
+| 宏类型 | 自动解析 | 手写解析 | 说明 |
+|--------|---------|---------|------|
+| `simple-let`（无 ellipses、单层） | ✅ 可用 | 可用 | Bug 3 修复后，自动解析效果与手写一致 |
+| `match`（含 ellipses、复杂嵌套） | ❌ 不可用 | ✅ 必需 | ellipses 被拒绝；辅助宏太多；浅层复制不够 |
+| `try`、`let1`、`define-case-class` 等 | ❌ 不可用 | ✅ 必需 | 这些宏有专门的手写规则处理其特殊语义 |
+
+### 当前部署状态
+
+- **Bug 1、Bug 3 已修复**：`ellipse-*-form` 的伪子节点跳过、symbol 分支的 pair 生成、`recursive-collect` 的子节点递归均已合入
+- **`router.sls` 的自动规则被注释掉**：未正式启用。若启用，会为 `.akku/lib/` 中大量外部库宏创建规则，导致 `init-workspace` 性能急剧下降
+- **测试策略**：`test-simple-macro-auto-resolve.sps` 通过手动调用 `rule` 验证自动解析功能；`test-auto-macro-resolve.sps` 验证 `match` 自动解析会崩溃（预期行为）

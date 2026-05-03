@@ -84,6 +84,8 @@
         (private:expansion+index-node->pairs (vector->list compound-list) index-node)]
       [(pair? compound-list) 
         (private:expansion+index-node->pairs `(,(car compound-list) ,(cdr compound-list)) index-node) ]
+      [(and (symbol? compound-list) (symbol? expression))
+        `((,index-node . ,compound-list))]
       ;symbol won't get pairs
       [else '()])))
 

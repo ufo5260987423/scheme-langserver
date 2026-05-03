@@ -22,7 +22,9 @@
     
     (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
     (scheme-langserver analysis identifier self-defined-rules goldfish let1)
-    (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda))
+    (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda)
+    
+    (only (srfi :13 strings) string-contains))
 
 (define (route&add 
   rules target-identifier
@@ -53,11 +55,17 @@
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
-      ;only for test
-      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)) (identifier-reference-syntax-expander (car top)))
-      ; (pretty-print 'trigger)
+      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
       ;   (add-rule-procedure rules 
-      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander (car top)) step file-linkage expanded+callee-list memory)) . 
+      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory)) . 
+      ;       ,target-identifier))]
+      ; [(and (identifier-reference-syntax-expander target-identifier)
+      ;       (let ([doc (identifier-reference-document target-identifier)])
+      ;         (or (null? doc)
+      ;             (let ([path (uri->path (document-uri doc))])
+      ;               (not (string-contains path ".akku/lib/"))))))
+      ;   (add-rule-procedure rules 
+      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory)) . 
       ;       ,target-identifier))]
       [else rules])))
 )
