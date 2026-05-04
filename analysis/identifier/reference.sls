@@ -252,19 +252,24 @@
         [('alias identifier _ ...) (check?)]
         [else #f]))))
 
+(define (private:list->eq-set lst)
+  (let ([ht (make-eq-hashtable)])
+    (for-each (lambda (item) (eq-hashtable-set! ht item #t)) lst)
+    ht))
+
 (define find-available-references-for
   (case-lambda
     [(document current-index-node)
       (let* ([local (index-node-references-import-in-this-node current-index-node)]
-          [local-identifiers (map identifier-reference-identifier local)]
-          [exclude (index-node-excluded-references current-index-node)])
+          [local-ht (private:list->eq-set (map identifier-reference-identifier local))]
+          [exclude-ht (private:list->eq-set (index-node-excluded-references current-index-node))])
         (filter
-          (lambda (reference) (not (member reference exclude)))
+          (lambda (reference) (not (eq-hashtable-contains? exclude-ht reference)))
           (append 
             local
             (filter 
               (lambda (reference)
-                (not (member (identifier-reference-identifier reference) local-identifiers)))
+                (not (eq-hashtable-contains? local-ht (identifier-reference-identifier reference))))
               (if (null? (index-node-parent current-index-node))
                 (document-ordered-reference-list document) 
                 (find-available-references-for document (index-node-parent current-index-node)))))))]
@@ -290,19 +295,16 @@
           tmp-result))]))
 
 (define (private-binary-search reference-list identifier exclude)
-  (let ([prev
-        (binary-search
-          (list->vector reference-list)
-          identifier-compare?
-          (make-identifier-reference identifier '() '() '() '() '() '() '()))])
+  (let ([exclude-ht (private:list->eq-set exclude)]
+        [prev
+          (binary-search
+            (list->vector reference-list)
+            identifier-compare?
+            (make-identifier-reference identifier '() '() '() '() '() '() '()))])
     (filter
       (lambda (reference)
-        (not 
-          (find 
-            (lambda (ex-reference)
-              (equal? ex-reference reference))
-            exclude)))
-        prev)))
+        (not (eq-hashtable-contains? exclude-ht reference)))
+      prev)))
 
 (define (root-ancestor identifier-reference)
   (if (null? (identifier-reference-parents identifier-reference))
