@@ -73,67 +73,44 @@
    [literals (cadr syntax-rules-expression)]
    [clause-index-nodes (cddr (index-node-children syntax-rules-node))])
 
-  (display "match call expression:\n") (pretty-print match-expression) (newline)
-  (display "number of clauses in match syntax-rules: ") (display (length clause-index-nodes)) (newline)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; Method A: scheme-langserver's confirm-clause (first-step)
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (let ([sls-result (confirm-clause literals clause-index-nodes match-expression)])
-    (display "\n=== scheme-langserver first-step expansion (confirm-clause) ===\n")
-    (pretty-print sls-result)
-    (newline)
+  (let ([sls-result (confirm-clause literals clause-index-nodes match-expression)]
+        [expanded-datum 
+          (guard (c [else 'expand-failed])
+            (eval '(import (ufo-match)))
+            (let* ([expr-syntax (datum->syntax #'here match-expression)]
+                   [expanded-syntax (expand expr-syntax)])
+              (syntax->datum expanded-syntax)))])
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; Method B: Chez Scheme expand (recursive to core forms)
+    ;; Assertions
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; Method B: Chez Scheme expand (best-effort, may fail if match
-    ;; is not bound in interaction environment)
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; The first-step template from confirm-clause should contain match-next
+    ; (because match expands to match-next in the first step)
+    (test-equal "first-step expansion contains match-next"
+      #t
+      (if sls-result
+        (private:tree-contains? (cdr sls-result) 'match-next)
+        #f))
 
-    (let ([expanded-datum 
-            (guard (c [else 'expand-failed])
-              (eval '(import (ufo-match)))
-              (let* ([expr-syntax (datum->syntax #'here match-expression)]
-                     [expanded-syntax (expand expr-syntax)])
-                (syntax->datum expanded-syntax)))])
-      (display "=== Chez Scheme expand (full) result ===\n")
-      (pretty-print expanded-datum)
-      (newline)
-
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;; Assertions
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-      ; The first-step template from confirm-clause should contain match-next
-      ; (because match expands to match-next in the first step)
-      (test-equal "first-step expansion contains match-next"
-        #t
-        (if sls-result
-          (private:tree-contains? (cdr sls-result) 'match-next)
-          #f))
-
-      ; Chez expand (full) should NOT contain match-next anymore
-      (test-equal "full Chez expansion eliminates match-next"
+    ; Chez expand (full) should NOT contain match-next anymore
+    (test-equal "full Chez expansion eliminates match-next"
+      #f
+      (if (equal? expanded-datum 'expand-failed)
         #f
-        (if (equal? expanded-datum 'expand-failed)
-          #f
-          (private:tree-contains? expanded-datum 'match-next)))
+        (private:tree-contains? expanded-datum 'match-next)))
 
-      ; The confirm-clause matched the correct clause (index 4 for atom pattern)
-      (test-equal "confirm-clause matched clause index 4"
-        4
-        (if sls-result (car sls-result) #f))
+    ; The confirm-clause matched the correct clause (index 4 for atom pattern)
+    (test-equal "confirm-clause matched clause index 4"
+      4
+      (if sls-result (car sls-result) #f))
 
-      ; The bound variable in first-step should be 'expression'
-      (test-equal "first-step binds atom to 'expression'"
-        #t
-        (if sls-result
-          (private:tree-contains? (cdr sls-result) 'expression)
-          #f)))))
+    ; The bound variable in first-step should be 'expression'
+    (test-equal "first-step binds atom to 'expression'"
+      #t
+      (if sls-result
+        (private:tree-contains? (cdr sls-result) 'expression)
+        #f))))
 
 (test-end)
 
