@@ -46,7 +46,7 @@
         [(e equal-procedure) 
             (cond 
                 [(null? e) e]
-                [(= 1 (length e)) e]
+                [(null? (cdr e)) e]
                 [(equal-procedure (car e) (cadr e))
                     (ordered-dedupe (cdr e) equal-procedure)]
                 [else
