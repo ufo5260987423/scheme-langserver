@@ -292,7 +292,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
 | `doc/analysis/file-linkage.md:148` | Matrix shrink on file deletion is now implemented via `shrink-file-linkage!` | Resolved |
-| `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. In Scheme every proper list is built from pairs, but the type system treats them as distinct. This prevents safely rewriting `(append result `(,x))` to `(cons x result)` inside named-let accumulators (e.g. `matrix-from`) because the inferred parameter type flips from `inner:list?` → `inner:pair?`, breaking substitution generation. `reverse` is fine (it already returns `inner:list?`). | Medium — blocks `append`→`cons`+`reverse` micro-optimization in matrix.sls |
+| `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. The type system treats `inner:pair?` and `inner:list?` as disjoint. `matrix-from`/`matrix-to` now work around this by using `cons` inside the loop and `reverse` at the return point, so the accumulator stays correctly typed as `inner:list?`. No change to `cons`'s rule itself was needed. | Resolved — workaround in place |
 
 ---
 
