@@ -95,7 +95,7 @@
       [matrix-from-node (find-define-with-params root-index-node 'matrix-from)]
       [let-loop-node (find-named-let matrix-from-node 'loop)]
       [target-index-node (cadr (index-node-children let-loop-node))]
-      [check-base (construct-type-expression-with-meta '((inner:list?) <- (inner:list? fixnum? (inner:list?))))])
+      [check-base (construct-type-expression-with-meta '((inner:list? something? ...) <- (inner:list? fixnum? (inner:list?))))])
     (construct-substitutions-for target-document)
     ; (pretty-print (map  inner:type->string (type:recursive-interpret-result-list target-index-node)))
     (test-equal #t

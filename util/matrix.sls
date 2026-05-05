@@ -20,8 +20,8 @@
           (+ 1 column-id)
           (if (zero? (vector-ref matrix (encode rows-count row-id column-id)))
             result
-            (append result `(,column-id))))
-        result))))
+            (cons column-id result)))
+        (reverse result)))))
 
 (define (matrix-to matrix to-id)
   (let ([rows-count (sqrt (vector-length matrix))]
@@ -32,8 +32,8 @@
           (+ 1 row-id)
           (if (zero? (vector-ref matrix (encode rows-count row-id column-id)))
             result
-            (append result `(,row-id))))
-        result))))
+            (cons row-id result)))
+        (reverse result)))))
 
 (define (matrix-expand target-matrix)
   (let* ([node-count (sqrt (vector-length target-matrix))]
