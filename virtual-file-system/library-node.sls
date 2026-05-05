@@ -32,7 +32,7 @@
             (let* ([head (car list-instance)]
                   [rest (cdr list-instance)]
                   [child (find 
-                      (lambda (child-node) (equal? head (library-node-name child-node))) 
+                      (lambda (child-node) (eq? head (library-node-name child-node))) 
                       (library-node-children library-node))])
               (make-library-node
                 rest 
@@ -70,7 +70,7 @@
     (library-node-parent current-library-node)
     (filter 
       (lambda (library-node)
-        (not (equal? library-node current-library-node)))
+        (not (eq? library-node current-library-node)))
       (library-node-children (library-node-parent current-library-node)))))
 
 (define (walk-library list-instance current-library-node)
@@ -79,7 +79,7 @@
     (let* ([head (car list-instance)]
           [rest (cdr list-instance)]
           [child (find 
-              (lambda (child-node) (equal? head (library-node-name child-node))) 
+              (lambda (child-node) (eq? head (library-node-name child-node))) 
               (library-node-children current-library-node))])
       (if child
         (walk-library rest child)

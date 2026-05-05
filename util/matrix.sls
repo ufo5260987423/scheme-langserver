@@ -18,7 +18,7 @@
       (if (< column-id rows-count)
         (loop 
           (+ 1 column-id)
-          (if (zero? (matrix-take matrix row-id column-id))
+          (if (zero? (vector-ref matrix (encode rows-count row-id column-id)))
             result
             (append result `(,column-id))))
         result))))
@@ -30,7 +30,7 @@
       (if (< row-id rows-count)
         (loop 
           (+ 1 row-id)
-          (if (zero? (matrix-take matrix row-id column-id))
+          (if (zero? (vector-ref matrix (encode rows-count row-id column-id)))
             result
             (append result `(,row-id))))
         result))))
@@ -42,10 +42,9 @@
       [current-length (vector-length result)])
     (let loop ([index 0])
       (if (< index current-length)
-        (let* ([indexes (decode new-count index)]
-            [row-id (car indexes)]
-            [column-id (cadr indexes)])
-          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) 0 (matrix-take target-matrix row-id column-id)))
+        (let ([row-id (div index new-count)]
+              [column-id (mod index new-count)])
+          (vector-set! result index (if (or (= row-id node-count) (= column-id node-count)) 0 (vector-ref target-matrix (encode node-count row-id column-id))))
           (loop (+ index 1)))
         result))))
 
@@ -61,7 +60,7 @@
               (let loop2 ([new-col 0])
                 (if (< new-col new-count)
                   (let ([old-col (if (< new-col removed-id) new-col (+ new-col 1))])
-                    (matrix-set! result new-row new-col (matrix-take target-matrix old-row old-col))
+                    (vector-set! result (encode new-count new-row new-col) (vector-ref target-matrix (encode node-count old-row old-col)))
                     (loop2 (+ 1 new-col)))
                   (loop (+ 1 new-row)))))
             result))))))
@@ -92,25 +91,25 @@
       (let ([visited (make-vector node-count)])
         (let loop ([n 0]) 
           (if (< n node-count)
-            (let ([result (find-cycle matrix visited n '())])
+            (let ([result (find-cycle matrix node-count visited n '())])
               (if (null? result)
                 (loop (+ 1 n))
                 result))
             '())))]
-    [(matrix visited n path) 
+    [(matrix node-count visited n path) 
       (if (zero? (vector-ref visited n))
         (begin
           (vector-set! visited n 1)
           (let loop ([m 0])
             (if (< m (vector-length visited))
-              (if (zero? (matrix-take matrix n m))
+              (if (zero? (vector-ref matrix (encode node-count n m)))
                 (loop (+ 1 m))
-                (let ([result (find-cycle matrix visited m (append path `(,n)))])
+                (let ([result (find-cycle matrix node-count visited m (cons n path))])
                   (if (null? result)
                     (loop (+ 1 m))
-                    (append path result))))
+                    (cons n result))))
               '())))
         (if (find (lambda (t) (= n t)) path)
-          (append path `(,n))
+          (cons n path)
           '()))]))
 )

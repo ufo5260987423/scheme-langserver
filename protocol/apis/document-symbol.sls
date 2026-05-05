@@ -29,7 +29,7 @@
         [identifiers
           (filter 
             (lambda (identifier-reference)
-              (equal? document (identifier-reference-document identifier-reference)))
+              (eq? document (identifier-reference-document identifier-reference)))
             (apply append 
               (map 
                 index-node-references-import-in-this-node

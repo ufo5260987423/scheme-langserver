@@ -156,19 +156,19 @@
       (lambda (identifier) 
         (not 
           (or 
-            (equal? 'parameter (identifier-reference-type identifier))
-            (equal? 'syntax-parameter (identifier-reference-type identifier)))))
+            (eq? 'parameter (identifier-reference-type identifier))
+            (eq? 'syntax-parameter (identifier-reference-type identifier)))))
       identifier-list)))
 
 (define private:find-available-references-for 
   (case-lambda 
     [(expanded+callee-list current-document current-index-node)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
           (private:find-available-references-for expanded+callee-list current-document (cdr result))
           (find-available-references-for current-document current-index-node)))]
     [(expanded+callee-list current-document current-index-node expression)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
           (private:find-available-references-for expanded+callee-list current-document (cdr result) expression)
           (find-available-references-for current-document current-index-node expression)))]))

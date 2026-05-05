@@ -108,7 +108,7 @@
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) identifier) #t #f))
+                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) identifier) #t #f))
                 (import-references document root-library-node library-identifier))])
 
           (if (not (null? importion-index-node))
@@ -117,7 +117,7 @@
                 [current-references 
                   (filter
                     (lambda (reference) 
-                      (equal? current-identifier (identifier-reference-identifier reference)))
+                      (eq? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
 
               (append-references-into-ordered-references-for document current-index-node current-references)
@@ -129,7 +129,7 @@
                 (cdr identifiers) 
                 (filter
                   (lambda (reference) 
-                    (not (equal? current-identifier (identifier-reference-identifier reference))))
+                    (not (eq? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('except (library-identifier **1) (? symbol? identifier) **1) 
         (if (null? (walk-library library-identifier root-library-node))
@@ -139,7 +139,7 @@
         (let ([tmp 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (not (equal? id (identifier-reference-identifier reference)))) identifier) #t #f))
+                  (if (find (lambda(id) (not (eq? id (identifier-reference-identifier reference)))) identifier) #t #f))
                 (import-references document root-library-node library-identifier))])
           (if (null? grand-parent-index-node)
             (document-ordered-reference-list-set! 
@@ -152,7 +152,7 @@
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) identifier) #t #f))
+                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) identifier) #t #f))
                 (import-references document root-library-node library-identifier))])
           (if (not (null? importion-index-node))
             (let* ([current-index-node (car importion-index-node)]
@@ -160,7 +160,7 @@
                 [current-references 
                   (filter
                     (lambda (reference) 
-                      (equal? current-identifier (identifier-reference-identifier reference)))
+                      (eq? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
 
               (append-references-into-ordered-references-for document current-index-node current-references)
@@ -169,7 +169,7 @@
                 (cdr identifiers) 
                 (filter
                   (lambda (reference) 
-                    (not (equal? current-identifier (identifier-reference-identifier reference))))
+                    (not (eq? current-identifier (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('prefix (library-identifier **1) (? symbol? prefix-id))
         (if (null? (walk-library library-identifier root-library-node))
@@ -203,7 +203,7 @@
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) external-name) #t #f))
+                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) external-name) #t #f))
                 (import-references document root-library-node library-identifier))])
           (if (not (null? importion-nodes))
             (let* ([current-importion-pair (index-node-children (car importion-nodes))]
@@ -214,7 +214,7 @@
                 [current-references 
                   (filter
                     (lambda (reference) 
-                      (equal? current-external-name (identifier-reference-identifier reference)))
+                      (eq? current-external-name (identifier-reference-identifier reference)))
                     imported-references)]
                 [renamed-references 
                   (map 
@@ -244,7 +244,7 @@
                 (cdr internal-names)
                 (filter
                   (lambda (reference) 
-                    (not (equal? current-external-name (identifier-reference-identifier reference))))
+                    (not (eq? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
         (if (null? (walk-library library-identifier root-library-node))
@@ -257,7 +257,7 @@
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (equal? id (identifier-reference-identifier reference))) external-name) #t #f))
+                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) external-name) #t #f))
                 (import-references document root-library-node library-identifier))])
           (if (not (null? importion-nodes))
             (let* ([current-importion-pair (index-node-children (car importion-nodes))]
@@ -268,7 +268,7 @@
                 [current-references 
                   (filter
                     (lambda (reference) 
-                      (equal? current-external-name (identifier-reference-identifier reference)))
+                      (eq? current-external-name (identifier-reference-identifier reference)))
                     imported-references)]
                 [renamed-references 
                   (map 
@@ -299,13 +299,13 @@
                 (cdr internal-names)
                 (filter
                   (lambda (reference) 
-                    (not (equal? current-external-name (identifier-reference-identifier reference))))
+                    (not (eq? current-external-name (identifier-reference-identifier reference))))
                   imported-references)))))]
       [('for ('only (library-identifier **1) (? symbol? identifier) **1) import-level) 
         (if (or
-            (equal? 'run import-level)
+            (eq? 'run import-level)
             (equal? '(meta 0) import-level)
-            (equal? 'expand import-level)
+            (eq? 'expand import-level)
             ; (equal? '(meta 1) import-level)
             )
           (match-clause initialization-index-node root-file-node root-library-node document (cadr (index-node-children index-node))))]
@@ -315,9 +315,9 @@
             (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library library-identifier root-library-node))))
         (if (or
-            (equal? 'run import-level)
+            (eq? 'run import-level)
             (equal? '(meta 0) import-level)
-            (equal? 'expand import-level)
+            (eq? 'expand import-level)
             ; (equal? '(meta 1) import-level)
             )
           (let ([tmp (filter identifier-reference? (import-references document root-library-node library-identifier))])

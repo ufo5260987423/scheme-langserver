@@ -137,7 +137,7 @@
 
 (define (debug:recursive-print-expression&uuid index-node)
   (debug:print-expression&uuid index-node)
-  (map debug:recursive-print-expression&uuid (index-node-children index-node)))
+  (for-each debug:recursive-print-expression&uuid (index-node-children index-node)))
 
 (define (find-leaves index-node-list)
   (fold-left 
@@ -181,14 +181,14 @@
 (define (is-ancestor? ancestor target)
   (if (null? target)
     #f
-    (if (equal? ancestor (index-node-parent target))
+    (if (eq? ancestor (index-node-parent target))
       #t
       (is-ancestor? ancestor (index-node-parent target)))))
 
 (define (is-first-child? index-node)
   (if (null? (index-node-parent index-node))
     #f
-    (equal? index-node (car (index-node-children (index-node-parent index-node))))))
+    (eq? index-node (car (index-node-children (index-node-parent index-node))))))
 
 (define (get-root-ancestor index-node)
   (if (null? (index-node-parent index-node))
@@ -198,7 +198,7 @@
 (define (clear-references-for index-node)
   (index-node-references-export-to-other-node-set! index-node '())
   (index-node-references-import-in-this-node-set! index-node '())
-  (map clear-references-for (index-node-children index-node)))
+  (for-each clear-references-for (index-node-children index-node)))
 
 (define (pick-index-node-has-content-without-recursion target-index-node-list content-expression)
   (filter (lambda (x) (equal? content-expression (annotation-stripped (index-node-datum/annotations x)))) target-index-node-list))

@@ -72,7 +72,7 @@
             (lambda (maybe-symbol)
               (if (symbol? maybe-symbol)
                 (find 
-                  (lambda (identifier) (equal? maybe-symbol identifier))
+                  (lambda (identifier) (eq? maybe-symbol identifier))
                   (map identifier-reference-identifier available-references))
                 #f))])
         (list->vector 

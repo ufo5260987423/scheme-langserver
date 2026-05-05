@@ -77,7 +77,7 @@
           (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f)]))))
 
 (define (is-ancestor-of? identifier-reference0 identifier-reference1)
-  (if (equal? identifier-reference0 identifier-reference1)
+  (if (eq? identifier-reference0 identifier-reference1)
     #t
     (if (find (lambda (parent) (is-ancestor-of? identifier-reference0 parent)) (identifier-reference-parents identifier-reference1))
       #t
@@ -110,7 +110,7 @@
                       (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
                         (and 
                           (index-node? tmp) 
-                          (not (contain? target-index-node-blacklist tmp)) 
+                          (not (contain? target-index-node-blacklist tmp eq?)) 
                           (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     exclude-reference)))
               (index-node-references-import-in-this-node-set!
@@ -122,10 +122,10 @@
                       (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
                         (and 
                           (index-node? tmp) 
-                          (not (contain? target-index-node-blacklist tmp)) 
+                          (not (contain? target-index-node-blacklist tmp eq?)) 
                           (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     imported-reference)))
-              (map 
+              (for-each 
                 (lambda (item) (private-export-transform item document target-index-node-list mapper-vector))
                 exported-reference))
             '()))))))
@@ -169,9 +169,9 @@
   (let ([e (annotation-stripped (index-node-datum/annotations index-node))])
     (if (symbol? e)
       (let* ([as (find-available-references-for document index-node e)]
-          [ras (fold-left append '() (map root-ancestor as))]
+          [ras (fold-right append '() (map root-ancestor as))]
           [metas (filter meta? ras)])
-        (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) metas)))))
+        (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) metas)))))
 
 (define (identifier-compare? target1 target2)
   (string<=?
@@ -205,7 +205,7 @@
             #t
             (loop 
               (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-                (fold-left append '() (map identifier-reference-parents body))))))))))
+                (fold-right append '() (map identifier-reference-parents body))))))))))
 
 (define (private-check-library-identifier? candidates library-identifier-rest)
   (if (null? candidates)
@@ -227,22 +227,22 @@
             (if (null? grandparent)
               #f
               (and 
-                (not (equal? bigest-sibling index-node))
-                (contain? sibling index-node)
+                (not (eq? bigest-sibling index-node))
+                (contain? sibling index-node eq?)
                 (match (annotation-stripped (index-node-datum/annotations grandparent))
-                  [('library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
-                  [('define-library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
+                  [('library _ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
+                  [('define-library _ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
                   [else #f])))))])
     (if (null? parent)
       #f
       (match (annotation-stripped (index-node-datum/annotations parent))
         [('library identifier _ ...) 
           (and 
-            (equal? (cadr (index-node-children parent)) index-node)
+            (eq? (cadr (index-node-children parent)) index-node)
             (not (check?)))]
         [('define-library identifier _ ...) 
           (and 
-            (equal? (cadr (index-node-children parent)) index-node)
+            (eq? (cadr (index-node-children parent)) index-node)
             (not (check?)))]
         [('import identifier **1) (check?)]
         [('only identifier _ ...) (check?)]
@@ -277,8 +277,8 @@
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])
         (if (and 
-            (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) export-list)
-            (equal? expression identifier))
+            (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) export-list)
+            (eq? expression identifier))
           '()
           (find-available-references-for document current-index-node identifier '())))]
     [(document current-index-node identifier exclude)
@@ -309,7 +309,7 @@
 (define (root-ancestor identifier-reference)
   (if (null? (identifier-reference-parents identifier-reference))
     `(,identifier-reference)
-    (fold-left append '() (map root-ancestor (identifier-reference-parents identifier-reference)))))
+    (fold-right append '() (map root-ancestor (identifier-reference-parents identifier-reference)))))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]
@@ -320,7 +320,7 @@
         (let ([result 
               (find 
                 (lambda (candidate-reference) 
-                  (if (find (lambda (cr) (equal? cr candidate-reference)) available-references)
+                  (if (find (lambda (cr) (eq? cr candidate-reference)) available-references)
                     #t
                     #f))
                 (find-available-references-for document index-node maybe-symbol))])

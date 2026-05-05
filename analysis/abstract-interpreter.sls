@@ -104,10 +104,10 @@
               (index-node-children current-index-node)))]
         [(syntax? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node 
-            (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
+            (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
         [(quasisyntax? current-index-node current-document)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
+            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
             (map 
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasisyntaxed expanded+callee-list memory))
@@ -260,25 +260,25 @@
         (not 
           (or 
             ; (equal? 'syntax-variable (identifier-reference-type identifier))
-            (equal? 'parameter (identifier-reference-type identifier))
-            (equal? 'syntax-parameter (identifier-reference-type identifier))
-            (equal? 'procedure (identifier-reference-type identifier))
-            (equal? 'variable (identifier-reference-type identifier)))))
+            (eq? 'parameter (identifier-reference-type identifier))
+            (eq? 'syntax-parameter (identifier-reference-type identifier))
+            (eq? 'procedure (identifier-reference-type identifier))
+            (eq? 'variable (identifier-reference-type identifier)))))
       identifier-list)))
 
 (define private:find-available-references-for 
   (case-lambda 
     [(expanded+callee-list current-document current-index-node)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
           (private:find-available-references-for expanded+callee-list current-document (cdr result))
           (find-available-references-for current-document current-index-node)))]
     [(expanded+callee-list current-document current-index-node expression)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
           (private:find-available-references-for expanded+callee-list current-document (cdr result) expression)
           (find-available-references-for current-document current-index-node expression)))]))
 
 (define (private:top-env=? standard top)
-  (contain? (map identifier-reference-top-environment top) standard))
+  (find (lambda (item) (eq? standard (identifier-reference-top-environment item))) top))
 )

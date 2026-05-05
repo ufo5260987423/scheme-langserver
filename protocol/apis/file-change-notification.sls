@@ -102,7 +102,7 @@
               (file-node-parent file-node)
               (filter 
                 (lambda (siblins)
-                  (not (equal? file-node siblins)))
+                  (not (eq? file-node siblins)))
                 (file-node-children (file-node-parent file-node)))))))
       (map 
         (lambda (path) (walk-file (workspace-file-node workspace) path))

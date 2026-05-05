@@ -101,8 +101,8 @@
             ;; File is not in the linkage (script file or already removed)
             '())
           (begin 
-            (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
-            (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
+            (for-each (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
+            (for-each (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
             (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to)))))]))
 
 (define (shrink-file-linkage! linkage removed-path)
