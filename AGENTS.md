@@ -257,6 +257,16 @@ Located in `util/path.sls`. The URI format is `file:///absolute/path`.
 - `matrix-expand` grows a square matrix; `matrix-shrink` removes a row/column.
 - Always derive dimension via `(sqrt (vector-length matrix))`.
 
+### `inner:pair?` vs `inner:list?` in the type system
+In Scheme a list is a chain of pairs terminated by `'()`, so `(cons x '())` is **both** a pair and a list. The langserver type system distinguishes them:
+
+| Type | Meaning | Typical producers |
+|------|---------|-----------------|
+| `inner:pair?` | Any `cons` cell (proper or improper list) | `cons`, `list` (single element) |
+| `inner:list?` | Proper list (chain of pairs ending in `'()`) | `'()`, `append`, `reverse`, `list` (≥0 elements) |
+
+**Trap**: `cons`'s type rule in `rnrs-meta-rules.sls` returns `inner:pair?`, while `append` returns `inner:list?`. If you rewrite an accumulator loop from `(append result `(,x))` to `(cons x result)`, the type inferrer sees the recursive argument as `inner:pair?` instead of `inner:list?`, which can break substitution generation for named-let bindings. The fix is to keep `append` (or add a `reverse` at the return point and teach the type system that `(cons x <list>)` → `<list>`).
+
 ### `ufo-match` wildcard
 `ufo-match` uses `:_` as the "match anything, don't bind" wildcard, **not** `_`.
 `_` is treated as a normal pattern variable.
@@ -282,6 +292,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
 | `doc/analysis/file-linkage.md:148` | Matrix shrink on file deletion is now implemented via `shrink-file-linkage!` | Resolved |
+| `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. In Scheme every proper list is built from pairs, but the type system treats them as distinct. This prevents safely rewriting `(append result `(,x))` to `(cons x result)` inside named-let accumulators (e.g. `matrix-from`) because the inferred parameter type flips from `inner:list?` → `inner:pair?`, breaking substitution generation. `reverse` is fine (it already returns `inner:list?`). | Medium — blocks `append`→`cons`+`reverse` micro-optimization in matrix.sls |
 
 ---
 
