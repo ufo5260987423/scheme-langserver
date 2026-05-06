@@ -43,11 +43,11 @@
           [(string=? seg "..")
            (if (null? stack)
              (void)
-             (set! stack (reverse (cdr (reverse stack)))))]
+             (set! stack (cdr stack)))]
           [else
-            (set! stack (append stack (list seg)))]))
+            (set! stack (cons seg stack))]))
       path-parts)
-    (string-append "/" (string-join stack "/"))))
+    (string-append "/" (string-join (reverse stack) "/"))))
 
 (define (private:path->uri-transformation path)
   (let ([token-vector (list->vector (string->list path))]

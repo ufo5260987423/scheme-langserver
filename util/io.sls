@@ -47,8 +47,8 @@
     (lambda (port)
       (let loop ((result '()) (item (read-line port)))
         (if (eof-object? item)
-          result
-          (loop (append result (list item)) (read-line port)))))))
+          (reverse result)
+          (loop (cons item result) (read-line port)))))))
 
 (define (read-line . port)
   (let ((eat (lambda (p c)
