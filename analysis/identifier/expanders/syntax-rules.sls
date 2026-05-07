@@ -13,6 +13,60 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver analysis identifier reference))
 
+;; ---- Signature extraction for fast clause filtering ----
+
+(define (private:param-shape param)
+  (cond
+    [(null? param) 'null]
+    [(symbol? param) 'symbol]
+    [(pair? param) 'pair]
+    [(vector? param) 'vector]
+    [else 'other]))
+
+(define (private:fixed-prefix params)
+  (cond
+    [(null? params) '()]
+    [(and (not (null? (cdr params))) (eq? '... (cadr params)))
+      (private:fixed-prefix (cddr params))]
+    [else (cons (car params) (private:fixed-prefix (cdr params)))]))
+
+(define (private:extract-signature pattern-expr)
+  (let ([params (cdr pattern-expr)])
+    (if (list? params)
+      (let ([fixed (private:fixed-prefix params)])
+        (cons (length fixed) (map private:param-shape fixed)))
+      (let ([prefix 
+              (let loop ([p params])
+                (if (pair? p) (cons (car p) (loop (cdr p))) '()))])
+        (cons (length prefix) (map private:param-shape prefix))))))
+
+(define (private:shape-match? shape param)
+  (case shape
+    [(symbol) #t]
+    [(null) (null? param)]
+    [(pair) (or (pair? param) (null? param))]
+    [(vector) (vector? param)]
+    [else #t]))
+
+(define (private:params-shapes-match? shapes params)
+  (if (or (null? shapes) (null? params))
+    (and (null? shapes) (null? params))
+    (and (private:shape-match? (car shapes) (car params))
+         (private:params-shapes-match? (cdr shapes) (cdr params)))))
+
+(define (private:signature-match? signature input-expr)
+  (let ([input-params (cdr input-expr)]
+      [min-len (car signature)]
+      [shapes (cdr signature)])
+    (and (list? input-params)
+         (>= (length input-params) min-len)
+         (private:params-shapes-match? shapes 
+           (let loop ([lst input-params] [n (length shapes)])
+             (if (or (zero? n) (null? lst)) '() 
+               (cons (car lst) (loop (cdr lst) (- n 1)))))))))
+
+;; ---- Main generator factory ----
+
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
 (define (syntax-rules->generator:map+expansion root-file-node root-library-node document input-index-node)
   (match (annotation-stripped (index-node-datum/annotations input-index-node))
@@ -102,12 +156,16 @@
       #f
       (let* ([current-clause-index-node (car rest)]
           [current-clause-expression (annotation-stripped (index-node-datum/annotations current-clause-index-node))]
-          [pre-target 
+          [pattern-expression (car current-clause-expression)]
+          [signature (private:extract-signature pattern-expression)])
+        (if (private:signature-match? signature input-expression)
+          (let* ([pre-target 
             `(syntax-case ',input-expression ,literals 
               (,(car current-clause-expression) 
                 ;result
                 #'(,index . ,(car (reverse current-clause-expression))))
               (else #f))]
-          [target (syntax->datum (eval pre-target))])
-        (if target target (loop (cdr rest) (+ 1 index)))))))
-)
+              [target (syntax->datum (eval pre-target))])
+            (if target target (loop (cdr rest) (+ 1 index))))
+          (loop (cdr rest) (+ 1 index)))))))
+) ; end library
