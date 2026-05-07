@@ -159,6 +159,8 @@ match → match-next → match-one → match-two → match-check-ellipsis → ma
 ### 4. 已知限制：`ellipse-pair-form` 处理
 `syntax-rules->generator:map+expansion` 中的 `private:expansion+index-node->pairs` 对 `ellipse-pair-form`（如 `(p ...)` 展开为多个元素）存在长度不匹配问题。这会导致某些含 ellipsis 的宏调用无法正确建立展开前后的节点对应关系，进而影响 `shallow-copy` 的引用回传。
 
+**已修复**：`private:expansion+index-node->pairs` 现已添加 `private:take` 截断逻辑，当 `compound-list` 与 `children` 长度不匹配时，截断较短的列表继续配对，避免 `map` 直接 crash。
+
 ## 当前决策
 
 **暂时不启用 `router.sls` 中的自动宏解析路径**（即保持 `match-process` 等手写规则，不启用 `expansion-generator->rule` 的通用自动展开）。

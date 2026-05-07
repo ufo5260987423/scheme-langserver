@@ -51,6 +51,11 @@
                 `(,matching-pairs . ,expansion-index-node))))))]
     [else #f]))
 
+(define (private:take list n)
+  (if (or (zero? n) (null? list))
+    '()
+    (cons (car list) (private:take (cdr list) (- n 1)))))
+
 (define (private:tree-has? ready target)
   (cond 
     [(equal? ready target) #t]
@@ -74,12 +79,14 @@
     (cond 
       [(index-node? compound-list) `((,index-node . ,compound-list))]
       [(list? compound-list) 
-        (apply append 
-          (map 
-            (lambda (left right) 
-            (private:expansion+index-node->pairs left right))
-            compound-list
-            children))]
+        (let ([len-c (length compound-list)]
+              [len-ch (length children)])
+          (apply append 
+            (map 
+              (lambda (left right) 
+              (private:expansion+index-node->pairs left right))
+              (if (> len-c len-ch) (private:take compound-list len-ch) compound-list)
+              (if (> len-ch len-c) (private:take children len-c) children))))]
       [(vector? compound-list) 
         (private:expansion+index-node->pairs (vector->list compound-list) index-node)]
       [(pair? compound-list) 

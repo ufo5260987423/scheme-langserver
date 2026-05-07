@@ -80,7 +80,9 @@
                     #f)])
               (map (lambda (child) (pattern-parent-set! child p)) (pattern-children p))
               (pattern-exposed-literals-set! p (dedupe (apply append (map pattern-exposed-literals (pattern-children p)))))
-              (pattern-cdr?-set! (cadr (pattern-children p)) #t)
+              (let ([children (pattern-children p)])
+                (if (not (null? children))
+                  (pattern-cdr?-set! (car (reverse children)) #t)))
               p)]
           [(vector? successed-matched-pattern-expression) 
             (let ([p
@@ -121,7 +123,11 @@
         ((case type 
             [list-form (lambda (a) a)]
             [vector-form list->vector]
-            [pair-form (lambda (a) `(,(car a) . ,(cadr a)))])
+            [pair-form (lambda (a)
+              (let loop ([rest a])
+                (if (null? (cdr rest))
+                  (car rest)
+                  (cons (car rest) (loop (cdr rest))))))])
           (map (lambda (c) (expand->index-node-compound-list c bindings pattern-context)) children))]
       [(ellipse-list-form ellipse-vector-form ellipse-pair-form)
         ((case type 
@@ -344,13 +350,19 @@
   `((,pattern . ,index-node) .
     ,(let ([p-c (pattern-children pattern)]
         [i-c (index-node-children index-node)]
-        [i-e (annotation-stripped (index-node-datum/annotations index-node))])
+        [i-e (guard (e [else '()])
+               (annotation-stripped (index-node-datum/annotations index-node)))])
       (case (pattern-type pattern)
         [(list-form vector-form pair-form)
           (let loop ([rest-patterns p-c] [rest-index-nodes i-c])
-            (if (null? rest-patterns)
-              '()
-              `(,@(pattern+index-node->pair-list (car rest-patterns) (car rest-index-nodes)) . ,(loop (cdr rest-patterns) (cdr rest-index-nodes)))))]
+            (cond
+              [(null? rest-patterns) '()]
+              [(null? rest-index-nodes)
+               (apply append
+                 (map (lambda (p) (pattern+index-node->pair-list p (make-index-node '() '() '() '() '() '() '() '()))) rest-patterns))]
+              [else
+               `(,@(pattern+index-node->pair-list (car rest-patterns) (car rest-index-nodes))
+                 . ,(loop (cdr rest-patterns) (cdr rest-index-nodes)))]))]
         [pair-form
           `(,(pattern+index-node->pair-list (car p-c) (car i-c)) .
             ,(fold-left

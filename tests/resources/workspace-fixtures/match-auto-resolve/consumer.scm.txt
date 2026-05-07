@@ -1,0 +1,6 @@
+(library (consumer)
+  (export test)
+  (import (chezscheme) (ufo-match))
+
+  (define (test)
+    (match x [(? string? path) path])))

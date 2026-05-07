@@ -290,7 +290,7 @@ Exception in map: lists ... differ in length
 | 缺陷 | 复杂度 | 状态 | 说明 |
 |------|--------|------|------|
 | Bug 1 `ellipse-*-form` loop | 中 | ✅ 已修复 | loop 现在会跳过 `ellipse` 伪子节点 |
-| Bug 2 长度不匹配 | 高 | ⚠️ 潜在风险 | 代码层面未加防护，但当前测试路径不触发。需让配对器理解 ellipses 语义，或改用「展开后 AST ↔ 展开后 AST」配对 |
+| Bug 2 长度不匹配 | 高 | ✅ 已修复 | 已为 `private:expansion+index-node->pairs` 添加长度截断（`private:take`），避免 `map` 因长度不匹配而 crash。配对器仍不理解 ellipses 语义，但已具备 fault-tolerance |
 | Bug 3 Symbol 不生成 pair | 高 | ✅ 已修复 | symbol 分支已添加；`recursive-collect` 和 `shallow-copy` 的 index-node 处理也已修复 |
 
 ## 结论

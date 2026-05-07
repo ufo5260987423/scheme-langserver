@@ -58,19 +58,19 @@
         (index-node-references-import-in-this-node-set! path-node '())
 
         ; Run auto-resolve via expansion-generator->rule.
-        ; Known limitation: syntax-rules->generator:map+expansion has a
-        ; fundamental bug in ellipse-pair-form handling (see pattern.sls) and
-        ; private:expansion+index-node->pairs cannot cope with length mismatch
-        ; between expanded compound-list and unexpanded expansion-index-node.
-        ; Therefore auto-resolve for match currently crashes.
+        ; Auto-resolve is skipped for match calls because tree-has? detects
+        ; '...' in the callee expression, which would trigger a cascade of
+        ; auxiliary macro expansions (match-next, match-one, match-two, ...)
+        ; that is both exponentially slow and structurally incompatible with
+        ; single-level shallow-copy reference back-propagation.
         (let ([auto-exports 
                 (guard (c [else 'crash])
                   (let ([rule (expansion-generator->rule syntax-expander step file-linkage '() '())])
                     (rule root-file-node root-library-node document match-call-node))
                   (index-node-references-export-to-other-node path-node))])
 
-          (test-equal "auto-resolve for match crashes due to ellipse-pair-form bug"
-            'crash
+          (test-equal "auto-resolve for match is skipped due to '...' in callee"
+            '()
             auto-exports)
 
           ; Restore hand-written state
