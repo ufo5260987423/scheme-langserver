@@ -145,9 +145,9 @@ Chez `match` 第一层的输出将是：
 
 ---
 
-## 10 层逐层对比结果
+## 12 层逐层对比结果
 
-通过在 `debug-trace/layered-auto-expand.ss` 中手动驱动 auto-resolve generator，逐层展开并与 Chez trace 日志对比，**前 10 层结果完全一致**。
+通过在 `debug-trace/layered-auto-expand.ss` 中手动驱动 auto-resolve generator，逐层展开并与 Chez trace 日志对比，**前 12 层结果完全一致**。
 
 > **耗时**：约 **24 秒**（含 workspace 初始化、加载 `ufo-match`、逐层 generator 调用）。其中绝大部分时间花在 `init-workspace` 扫描文件树和 `source-file->annotations` 解析上；单层的 `expansion-generator` 实际执行时间在毫秒级。
 
@@ -163,6 +163,8 @@ Chez `match` 第一层的输出将是：
 | 8 | `match-check-ellipsis` → `let-syntax` | `(let-syntax ((ellipsis? (syntax-rules () ((ellipsis? (foo path) sk fk) sk) ((ellipsis? other sk fk) fk)))) (ellipsis? (a b c) (match-extract-vars and (match-gen-ellipsis v and () (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ()) (match-two v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))` | 相同 | ✅ |
 | 9 | `match-two` → `match-one` | `(match-one v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ())` | 相同 | ✅ |
 | 10 | `match-one` → `match-two` | `(match-two v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ())` | 相同 | ✅ |
+| 11 | `match-two` → `match-check-identifier` | `(match-check-identifier path (let-syntax ((new-sym? (syntax-rules () ...))) (new-sym? random-sym-to-match (let ((path v)) (match-one v (and) ... (path))) (if (equal? v path) (match-one v (and) ...) (failure)))) (if (equal? v path) (match-one v (and) ...) (failure)))` | 相同 | ✅ |
+| 12 | `match-check-identifier` → `let-syntax` | `(let-syntax ((sym? (syntax-rules () ...))) (sym? abracadabra (let-syntax ((new-sym? ...))) (if (equal? v path) ...)))` | 相同 | ✅ |
 
 ---
 
@@ -175,6 +177,8 @@ Chez `match` 第一层的输出将是：
 | `analysis/identifier/expanders/pattern.sls` | `pattern+index-node->pair-list` 遇到 pattern children 比 index-node children 多（如 `pair-form` 5 个 vs proper list 4 个）直接抛异常 | 当 `rest-index-nodes` 耗尽时，用空 node 继续匹配剩余 pattern；`guard` 保护 `annotation-stripped` |
 | `analysis/identifier/expanders/syntax-rules.sls` | `private:expansion+index-node->pairs` 的 `list?` 分支只截断 `compound-list`，未处理 `children` 更短的情况 | 双向截断，确保 `map` 的两个列表长度一致 |
 | `analysis/identifier/expanders/pattern.sls` | `generate-binding` 对 ellipsed pattern variable 遇到 `escape-from-target-form` 且 `ancestors` 为空时直接 `raise 'special-error'` | 改为跳过该标记，继续处理，使空 ellipses（如 `q ...` 匹配零个元素）能正确生成空绑定 |
+| `analysis/identifier/expanders/pattern.sls` | `generate-binding` 的 `dive-into-an-ellipsed-leaf` 只有两个分支；当同一 level 的 leaf 连续出现（如 `sk` 匹配 6 个元素）时 `(= level ancestor-level)` 分支让 `i` 不变，导致死循环 | 补全为 4 个分支（与 `dive-into-an-ellipsed-form` 一致）：`null? ancestors` / `<= level` + 多 ancestors / `<= level` + 单 ancestor / 默认，使重复 leaf 能正确累集或退出 context |
+| `analysis/identifier/expanders/pattern.sls` | `generate-binding` 的 `escape-from-target-form` 分支误用 `(vector-ref result (car ancestors))`，而 `result` 是 list 不是 vector | 改为 `(vector-ref tmp (car ancestors))` |
 
 ---
 
@@ -182,7 +186,7 @@ Chez `match` 第一层的输出将是：
 
 ### 1. 级联展开性能
 
-`match` 的完整级联涉及 10+ 个辅助宏（`match-next` → `match-one` → `match-two` → `match-check-ellipsis` → `match-extract-vars` → `match-gen-ellipsis` → ...）。虽然前 3 层已通，但为所有辅助宏启用 auto-resolve 后，完整级联在测试环境中**仍然无法在合理时间内完成**。
+`match` 的完整级联涉及 16 个辅助宏层。前 12 层已能在约 16 秒内完成。剩余 4 层（`match-one` → `match-two` → `match-drop-ids` → `match-next`）理论上可以继续展开，但需要将每一层的实际输出（而非手写预期）作为下一层输入，因为 Layer 12 的输出包含 `let-syntax` 嵌套结构。
 
 ### 2. 缺少多级引用回传机制
 
