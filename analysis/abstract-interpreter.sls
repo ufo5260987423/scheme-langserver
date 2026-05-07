@@ -15,6 +15,7 @@
     (scheme-langserver analysis identifier primitive-variable)
 
     (scheme-langserver analysis identifier expanders syntax-rules)
+    (scheme-langserver analysis identifier expanders syntax-case)
 
     (scheme-langserver analysis identifier reference)
 

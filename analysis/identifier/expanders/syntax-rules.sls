@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis identifier expanders syntax-rules)
   (export 
     syntax-rules->generator:map+expansion
-    syntax-case->generator:map+expansion)
+    make-generator-for-clauses)
   (import 
     (chezscheme)
     (ufo-match)
@@ -81,15 +81,6 @@
     [else (or (private:template-has-nested-macro? (car template-expr))
               (private:template-has-nested-macro? (cdr template-expr)))]))
 
-; syntax-case templates are wrapped in (syntax ...) or (quasisyntax ...).
-; Unwrap one layer so make-pattern sees the bare template datum.
-(define (private:unwrap-syntax template-expr)
-  (cond
-    [(and (list? template-expr) 
-          (memq (car template-expr) '(syntax quasisyntax unsyntax)))
-      (private:unwrap-syntax (cadr template-expr))]
-    [else template-expr]))
-
 ;; ---- Main generator factory ----
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
@@ -98,25 +89,15 @@
   ;clause means pattern and template
     [(_ (literals ...) clauses **1) 
       (let ([clause-index-nodes (cddr (index-node-children input-index-node))])
-        (private:make-generator-for-clauses input-index-node literals clause-index-nodes
+        (make-generator-for-clauses input-index-node literals clause-index-nodes
           (lambda (clause-expression) (car (reverse clause-expression)))))]
-    [else #f]))
-
-;input-index-node is supposed have the form of `(syntax-case to-match (literals ...) clauses ...)`
-(define (syntax-case->generator:map+expansion root-file-node root-library-node document input-index-node)
-  (match (annotation-stripped (index-node-datum/annotations input-index-node))
-    [(_ to-match (literals ...) clauses **1) 
-      (let ([clause-index-nodes (cdddr (index-node-children input-index-node))])
-        (private:make-generator-for-clauses input-index-node literals clause-index-nodes
-          (lambda (clause-expression) 
-            (private:unwrap-syntax (car (reverse clause-expression))))))]
     [else #f]))
 
 ; Shared logic for building a generator from clause index-nodes.
 ; extract-template is a function that takes a clause-expression datum
 ; and returns the bare template (for syntax-rules it is the last element;
 ; for syntax-case it is the unwrapped syntax form).
-(define (private:make-generator-for-clauses input-index-node literals clause-index-nodes extract-template)
+(define (make-generator-for-clauses input-index-node literals clause-index-nodes extract-template)
   (if (find 
         (lambda (clause-node)
           (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-node))]
