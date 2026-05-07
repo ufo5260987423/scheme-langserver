@@ -75,6 +75,21 @@
 (define match-two-expr-2 '(match-two v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))
 (define match-one-expr-3
   '(match-one v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ()))
+(define match-two-expr-3
+  '(match-two v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ()))
+(define match-check-identifier-expr
+  '(match-check-identifier
+     path
+     (let-syntax
+         ((new-sym?
+           (syntax-rules ()
+             ((new-sym? path sk2 fk2) sk2)
+             ((new-sym? y sk2 fk2) fk2))))
+       (new-sym?
+         random-sym-to-match
+         (let ((path v)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure) (path)))
+         (if (equal? v path) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) (failure))))
+     (if (equal? v path) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) (failure))))
 
 (let* ([start-time (current-time)]
        [workspace (init-workspace (current-directory))]
@@ -85,7 +100,9 @@
        [match-next-gen (get-macro-generator ufo-match-doc 'match-next)]
        [match-one-gen (get-macro-generator ufo-match-doc 'match-one)]
        [match-check-ellipsis-gen (get-macro-generator ufo-match-doc 'match-check-ellipsis)]
-       [match-two-gen (get-macro-generator ufo-match-doc 'match-two)])
+       [match-two-gen (get-macro-generator ufo-match-doc 'match-two)]
+       [match-check-identifier-gen (get-macro-generator ufo-match-doc 'match-check-identifier)]
+       [match-drop-ids-gen (get-macro-generator ufo-match-doc 'match-drop-ids)])
 
   (display "Generators loaded: match=")
   (write (procedure? match-gen))
@@ -97,6 +114,10 @@
   (write (procedure? match-check-ellipsis-gen))
   (display " match-two=")
   (write (procedure? match-two-gen))
+  (display " match-check-identifier=")
+  (write (procedure? match-check-identifier-gen))
+  (display " match-drop-ids=")
+  (write (procedure? match-drop-ids-gen))
   (newline)
 
   ; Layer 1: match
@@ -120,7 +141,13 @@
                                                     (if layer9
                                                         (let ([layer10 (expand-layer match-one-gen ufo-match-doc layer9 match-one-expr-3 10)])
                                                           (if layer10
-                                                              (display "Layer 10 done\n")
+                                                              (let ([layer11 (expand-layer match-two-gen ufo-match-doc layer10 match-two-expr-3 11)])
+                                                                (if layer11
+                                                                    (let ([layer12 (expand-layer match-check-identifier-gen ufo-match-doc layer11 match-check-identifier-expr 12)])
+                                                                      (if layer12
+                                                                          (display "Layer 12 done\n")
+                                                                          (display "Layer 12 returned #f (expected due to let-syntax limitation)\n")))
+                                                                    (display "Layer 11 failed\n")))
                                                               (display "Layer 10 failed\n")))
                                                         (display "Layer 9 failed\n")))
                                                   (display "Layer 8 failed\n")))
