@@ -25,6 +25,11 @@
           (private:shallow-copy pairs expansion-index-node document index-node))
         '()))))
 
+; Shallow-copy is a reference back-propagator:
+; it copies identifier-references from the expanded AST back to the
+; original macro-call nodes according to the pattern->expansion
+; correspondence, so that IDE features (go-to-definition, completion)
+; work on user-written code.
 (define (private:shallow-copy pairs expansion-index-node document initialization-index-node)
   (let* ([local-identifiers+export-index-node (private:recursive-collect expansion-index-node index-node-references-export-to-other-node)]
       [local-identifiers+import-index-node (private:recursive-collect expansion-index-node index-node-references-import-in-this-node)])
