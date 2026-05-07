@@ -145,11 +145,11 @@ Chez `match` 第一层的输出将是：
 
 ---
 
-## 6 层逐层对比结果
+## 10 层逐层对比结果
 
-通过在 `debug-trace/layered-auto-expand.ss` 中手动驱动 auto-resolve generator，逐层展开并与 Chez trace 日志对比，**6 层结果完全一致**。
+通过在 `debug-trace/layered-auto-expand.ss` 中手动驱动 auto-resolve generator，逐层展开并与 Chez trace 日志对比，**前 10 层结果完全一致**。
 
-> **耗时**：约 **22 秒**（含 workspace 初始化、加载 `ufo-match`、逐层 generator 调用）。其中绝大部分时间花在 `init-workspace` 扫描文件树和 `source-file->annotations` 解析上；单层的 `expansion-generator` 实际执行时间在毫秒级。
+> **耗时**：约 **24 秒**（含 workspace 初始化、加载 `ufo-match`、逐层 generator 调用）。其中绝大部分时间花在 `init-workspace` 扫描文件树和 `source-file->annotations` 解析上；单层的 `expansion-generator` 实际执行时间在毫秒级。
 
 | 层级 | 宏 | Auto 展开结果 | Chez 展开结果 | 匹配 |
 |------|-----|--------------|---------------|------|
@@ -159,10 +159,14 @@ Chez `match` 第一层的输出将是：
 | 4 | `match-one` → `match-check-ellipsis` / `match-two` | `(match-check-ellipsis string? (match-extract-vars ? (match-gen-ellipsis v ? (path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ()) (match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))` | 相同 | ✅ |
 | 5 | `match-check-ellipsis` → `let-syntax` | `(let-syntax ((ellipsis? (syntax-rules () ((ellipsis? (foo string?) sk fk) sk) ((ellipsis? other sk fk) fk)))) (ellipsis? (a b c) (match-extract-vars ? (match-gen-ellipsis v ? (path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ()) (match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))` | 相同 | ✅ |
 | 6 | `match-two` → `if` | `(if (string? v) (match-one v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) (failure))` | 相同 | ✅ |
+| 7 | `match-one` → `match-check-ellipsis` / `match-two` | `(match-check-ellipsis path (match-extract-vars and (match-gen-ellipsis v and () (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ()) (match-two v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))` | 相同 | ✅ |
+| 8 | `match-check-ellipsis` → `let-syntax` | `(let-syntax ((ellipsis? (syntax-rules () ((ellipsis? (foo path) sk fk) sk) ((ellipsis? other sk fk) fk)))) (ellipsis? (a b c) (match-extract-vars and (match-gen-ellipsis v and () (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ()) (match-two v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))` | 相同 | ✅ |
+| 9 | `match-two` → `match-one` | `(match-one v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ())` | 相同 | ✅ |
+| 10 | `match-one` → `match-two` | `(match-two v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ())` | 相同 | ✅ |
 
 ---
 
-## 修复的 bug（使 3 层对比成为可能）
+## 修复的 bug
 
 | 文件 | 问题 | 修复 |
 |------|------|------|
@@ -170,6 +174,7 @@ Chez `match` 第一层的输出将是：
 | `analysis/identifier/expanders/pattern.sls` | `expand->index-node-compound-list` 的 `pair-form` lambda 只保留 `(car a)` 和 `(cadr a)`，截断多元素点对模板 | 递归构造完整 dotted list `(a b c . d)` |
 | `analysis/identifier/expanders/pattern.sls` | `pattern+index-node->pair-list` 遇到 pattern children 比 index-node children 多（如 `pair-form` 5 个 vs proper list 4 个）直接抛异常 | 当 `rest-index-nodes` 耗尽时，用空 node 继续匹配剩余 pattern；`guard` 保护 `annotation-stripped` |
 | `analysis/identifier/expanders/syntax-rules.sls` | `private:expansion+index-node->pairs` 的 `list?` 分支只截断 `compound-list`，未处理 `children` 更短的情况 | 双向截断，确保 `map` 的两个列表长度一致 |
+| `analysis/identifier/expanders/pattern.sls` | `generate-binding` 对 ellipsed pattern variable 遇到 `escape-from-target-form` 且 `ancestors` 为空时直接 `raise 'special-error'` | 改为跳过该标记，继续处理，使空 ellipses（如 `q ...` 匹配零个元素）能正确生成空绑定 |
 
 ---
 

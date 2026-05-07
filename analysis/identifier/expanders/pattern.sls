@@ -252,8 +252,8 @@
           [(and 
               (eq? 'escape-from-target-form (vector-ref v i))
               (null? ancestors))
-            ;this shouldn't be generated
-            (raise 'special-error)]
+            ;no matching elements for ellipsed pattern variable
+            (loop (+ 1 i) ancestors result)]
           [(and 
               (eq? 'escape-from-target-form (vector-ref v i))
               (private:dive-into-an-ellipsed-leaf? (vector-ref v (car ancestors)))

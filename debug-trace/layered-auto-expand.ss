@@ -66,6 +66,15 @@
      (match-extract-vars ? (match-gen-ellipsis v ? (path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ())
      (match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))
 (define match-two-expr '(match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))
+(define match-one-expr-2 '(match-one v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))
+(define match-check-ellipsis-expr-2
+  '(match-check-ellipsis
+     path
+     (match-extract-vars and (match-gen-ellipsis v and () (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ())
+     (match-two v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))
+(define match-two-expr-2 '(match-two v (and path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))
+(define match-one-expr-3
+  '(match-one v path (x (set! x)) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure)) (failure) ()))
 
 (let* ([start-time (current-time)]
        [workspace (init-workspace (current-directory))]
@@ -103,7 +112,19 @@
                             (if layer5
                                 (let ([layer6 (expand-layer match-two-gen ufo-match-doc layer5 match-two-expr 6)])
                                   (if layer6
-                                      (display "Layer 6 done\n")
+                                      (let ([layer7 (expand-layer match-one-gen ufo-match-doc layer6 match-one-expr-2 7)])
+                                        (if layer7
+                                            (let ([layer8 (expand-layer match-check-ellipsis-gen ufo-match-doc layer7 match-check-ellipsis-expr-2 8)])
+                                              (if layer8
+                                                  (let ([layer9 (expand-layer match-two-gen ufo-match-doc layer8 match-two-expr-2 9)])
+                                                    (if layer9
+                                                        (let ([layer10 (expand-layer match-one-gen ufo-match-doc layer9 match-one-expr-3 10)])
+                                                          (if layer10
+                                                              (display "Layer 10 done\n")
+                                                              (display "Layer 10 failed\n")))
+                                                        (display "Layer 9 failed\n")))
+                                                  (display "Layer 8 failed\n")))
+                                            (display "Layer 7 failed\n")))
                                       (display "Layer 6 failed\n")))
                                 (display "Layer 5 failed\n")))
                           (display "Layer 4 failed\n")))
