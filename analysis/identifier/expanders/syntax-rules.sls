@@ -65,6 +65,21 @@
              (if (or (zero? n) (null? lst)) '() 
                (cons (car lst) (loop (cdr lst) (- n 1)))))))))
 
+;; ---- Nested-macro guard ----
+
+; If a syntax-rules template contains nested macro definitions
+; (let-syntax, letrec-syntax, syntax-rules, define-syntax),
+; the auto-resolver cannot handle them.  Detect this at definition
+; time and install a no-op generator so that define-syntax:attach-generator
+; does not crash and the macro falls back to hand-written rules.
+(define (private:template-has-nested-macro? template-expr)
+  (cond
+    [(null? template-expr) #f]
+    [(not (pair? template-expr)) #f]
+    [(memq (car template-expr) '(let-syntax letrec-syntax syntax-rules define-syntax)) #t]
+    [else (or (private:template-has-nested-macro? (car template-expr))
+              (private:template-has-nested-macro? (cdr template-expr)))]))
+
 ;; ---- Main generator factory ----
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
@@ -72,37 +87,46 @@
   (match (annotation-stripped (index-node-datum/annotations input-index-node))
   ;clause means pattern and template
     [(_ (literals ...) clauses **1) 
-      (index-node-expansion-generator-set! input-index-node
-        (lambda (local-root-file-node local-root-library-node local-document local-index-node)
-          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
-              [clause-index-nodes (cddr (index-node-children input-index-node))]
-              [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)])
-            (if (or (private:tree-has? local-expression '...) (not index+expansion))
-              #f
-              (let* ([index (car index+expansion)]
-                  [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
-                  [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
-                  [expansion-expression (cdr index+expansion)]
+      (let ([clause-index-nodes (cddr (index-node-children input-index-node))])
+        (if (find 
+              (lambda (clause-node)
+                (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-node))]
+                    [template-expression (car (reverse clause-expression))])
+                  (private:template-has-nested-macro? template-expression)))
+              clause-index-nodes)
+          (begin
+            (index-node-expansion-generator-set! input-index-node (lambda _ #f))
+            #f)
+          (index-node-expansion-generator-set! input-index-node
+            (lambda (local-root-file-node local-root-library-node local-document local-index-node)
+              (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
+                  [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)])
+                (if (or (private:tree-has? local-expression '...) (not index+expansion))
+                  #f
+                  (let* ([index (car index+expansion)]
+                      [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
+                      [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+                      [expansion-expression (cdr index+expansion)]
 
-                  [pattern-expression (car clause-expression)]
-                  [pattern (make-pattern pattern-expression)]
-                  [template-expression (car (reverse clause-expression))]
-                  [template-pattern (make-pattern template-expression)]
-                  [pattern-context (gather-context pattern)]
-                  [pairs (pattern+index-node->pair-list pattern local-index-node)]
-                  [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
-                  [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
+                      [pattern-expression (car clause-expression)]
+                      [pattern (make-pattern pattern-expression)]
+                      [template-expression (car (reverse clause-expression))]
+                      [template-pattern (make-pattern template-expression)]
+                      [pattern-context (gather-context pattern)]
+                      [pairs (pattern+index-node->pair-list pattern local-index-node)]
+                      [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
+                      [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
-                  ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
-                  [expansion-index-node 
-                    (init-index-node 
-                      local-index-node
-                      (car 
-                        (source-file->annotations 
-                          (with-output-to-string (lambda () (pretty-print expansion-expression)))
-                          (uri->path (document-uri local-document)))))]
-                  [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-                `(,matching-pairs . ,expansion-index-node))))))]
+                      ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
+                      [expansion-index-node 
+                        (init-index-node 
+                          local-index-node
+                          (car 
+                            (source-file->annotations 
+                              (with-output-to-string (lambda () (pretty-print expansion-expression)))
+                              (uri->path (document-uri local-document)))))]
+                      [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+                    `(,matching-pairs . ,expansion-index-node))))))))]
     [else #f]))
 
 (define (private:take list n)

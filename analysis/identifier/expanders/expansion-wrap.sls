@@ -16,7 +16,11 @@
         (let* ([pairs (car pairs+expansion)]
             [expansion-index-node (cdr pairs+expansion)]
             [possible-new-memory `(,expression . ,memory)])
-          (if (not (contain? memory expression)) 
+          ; Guard 1: prevent re-expansion of the exact same expression.
+          ; Guard 2: cap memory chain length to avoid infinite cascades
+          ; (e.g. match -> match-next -> match-one -> ...).
+          (if (and (not (contain? memory expression))
+                   (< (length memory) 5))
             (step root-file-node root-library-node file-linkage document expansion-index-node expanded+callee-list possible-new-memory))
           (private:shallow-copy pairs expansion-index-node document index-node))
         '()))))
@@ -24,27 +28,28 @@
 (define (private:shallow-copy pairs expansion-index-node document initialization-index-node)
   (let* ([local-identifiers+export-index-node (private:recursive-collect expansion-index-node index-node-references-export-to-other-node)]
       [local-identifiers+import-index-node (private:recursive-collect expansion-index-node index-node-references-import-in-this-node)])
-    (map 
+    (for-each 
       (lambda (p)
         (let* ([lis (cdr p)]
             [i (car p)]
             [corresponding-export-ip (assoc i pairs)]
 
+            ; If the expansion-sub-node has no counterpart in pairs (e.g.
+            ; ellipsis truncation caused a mismatch), fall back to the
+            ; original macro-call node so the reference is not lost.
             [compound-export-list 
               (if corresponding-export-ip 
                 (cdr corresponding-export-ip)
-                #f)]
+                initialization-index-node)]
             [corresponding-import-ip 
-              (if compound-export-list
-                (filter (lambda (p) (equal? (car p) i))  local-identifiers+import-index-node)
-                '())]
+              (filter (lambda (entry) (equal? (car entry) i)) local-identifiers+import-index-node)]
             [compound-import-list 
-              (if corresponding-import-ip 
-                (map cdr corresponding-import-ip)
+              (if (not (null? corresponding-import-ip))
+                (apply append (map cdr corresponding-import-ip))
                 '())])
-          (map 
+          (for-each
             (lambda (single-compound-export-index-node)
-              (map 
+              (for-each
                 (lambda (current-identifier)
                   (let* ([ni 
                       (make-identifier-reference 
@@ -58,19 +63,18 @@
                         '()
                         (identifier-reference-top-environment current-identifier))])
                     (index-node-references-export-to-other-node-set!
-                      compound-export-list
+                      single-compound-export-index-node
                       (append 
-                        (index-node-references-export-to-other-node compound-export-list)
+                        (index-node-references-export-to-other-node single-compound-export-index-node)
                         `(,ni)))
-                    (map 
+                    (for-each
                       (lambda (import-index-node)
                         (append-references-into-ordered-references-for document import-index-node `(,ni)))
                       (private:recursive-filter compound-import-list index-node?))))
                 lis))
             (cond 
-              [(null? compound-export-list) '()]
-              [(list? compound-export-list) (filter index-node? compound-export-list)]
               [(index-node? compound-export-list) `(,compound-export-list)]
+              [(list? compound-export-list) (filter index-node? compound-export-list)]
               [else '()]))))
       local-identifiers+export-index-node)))
 
@@ -89,4 +93,4 @@
     (if (null? current)
       children-results
       `((,expansion-index-node . ,current) . ,children-results))))
-)
+) ; end library
