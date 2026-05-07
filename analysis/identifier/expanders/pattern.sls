@@ -244,8 +244,17 @@
 
           [(and (private:dive-into-an-ellipsed-leaf? (vector-ref v i)) (null? ancestors))
             (loop (+ 1 i) `(,i . ,ancestors) result)]
-          [(and (private:dive-into-an-ellipsed-leaf? (vector-ref v i)) (= (cdr (vector-ref v i)) (cdr (vector-ref v (car ancestors)))))
-            (loop i ancestors result)]
+          [(and (private:dive-into-an-ellipsed-leaf? (vector-ref v i)) (<= (cdr (vector-ref v i)) (cdr (vector-ref v (car ancestors)))) (not (null? (cdr ancestors))))
+            (vector-set! tmp (cadr ancestors) 
+              (append 
+                (vector-ref tmp (cadr ancestors))
+                `(,(vector-ref tmp (car ancestors)))))
+            (loop i (cdr ancestors) result)]
+          [(and (private:dive-into-an-ellipsed-leaf? (vector-ref v i)) (<= (cdr (vector-ref v i)) (cdr (vector-ref v (car ancestors)))))
+            (loop 
+              (+ 1 i) 
+              `(,i . ,(cdr ancestors)) 
+              (append result (vector-ref tmp (car ancestors))))]
           [(private:dive-into-an-ellipsed-leaf? (vector-ref v i))
             (loop (+ 1 i) `(,i . ,ancestors) result)]
           
@@ -261,7 +270,7 @@
             (loop 
               (+ 1 i) 
               (cdr ancestors)
-              (append result (vector-ref result (car ancestors))))]
+              (append result (vector-ref tmp (car ancestors))))]
           [(and 
               (eq? 'escape-from-target-form (vector-ref v i))
               (private:dive-into-an-ellipsed-leaf? (vector-ref v (car ancestors))))
