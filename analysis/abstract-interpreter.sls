@@ -203,10 +203,10 @@
             [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
             [(equal? r '(let-values)) (private-add-rule rules `((,let-values-process) . ,identifier))]
             [(equal? r '(let*-values)) (private-add-rule rules `((,let*-values-process) . ,identifier))]
-            [(equal? r '(let-syntax)) (private-add-rule rules `((,let-syntax-process) . ,identifier))]
+            [(equal? r '(let-syntax)) (private-add-rule rules `((,let-syntax-process . ,let-syntax:attach-generator) . ,identifier))]
             [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
             [(equal? r '(letrec*)) (private-add-rule rules `((,letrec*-process) . ,identifier))]
-            [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process) . ,identifier))]
+            [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process . ,letrec-syntax:attach-generator) . ,identifier))]
             [(and (equal? r '(fluid-let)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-process) . ,identifier))]
             [(and (equal? r '(fluid-let-syntax)) (private:top-env=? 'r6rs top))

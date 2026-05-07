@@ -1,0 +1,10 @@
+(library (consumer)
+  (export test)
+  (import (chezscheme))
+
+  (define (test)
+    (let-syntax ([simple-let
+                   (syntax-rules ()
+                     [(_ ((var val)) body)
+                      (let ((var val)) body)])])
+      (simple-let ((x 1)) x))))
