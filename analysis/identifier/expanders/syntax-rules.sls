@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier expanders syntax-rules)
   (export 
-    syntax-rules->generator:map+expansion)
+    syntax-rules->generator:map+expansion
+    syntax-case->generator:map+expansion)
   (import 
     (chezscheme)
     (ufo-match)
@@ -80,6 +81,15 @@
     [else (or (private:template-has-nested-macro? (car template-expr))
               (private:template-has-nested-macro? (cdr template-expr)))]))
 
+; syntax-case templates are wrapped in (syntax ...) or (quasisyntax ...).
+; Unwrap one layer so make-pattern sees the bare template datum.
+(define (private:unwrap-syntax template-expr)
+  (cond
+    [(and (list? template-expr) 
+          (memq (car template-expr) '(syntax quasisyntax unsyntax)))
+      (private:unwrap-syntax (cadr template-expr))]
+    [else template-expr]))
+
 ;; ---- Main generator factory ----
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
@@ -88,46 +98,63 @@
   ;clause means pattern and template
     [(_ (literals ...) clauses **1) 
       (let ([clause-index-nodes (cddr (index-node-children input-index-node))])
-        (if (find 
-              (lambda (clause-node)
-                (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-node))]
-                    [template-expression (car (reverse clause-expression))])
-                  (private:template-has-nested-macro? template-expression)))
-              clause-index-nodes)
-          (begin
-            (index-node-expansion-generator-set! input-index-node (lambda _ #f))
-            #f)
-          (index-node-expansion-generator-set! input-index-node
-            (lambda (local-root-file-node local-root-library-node local-document local-index-node)
-              (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
-                  [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)])
-                (if (or (private:tree-has? local-expression '...) (not index+expansion))
-                  #f
-                  (let* ([index (car index+expansion)]
-                      [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
-                      [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
-                      [expansion-expression (cdr index+expansion)]
-
-                      [pattern-expression (car clause-expression)]
-                      [pattern (make-pattern pattern-expression)]
-                      [template-expression (car (reverse clause-expression))]
-                      [template-pattern (make-pattern template-expression)]
-                      [pattern-context (gather-context pattern)]
-                      [pairs (pattern+index-node->pair-list pattern local-index-node)]
-                      [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
-                      [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
-
-                      ;todo: expansion and expansion-expression should be emmm, isomophism? This should be checked.
-                      [expansion-index-node 
-                        (init-index-node 
-                          local-index-node
-                          (car 
-                            (source-file->annotations 
-                              (with-output-to-string (lambda () (pretty-print expansion-expression)))
-                              (uri->path (document-uri local-document)))))]
-                      [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-                    `(,matching-pairs . ,expansion-index-node))))))))]
+        (private:make-generator-for-clauses input-index-node literals clause-index-nodes
+          (lambda (clause-expression) (car (reverse clause-expression)))))]
     [else #f]))
+
+;input-index-node is supposed have the form of `(syntax-case to-match (literals ...) clauses ...)`
+(define (syntax-case->generator:map+expansion root-file-node root-library-node document input-index-node)
+  (match (annotation-stripped (index-node-datum/annotations input-index-node))
+    [(_ to-match (literals ...) clauses **1) 
+      (let ([clause-index-nodes (cdddr (index-node-children input-index-node))])
+        (private:make-generator-for-clauses input-index-node literals clause-index-nodes
+          (lambda (clause-expression) 
+            (private:unwrap-syntax (car (reverse clause-expression))))))]
+    [else #f]))
+
+; Shared logic for building a generator from clause index-nodes.
+; extract-template is a function that takes a clause-expression datum
+; and returns the bare template (for syntax-rules it is the last element;
+; for syntax-case it is the unwrapped syntax form).
+(define (private:make-generator-for-clauses input-index-node literals clause-index-nodes extract-template)
+  (if (find 
+        (lambda (clause-node)
+          (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-node))]
+              [template-expression (extract-template clause-expression)])
+            (private:template-has-nested-macro? template-expression)))
+        clause-index-nodes)
+    (begin
+      (index-node-expansion-generator-set! input-index-node (lambda _ #f))
+      #f)
+    (index-node-expansion-generator-set! input-index-node
+      (lambda (local-root-file-node local-root-library-node local-document local-index-node)
+        (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
+            [index+expansion (private:confirm-clause literals clause-index-nodes local-expression)])
+          (if (or (private:tree-has? local-expression '...) (not index+expansion))
+            #f
+            (let* ([index (car index+expansion)]
+                [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
+                [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+                [expansion-expression (cdr index+expansion)]
+
+                [pattern-expression (car clause-expression)]
+                [pattern (make-pattern pattern-expression)]
+                [template-expression (extract-template clause-expression)]
+                [template-pattern (make-pattern template-expression)]
+                [pattern-context (gather-context pattern)]
+                [pairs (pattern+index-node->pair-list pattern local-index-node)]
+                [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
+                [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
+
+                [expansion-index-node 
+                  (init-index-node 
+                    local-index-node
+                    (car 
+                      (source-file->annotations 
+                        (with-output-to-string (lambda () (pretty-print expansion-expression)))
+                        (uri->path (document-uri local-document)))))]
+                [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
+              `(,matching-pairs . ,expansion-index-node))))))))
 
 (define (private:take list n)
   (if (or (zero? n) (null? list))

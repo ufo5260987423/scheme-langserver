@@ -14,6 +14,26 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+; For syntax-rules: value-node is the syntax-rules index-node itself.
+; For syntax-case: value-node may be (lambda (x) (syntax-case x ...)) or
+; the syntax-case index-node directly.  Walk into lambda when needed.
+(define (private:find-generator value-index-node)
+  (let ([expr (annotation-stripped (index-node-datum/annotations value-index-node))])
+    (cond
+      [(and (list? expr) (eq? 'syntax-rules (car expr)))
+        (index-node-expansion-generator value-index-node)]
+      [(and (list? expr) (eq? 'syntax-case (car expr)))
+        (index-node-expansion-generator value-index-node)]
+      [(and (list? expr) (eq? 'lambda (car expr)))
+        (let* ([lambda-children (index-node-children value-index-node)]
+            [body-list (cddr lambda-children)])
+          (if (and (= (length body-list) 1)
+                   (let ([body-expr (annotation-stripped (index-node-datum/annotations (car body-list)))])
+                     (and (list? body-expr) (eq? 'syntax-case (car body-expr)))))
+            (index-node-expansion-generator (car body-list))
+            #f))]
+      [else #f])))
+
 (define (define-syntax:attach-generator root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [library-identifiers (get-nearest-ancestor-library-identifier index-node)]
@@ -21,12 +41,14 @@
       [children (index-node-children index-node)])
     (match expression
       [(_ (? symbol? identifier) only-one) 
-        (map 
-          (lambda (id)
-            (identifier-reference-syntax-expander-set! id
-              (lambda x 
-                (apply (index-node-expansion-generator (car (reverse children))) x))))
-          (index-node-references-export-to-other-node (cadr children)))]
+        (let ([generator (private:find-generator (car (reverse children)))])
+          (if generator
+            (map 
+              (lambda (id)
+                (identifier-reference-syntax-expander-set! id
+                  (lambda x (apply generator x))))
+              (index-node-references-export-to-other-node (cadr children)))
+            '()))]
       [else '()])))
 ; reference-identifier-type include 
 ; syntax-parameter syntax-variable syntax parameter
@@ -163,4 +185,4 @@
   (if (pair? pair)
     (car* (car pair))
     pair))
-)
+) ; end library

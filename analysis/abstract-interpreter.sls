@@ -213,7 +213,7 @@
               (private-add-rule rules `((,fluid-let-syntax-process) . ,identifier))]
 
             [(and (equal? r '(syntax-case)) (private:top-env=? 'r6rs top))
-              (private-add-rule rules `((,syntax-case-process) . ,identifier))]
+              (private-add-rule rules `((,syntax-case-process . ,syntax-case->generator:map+expansion) . ,identifier))]
             [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process . ,syntax-rules->generator:map+expansion) . ,identifier))]
             [(and (equal? r '(identifier-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,identifier-syntax-process) . ,identifier))]
