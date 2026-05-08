@@ -55,17 +55,9 @@
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
-      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      ; [(identifier-reference-syntax-expander target-identifier)
       ;   (add-rule-procedure rules 
-      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory)) . 
-      ;       ,target-identifier))]
-      ; [(and (identifier-reference-syntax-expander target-identifier)
-      ;       (let ([doc (identifier-reference-document target-identifier)])
-      ;         (or (null? doc)
-      ;             (let ([path (uri->path (document-uri doc))])
-      ;               (not (string-contains path ".akku/lib/"))))))
-      ;   (add-rule-procedure rules 
-      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory)) . 
+      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory target-identifier)) . 
       ;       ,target-identifier))]
       [else rules])))
 )
