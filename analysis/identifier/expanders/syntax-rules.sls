@@ -73,11 +73,18 @@
 ; the auto-resolver cannot handle them.  Detect this at definition
 ; time and install a no-op generator so that define-syntax:attach-generator
 ; does not crash and the macro falls back to hand-written rules.
+; Templates may contain let-syntax/letrec-syntax with inner syntax-rules
+; (e.g. match-two, match-check-identifier, match-check-ellipsis).
+; The auto-resolver already has full let-syntax/letrec-syntax support
+; (let-syntax-process + let-syntax:attach-generator), so nested macros
+; inside templates are fine.  We only reject define-syntax in templates
+; because runtime define-syntax is almost always a mistake and our
+; scope tracking for it is not fully tested.
 (define (private:template-has-nested-macro? template-expr)
   (cond
     [(null? template-expr) #f]
     [(not (pair? template-expr)) #f]
-    [(memq (car template-expr) '(let-syntax letrec-syntax syntax-rules define-syntax)) #t]
+    [(eq? (car template-expr) 'define-syntax) #t]
     [else (or (private:template-has-nested-macro? (car template-expr))
               (private:template-has-nested-macro? (cdr template-expr)))]))
 
@@ -129,7 +136,7 @@
 
                 [expansion-index-node 
                   (init-index-node 
-                    local-index-node
+                    (index-node-parent input-index-node)
                     (car 
                       (source-file->annotations 
                         (with-output-to-string (lambda () (pretty-print expansion-expression)))
@@ -163,7 +170,20 @@
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [children (index-node-children index-node)])
     (cond 
-      [(index-node? compound-list) `((,index-node . ,compound-list))]
+      [(index-node? compound-list)
+        (let ([compound-children (index-node-children compound-list)])
+          (append
+            `((,index-node . ,compound-list))
+            (if (and (not (null? compound-children))
+                     (not (null? children))
+                     (= (length compound-children) (length children)))
+              (apply append
+                (map
+                  (lambda (left right)
+                    (private:expansion+index-node->pairs left right))
+                  compound-children
+                  children))
+              '())))]
       [(list? compound-list) 
         (let ([len-c (length compound-list)]
               [len-ch (length children)])

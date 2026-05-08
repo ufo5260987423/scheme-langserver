@@ -41,16 +41,16 @@
                     (identifier-reference-initialization-index-node top-identifier-reference) 
                     (car pre))]
                 [callee+expanded-pairs (generate-pair:callee+expanded template+callees expanded-index-node top-identifier-reference callee-index-node callee-document)]
-                [expanded+callee-list (private:reverse-pair callee+expanded-pairs)])
+                [expanded+callee-list (private:reverse-pair callee+expanded-pairs (identifier-reference-document top-identifier-reference))])
               (stepper (identifier-reference-document top-identifier-reference) expanded-index-node (append expanded+callee-list old-expanded+callee-list))))))
       expanded-expression-list)))
 
-(define (private:reverse-pair callee+expanded-pairs)
+(define (private:reverse-pair callee+expanded-pairs expander-doc)
   (apply append 
     (map 
       (lambda (pair)
         (map 
-          (lambda (i) `(,i . ,(car pair)))
+          (lambda (i) `(,i ,(car pair) ,expander-doc))
           (cdr pair)))
       callee+expanded-pairs)))
 )

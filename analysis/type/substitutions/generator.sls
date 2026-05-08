@@ -165,11 +165,27 @@
     [(expanded+callee-list current-document current-index-node)
       (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
-          (private:find-available-references-for expanded+callee-list current-document (cdr result))
+          (let* ([is-new-format (list? result)]
+              [callee-node (if is-new-format (cadr result) (cdr result))]
+              [expander-doc (if is-new-format (caddr result) #f)]
+              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node)])
+            (if (null? callee-result)
+              (if expander-doc
+                (find-available-references-for expander-doc current-index-node)
+                '())
+              callee-result))
           (find-available-references-for current-document current-index-node)))]
     [(expanded+callee-list current-document current-index-node expression)
       (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
-          (private:find-available-references-for expanded+callee-list current-document (cdr result) expression)
+          (let* ([is-new-format (list? result)]
+              [callee-node (if is-new-format (cadr result) (cdr result))]
+              [expander-doc (if is-new-format (caddr result) #f)]
+              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node expression)])
+            (if (null? callee-result)
+              (if expander-doc
+                (find-available-references-for expander-doc current-index-node expression)
+                '())
+              callee-result))
           (find-available-references-for current-document current-index-node expression)))]))
 )

@@ -4,26 +4,31 @@
   (import 
     (chezscheme)
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver util contain))
 
-(define (expansion-generator->rule proc step file-linkage expanded+callee-list memory)
-  (lambda (root-file-node root-library-node document index-node)
-    (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
-        ;taking analysis/identifier/expanders/syntax-rules as an example
-        [pairs+expansion (proc root-file-node root-library-node document index-node)])
-      (if pairs+expansion
-        (let* ([pairs (car pairs+expansion)]
-            [expansion-index-node (cdr pairs+expansion)]
-            [possible-new-memory `(,expression . ,memory)])
-          ; Guard 1: prevent re-expansion of the exact same expression.
-          ; Guard 2: cap memory chain length to avoid infinite cascades
-          ; (e.g. match -> match-next -> match-one -> ...).
-          (if (and (not (contain? memory expression))
-                   (< (length memory) 5))
-            (step root-file-node root-library-node file-linkage document expansion-index-node expanded+callee-list possible-new-memory))
-          (private:shallow-copy pairs expansion-index-node document index-node))
-        '()))))
+(define (expansion-generator->rule proc step file-linkage expanded+callee-list memory . maybe-expander-ref)
+  (let ([expander-ref (if (null? maybe-expander-ref) #f (car maybe-expander-ref))])
+    (lambda (root-file-node root-library-node document index-node)
+      (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+          ;taking analysis/identifier/expanders/syntax-rules as an example
+          [pairs+expansion (proc root-file-node root-library-node document index-node)])
+        (if pairs+expansion
+          (let* ([pairs (car pairs+expansion)]
+              [expansion-index-node (cdr pairs+expansion)]
+              [possible-new-memory `(,expression . ,memory)]
+              [expander-doc (if expander-ref (identifier-reference-document expander-ref) #f)]
+              [new-expanded+callee-list 
+                (cons `(,expansion-index-node ,index-node ,expander-doc) expanded+callee-list)])
+            ; Guard 1: prevent re-expansion of the exact same expression.
+            ; Guard 2: cap memory chain length to avoid infinite cascades
+            ; (e.g. match -> match-next -> match-one -> ...).
+            (if (and (not (contain? memory expression))
+                     (< (length memory) 10))
+              (step root-file-node root-library-node file-linkage document expansion-index-node new-expanded+callee-list possible-new-memory))
+            (private:shallow-copy pairs expansion-index-node document index-node))
+          '())))))
 
 ; Shallow-copy is a reference back-propagator:
 ; it copies identifier-references from the expanded AST back to the
