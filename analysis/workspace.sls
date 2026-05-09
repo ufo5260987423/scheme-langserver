@@ -144,7 +144,10 @@
 (define (private-init-references workspace-instance target-path)
   (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
       [document (file-node-document current-file-node)]
-      [index-node-list (document-index-node-list document)])
+      [index-node-list (document-index-node-list document)]
+      [syntax-diagnoses 
+        (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+          (document-diagnoses document))])
     (document-diagnoses-set! document '())
     ; (pretty-print 'test0)
     ; (pretty-print target-path)
@@ -161,6 +164,7 @@
             (warning 'init-warning1 target-path `(,(condition-who c) ,(condition-message c) ,(condition-irritants c)))]
           [else 
             (error 'init-error target-path '())])))
+    (document-diagnoses-set! document (append syntax-diagnoses (document-diagnoses document)))
     (document-refreshable?-set! document #f)))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
@@ -174,9 +178,11 @@
           (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
             old-library-identifiers-list))]
       [new-index-nodes 
-        (map 
-          (lambda (item) (init-index-node '() item)) 
-          (source-file->annotations text (uri->path (document-uri target-document))))])
+        (begin
+          (document-diagnoses-set! target-document '())
+          (map 
+            (lambda (item) (init-index-node '() item)) 
+            (source-file->annotations text (uri->path (document-uri target-document)) (consume-sps-auxiliary text) #t target-document)))])
 ;;For old dependency
     (map (lambda (document) (document-refreshable?-set! document #t))
       (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
@@ -312,7 +318,8 @@
     (cond 
       [(string? s) 
         (let ([d (make-document uri s (find-meta meta-lib top-environment))])
-          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path))) 
+          (document-diagnoses-set! d '())
+          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d))) 
           d)]
       [(eof-object? s) 
         (make-document uri "" (find-meta meta-lib top-environment))]

@@ -1,10 +1,12 @@
 (library (scheme-langserver analysis tokenizer)
   (export 
-    source-file->annotations)
+    source-file->annotations
+    consume-sps-auxiliary)
   (import 
     (chezscheme) 
     (only (srfi :13) string-take string-take-right)
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
     (scheme-langserver util io)
     (ufo-try))
 
@@ -259,11 +261,85 @@
         [else (warning 'tokenizer-warning4 "" `(,e))
           source]))))
 
+(define (private:condition->diagnose condition source)
+  (let* ([msg (condition-message condition)]
+         [irritants (condition-irritants condition)]
+         [position 
+           (cond
+             [(and (condition? condition) (pair? irritants) (string? (car irritants)) (>= (length irritants) 3) (number? (caddr irritants)))
+              (caddr irritants)]
+             [(and (condition? condition) (pair? irritants) (pair? (car irritants)) (string? (caar irritants)) (>= (length (car irritants)) 3) (number? (caddar irritants)))
+              (caddar irritants)]
+             [else (or (private:extract-position-from-message msg) 0)])]
+         [start (max 0 (or position 0))]
+         [end 
+           (cond
+             [(or (private:message-matches? msg "unexpected dot (.)")
+                  (private:message-matches? msg "unexpected close parenthesis")
+                  (private:message-matches? msg "unexpected close bracket")
+                  (private:message-matches? msg "unexpected end-of-file reading ~a")
+                  (private:message-matches? msg "parenthesized list terminated by bracket")
+                  (private:message-matches? msg "bracketed list terminated by parenthesis")
+                  (private:message-matches? msg "more than one item found after dot (.)")
+                  (private:message-matches? msg "invalid character ~c in string hex escape"))
+              (+ start 1)]
+             [(private:message-matches? msg "invalid syntax #!~a")
+              (+ start 2)]
+             [(private:message-matches? msg "expected one item after dot (.)")
+              (let ([dot-pos 
+                      (let search ([i (min start (- (string-length source) 1))])
+                        (cond [(< i 0) 0] [(char=? #\. (string-ref source i)) i] [else (search (- i 1))]))])
+                (+ dot-pos 1))]
+             [(private:message-matches? msg "expected close brace terminating gensym syntax")
+              (string-length source)]
+             [(private:message-matches? msg "invalid string character \\~c")
+              (let ([esc-start (if (and (> start 0) (char=? #\\ (string-ref source (- start 1)))) (- start 1) start)])
+                (+ esc-start (if (= esc-start start) 1 2)))]
+             [(private:message-matches? msg "invalid character name #\\~a")
+              (let ([what 
+                      (cond
+                        [(and (pair? irritants) (pair? (cdr irritants)) (pair? (cadr irritants))) (caadr irritants)]
+                        [(and (pair? irritants) (pair? (car irritants)) (pair? (cdar irritants)) (pair? (cadar irritants))) (caadar irritants)]
+                        [else ""])])
+                (+ start 2 (string-length what)))]
+             [(or (private:message-matches? msg "invalid boolean #~a~c")
+                  (private:message-matches? msg "invalid hex character escape ~a")
+                  (private:message-matches? msg "invalid character #\\~a~a~a")
+                  (private:message-matches? msg "invalid delimiter ~a for ~a")
+                  (private:message-matches? msg "invalid number syntax ~a")
+                  (private:message-matches? msg "cannot represent ~a")
+                  (private:message-matches? msg "too many vector elements supplied")
+                  (private:message-matches? msg "invalid vector length ~s")
+                  (private:message-matches? msg "non-fixnum found in fxvector")
+                  (private:message-matches? msg "too many fxvector elements supplied")
+                  (private:message-matches? msg "invalid fxvector length ~s")
+                  (private:message-matches? msg "non-flonum found in flvector")
+                  (private:message-matches? msg "too many flvector elements supplied")
+                  (private:message-matches? msg "invalid value ~:[~s~;~a~] found in bytevector")
+                  (private:message-matches? msg "non-octet found in bytevector")
+                  (private:message-matches? msg "mask required for stencil vector")
+                  (private:message-matches? msg "not enough stencil vector elements supplied")
+                  (private:message-matches? msg "too many stencil vector elements supplied")
+                  (private:message-matches? msg "invalid stencil vector mask ~s")
+                  (private:message-matches? msg "non-symbol found after #[")
+                  (private:message-matches? msg "unrecognized record name ~s")
+                  (private:message-matches? msg "too few fields supplied for record ~s")
+                  (private:message-matches? msg "too many fields supplied for record ~s")
+                  (private:message-matches? msg "duplicate mark #~s= seen")
+                  (private:message-matches? msg "mark #~s= missing")
+                  (private:message-matches? msg "invalid code point value ~s in string hex escape"))
+              (string-find-delimiter source start)]
+             [else (+ start 1)])])
+    `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " msg))))
+
 (define source-file->annotations
   (case-lambda
     ([path] (source-file->annotations (read-string path) path))
     ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t))
+    ([source path start-position] (source-file->annotations source path start-position #t))
     ([source path start-position tolerant?]
+      (source-file->annotations source path start-position tolerant? #f))
+    ([source path start-position tolerant? maybe-document]
       (if (file-exists? path)
         (let ([port (open-string-input-port source)]
             [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
@@ -277,12 +353,18 @@
                     `(,ann . ,(loop (port-position port)))))
                 (except e
                   [(and tolerant? (condition? e))
+                    (when maybe-document
+                      (append-new-diagnoses maybe-document (private:condition->diagnose e source)))
                     (let ([after (private:tolerant-parse->patch source)])
                       (if (= (string-length after) (string-length source))
-                        (source-file->annotations after path start-position #f)
+                        (source-file->annotations after path start-position #f maybe-document)
                         (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
-                  [(condition? e) (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
-                  [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant?))])))))
+                  [(condition? e)
+                    (when maybe-document
+                      (append-new-diagnoses maybe-document (private:condition->diagnose e source)))
+                    (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
+                  [else (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant?))
+                    '()])))))
           (warning 'no-such-file-warning path '())))))
 
 ;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
