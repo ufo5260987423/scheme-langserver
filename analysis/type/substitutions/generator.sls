@@ -88,7 +88,9 @@
                   (lambda (current) ((car (cdr current)) current-document current-index-node))
                   target-rules)
                 (except c
-                  [(condition? c) '()]
+                  [(condition? c) 
+                    (append-new-diagnoses current-document `(0 0 2 ,(string-append "Type rule warning: " (condition-message c))))
+                    '()]
                   [else (raise c)]))
               ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
@@ -97,7 +99,9 @@
                 (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
                 children)
               (except c 
-                [(condition? c) '()]
+                [(condition? c) 
+                  (append-new-diagnoses current-document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c))))
+                  '()]
                 [else (raise c)])))])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed

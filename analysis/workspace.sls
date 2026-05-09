@@ -159,8 +159,10 @@
         (construct-substitutions-for document)
         (except c 
           [(or (string? c) (symbol? c))
+            (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (if (string? c) c (symbol->string c)))))
             (warning 'init-warning0 target-path '(,c))]
           [(condition? c)
+            (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c))))
             (warning 'init-warning1 target-path `(,(condition-who c) ,(condition-message c) ,(condition-irritants c)))]
           [else 
             (error 'init-error target-path '())])))
