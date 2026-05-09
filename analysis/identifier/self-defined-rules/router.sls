@@ -46,8 +46,12 @@
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
-      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      [(equal? library-identifiers '((ufo-match)))
         (add-rule-procedure rules `((,match-process) . ,target-identifier))]
+      ; [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      ;   (add-rule-procedure rules 
+      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory target-identifier)) . 
+      ;       ,target-identifier))]
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
         (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))

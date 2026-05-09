@@ -1,7 +1,7 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
-;; Test whether match-next/match-one/match-two are auto-resolved
-;; when generic auto-resolve is enabled in router.sls
+;; Test whether match pattern variables get references
+;; when workspace initializes with ufo-match source in fixture.
 #!r6rs
 
 (import 
@@ -11,6 +11,7 @@
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
+  (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 
 (define (find-match-call root-index-node)
@@ -30,7 +31,22 @@
                   c
                   (inner (cdr children)))))))))))
 
-(test-begin "match auxiliary macros auto-resolve via generic path")
+;; Navigate to the 'path' node inside (? string? path)
+;; match-call -> clause [(? string? path) path]
+;;           -> pattern (? string? path)
+;;           -> path
+(define (find-path-node match-call-node)
+  (let* ([clauses (cddr (index-node-children match-call-node))]
+         [first-clause (if (null? clauses) #f (car clauses))])
+    (if first-clause
+      (let* ([pattern-node (car (index-node-children first-clause))]
+             [pattern-children (index-node-children pattern-node)])
+        (if (>= (length pattern-children) 3)
+          (caddr pattern-children)
+          #f))
+      #f)))
+
+(test-begin "match pattern variable references with ufo-match source in fixture")
 
 (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/match-auto-resolve")]
        [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
@@ -42,20 +58,26 @@
   (test-assert "match call node found" match-call-node)
 
   (when match-call-node
-    (let ([refs (index-node-references-export-to-other-node match-call-node)])
-      (test-assert "match call node has exported references" 
-        (not (null? refs)))
-      
-      (display "\n[DEBUG] match call node references:\n")
-      (for-each 
-        (lambda (r)
-          (display "  ") 
-          (display (identifier-reference-identifier r))
-          (newline))
-        refs)
-      
-      (test-assert "deep pattern variable 'path appears in match call refs"
-        (find (lambda (r) (eq? 'path (identifier-reference-identifier r))) refs)))))
+    (let ([path-node (find-path-node match-call-node)])
+      (test-assert "path pattern node found" path-node)
+
+      (when path-node
+        (let ([refs (index-node-references-export-to-other-node path-node)])
+          (display "\n[DEBUG] path-node expr: ")
+          (display (annotation-stripped (index-node-datum/annotations path-node)))
+          (display "\n[DEBUG] path-node references:\n")
+          (for-each 
+            (lambda (r)
+              (display "  ") 
+              (display (identifier-reference-identifier r))
+              (newline))
+            refs)
+          
+          (test-assert "path pattern node has exported references" 
+            (not (null? refs)))
+          
+          (test-assert "deep pattern variable 'path appears in path-node refs"
+            (find (lambda (r) (eq? 'path (identifier-reference-identifier r))) refs)))))))
 
 (test-end)
 
