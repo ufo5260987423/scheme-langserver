@@ -106,11 +106,12 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ## Detailed Document
 1. [Scheme-langserver: Treat Scheme Code Editing as the First-Class Concern](./doc/paper.pdf).
 2. [Catching identifier bindings](./doc/analysis/identifier.md)
-3. [Synchronizing](./doc/util/synchronize.md)
-4. [Type inference](./doc/analysis/type-inference.md) (the Chinese version is deprecated and being rewritten into a book)
-5. [API Analysis](./doc/protocol/analysis.md)
-6. [Deepwiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
-7. [Scheme-langserver Development Guide](./doc/Scheme-langserver%20development%20guide%20en.md).
+3. [Macro auto-resolution](./doc/analysis/macro-auto-resolve.md) — generic `syntax-rules` expansion vs hand-written rules
+4. [Synchronizing](./doc/util/synchronize.md)
+5. [Type inference](./doc/analysis/type-inference.md) (the Chinese version is deprecated and being rewritten into a book)
+6. [API Analysis](./doc/protocol/analysis.md)
+7. [Deepwiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
+8. [Scheme-langserver Development Guide](./doc/Scheme-langserver%20development%20guide%20en.md).
 
 ## License
 [MIT](./LICENSE)
