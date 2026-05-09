@@ -58,20 +58,17 @@
         (index-node-references-import-in-this-node-set! path-node '())
 
         ; Run auto-resolve via expansion-generator->rule.
-        ; Auto-resolve is skipped for match calls because tree-has? detects
-        ; '...' in the callee expression, which would trigger a cascade of
-        ; auxiliary macro expansions (match-next, match-one, match-two, ...)
-        ; that is both exponentially slow and structurally incompatible with
-        ; single-level shallow-copy reference back-propagation.
+        ; load.sls's match call does NOT contain '...', so auto-resolve
+        ; should proceed normally and produce the same exports as hand-written.
         (let ([auto-exports 
                 (guard (c [else 'crash])
                   (let ([rule (expansion-generator->rule syntax-expander step file-linkage '() '())])
                     (rule root-file-node root-library-node document match-call-node))
                   (index-node-references-export-to-other-node path-node))])
 
-          (test-equal "auto-resolve for match is skipped due to '...' in callee"
-            '()
-            auto-exports)
+          (test-equal "auto-resolve for match without '...' produces same exports"
+            (map identifier-reference-identifier saved-exports)
+            (map identifier-reference-identifier auto-exports))
 
           ; Restore hand-written state
           (index-node-references-export-to-other-node-set! path-node saved-exports)))))

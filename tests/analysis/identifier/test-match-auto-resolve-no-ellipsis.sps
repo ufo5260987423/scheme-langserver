@@ -38,11 +38,6 @@
             (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
         root-index-node)])
     
-    (display "\n[DEBUG] call-node expr: ")
-    (pretty-print (annotation-stripped (index-node-datum/annotations call-node)))
-    (display "[DEBUG] call-node children count: ")
-    (display (length (index-node-children call-node)))
-    (newline)
     
     (let* ([call-reference (car (find-available-references-for document call-node 'match))]
            [syntax-expander (identifier-reference-syntax-expander call-reference)]
@@ -58,20 +53,13 @@
         (let* ([pairs (car gen-result)]
                [expansion-node (cdr gen-result)]
                [expansion-expr (annotation-stripped (index-node-datum/annotations expansion-node))])
-          (display "\n[DEBUG] expansion expression:\n  ")
-          (pretty-print expansion-expr)
-          (display "\n[DEBUG] pairs count: ")
-          (display (length pairs))
-          (newline))))
+          (void))))
 
     ;; Run auto-resolve via expansion-generator->rule
     (let ([rule (expansion-generator->rule syntax-expander step file-linkage '() '())])
       (rule root-file-node root-library-node document call-node))
 
     (let ([exports (index-node-references-export-to-other-node path-node)])
-      (display "\n[DEBUG] path-node exports: ")
-      (display (map identifier-reference-identifier exports))
-      (newline)
       (test-assert "auto-resolve match attaches 'path reference"
         (and (not (null? exports))
              (find (lambda (id) (eq? 'path id)) 

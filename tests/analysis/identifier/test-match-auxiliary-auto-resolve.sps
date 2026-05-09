@@ -63,15 +63,6 @@
 
       (when path-node
         (let ([refs (index-node-references-export-to-other-node path-node)])
-          (display "\n[DEBUG] path-node expr: ")
-          (display (annotation-stripped (index-node-datum/annotations path-node)))
-          (display "\n[DEBUG] path-node references:\n")
-          (for-each 
-            (lambda (r)
-              (display "  ") 
-              (display (identifier-reference-identifier r))
-              (newline))
-            refs)
           
           (test-assert "path pattern node has exported references" 
             (not (null? refs)))

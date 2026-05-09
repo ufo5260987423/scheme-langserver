@@ -118,9 +118,6 @@
     (let ([rule (expansion-generator->rule match-two-gen step (workspace-file-linkage workspace) '() '())])
       (rule root-file-node (workspace-library-node workspace) ufo-match-doc node6b))
     (let ([exports (index-node-references-export-to-other-node t-node)])
-      (display "[DEBUG] t-node exports after shallow-copy: ")
-      (display (length exports))
-      (newline)
       (test-assert "L6b: t-node has exports after shallow-copy"
         (not (null? exports)))))
 

@@ -86,14 +86,6 @@
                [expected-expansion (caddr case)]
                [test-name (cadddr case)]
                [result (confirm-clause literals clause-index-nodes input)])
-          (when (not (and result
-                          (= (car result) expected-index)
-                          (equal? (cdr result) expected-expansion)))
-            (display (string-append "\n[DEBUG] " test-name ":\n"))
-            (display "  input: ") (pretty-print input)
-            (display "  expected: ") (pretty-print (list expected-index expected-expansion))
-            (display "  actual: ") (pretty-print (if result (list (car result) (cdr result)) '(#f #f)))
-            (newline))
           (test-equal test-name
             (list expected-index expected-expansion)
             (if result
