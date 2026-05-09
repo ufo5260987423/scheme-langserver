@@ -120,59 +120,20 @@
           ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
           ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
           ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
-          ; ["textDocument/documentHighlight" 
-          ;   (try
-          ;     (send-message server-instance (success-response id (find-highlight workspace params)))
-          ;     (except c
-          ;       [else 
-          ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-            ; (do-log-timestamp server-instance)
-          ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
-            ; ["textDocument/signatureHelp"
-            ;  (text-document/signatureHelp id params)]
           ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
           ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
           ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
-          ;TODO: pretty-format with comments
-          ; ["textDocument/formatting"
-          ;   (try
-          ;     (send-message server-instance (success-response id (formatting workspace params)))
-          ;     (except c
-          ;       [else 
-          ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-          ;         (do-log-timestamp server-instance)
-          ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
 
           ["shutdown"
             (server-shutdown?-set! server-instance #t)
             (send-message server-instance (success-response id 'null))]
           ["$/cancelRequest" '()]
-            ; ["textDocument/prepareRename"
-            ;  (text-document/prepareRename id params)]
-            ; ["textDocument/rangeFormatting"
-            ;  (text-document/range-formatting! id params)]
-            ; ["textDocument/onTypeFormatting"
-            ;  (text-document/on-type-formatting! id params)]
-            ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
           [else
             ;; For JSON-RPC notifications, `id` is absent => `#f`.
             ;; LSP requires servers to ignore unknown notifications and not respond.
             (if id
               (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
               '())])))))
-	; public static final string text_document_code_lens = "textdocument/codelens";
-	; public static final string text_document_signature_help = "textdocument/signaturehelp";
-	; public static final string text_document_rename = "textdocument/rename";
-	; public static final string workspace_execute_command = "workspace/executecommand";
-	; public static final string workspace_symbol = "workspace/symbol";
-	; public static final string workspace_watched_files = "workspace/didchangewatchedfiles";
-	; public static final string code_action = "textdocument/codeaction";
-	; public static final string typedefinition = "textdocument/typedefinition";
-	; public static final string document_highlight = "textdocument/documenthighlight";
-	; public static final string foldingrange = "textdocument/foldingrange";
-	; public static final string workspace_change_folders = "workspace/didchangeworkspacefolders";
-	; public static final string implementation = "textdocument/implementation";
-	; public static final string selection_range = "textdocument/selectionrange";
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
@@ -181,10 +142,6 @@
         [window (assq-ref client-capabilities 'window)]
         [workDoneProgress? (if window (assq-ref window 'workDoneProgress) #f)]
         [textDocument (assq-ref params 'textDocument)]
-        ; [renameProvider 
-        ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
-        ;     (make-alist 'prepareProvider #t)
-        ;     #t)]
         [workspace-configuration-body (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
 
         [text-document-body (make-alist 
@@ -197,36 +154,17 @@
               'hoverProvider #t
               'definitionProvider #t
               'referencesProvider #t
-              ; 'diagnosticProvider (make-alist 'interFileDependencies #t 'workspaceDiagnostics #f)
-              ; 'workspaceSymbol #t
-              ; 'typeDefinitionProvider #t
-              ; 'selectionRangeProvider #t
-              ; 'callHierarchyProvider #t
               'completionProvider (make-alist 'triggerCharacters (vector))
-              ; 'signatureHelpProvider (make-alist 'triggerCharacters (vector " " ")" "]"))
-              ; 'implementationProvider #t
-              ; 'renameProvider renameProvider
-              ; 'codeActionProvider #t
-              ; 'documentHighlightProvider #t
               'documentSymbolProvider #t
-              ; 'documentLinkProvider #t
               'documentFormattingProvider #f
               'workspace 
                 (make-alist 
                   'fileOperations 
                     (make-alist 
-                    ;however, these three are only triggered when create/rename/delete file with vscode's origin create/renmae/delete
-                    ;so that we must to add fault tolerant to re-init workspace
                       'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
                       'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
                       'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*")))))
                   'didChangeWatchedFiles (make-alist 'dynamicRegistration #f))
-              ; 'documentRangeFormattingProvider #f
-              ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
-              ; 'codeLensProvider #t
-              ; 'foldingRangeProvider #t
-              ; 'colorProvider #t
-              ; 'workspace workspace-configuration
               )])
 
     (if (null? (server-mutex server-instance))
