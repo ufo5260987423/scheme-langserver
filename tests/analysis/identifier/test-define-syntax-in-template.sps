@@ -54,8 +54,14 @@
                      (syntax-rules () \
                        ((_ y) (+ y y)))) \
                    (double-it x))))))"]
-       [annotations (source-file->annotations macro-source "/tmp/test-define-syntax.sls")]
+       [tmp-path (begin
+                   (with-output-to-file "/tmp/test-define-syntax.sls"
+                     (lambda () (display macro-source))
+                     'replace)
+                   "/tmp/test-define-syntax.sls")]
+       [annotations (source-file->annotations macro-source tmp-path)]
        [doc (make-document "file:///tmp/test-define-syntax.sls" macro-source annotations)]
+       [_ (document-index-node-list-set! doc (map (lambda (item) (init-index-node '() item)) annotations))]
        ; Run step to init the document
        [_ (step root-file-node root-library-node (workspace-file-linkage workspace) doc)]
        ; Find the macro generator
