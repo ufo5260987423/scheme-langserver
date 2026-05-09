@@ -51,30 +51,31 @@ Previous releases: see [release-log.md](./doc/release-log.md).
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
-8. Catching local identifier bindings in `define-syntax`, `let-syntax`, and other macro forms.
-9. Cross-platform parallel indexing.
-10. Custom source-code annotator compatible with `.sps` files.
-11. Peephole optimization for API requests using suspendable tasks.
-12. Type inference via a homemade DSL interpreter, now integrated into auto-completion. Parameters whose types match the expected signature are ranked higher, as shown below where `length-a` and `length-b` (both `integer?`) appear first because they match the parameter type required by `<=`.
+8. Catching local identifier bindings in `define-syntax`, `let-syntax`, and other macro forms via hand-written rules.
+9. **Automatic macro resolution** for `syntax-rules` / `syntax-case` macros via generic expansion and `shallow-copy` reference back-propagation. Currently enabled for the `(ufo-match)` library; auxiliary macros (`match-next`, `match-one`, `match-two`, etc.) are handled by the same rule.
+10. Cross-platform parallel indexing.
+11. Custom source-code annotator compatible with `.sps` files.
+12. Peephole optimization for API requests using suspendable tasks.
+13. Type inference via a homemade DSL interpreter, now integrated into auto-completion. Parameters whose types match the expected signature are ranked higher, as shown below where `length-a` and `length-b` (both `integer?`) appear first because they match the parameter type required by `<=`.
 ![Autocompletion with type inference](./doc/figure/auto-completion-with-type-inference.png "Autocompletion with type inference")
-13. Supports R6RS, R7RS, and [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html) by switching top environments.
+14. Supports R6RS, R7RS, and [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html) by switching top environments.
 
 ```bash
 send-message
 2023 11 21 11 26 41 967266866
 {"jsonrpc":"2.0","id":"3","result":[{"label":"length-a"},{"label":"length-b"},{"label":"lambda"},{"label":"latin-1-codec"},{"label":"lcm"},{"label":"least-fixnum"},{"label":"length"},{"label":"let"},{"label":"let*"},{"label":"let*-values"},{"label":"let-syntax"},{"label":"let-values"},{"label":"letrec"},{"label":"letrec*"},{"label":"letrec-syntax"},{"label":"lexical-violation?"},{"label":"list"},{"label":"list->string"},{"label":"list->vector"},{"label":"list-ref"},{"label":"list-sort"},{"label":"list-tail"},{"label":"list?"},{"label":"log"},{"label":"lookahead-char"},{"label":"lookahead-u8"}]}
 ```
-14. Abstract interpreter that resolves identifiers across multiple file extensions: `.scm`, `.ss`, `.sps`, `.sls`, `.sld`.
-15. Code diagnostics. Currently supports detecting library-not-found errors.
+15. Abstract interpreter that resolves identifiers across multiple file extensions: `.scm`, `.ss`, `.sps`, `.sls`, `.sld`.
+16. Code diagnostics. Currently supports detecting library-not-found errors.
 ![Fail to find library](./doc/figure/diagnose-failt-to-find-library.png "Fail to find library")
 
 ### Roadmap
-16. Renaming support.
-17. Full R6RS compatibility.
-18. Step-by-step macro expander for self-defined macros.
-19. Code evaluation within the language server.
-20. Cross-language semantic support via AST transformers.
-21. Extract expression/statement into a procedure (refactoring).
+17. Renaming support.
+18. Full R6RS compatibility.
+19. Step-by-step macro expander for self-defined macros.
+20. Code evaluation within the language server.
+21. Cross-language semantic support via AST transformers.
+22. Extract expression/statement into a procedure (refactoring).
 
 ## Contributing
 Pull requests are welcome! Please see [AGENTS.md](./AGENTS.md) for project conventions, build steps, and coding style before opening a PR.
