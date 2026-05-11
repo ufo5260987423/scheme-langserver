@@ -293,6 +293,8 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
 | `doc/analysis/file-linkage.md:148` | Matrix shrink on file deletion is now implemented via `shrink-file-linkage!` | Resolved |
 | `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. The type system treats `inner:pair?` and `inner:list?` as disjoint. `matrix-from`/`matrix-to` now work around this by using `cons` inside the loop and `reverse` at the return point, so the accumulator stays correctly typed as `inner:list?`. No change to `cons`'s rule itself was needed. | Resolved — workaround in place |
+| `protocol/request.sls:26` | `read-message` has no exception guard around `parse-content`. Malformed JSON (unclosed strings, invalid escapes, NaN/Infinity, non-object roots like `[]`/`42`/`true`/`null`) propagates as unhandled `json-error` or `assq` crashes, killing the server. | **High** — any malformed LSP message crashes the server |
+| `protocol/request.sls:54` | `read-content` does not validate `content-length` from `get-content-length`. Negative values, non-numeric strings, or malformed headers (e.g. `Content-Length: 10: extra`) cause `get-bytevector-n` to crash. | **High** — malformed HTTP-style header crashes the server |
 
 ---
 
@@ -313,6 +315,9 @@ grep -rl "library-import" tests/
 
 # Count test assertions in a file
 grep -c "test-equal\|test-assert" tests/analysis/dependency/test-file-linkage.sps
+
+# Run LSP message-level robustness tests
+source .akku/bin/activate && scheme --script tests/robustness-lsp-replay.sps
 ```
 
 ---
