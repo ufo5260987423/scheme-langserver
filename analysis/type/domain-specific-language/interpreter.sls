@@ -55,6 +55,7 @@
     [(index-node? target) 'something?]
     [(null? target) target]
     [(symbol? target) target]
+    [(inner:lambda? target) (map private-substitute-index-node&macro target)]
     [(list? target) 
       (let ([tmp (map private-substitute-index-node&macro target)])
         (if (equal? 'something? (car tmp))
