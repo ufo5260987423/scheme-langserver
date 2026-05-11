@@ -216,7 +216,7 @@ scheme-time scheme-write scheme-r5rs s7))
         [(equal? meta-identifier '...) '...]
         [(equal? meta-identifier '**1) '**1]
         [(equal? meta-identifier 'something?) 'something?]
-        [(equal? meta-identifier 'void?) 'void?]
+        [(equal? meta-identifier 'inner:void?) 'inner:void?]
         [else
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
             (if target-identifier target-identifier meta-identifier))])]

@@ -71,7 +71,7 @@
       [root-index-node (car (document-index-node-list target-document))]
       [debug-node (find-define-with-params root-index-node 'debug:print-expression)]
       [target-index-node (define-node->name-node debug-node)]
-      [check-base 'void?])
+      [check-base 'inner:void?])
     (construct-substitutions-for target-document)
     ; (debug:print-expression&uuid target-index-node)
     ; (debug:recursive-print-expression&uuid (car (document-index-node-list target-document)))

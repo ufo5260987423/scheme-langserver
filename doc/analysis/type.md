@@ -34,7 +34,7 @@ Type expressions are ordinary Scheme S-expressions. There is no separate parser.
 | Form | Meaning |
 |------|---------|
 | `something?` | The top type (universal). Every value inhabits it. |
-| `void?` | The type of `(void)`. |
+| `inner:void?` | The type of `(void)`. |
 | `<-` | Function-arrow marker (used in infix position). |
 | `...` | Kleene-star: the preceding element may appear **zero or more** times. |
 | `**1` | Kleene-plus: the preceding element may appear **one or more** times. |
@@ -254,7 +254,7 @@ Collects the `constructor`, `predicator`, `getter`s and `setter`s exported by th
 - `predicator` → `(boolean? <- (inner:list? something?))`
 - `constructor` → `(predicator <- (inner:list? something? …))`
 - `getter` → `(something? <- (inner:list? predicator))`
-- `setter` → `(void? <- (inner:list? predicator something?))`
+- `setter` → `(inner:void? <- (inner:list? predicator something?))`
 
 These are stored directly in the `identifier-reference-type-expressions` field so that they are available even when the record definition is imported from another file.
 
@@ -380,7 +380,7 @@ This is not a full fixed-point solver, but in practice it resolves most self-ref
 ```
 
 An expression is **solved** when:
-- It is an atom (symbol, identifier-reference, `'something?`, `'void?`).
+- It is an atom (symbol, identifier-reference, `'something?`, `'inner:void?`).
 - It is a list, and every element is solved, **and** the list itself is an `inner:trivial?` type expression (i.e. not a raw application waiting for reduction).
 
 `type:partially-solved?` counts how many leaf nodes are solved; it is used by the Cartesian-product pruner.

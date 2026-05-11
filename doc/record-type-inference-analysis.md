@@ -36,7 +36,7 @@ scheme-langserver 的 type inference 采用 **substitution + 解释器** 架构�
   make-point: (point? <- (inner:list? something? ...))
   point?:     (boolean? <- (inner:list? something?))
   point-x:    (something? <- (inner:list? point?))
-  point-x-set!:(void? <- (inner:list? point? something?))
+  point-x-set!:(inner:void? <- (inner:list? point? something?))
   ↓ usage 阶段
 (point-x p) 的 usage node 的 substitution = point-x 的 identifier-reference
   ↓ interpreter 阶段
@@ -223,7 +223,7 @@ scheme-langserver 的 type inference 采用 **substitution + 解释器** 架构�
 为所有 setter 设置的是：
 
 ```scheme
-(void? <- (inner:list? ,predicator something?))
+(inner:void? <- (inner:list? ,predicator something?))
 ```
 
 这里有两个问题：
@@ -330,7 +330,7 @@ scheme-langserver 的 type inference 采用 **substitution + 解释器** 架构�
 3. `interpreter.sls` 根据 `inner:record?` 自动推导：
    - constructor: `(point? <- (inner:list? number? string?))`
    - getter `point-x`: `(number? <- (inner:list? point?))`
-   - setter `point-x-set!`: `(void? <- (inner:list? point? number?))`
+   - setter `point-x-set!`: `(inner:void? <- (inner:list? point? number?))`
 
 **好处**：
 - 字段类型不再丢失，从 `something?` 提升到具体类型。

@@ -36,7 +36,7 @@
                       (lambda (setter)
                         (identifier-reference-type-expressions-set! 
                           setter
-                          `((void? <- (inner:list? ,predicator something?)))))
+                          `((inner:void? <- (inner:list? ,predicator something?)))))
                       setters)
                     ;; Predicator type-expressions are handled by trivial.sls (hard-coded).
                     ;; Keeping it here risks inconsistency because trivial.sls and record.sls

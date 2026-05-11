@@ -63,7 +63,7 @@
     ;(1) rename/prefix a identifier-reference in library importion/exportion
     ;(2) record-type inherent
     (mutable parents)
-    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
+    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'inner:void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)
     (mutable top-environment)
@@ -158,7 +158,7 @@
       (equal? '**1 expression) 
       (equal? '... expression) 
       (equal? 'something? expression) 
-      (equal? 'void? expression) 
+      (equal? 'inner:void? expression) 
       (equal? 'inner:list? expression) 
       (equal? 'inner:pair? expression) 
       (equal? 'inner:vector? expression) 

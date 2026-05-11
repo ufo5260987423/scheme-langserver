@@ -60,6 +60,6 @@
     (construct-substitutions-for target-document)
     (test-equal
       (inner:type->string (car (identifier-reference-type-expressions ref)))
-      "(void? <- (inner:list? [identifier-reference document?] something? ) ) "))
+      "(inner:void? <- (inner:list? [identifier-reference document?] something? ) ) "))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

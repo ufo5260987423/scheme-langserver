@@ -80,7 +80,7 @@
     [(symbol? expression) 
       (cond
         [(equal? expression 'something?) #f]
-        [(equal? expression 'void?) #f]
+        [(equal? expression 'inner:void?) #f]
         [(equal? expression '<-) #f]
         [(equal? expression '<-record-ref) #f]
         [(equal? expression '<-record-set!) #f]
@@ -99,7 +99,7 @@
     ;NOTE: index-node/variable is different from something! Porque variable is more like undefined, and something is defined.
     ;Or in Hott's tongue, something is confired as one of universe. And variable haven't been desided.
     [(equal? 'something? item) #t]
-    [(equal? 'void? item) #t]
+    [(equal? 'inner:void? item) #t]
     [else #f]))
 
 ;inner:macro? cases should be excuted before inner:lambda? cases

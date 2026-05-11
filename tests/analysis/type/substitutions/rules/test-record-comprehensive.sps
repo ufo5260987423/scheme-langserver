@@ -111,7 +111,7 @@
   (let ([tes (identifier-reference-type-expressions point-x-set!-ref)])
     (test-equal "setter has 1 type-expression" 1 (length tes))
     (test-equal "setter type string"
-      "(void? <- (inner:list? [identifier-reference point?] something? ) ) "
+      "(inner:void? <- (inner:list? [identifier-reference point?] something? ) ) "
       (inner:type->string (car tes)))))
 
 (test-end)
@@ -182,7 +182,7 @@
   (let ([results (type:interpret-result-list point-x-set!-node)])
     (test-assert "setter interpret result exists" (> (length results) 0))
     (test-equal "setter interpret string"
-      "(void? <- (inner:list? [identifier-reference point?] something? ) ) "
+      "(inner:void? <- (inner:list? [identifier-reference point?] something? ) ) "
       (inner:type->string (car results)))))
 
 (test-end)
