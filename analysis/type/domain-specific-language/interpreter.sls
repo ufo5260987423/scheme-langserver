@@ -261,7 +261,15 @@
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
           [(inner:macro? expression) 
           (type:environment-result-list-set! env `(,expression))]
-          [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
+          [(inner:lambda? expression)
+            (let ([return-results (type:interpret-result-list (inner:lambda-return expression) env new-memory)]
+                [param-results (type:interpret-result-list (inner:lambda-param expression) env new-memory)])
+              (type:environment-result-list-set! env
+                (apply append
+                  (map (lambda (r)
+                      (map (lambda (p) `(,r <- ,p)) param-results))
+                    return-results))))]
+          [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
             (type:environment-result-list-set! env 
               (apply 
                 (private-generate-cartesian-product-procedure)
