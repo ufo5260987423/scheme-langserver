@@ -14,7 +14,11 @@
     type:<-?
     type:=?
 
-    make-type:environment)
+    make-type:environment
+
+    execute-macro
+    macro-head-execute-with
+    private-with)
   (import 
     (chezscheme)
     (ufo-match)

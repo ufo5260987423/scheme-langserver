@@ -393,11 +393,23 @@ Some R6RS primitives cannot be expressed as simple function types. `car`, for ex
 
 ### 6.1 `with` – Pattern Abstraction
 
+`with` has two syntactic forms depending on whether the denotions (pattern templates) are wrapped in an extra list.
+
+**Form A — flat denotions (most common)**
 ```scheme
-(with ((template) ...) body) arg1 arg2 …
+((with (a b c)                ; denotions = (a b c)
+     body)
+  x y z)                      ; inputs    = (x y z)
 ```
 
-`template` is a pattern using ordinary symbols and the segment markers `...` / `**1`. `body` is the macro body. When the interpreter sees a macro application, it:
+**Form B — wrapped denotions (single-input scenarios)**
+```scheme
+((with ((a b c **1))          ; denotions = ((a b c **1))
+     body)
+  (inner:list? x y z))        ; inputs    = ((inner:list? x y z))
+```
+
+When the interpreter sees a macro application, it:
 
 1. Interprets the arguments to obtain their type-level values.
 2. Calls `candy:matchable?` to see if the templates match.
@@ -405,14 +417,92 @@ Some R6RS primitives cannot be expressed as simple function types. `car`, for ex
 4. Substitutes these pairs into `body` via `private-with`.
 5. Interprets the resulting body.
 
+> **Critical invariant**: `execute-macro` calls `candy:matchable?` with `denotions` on the left and `expanded-inputs` on the right. The two lists must have the **same nesting level** — flat against flat, wrapped against wrapped. Mismatching them causes `candy:matchable?` to return `#f` and the macro is silently left unexpanded. See §6.7 Trap 1.
+
 ### 6.2 Built-In Macro Helpers
 
 | Macro | Semantics |
 |-------|-----------|
-| `with-append` | `(with-append list1 list2)` → appended list |
-| `with-equal?` | `(with-equal? a b body)` → `body` if `a` equals `b`, else the original macro expression (match failure) |
+| `with-append` | `(with-append list1 list2)` → `(append list1 list2)`, then recursively execute |
+| `with-equal?` | `(with-equal? a b body)` → `body` if `a` equals `b`, else the **original macro expression unchanged** |
 
-### 6.3 Example: `car`
+`with-equal?` is the primary guard mechanism. When the guard fails, the entire expression is returned as-is; `type:interpret` then tries the next signature in the substitution list.
+
+### 6.3 Macro Execution Internals
+
+#### 6.3.1 `macro-head-execute-with` — Gatekeeper
+
+```scheme
+(define (macro-head-execute-with expression interpreted-inputs)
+  (match expression
+    [(('with ((? inner:macro-template? denotions) **1) body)
+      (? inner:trivial? inputs) **1)
+     (execute-macro `((with ,denotions ,body) ,@interpreted-inputs))]
+    [else (raise 'macro-not-match:macro-head-execute-with)]))
+```
+
+The match pattern `((? inner:trivial? inputs) **1)` uses **ufo-match** semantics: `**1` means "one or more occurrences of the preceding pattern", and the predicate `inner:trivial?` is checked **per element**. `inputs` binds to the entire list of matched elements.
+
+| Input shape | Match result | Why |
+|-------------|--------------|-----|
+| `(x)` | ✅ `inputs = (x)` | Single element satisfies `inner:trivial?` |
+| `(x y z)` | ✅ `inputs = (x y z)` | All three satisfy `inner:trivial?` |
+| `(x y z)` where `y` is bare `number?` | ❌ match fails | Bare symbols fail `inner:trivial?` |
+| `(x y z)` where `y` is `identifier-reference` | ✅ match passes | `identifier-reference?` is accepted |
+
+> **Field note**: In real substitution generation every type predicate (`fixnum?`, `string?`, etc.) is wrapped as an `identifier-reference` by `construct-type-expression-with-meta`. Bare symbols fail the guard, which is why synthetic repros using raw symbols sometimes look like macro bugs when they are actually data-format mismatches.
+
+#### 6.3.2 `execute-macro` — The Expander
+
+```scheme
+(define (execute-macro expression)
+  (match expression
+    [(('with ((? inner:macro-template? denotions) **1) body) inputs ...)
+     (let ([expanded-inputs (map execute-macro inputs)])
+       (if (and (andmap inner:trivial? expanded-inputs)
+                (candy:matchable? denotions expanded-inputs))
+           (execute-macro (private-with body (candy:match-left denotions expanded-inputs)))
+           expression))]
+    [('with-append (? list? a) (? list? b)) (execute-macro (append a b))]
+    [('with-equal? a b body) (if (equal? a b) (execute-macro body) expression)]
+    [else expression]))
+```
+
+Three checks before expansion:
+
+1. `andmap inner:trivial? expanded-inputs` — every argument must be a valid type expression.
+2. `candy:matchable? denotions expanded-inputs` — shapes must align (see §6.7 Trap 1 for the wrapping-level requirement).
+3. If both pass, `candy:match-left` produces bindings and `private-with` substitutes them into `body`.
+
+On failure, `execute-macro` returns the **original expression unchanged**. This residue then flows back into `type:interpret-result-list` and participates in Cartesian products downstream.
+
+#### 6.3.3 `private-with` — Substitution Engine
+
+```scheme
+(define (private-with body match-pairs)
+  (fold-left
+    (lambda (left pair)
+      (let ([denotion (car pair)] [input (cdr pair)])
+        (cond 
+          [(symbol? denotion) (private-substitute left denotion input)]
+          [(index-node? denotion) (private-substitute left denotion input)]
+          [(identifier-reference? denotion) left]  ; deliberately ignored
+          [(and (list? denotion) (list? input))
+           (if (candy:matchable? denotion input)
+               (if (or (contain? input '**1) (contain? input '...))
+                   (private-with body (candy:match-right denotion input))
+                   (private-with body (candy:match-left denotion input)))
+               (raise 'macro-not-match:private-with-list?))]
+          [else (raise 'macro-not-match:private-with-else)])))
+    body 
+    match-pairs))
+```
+
+`private-substitute` is a naïve tree walk that replaces **every** occurrence of `from` with `to`. When `denotion` is an `identifier-reference`, `private-with` returns `left` unchanged — an `identifier-reference` in pattern position acts as a **wildcard that matches anything but binds nothing**.
+
+When both `denotion` and `input` are lists, `private-with` recurses with `candy:match-left` (for fixed-length matches) or `candy:match-right` (for repeated segments). See §6.7 Trap 3 for the `candy:match-right` hazard.
+
+### 6.4 Example: `car`
 
 `car` carries **two** signatures in `rnrs-meta-rules.sls`:
 
@@ -423,7 +513,7 @@ Some R6RS primitives cannot be expressed as simple function types. `car`, for ex
 
 The first is a **macro** for `inner:list?` arguments; the second is a conservative function type for `inner:pair?` arguments. `type:interpret` tries them in order.
 
-#### 6.3.1 Macro execution trace
+#### 6.4.1 Macro execution trace
 
 Apply the macro to `(inner:list? fixnum? number?)`:
 
@@ -449,7 +539,7 @@ Apply the macro to `(inner:list? fixnum? number?)`:
    - `(equal? inner:list? inner:list?)` → `#t`.
    - Result is `fixnum?`.
 
-#### 6.3.2 Match-failure & fallback
+#### 6.4.2 Match-failure & fallback
 
 If the argument is **not** an `inner:list?` (e.g. an `inner:pair?`):
 
@@ -458,7 +548,7 @@ If the argument is **not** an `inner:list?` (e.g. an `inner:pair?`):
 - `with-equal?` returns the **original macro expression** unchanged.
 - `type:interpret` sees the macro was not reduced, tries the next signature (the pair version), and returns `something?`.
 
-#### 6.3.3 Template length requirement
+#### 6.4.3 Template length requirement
 
 The template `(a b c **1)` requires the argument to contain **at least three** elements (`a`, `b`, and at least one `c`). Therefore:
 
@@ -471,7 +561,7 @@ The template `(a b c **1)` requires the argument to contain **at least three** e
 
 The same pattern applies to all `c*r` macros listed below.
 
-### 6.4 Extending the `c*r` Macro Family
+### 6.5 Extending the `c*r` Macro Family
 
 The `cdr`/`cddr`/`cdddr`/`cddddr` macros already exist in `rnrs-meta-rules.sls`. They use `with-append (inner:list?)` to reconstruct the tail type:
 
@@ -484,7 +574,7 @@ The `cdr`/`cddr`/`cdddr`/`cddddr` macros already exist in `rnrs-meta-rules.sls`.
 
 The following `inner:list?` macros have been added to `rnrs-meta-rules.sls`. They improve hover-tooltip precision for code that uses `cadr`, `caddr`, etc. on known-length lists.
 
-#### 6.4.1 `cadr` – second element
+#### 6.5.1 `cadr` – second element
 
 ```scheme
 (cadr (with ((a b c d **1)) (with-equal? inner:list? a c)))
@@ -499,7 +589,7 @@ The following `inner:list?` macros have been added to `rnrs-meta-rules.sls`. The
 
 Requires the argument to contain at least **four** elements. Shorter lists fall back to the pair version.
 
-#### 6.4.2 `caddr` – third element
+#### 6.5.2 `caddr` – third element
 
 ```scheme
 (caddr (with ((a b c d e **1)) (with-equal? inner:list? a d)))
@@ -507,7 +597,7 @@ Requires the argument to contain at least **four** elements. Shorter lists fall 
 
 Requires at least **five** elements. `d` binds `τ₃`.
 
-#### 6.4.3 `cadddr` – fourth element
+#### 6.5.3 `cadddr` – fourth element
 
 ```scheme
 (cadddr (with ((a b c d e f **1)) (with-equal? inner:list? a e)))
@@ -515,7 +605,7 @@ Requires at least **five** elements. `d` binds `τ₃`.
 
 Requires at least **six** elements. `e` binds `τ₄`.
 
-#### 6.4.4 Nested-list macros (`caar`, `caaar`, `cadar`, `cddar`, …)
+#### 6.5.4 Nested-list macros (`caar`, `caaar`, `cadar`, `cddar`, …)
 
 Macros that decompose **nested** list types are written by nesting `with` macro applications inside the macro body. `execute-macro` recursively expands them, and since the interpreter pre-expands macro arguments (including `with-append` and `with-equal?`) before matching a macro head, inner `cdr` steps work as well.
 
@@ -550,7 +640,7 @@ Macros that decompose **nested** list types are written by nesting `with` macro 
 
 The nesting depth is limited only by readability. In practice only `caar`, `cadar`, `cddar`, and `caaar` appear often enough in real code to justify the extra signature lines.
 
-#### 6.4.5 Summary table – all `c*r` functions
+#### 6.5.5 Summary table – all `c*r` functions
 
 | Function | List macro? | Kind | Min elems | Notes |
 |---|---|---|---|---|
@@ -587,16 +677,16 @@ The nesting depth is limited only by readability. In practice only `caar`, `cada
 
 > **Note:** For every function in the table, an additional fallback signature `(something? <- (inner:list? (inner:pair? something? something?)))` is kept in `rnrs-meta-rules.sls` so that short lists and generic pairs still type-check conservatively.
 
-#### 6.4.6 Why some `c*r` functions are not added
+#### 6.5.6 Why some `c*r` functions are not added
 
-After the `execute-macro` fix (§6.4.4), **all** `c*r` functions can theoretically receive a list macro—there is no longer a technical block. The remaining ones are omitted for two pragmatic reasons:
+After the `execute-macro` fix (§6.5.4), **all** `c*r` functions can theoretically receive a list macro—there is no longer a technical block. The remaining ones are omitted for two pragmatic reasons:
 
 1. **Readability.** A 4-layer nested `with` (e.g. `caaaar`) is ~10 lines of dense parenthesis soup. It is easy to get a bracket wrong and hard to review.
 2. **Frequency.** Functions beyond 3 layers (`caaaar`, `caaadr`, `caadar`, …) appear so rarely in real Scheme code that the pair fallback `(something? <- (inner:list? (inner:pair? something? something?)))` is sufficient for IDE use.
 
 If a project genuinely needs `caadr` or `cdaar`, the pattern is identical to `cadar`/`cddar`: nest `with` macros, use `with-append (inner:list?)` for every `cdr` step, and keep the outer `with-equal? inner:list?` guard at each level.
 
-### 6.5 `candy:matchable?` – Dynamic-Programming Matcher
+### 6.6 `candy:matchable?` – Dynamic-Programming Matcher
 
 The matcher lives in `syntax-candy.sls`. It segments a list into alternating **fixed** and **repeatable** sections. A segment is delimited by `...` or `**1`.
 
@@ -607,6 +697,74 @@ Matching is performed by filling a 2-D matrix (rows = template segments, columns
 - `'unused` – unreachable cell.
 
 The matrix is explored depth-first, allowing paths that step right or down but never diagonally. This is essentially a restricted regular-expression matcher for heterogeneous lists. It supports overlapping repeatable segments, which is needed for types like `(inner:list? number? ... string? ...)`.
+
+### 6.7 Known Traps & Invariants
+
+#### Trap 1: Wrapping-Level Mismatch
+
+`execute-macro` passes `denotions` and `expanded-inputs` to `candy:matchable?` **without any unwrapping**. The two must share the same nesting level.
+
+| Denotions | Inputs | Result |
+|---|---|---|
+| `(a b c)` (flat) | `(x y z)` (flat) | ✅ match |
+| `((a b c **1))` (wrapped) | `((x y z))` (wrapped) | ✅ match |
+| `(a b c)` (flat) | `((x y z))` (wrapped) | ❌ mismatch — `candy:matchable?` returns `#f` |
+| `((a b c **1))` (wrapped) | `(x y z)` (flat) | ❌ mismatch |
+
+If you write a macro with wrapped denotions (Form B), the caller must also wrap the arguments. The `c*r` macros that use `inner:list?` (§6.5) rely on this wrapping because the entire list type `(inner:list? τ₁ τ₂ …)` is treated as a single macro argument.
+
+#### Trap 2: Symbol-Category Mismatch
+
+`execute-macro` requires `(andmap inner:trivial? expanded-inputs)`. `inner:trivial?` accepts `index-node?`, `identifier-reference?`, `something?`, and `inner:void?`. It **rejects bare symbols** such as `number?` or `fixnum?`.
+
+In real substitution rules all predicates are `identifier-reference` records produced by `construct-type-expression-with-meta`. However, hand-written unit tests that feed raw symbols will silently fail to match any macro, leaving the `with` expression unexpanded. If that residue later flows into a Cartesian product, the product includes the raw `with` expression as one of its branches, which usually produces a meaningless type.
+
+> **Rule of thumb**: never use bare symbols in synthetic repros. Wrap them with `construct-type-expression-with-meta` or at least ensure they satisfy `inner:trivial?`.
+
+#### Trap 3: `candy:match-right` & `private-with` Interaction
+
+When a template contains repeated segments (`**1` or `...`), `candy:match-right` returns a flat list of pairs:
+
+```scheme
+;; template: (a b c **1)   argument: (x y z w)
+;; candy:match-right produces:
+((a . x) (b . y) (c . z) (c . w))
+```
+
+`private-with` then iterates over these pairs with `fold-left` and `private-substitute`. Because `private-substitute` replaces **every** occurrence of the denotion symbol, the two `(c . _)` pairs overwrite each other rather than accumulating into a list. This means repeated-segment substitution inside `private-with` is currently **incomplete** for the `candy:match-right` path.
+
+In practice this path is only exercised for **nested-list** macros (e.g. `caar`) where the inner `with` has already been reduced to a simple fixed-length match by the time `private-with` recurses. If you write a macro that relies on `candy:match-right` at the top level, test it carefully.
+
+#### Trap 4: Macro Residue in Cartesian Products
+
+When `execute-macro` fails to expand (guard fails or mismatch), it returns the **original macro expression unchanged**. If this residue is fed back into `type:interpret-result-list`, it participates in the Cartesian product of type combinations. The product generator does not know how to reduce a `with` expression, so the resulting branch is typically discarded as an invalid type, but it wastes time and may confuse downstream consumers.
+
+> **Lesson learned**: `application.sls` was briefly modified to inject `with` macros into every call site. Even when the macro did not expand, the residue broke `test-define` and `test-let` because unexpanded `with` terms appeared inside substitution lists that the interpreter tried to fold into type sets. The fix was to revert `application.sls` to its simple form.
+
+#### Trap 5: `with-append` Is Not `append`
+
+`with-append` is **only** recognised inside `execute-macro`. It is not a general function. You cannot write:
+
+```scheme
+;; WRONG — with-append is not in scope outside a macro body
+(let ([tail (with-append (inner:list?) (number?))]) ...)
+```
+
+It must appear as the immediate expression being interpreted, and its arguments must be literal lists known at macro-expansion time.
+
+#### Trap 6: Template Length vs Runtime Length
+
+A template like `(a b c **1)` requires the argument to contain **at least three** elements. If the list is shorter at runtime, the macro does not match and falls back to the next signature. This is by design — `car` on a two-element list cannot statically know whether the first element is the "head" or the "tail" in a type sense — but it means short lists always degrade to the conservative pair fallback (`something?`).
+
+#### Trap 7: `identifier-reference` As Wildcard
+
+In `private-with`, if the denotion is an `identifier-reference?`, the branch returns `left` unchanged:
+
+```scheme
+[(identifier-reference? denotion) left]  ; deliberately ignored
+```
+
+This means an `identifier-reference` in pattern position acts as a **wildcard that matches anything but binds nothing**. It is useful when you want a segment to match without capturing its value (e.g. forcing a shape check but discarding the matched predicate). However, if you intended to capture the matched value into a variable, using an `identifier-reference` instead of a symbol will silently drop it.
 
 ---
 
