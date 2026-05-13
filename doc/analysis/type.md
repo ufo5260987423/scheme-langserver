@@ -489,9 +489,7 @@ On failure, `execute-macro` returns the **original expression unchanged**. This 
           [(identifier-reference? denotion) left]  ; deliberately ignored
           [(and (list? denotion) (list? input))
            (if (candy:matchable? denotion input)
-               (if (or (contain? input '**1) (contain? input '...))
-                   (private-with body (candy:match-right denotion input))
-                   (private-with body (candy:match-left denotion input)))
+               (private-with body (candy:match-left denotion input))
                (raise 'macro-not-match:private-with-list?))]
           [else (raise 'macro-not-match:private-with-else)])))
     body 
@@ -500,7 +498,7 @@ On failure, `execute-macro` returns the **original expression unchanged**. This 
 
 `private-substitute` is a naïve tree walk that replaces **every** occurrence of `from` with `to`. When `denotion` is an `identifier-reference`, `private-with` returns `left` unchanged — an `identifier-reference` in pattern position acts as a **wildcard that matches anything but binds nothing**.
 
-When both `denotion` and `input` are lists, `private-with` recurses with `candy:match-left` (for fixed-length matches) or `candy:match-right` (for repeated segments). See §6.7 Trap 3 for the `candy:match-right` hazard.
+When both `denotion` and `input` are lists, `private-with` recurses with `candy:match-left`. The previous code used `candy:match-right` when `input` contained `**1` or `...`, but that path was broken: `match-right` expands list-valued bindings into multiple flat pairs, and `fold-left` + `private-substitute` can only consume the first one. See §6.7 Trap 3 for details.
 
 ### 6.4 Example: `car`
 
@@ -721,7 +719,7 @@ In real substitution rules all predicates are `identifier-reference` records pro
 
 > **Rule of thumb**: never use bare symbols in synthetic repros. Wrap them with `construct-type-expression-with-meta` or at least ensure they satisfy `inner:trivial?`.
 
-#### Trap 3: `candy:match-right` & `private-with` Interaction
+#### Trap 3: `candy:match-right` & `private-with` Interaction (Fixed)
 
 When a template contains repeated segments (`**1` or `...`), `candy:match-right` returns a flat list of pairs:
 
@@ -731,9 +729,33 @@ When a template contains repeated segments (`**1` or `...`), `candy:match-right`
 ((a . x) (b . y) (c . z) (c . w))
 ```
 
-`private-with` then iterates over these pairs with `fold-left` and `private-substitute`. Because `private-substitute` replaces **every** occurrence of the denotion symbol, the two `(c . _)` pairs overwrite each other rather than accumulating into a list. This means repeated-segment substitution inside `private-with` is currently **incomplete** for the `candy:match-right` path.
+`private-with` then iterates over these pairs with `fold-left` and `private-substitute`. Because `private-substitute` replaces **every** occurrence of the denotion symbol, the two `(c . _)` pairs overwrite each other rather than accumulating into a list. This means repeated-segment substitution inside `private-with` was **incomplete** for the `candy:match-right` path.
 
-In practice this path is only exercised for **nested-list** macros (e.g. `caar`) where the inner `with` has already been reduced to a simple fixed-length match by the time `private-with` recurses. If you write a macro that relies on `candy:match-right` at the top level, test it carefully.
+**A more severe variant** was discovered: even when the *template* has no repeated segments, if the *argument* itself is a list type expression (e.g. `(inner:list? something? ...)` which contains `...` or `**1`), `match-right` would still expand the matched binding into multiple pairs:
+
+```scheme
+;; template: (x d0 d1)
+;; argument: (inner:list? (something? <- ...) (inner:list? something? ...) **1)
+;; match-right incorrectly produces:
+((x . inner:list?)
+ (d0 . (something? <- ...))
+ (d1 . inner:list?)       <-- d1 bound to first element only
+ (d1 . something?)
+ (d1 . ...))
+```
+
+`private-with` would then substitute `d1` with `inner:list?` and discard `something?` and `...`, causing the parameter type to collapse from `(inner:list? something? ...)` to bare `inner:list?`.
+
+**Fix (2025-05-11)**: `private-with` now always uses `candy:match-left`, which preserves list-valued bindings as a single pair:
+
+```scheme
+;; match-left correctly produces:
+((x . inner:list?)
+ (d0 . (something? <- ...))
+ (d1 . (inner:list? something? ...)))   <-- d1 keeps the full list
+```
+
+> **User concern**: `interpreted-inputs` passed to macros (e.g. the type signature of `map`) can themselves contain `**1` or `...`. The old `match-right` branch would trigger on *any* `**1` in the input, not just repeated-segment templates. Using `match-left` universally is safer because it never fragments a binding.
 
 #### Trap 4: Macro Residue in Cartesian Products
 

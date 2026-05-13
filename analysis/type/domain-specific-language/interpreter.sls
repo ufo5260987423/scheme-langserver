@@ -355,9 +355,7 @@
           [(identifier-reference? denotion) left]
           [(and (list? denotion) (list? input)) 
             (if (candy:matchable? denotion input)
-              (if (or (contain? input '**1) (contain? input '...))
-                (private-with body (candy:match-right denotion input))
-                (private-with body (candy:match-left denotion input)))
+              (private-with body (candy:match-left denotion input))
               (raise 'macro-not-match:private-with-list?))]
           [else (raise 'macro-not-match:private-with-else)])))
     body 

@@ -128,6 +128,8 @@ The dual of `candy:match-left`. Maps each matched pair to a simple `(rest-type .
 
 Unlike `candy:match-left`, it does **not** group repeated segments; the same `rest-type` may appear multiple times. It is used less frequently, mainly for symmetry and debugging.
 
+> **Warning**: `match-right` is **unsafe** when consumed by `private-with` (the substitution engine in `interpreter.sls`). Because `private-with` iterates with `fold-left` + `private-substitute`, the first `(rest-type . _)` pair shadows all subsequent ones, losing information. If the matched argument itself contains `**1` or `...` (e.g. a higher-order function signature like `map`), `match-right` can incorrectly fragment a binding and cause type collapse. See `doc/analysis/type.md` §6.7 Trap 3.
+
 ---
 
 ## 3. Record Type — `segment`
