@@ -354,23 +354,23 @@
                 (except e
                   [(and tolerant? (condition? e))
                     (when maybe-document
-                      (append-new-diagnoses maybe-document (private:condition->diagnose e source)))
+                      (append-new-diagnoses maybe-document (append (private:condition->diagnose e source) '("syntax" "syntax-error"))))
                     (let ([after (private:tolerant-parse->patch source)])
                       (if (= (string-length after) (string-length source))
                         (source-file->annotations after path start-position #f maybe-document)
                         (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
                   [(condition? e)
                     (when maybe-document
-                      (append-new-diagnoses maybe-document (private:condition->diagnose e source)))
+                      (append-new-diagnoses maybe-document (append (private:condition->diagnose e source) '("syntax" "syntax-error"))))
                     (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
                   [else 
                     (when maybe-document
-                      (append-new-diagnoses maybe-document `(0 0 1 "Syntax error: unknown parse error")))
+                      (append-new-diagnoses maybe-document '(0 0 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
                     (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant?))
                     '()])))))
           (begin
             (when maybe-document
-              (append-new-diagnoses maybe-document `(0 0 1 ,(string-append "File not found: " path))))
+              (append-new-diagnoses maybe-document `(0 0 1 ,(string-append "File not found: " path) "syntax" "file-not-found")))
             (warning 'no-such-file-warning path '())
             '())))))
 

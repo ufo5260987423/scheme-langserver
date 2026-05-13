@@ -159,10 +159,10 @@
         (construct-substitutions-for document)
         (except c 
           [(or (string? c) (symbol? c))
-            (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (if (string? c) c (symbol->string c)))))
+            (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (if (string? c) c (symbol->string c))) "type" "type-inference-warning"))
             (warning 'init-warning0 target-path '(,c))]
           [(condition? c)
-            (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c))))
+            (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c)) "type" "type-inference-warning"))
             (warning 'init-warning1 target-path `(,(condition-who c) ,(condition-message c) ,(condition-irritants c)))]
           [else 
             (error 'init-error target-path '())])))

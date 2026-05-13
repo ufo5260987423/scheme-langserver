@@ -32,7 +32,7 @@
                 [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
                 [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
           (if (null? target-file-node)
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find file:" path)))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find file:" path) "load" "load-file-not-found"))
             (begin 
               (index-node-import-file-nodes-set! index-node `(,target-file-node))
               (let* ([target-document (file-node-document target-file-node)]

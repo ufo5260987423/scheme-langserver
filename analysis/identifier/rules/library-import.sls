@@ -112,7 +112,7 @@
       [('only (library-identifier **1) (? symbol? identifier) **1) 
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (let loop ([importion-index-node (cddr (index-node-children index-node))]
             [identifiers identifier]
@@ -145,7 +145,7 @@
       [('except (library-identifier **1) (? symbol? identifier) **1) 
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (let ([tmp 
               (filter
@@ -185,7 +185,7 @@
       [('prefix (library-identifier **1) (? symbol? prefix-id))
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (let* ([imported-references (import-references document root-library-node actual-library-identifier)]
             [prefixed-references 
@@ -206,7 +206,7 @@
       [('rename (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
@@ -260,7 +260,7 @@
       [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (let loop ([importion-nodes (cddr (index-node-children index-node))]
             [external-names external-name]
@@ -323,7 +323,7 @@
       [('for (library-identifier **1) import-level) 
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (if (or
             (eq? 'run import-level)
@@ -340,7 +340,7 @@
       [(library-identifier **1) 
         (if (null? (walk-library actual-library-identifier root-library-node))
           (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)))))
+            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! index-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (append-references-into-ordered-references-for 
           document 

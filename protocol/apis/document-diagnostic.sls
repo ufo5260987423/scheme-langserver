@@ -56,22 +56,36 @@
 (define (private:document->diagnostic-vec document)
   (vector-map 
     (lambda (diagnose)
-      (let* ([s (car diagnose)]
-          [e (cadr diagnose)]
-          [severity (caddr diagnose)]
-          [message (cadddr diagnose)])
-      (private:make-diagnostic document s e severity message)))
+      (private:make-diagnostic document diagnose))
     (list->vector (document-diagnoses document))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
-(define (private:make-diagnostic document range-start range-end severity message)
-  (make-alist 
-    'range 
-    (range->alist 
-      (make-range 
-        (apply make-position (document+bias->position-list document range-start))
-        (apply make-position (document+bias->position-list document range-end)))) 
-    'severity severity 
-    'message message))
+(define (private:make-diagnostic document diagnose)
+  (let* ([s (car diagnose)]
+      [e (cadr diagnose)]
+      [severity (caddr diagnose)]
+      [message (cadddr diagnose)]
+      [source (if (>= (length diagnose) 5) (list-ref diagnose 4) "scheme-langserver")]
+      [code (if (>= (length diagnose) 6) (list-ref diagnose 5) #f)])
+    (if code
+      (make-alist 
+        'range 
+        (range->alist 
+          (make-range 
+            (apply make-position (document+bias->position-list document s))
+            (apply make-position (document+bias->position-list document e)))) 
+        'severity severity 
+        'message message
+        'source source
+        'code code)
+      (make-alist 
+        'range 
+        (range->alist 
+          (make-range 
+            (apply make-position (document+bias->position-list document s))
+            (apply make-position (document+bias->position-list document e)))) 
+        'severity severity 
+        'message message
+        'source source))))
 )
