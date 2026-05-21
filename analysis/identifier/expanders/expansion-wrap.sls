@@ -72,33 +72,37 @@
   (apply append (map (lambda (entry) (list-ref entry 3)) expanded+callee-list)))
 
 (define (build-reverse-map all-pairs)
-  (filter
-    (lambda (entry) (index-node? (car entry)))
-    (map (lambda (pair) (cons (cdr pair) (car pair))) all-pairs)))
+  (let ([ht (make-eq-hashtable)])
+    (for-each
+      (lambda (pair)
+        (let ([key (cdr pair)])
+          (when (and (index-node? key) (not (hashtable-contains? ht key)))
+            (hashtable-set! ht key (car pair)))))
+      all-pairs)
+    ht))
 
 (define (private:sync-to-parent-expansion target-node export-list reverse-map document initialization-index-node)
-  (let ([parent-pair (assoc target-node reverse-map)])
-    (when parent-pair
-      (let ([parent-node (cdr parent-pair)])
-        (for-each
-          (lambda (current-identifier)
-            (let ([ni 
-                (make-identifier-reference 
-                  (identifier-reference-identifier current-identifier)
-                  document 
-                  parent-node
-                  initialization-index-node 
-                  (identifier-reference-library-identifier current-identifier)
-                  (identifier-reference-type current-identifier)
-                  '()
-                  '()
-                  (identifier-reference-top-environment current-identifier))])
-              (index-node-references-export-to-other-node-set!
+  (let ([parent-node (hashtable-ref reverse-map target-node #f)])
+    (when parent-node
+      (for-each
+        (lambda (current-identifier)
+          (let ([ni 
+              (make-identifier-reference 
+                (identifier-reference-identifier current-identifier)
+                document 
                 parent-node
-                (append 
-                  (index-node-references-export-to-other-node parent-node)
-                  `(,ni)))))
-          export-list)))))
+                initialization-index-node 
+                (identifier-reference-library-identifier current-identifier)
+                (identifier-reference-type current-identifier)
+                '()
+                '()
+                (identifier-reference-top-environment current-identifier))])
+            (index-node-references-export-to-other-node-set!
+              parent-node
+              (append 
+                (index-node-references-export-to-other-node parent-node)
+                `(,ni)))))
+        export-list))))
 
 (define (private:shallow-copy pairs all-pairs expansion-index-node document initialization-index-node)
   (let* ([reverse-map (build-reverse-map all-pairs)]

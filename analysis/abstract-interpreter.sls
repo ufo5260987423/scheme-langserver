@@ -267,15 +267,23 @@
             (eq? 'variable (identifier-reference-type identifier)))))
       identifier-list)))
 
+(define private:expander-doc-cache-ht (make-eq-hashtable))
+
 (define (private:find-expander-doc-for-node node expanded+callee-list)
-  (let loop ([current node])
-    (if (or (not current) (null? current))
-      #f
-      (let ([entry (assq current expanded+callee-list)])
-        (if entry
-          (let ([is-new-format (list? entry)])
-            (if is-new-format (caddr entry) #f))
-          (loop (index-node-parent current)))))))
+  (let ([cached (hashtable-ref private:expander-doc-cache-ht node #f)])
+    (if (and cached (eq? (car cached) expanded+callee-list))
+      (cdr cached)
+      (let ([result
+          (let loop ([current node])
+            (if (or (not current) (null? current))
+              #f
+              (let ([entry (assq current expanded+callee-list)])
+                (if entry
+                  (let ([is-new-format (list? entry)])
+                    (if is-new-format (caddr entry) #f))
+                  (loop (index-node-parent current))))))])
+        (hashtable-set! private:expander-doc-cache-ht node (cons expanded+callee-list result))
+        result))))
 
 (define private:find-available-references-for 
   (case-lambda 
