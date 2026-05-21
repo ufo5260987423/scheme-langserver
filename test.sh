@@ -2,10 +2,10 @@
 source .akku/bin/activate
 
 skip=(
-    "./tests/output-identifier-types.sps" 
+    "./tests/integration/output-identifier-types.sps" 
     "./bin/parallel-log-debug.sps" 
     "./bin/log-debug.sps" 
-    "./tests/performance.sps" 
+    "./tests/integration/performance.sps" 
     "./tests/analysis/identifier/test-auto-macro-resolve.sps"
 )
 
