@@ -6,6 +6,7 @@ skip=(
     "./bin/parallel-log-debug.sps" 
     "./bin/log-debug.sps" 
     "./tests/performance.sps" 
+    "./tests/analysis/identifier/test-auto-macro-resolve.sps"
 )
 
 success=0

@@ -267,6 +267,16 @@
             (eq? 'variable (identifier-reference-type identifier)))))
       identifier-list)))
 
+(define (private:find-expander-doc-for-node node expanded+callee-list)
+  (let loop ([current node])
+    (if (or (not current) (null? current))
+      #f
+      (let ([entry (assq current expanded+callee-list)])
+        (if entry
+          (let ([is-new-format (list? entry)])
+            (if is-new-format (caddr entry) #f))
+          (loop (index-node-parent current)))))))
+
 (define private:find-available-references-for 
   (case-lambda 
     [(expanded+callee-list current-document current-index-node)
@@ -281,7 +291,13 @@
                 (find-available-references-for expander-doc current-index-node)
                 '())
               callee-result))
-          (find-available-references-for current-document current-index-node)))]
+          (let ([refs (find-available-references-for current-document current-index-node)])
+            (if (null? refs)
+              (let ([expander-doc (private:find-expander-doc-for-node current-index-node expanded+callee-list)])
+                (if expander-doc
+                  (find-available-references-for expander-doc current-index-node)
+                  '()))
+              refs))))]
     [(expanded+callee-list current-document current-index-node expression)
       (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
@@ -294,7 +310,13 @@
                 (find-available-references-for expander-doc current-index-node expression)
                 '())
               callee-result))
-          (find-available-references-for current-document current-index-node expression)))]))
+          (let ([refs (find-available-references-for current-document current-index-node expression)])
+            (if (null? refs)
+              (let ([expander-doc (private:find-expander-doc-for-node current-index-node expanded+callee-list)])
+                (if expander-doc
+                  (find-available-references-for expander-doc current-index-node expression)
+                  '()))
+              refs))))]))
 
 (define (private:top-env=? standard top)
   (find (lambda (item) (eq? standard (identifier-reference-top-environment item))) top))

@@ -53,18 +53,20 @@
   (if (or (null? shapes) (null? params))
     (and (null? shapes) (null? params))
     (and (private:shape-match? (car shapes) (car params))
-         (private:params-shapes-match? (cdr shapes) (cdr params)))))
+      (private:params-shapes-match? (cdr shapes) (cdr params)))))
 
 (define (private:signature-match? signature input-expr)
   (let ([input-params (cdr input-expr)]
       [min-len (car signature)]
       [shapes (cdr signature)])
-    (and (list? input-params)
-         (>= (length input-params) min-len)
-         (private:params-shapes-match? shapes 
-           (let loop ([lst input-params] [n (length shapes)])
-             (if (or (zero? n) (null? lst)) '() 
-               (cons (car lst) (loop (cdr lst) (- n 1)))))))))
+    (and 
+      (list? input-params)
+      (>= (length input-params) min-len)
+      (private:params-shapes-match? shapes 
+        (let loop ([lst input-params] [n (length shapes)])
+          (if (or (zero? n) (null? lst)) 
+            '() 
+            (cons (car lst) (loop (cdr lst) (- n 1)))))))))
 
 ;; ---- Nested-macro guard ----
 
@@ -157,14 +159,6 @@
     [(pair? ready) (or (private:tree-has? (car ready) target) (private:tree-has? (cdr ready) target))]
     [else #f]))
 
-(define (compound-list->printable-list compound-list)
-  (cond
-    [(index-node? compound-list) (annotation-stripped (index-node-datum/annotations compound-list))]
-    [(list? compound-list) (map compound-list->printable-list compound-list)]
-    [(vector? compound-list) (vector-map compound-list->printable-list compound-list)]
-    [(pair? compound-list) `(,(compound-list->printable-list (car compound-list)) . ,(compound-list->printable-list (cdr compound-list)))]
-    [else compound-list]))
-
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
 (define (private:expansion+index-node->pairs compound-list index-node)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
@@ -175,15 +169,29 @@
           (append
             `((,index-node . ,compound-list))
             (if (and (not (null? compound-children))
-                     (not (null? children))
-                     (= (length compound-children) (length children)))
+                     (not (null? children)))
+              (let ([min-len (min (length compound-children) (length children))])
+                (apply append
+                  (map
+                    (lambda (left right)
+                      (private:expansion+index-node->pairs left right))
+                    (private:take compound-children min-len)
+                    (private:take children min-len))))
+              '())
+            ; Fallback: for extra symbol children in expansion, try to find matching symbol in compound
+            (let ([min-len (min (length compound-children) (length children))])
+              (let ([extra-children (if (> (length children) min-len) (list-tail children min-len) '())])
               (apply append
                 (map
-                  (lambda (left right)
-                    (private:expansion+index-node->pairs left right))
-                  compound-children
-                  children))
-              '())))]
+                  (lambda (exp-child)
+                    (let ([sym (annotation-stripped (index-node-datum/annotations exp-child))])
+                      (if (symbol? sym)
+                        (let ([compound-match (find (lambda (c) (eq? sym (annotation-stripped (index-node-datum/annotations c)))) compound-children)])
+                          (if compound-match
+                            `((,exp-child . ,compound-match))
+                            '()))
+                        '())))
+                  extra-children))))))]
       [(list? compound-list) 
         (let ([len-c (length compound-list)]
               [len-ch (length children)])

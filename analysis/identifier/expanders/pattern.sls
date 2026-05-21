@@ -124,10 +124,13 @@
             [list-form (lambda (a) a)]
             [vector-form list->vector]
             [pair-form (lambda (a)
-              (let loop ([rest a])
-                (if (null? (cdr rest))
-                  (car rest)
-                  (cons (car rest) (loop (cdr rest))))))])
+              (let ([last (car (reverse a))])
+                (if (and (list? last) (not (null? last)))
+                  (append (reverse (cdr (reverse a))) last)
+                  (let loop ([rest a])
+                    (if (null? (cdr rest))
+                      (car rest)
+                      (cons (car rest) (loop (cdr rest))))))))])
           (map (lambda (c) (expand->index-node-compound-list c bindings pattern-context)) children))]
       [(ellipse-list-form ellipse-vector-form ellipse-pair-form)
         ((case type 
@@ -196,15 +199,19 @@
 (define (generate-binding literal iterator)
   ;In ellipsed pair form, won't cdr cause error? I don't think so.
   (if (procedure? iterator)
-    (let* ([l 
-          (let loop ([var (iterator)])
-            (if (eq? var 'stop-iteration)
-              '()
-              `(,var . ,(loop (iterator)))))]
-        [v (list->vector l)]
-        [max-i (length l)]
-        [tmp (make-vector max-i '())])
-      (let loop ([i 0] [ancestors '()] [result '()])
+    (let* ([first-var (iterator)]
+        [is-literal? (symbol? first-var)])
+      (if is-literal?
+        `(,literal . ,first-var)
+        (let* ([l 
+              (let loop ([var first-var])
+                (if (eq? var 'stop-iteration)
+                  '()
+                  `(,var . ,(loop (iterator)))))]
+            [v (list->vector l)]
+            [max-i (length l)]
+            [tmp (make-vector max-i '())])
+          (let loop ([i 0] [ancestors '()] [result '()])
         (cond 
           [(and (= i max-i) (not (null? ancestors)) (not (null? (cdr ancestors))))
             ;process rest ancestors
@@ -218,6 +225,8 @@
             (loop i (cdr ancestors) (append result (vector-ref tmp (car ancestors))))]
           [(= i max-i) `(,literal . ,result)]
 
+          [(list? (vector-ref v i))
+            (loop (+ 1 i) ancestors (append result (vector-ref v i)))]
           [(index-node? (vector-ref v i))
             (vector-set! tmp (car ancestors) 
               (append 
@@ -281,7 +290,7 @@
             (loop (+ 1 i) (cdr ancestors) result)]
           [else 
             ;well, not leaf
-          (loop (+ 1 i) ancestors result)])))
+          (loop (+ 1 i) ancestors result)])))))
     `(,literal . ,iterator)))
 
 ;suppose pattern-type is pattern-variable/literal-identifier 
@@ -369,6 +378,10 @@
               [(null? rest-index-nodes)
                (apply append
                  (map (lambda (p) (pattern+index-node->pair-list p (make-index-node '() '() '() '() '() '() '() '()))) rest-patterns))]
+              [(and (eq? 'pair-form (pattern-type pattern)) (null? (cdr rest-patterns)))
+               (if (null? (cdr rest-index-nodes))
+                 `((,(car rest-patterns) . ,(car rest-index-nodes)))
+                 `((,(car rest-patterns) . ,rest-index-nodes)))]
               [else
                `(,@(pattern+index-node->pair-list (car rest-patterns) (car rest-index-nodes))
                  . ,(loop (cdr rest-patterns) (cdr rest-index-nodes)))]))]

@@ -46,8 +46,6 @@
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
-      ; [(equal? library-identifiers '((ufo-match)))
-      ;   (add-rule-procedure rules `((,match-process) . ,target-identifier))]
       [(equal? library-identifiers '((ufo-match)))
         (add-rule-procedure rules 
           `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory target-identifier)) . 
