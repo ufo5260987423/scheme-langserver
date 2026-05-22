@@ -59,8 +59,10 @@ Every `private:shallow-copy` call scans the entire `expanded+callee-list` to ext
   - `analysis/abstract-interpreter.sls`: `private:find-expander-doc-for-node` now uses an `eq-hashtable` keyed by `node` to cache (expanded+callee-list, result) pairs. Repeated lookups for the same node within the same expansion context avoid traversing the parent chain.
 - [x] **OPT-2** Convert `build-reverse-map` to `eq-hashtable`
   - `analysis/identifier/expanders/expansion-wrap.sls`: `build-reverse-map` now returns an `eq-hashtable` instead of an alist. `private:sync-to-parent-expansion` uses `hashtable-ref` instead of `assoc`, dropping lookup from O(n) to O(1).
-- [ ] **OPT-3** Replace `apply append` recursion with tail-recursive accumulators
-- [ ] **OPT-4** Cache `length` results and use accumulator in `syntax-rules.sls`
+- [x] **OPT-3** Replace `apply append` recursion with tail-recursive accumulators
+  - `analysis/identifier/expanders/expansion-wrap.sls`: `private:recursive-collect`, `private:find-nodes-by-symbol`, and `private:recursive-filter` rewritten to use explicit stack + accumulator, eliminating `apply append` and intermediate list construction.
+- [x] **OPT-4** Cache `length` results and use accumulator in `syntax-rules.sls`
+  - `analysis/identifier/expanders/syntax-rules.sls`: `private:expansion+index-node->pairs` now caches `(length compound-children)` and `(length children)` in `let*`; inner `map` + `apply append` replaced with tail-recursive accumulator loop. Added helper `private:expansion+index-node->pairs-rev` for accumulator-passing style.
 - [ ] **OPT-5** Incrementally maintain `all-pairs` in `expanded+callee-list`
 
 ---

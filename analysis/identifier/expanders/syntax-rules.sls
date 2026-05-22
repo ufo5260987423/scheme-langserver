@@ -161,54 +161,58 @@
 
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
 (define (private:expansion+index-node->pairs compound-list index-node)
+  (reverse (private:expansion+index-node->pairs-rev compound-list index-node '())))
+
+(define (private:expansion+index-node->pairs-rev compound-list index-node acc)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [children (index-node-children index-node)])
     (cond 
       [(index-node? compound-list)
         (let ([compound-children (index-node-children compound-list)])
-          (append
-            `((,index-node . ,compound-list))
-            (if (and (not (null? compound-children))
-                     (not (null? children)))
-              (let ([min-len (min (length compound-children) (length children))])
-                (apply append
-                  (map
-                    (lambda (left right)
-                      (private:expansion+index-node->pairs left right))
-                    (private:take compound-children min-len)
-                    (private:take children min-len))))
-              '())
-            ; Fallback: for extra symbol children in expansion, try to find matching symbol in compound
-            (let ([min-len (min (length compound-children) (length children))])
-              (let ([extra-children (if (> (length children) min-len) (list-tail children min-len) '())])
-              (apply append
-                (map
-                  (lambda (exp-child)
-                    (let ([sym (annotation-stripped (index-node-datum/annotations exp-child))])
-                      (if (symbol? sym)
-                        (let ([compound-match (find (lambda (c) (eq? sym (annotation-stripped (index-node-datum/annotations c)))) compound-children)])
-                          (if compound-match
-                            `((,exp-child . ,compound-match))
-                            '()))
-                        '())))
-                  extra-children))))))]
+          (let* ([len-cc (length compound-children)]
+              [len-ch (length children)]
+              [min-len (min len-cc len-ch)]
+              [extra-children (if (> len-ch min-len) (list-tail children min-len) '())])
+            (let ([acc0 (cons `(,index-node . ,compound-list) acc)])
+              (let ([acc1
+                  (let loop ([lefts (private:take compound-children min-len)]
+                      [rights (private:take children min-len)]
+                      [a acc0])
+                    (if (or (null? lefts) (null? rights))
+                      a
+                      (loop (cdr lefts) (cdr rights)
+                        (private:expansion+index-node->pairs-rev (car lefts) (car rights) a))))])
+                (let ([acc2
+                    (let loop ([ecs extra-children] [a acc1])
+                      (if (null? ecs)
+                        a
+                        (let* ([exp-child (car ecs)]
+                            [sym (annotation-stripped (index-node-datum/annotations exp-child))])
+                          (if (symbol? sym)
+                            (let ([compound-match (find (lambda (c) (eq? sym (annotation-stripped (index-node-datum/annotations c)))) compound-children)])
+                              (if compound-match
+                                (loop (cdr ecs) (cons `(,exp-child . ,compound-match) a))
+                                (loop (cdr ecs) a)))
+                            (loop (cdr ecs) a)))))])
+                  acc2)))))]
       [(list? compound-list) 
         (let ([len-c (length compound-list)]
-              [len-ch (length children)])
-          (apply append 
-            (map 
-              (lambda (left right) 
-              (private:expansion+index-node->pairs left right))
-              (if (> len-c len-ch) (private:take compound-list len-ch) compound-list)
-              (if (> len-ch len-c) (private:take children len-c) children))))]
+            [len-ch (length children)])
+          (let loop ([lefts (if (> len-c len-ch) (private:take compound-list len-ch) compound-list)]
+              [rights (if (> len-ch len-c) (private:take children len-c) children)]
+              [a acc])
+            (if (or (null? lefts) (null? rights))
+              a
+              (loop (cdr lefts) (cdr rights)
+                (private:expansion+index-node->pairs-rev (car lefts) (car rights) a)))))]
       [(vector? compound-list) 
-        (private:expansion+index-node->pairs (vector->list compound-list) index-node)]
+        (private:expansion+index-node->pairs-rev (vector->list compound-list) index-node acc)]
       [(pair? compound-list) 
-        (private:expansion+index-node->pairs `(,(car compound-list) ,(cdr compound-list)) index-node) ]
+        (private:expansion+index-node->pairs-rev `(,(car compound-list) ,(cdr compound-list)) index-node acc)]
       [(and (symbol? compound-list) (symbol? expression))
-        `((,index-node . ,compound-list))]
+        (cons `(,index-node . ,compound-list) acc)]
       ;symbol won't get pairs
-      [else '()])))
+      [else acc])))
 
 (define (private:confirm-clause literals clause-index-nodes input-expression)
   (let loop ([rest clause-index-nodes] [index 0])

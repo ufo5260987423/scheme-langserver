@@ -41,26 +41,53 @@
           '())))))
 
 (define (private:recursive-filter compound-list predicate?)
-  (cond 
-    [(predicate? compound-list) `(,compound-list)]
-    [(null? compound-list) '()]
-    [(pair? compound-list) 
-      `(,(private:recursive-filter (car compound-list) predicate?) . ,(private:recursive-filter (cdr compound-list) predicate?))]
-    [(vector? compound-list)
-      (private:recursive-filter (vector->list compound-list) predicate?)]))
+  (let loop ([stack (list compound-list)] [acc '()])
+    (if (null? stack)
+      (reverse acc)
+      (let ([current (car stack)] [rest (cdr stack)])
+        (cond 
+          [(predicate? current) 
+            (loop rest (cons current acc))]
+          [(null? current) 
+            (loop rest acc)]
+          [(pair? current) 
+            (loop (cons (car current) (cons (cdr current) rest)) acc)]
+          [(vector? current)
+            (loop (cons (vector->list current) rest) acc)]
+          [else 
+            (loop rest acc)])))))
 
 (define (private:recursive-collect expansion-index-node proc)
-  (let ([current (proc expansion-index-node)]
-      [children-results (apply append (map (lambda (child) (private:recursive-collect child proc)) (index-node-children expansion-index-node)))])
-    (if (null? current)
-      children-results
-      `((,expansion-index-node . ,current) . ,children-results))))
+  (let loop ([stack (list expansion-index-node)] [acc '()])
+    (if (null? stack)
+      (reverse acc)
+      (let* ([node (car stack)]
+          [current (proc node)]
+          [new-acc (if (null? current) acc (cons `(,node . ,current) acc))]
+          [children (index-node-children node)]
+          [new-stack 
+            (let child-loop ([cs children] [s (cdr stack)])
+              (if (null? cs)
+                s
+                (child-loop (cdr cs) (cons (car cs) s))))])
+        (loop new-stack new-acc)))))
 
 (define (private:find-nodes-by-symbol node sym)
   (if (index-node? node)
-    (if (eq? sym (annotation-stripped (index-node-datum/annotations node)))
-      `(,node)
-      (apply append (map (lambda (child) (private:find-nodes-by-symbol child sym)) (index-node-children node))))
+    (let loop ([stack (list node)] [acc '()])
+      (if (null? stack)
+        (reverse acc)
+        (let* ([current (car stack)]
+            [new-acc (if (eq? sym (annotation-stripped (index-node-datum/annotations current)))
+                      (cons current acc)
+                      acc)]
+            [children (index-node-children current)]
+            [new-stack 
+              (let child-loop ([cs children] [s (cdr stack)])
+                (if (null? cs)
+                  s
+                  (child-loop (cdr cs) (cons (car cs) s))))])
+          (loop new-stack new-acc))))
     '()))
 
 ; Shallow-copy is a reference back-propagator:
