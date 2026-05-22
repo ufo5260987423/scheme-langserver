@@ -74,3 +74,98 @@ Every `private:shallow-copy` call scans the entire `expanded+callee-list` to ext
 - `analysis/identifier/expanders/expansion-wrap.sls`
 - `analysis/identifier/expanders/syntax-rules.sls`
 - `analysis/identifier/expanders/pattern.sls`
+
+---
+
+# Memory Investigation: Auto Macro Expansion
+
+## Background
+
+While running the auto-macro test suite, multiple `scheme --script` processes each consume **800 MB+ RAM**, forcing manual kills. The issue is not limited to parallel test runs; even single-process `performance.sps` (full-project init) stays resident for 10+ minutes with high memory usage.
+
+## Memory Bottleneck Analysis
+
+### MEM-1: `append-references-into-ordered-references-for` — O(n² log n) reference maintenance
+
+**Location**: `analysis/identifier/reference.sls:182`
+
+Every call performs:
+1. `(append old-list new-items)` — copies the **entire** existing list
+2. `sort-identifier-references` — O(n log n) sort over the merged list
+3. `ordered-dedupe` — O(n) recursive dedupe (no hashtable optimization despite the module comment)
+
+Called **83 times** across the project. Inside `private:shallow-copy` (`expansion-wrap.sls:197`) it updates `document-ordered-reference-list` and `index-node-references-import-in-this-node`.
+
+As the document accumulates thousands of references, each insertion re-allocates and sorts the whole list. This is the single largest source of GC pressure and intermediate list allocation.
+
+**Fix**: defer sorting/deduping until read time (dirty-flag pattern), or replace `append` with `cons` and only sort on first query.
+
+### MEM-2: `index-node-references-export-to-other-node` built with `append`
+
+**Location**: `analysis/identifier/expanders/expansion-wrap.sls:194` and 20+ other files
+
+Pattern everywhere:
+```scheme
+(index-node-references-export-to-other-node-set!
+  node
+  (append (index-node-references-export-to-other-node node) `(,ni)))
+```
+
+Each insertion copies the whole export list. In `private:shallow-copy` this is compounded by:
+- `find` linear scan for duplicates (line 190) before appending
+- `private:sync-to-parent-expansion` (line 135) doing the same `append` again
+- cascade depth adds the same logical reference multiple times to the same node
+
+**Fix**: use `cons` instead of `append`; reverse only when the list is read. Or maintain an `eq-hashtable` of already-added identifiers per node.
+
+### MEM-3: `private:expander-doc-cache-ht` — global cache never cleared
+
+**Location**: `analysis/abstract-interpreter.sls:270`
+
+```scheme
+(define private:expander-doc-cache-ht (make-eq-hashtable))
+```
+
+Only `hashtable-set!`, never cleared. During full-project analysis `step` visits thousands of nodes; every miss is cached. After a large workspace init the hashtable may hold tens of thousands of `(node . (expanded+callee-list . result))` entries.
+
+**Fix**: clear the hashtable at the start of `init-references` / `private-init-references`.
+
+### MEM-4: `make-identifier-reference` creates duplicate objects
+
+**Location**: `analysis/identifier/expanders/expansion-wrap.sls:179` and `:123`
+
+`private:shallow-copy` and `private:sync-to-parent-expansion` create brand-new `identifier-reference` records (10 fields each) for every export/import pair. The same logical binding may be re-created dozens of times during cascade expansion.
+
+**Fix**: intern / reuse identical references via a weak eq-hashtable keyed by `(identifier document index-node init-node library-id type top-env)`.
+
+### MEM-5: `build-reverse-map` temporary hashtable per `shallow-copy`
+
+**Location**: `analysis/identifier/expanders/expansion-wrap.sls:108`
+
+Every `private:shallow-copy` call allocates a fresh `eq-hashtable`, fills it from `all-pairs`, then discards it. With hundreds of pairs and deep cascades this creates many short-lived hashtables.
+
+**Fix**: since OPT-5 already incrementally maintains `all-pairs`, consider also incrementally maintaining `reverse-map` inside `expanded+callee-list` entries (same 6th-slot technique), turning per-call allocation into per-entry update.
+
+### MEM-6: `clear-references-for` defined but never called
+
+**Location**: `virtual-file-system/index-node.sls:198`
+
+```scheme
+(define (clear-references-for index-node)
+  (index-node-references-export-to-other-node-set! index-node '())
+  (index-node-references-import-in-this-node-set! index-node '())
+  (for-each clear-references-for (index-node-children index-node)))
+```
+
+`private-init-references` (`analysis/workspace.sls:144`) never clears old references before re-running `step`. On incremental refresh (`refresh-workspace-for`), new references are appended on top of stale ones, causing a memory leak.
+
+**Fix**: call `(clear-references-for (car (document-index-node-list document)))` at the top of `private-init-references`.
+
+## Execution Plan
+
+- [ ] **MEM-1** Defer `sort`+`dedupe` in `append-references-into-ordered-references-for`
+- [ ] **MEM-2** Replace `append` with `cons` (or eq-hashtable guard) for export lists
+- [ ] **MEM-3** Clear `private:expander-doc-cache-ht` on each `init-references`
+- [ ] **MEM-4** Intern / deduplicate `make-identifier-reference` in shallow-copy
+- [ ] **MEM-5** Incrementally maintain `reverse-map` (optional, lower priority)
+- [ ] **MEM-6** Call `clear-references-for` at start of `private-init-references`
