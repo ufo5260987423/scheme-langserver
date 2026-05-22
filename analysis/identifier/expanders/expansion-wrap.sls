@@ -30,8 +30,12 @@
               [expansion-index-node (cdr pairs+expansion)]
               [possible-new-memory `(,expression . ,memory)]
               [expander-doc (if expander-ref (identifier-reference-document expander-ref) #f)]
+              [previous-all-pairs (if (null? expanded+callee-list)
+                                    '()
+                                    (list-ref (car expanded+callee-list) 4))]
+              [new-all-pairs (append pairs previous-all-pairs)]
               [new-expanded+callee-list 
-                (cons `(,expansion-index-node ,index-node ,expander-doc ,pairs) expanded+callee-list)])
+                (cons `(,expansion-index-node ,index-node ,expander-doc ,pairs ,new-all-pairs) expanded+callee-list)])
             ; Guard 1: prevent re-expansion of the exact same expression.
             ; Guard 2: cap memory chain length to avoid infinite cascades
             ; (e.g. match -> match-next -> match-one -> ...).
@@ -96,7 +100,9 @@
 ; correspondence, so that IDE features (go-to-definition, completion)
 ; work on user-written code.
 (define (extract-all-pairs expanded+callee-list)
-  (apply append (map (lambda (entry) (list-ref entry 3)) expanded+callee-list)))
+  (if (null? expanded+callee-list)
+    '()
+    (list-ref (car expanded+callee-list) 4)))
 
 (define (build-reverse-map all-pairs)
   (let ([ht (make-eq-hashtable)])
