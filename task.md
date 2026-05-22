@@ -169,3 +169,164 @@ Every `private:shallow-copy` call allocates a fresh `eq-hashtable`, fills it fro
 - [ ] **MEM-4** Intern / deduplicate `make-identifier-reference` in shallow-copy
 - [ ] **MEM-5** Incrementally maintain `reverse-map` (optional, lower priority)
 - [ ] **MEM-6** Call `clear-references-for` at start of `private-init-references`
+
+---
+
+# Appendix: Chez Scheme Memory Profiling Investigation Plan
+
+## Available Tools
+
+### 1. Runtime statistics (`statistics` / `sstats`)
+
+```scheme
+(import (chezscheme))
+(define s (statistics))
+(sstats-bytes s)      ; cumulative bytes allocated
+(sstats-gc-count s)   ; number of GCs
+(sstats-gc-cpu s)     ; GC CPU time
+(sstats-gc-real s)    ; GC real time
+(bytes-allocated)     ; shorthand for sstats-bytes
+(collect)             ; force full GC
+(display-statistics)  ; pretty-print summary
+```
+
+**Usage**: wrap a thunk with before/after `(statistics)` snapshots to compute delta bytes / delta GC time.
+
+### 2. Object-type census (`object-counts`)
+
+```scheme
+(object-counts)
+;; => ((flvector (static 1 . 16))
+;;     (pair (static 112336 . 1797376))
+;;     (vector (static 23937 . 1465568))
+;;     ...)
+```
+
+Returns per-generation counts and byte sizes for each primitive object type (`pair`, `vector`, `string`, `symbol`, `closure`, `hashtable`, etc.).
+
+**Limitation**: cannot distinguish user record types (e.g. `identifier-reference` vs generic `vector`).
+
+### 3. Guardian-based object tracking (`make-guardian`)
+
+```scheme
+(define g (make-guardian))
+(g (make-identifier-reference ...))
+(collect)
+(g)  ;; => #f if reclaimed, or the object if still alive
+```
+
+Weak-reference guardian. Useful for observing whether short-lived objects are actually being reclaimed between GCs.
+
+### 4. Process-level measurement (GNU `time -v`)
+
+Already used in testing:
+```bash
+/usr/bin/time -v scheme --script test.sps
+# => Maximum resident set size (kbytes): 446580
+```
+
+**Limitation**: only gives final peak RSS, not per-function attribution.
+
+## Missing Tools (Chez Scheme does not provide)
+
+| Tool | Status | Impact |
+|------|--------|--------|
+| Heap dump (`dump-memory`) | ❌ not bound | Cannot inspect individual object graphs |
+| Per-record-type counts | ❌ `object-counts` only sees primitives | Cannot count `identifier-reference` instances directly |
+| Line-level allocation profiler | ❌ not available | Cannot attribute bytes to specific source lines |
+| Heap snapshot diff | ❌ not available | Must manually sample before/after |
+
+## Investigation Plan
+
+Given the tool constraints, the practical approach is **delta sampling** at key boundaries.
+
+### Phase 1: Function-level allocation attribution
+
+**Goal**: pinpoint which function is responsible for the most byte allocation during cascade expansion.
+
+**Method**:
+1. Add a helper `with-memory-sampling` macro in `bin/memory-investigation.ss`:
+   ```scheme
+   (define-syntax with-memory-sampling
+     (syntax-rules ()
+       [(_ label body ...)
+        (let ([s0 (statistics)]
+              [t0 (current-time)])
+          (let ([result (begin body ...)])
+            (let ([s1 (statistics)])
+              (printf "[~a] alloc=~a gc-cpu=~a ms\n"
+                label
+                (- (sstats-bytes s1) (sstats-bytes s0))
+                (gc-time-diff s1 s0)))
+            result))]))
+   ```
+2. Instrument the four hotspots inside `expansion-wrap.sls`:
+   - `private:shallow-copy` (total)
+   - `private:sync-to-parent-expansion`
+   - `build-reverse-map`
+   - the inner `append-references-into-ordered-references-for` loop
+3. Run `test-match-cascade-auto-resolve.sps` under this instrumented build.
+4. Output: a ranked list of which function allocates the most bytes per invocation.
+
+### Phase 2: Object-type census snapshots
+
+**Goal**: determine whether the explosion is dominated by `pair` (list copying) or `vector` (hashtables / records).
+
+**Method**:
+1. Force GC (`collect`) before and after the critical section.
+2. Capture `(object-counts)` at three checkpoints:
+   - After `init-workspace`
+   - Before first cascade `shallow-copy`
+   - After last cascade `shallow-copy`
+3. Compute delta for:
+   - `pair` (lists)
+   - `vector` (hashtables, record internals)
+   - `string` (symbol→string conversions in `identifier-compare?`)
+4. Output: which primitive type grows the most during expansion.
+
+### Phase 3: Guardian-based object survival check
+
+**Goal**: verify whether the 1.45GB peak is due to *retained* objects or just *transient* allocations that GC hasn't reclaimed yet.
+
+**Method**:
+1. In `reference.sls`, wrap `make-identifier-reference` to register each new instance in a global guardian:
+   ```scheme
+   (define identifier-reference-guardian (make-guardian))
+   (define (track-identifier-reference ref)
+     (identifier-reference-guardian ref)
+     ref)
+   ```
+2. After each cascade level, force `(collect)` and drain the guardian:
+   ```scheme
+   (let count-reclaimed ([n 0])
+     (if (identifier-reference-guardian)
+         (count-reclaimed (+ n 1))
+         n))
+   ```
+3. Output: how many `identifier-reference` objects survive vs. how many are reclaimed. If most survive, the leak is structural (retained in index-node lists). If most are reclaimed but peak is still high, the problem is allocation churn (temporary lists during `append`/`sort`).
+
+### Phase 4: Process-level baseline with controlled memory cap
+
+**Goal**: get a reproducible RSS peak for regression testing.
+
+**Method**:
+1. Use `ulimit -v` to set a virtual-memory ceiling (e.g. 2GB).
+2. Run `test-match-cascade-auto-resolve.sps` with GNU `time -v`.
+3. Record:
+   - `Maximum resident set size (kbytes)`
+   - `Minor (reclaiming a frame) page faults`
+   - Elapsed wall-clock time
+4. If the test completes within the cap, success. If it OOMs, the cap is the baseline threshold.
+
+## Deliverable
+
+A new file `bin/memory-investigation.ss` that:
+1. Imports the above helpers.
+2. Wraps `test-match-cascade-auto-resolve.sps` (or `performance.sps`) with Phase 1–3 instrumentation.
+3. Prints a structured report (text or JSON) showing:
+   - Per-function allocation deltas
+   - Object-type census deltas
+   - Guardian survival counts
+   - Final RSS from GNU `time`
+
+This script should be checked into the repo (not committed to `kimi` yet) so it can be reused for future MEM optimization verification.
