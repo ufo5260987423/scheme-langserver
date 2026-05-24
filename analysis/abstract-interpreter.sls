@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis abstract-interpreter)
-  (export step)
+  (export step clear-expander-doc-cache!)
   (import 
     (chezscheme) 
 
@@ -268,6 +268,9 @@
       identifier-list)))
 
 (define private:expander-doc-cache-ht (make-eq-hashtable))
+
+(define (clear-expander-doc-cache!)
+  (hashtable-clear! private:expander-doc-cache-ht))
 
 (define (private:find-expander-doc-for-node node expanded+callee-list)
   (let ([cached (hashtable-ref private:expander-doc-cache-ht node #f)])

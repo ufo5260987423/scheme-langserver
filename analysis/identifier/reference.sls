@@ -184,11 +184,11 @@
     (document-ordered-reference-list-set! document 
       (ordered-dedupe 
         (sort-identifier-references 
-          (append (document-ordered-reference-list document) list))))
+          (fold-left (lambda (acc x) (cons x acc)) (document-ordered-reference-list document) list))))
     (index-node-references-import-in-this-node-set! index-node
       (ordered-dedupe 
         (sort-identifier-references 
-          (append (index-node-references-import-in-this-node index-node) list))))))
+          (fold-left (lambda (acc x) (cons x acc)) (index-node-references-import-in-this-node index-node) list))))))
 
 (define (sort-identifier-references identifier-references)
   (sort identifier-compare? identifier-references))
