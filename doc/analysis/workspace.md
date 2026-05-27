@@ -112,7 +112,7 @@ Builds the dependency graph. See `doc/file-linkage.md` for details. The result i
 
 Accepts a list of **batches** (each batch is a list of file paths).
 
-If `threaded?` is true the batch is processed inside a `with-mutex` block. Before dispatching parallel work, `init-references` first serially clears per-document state (`document-diagnoses-set!` and `clear-references-for`) for every path in the batch. It then uses `threaded-map` to run `private-init-references` on each path concurrently. If false, plain `for-each` is used and the same clear-then-analyse sequence happens serially.
+If `threaded?` is true the batch is processed inside a `with-mutex` block. Before dispatching parallel work, `init-references` first serially extracts `syntax-diagnoses` and clears per-document state (`document-diagnoses-set!` and `clear-references-for`) for every path in the batch. It then uses `threaded-map` to run `private-init-references` on each path concurrently. If false, plain `for-each` is used and the same extract-then-clear-then-analyse sequence happens serially.
 
 `private-init-references` performs the actual per-file analysis:
 
@@ -188,7 +188,7 @@ When `threaded?` is `#t`:
 - `init-references` wraps each batch inside `(with-mutex mutex ...)`.
 - Within the mutex it uses `threaded-map` to analyse files in a batch concurrently.
 
-Because all shared mutable state updates happen inside the mutex, batches themselves are processed **serially** (preserving dependency order), while files *inside* a batch run in parallel.
+Because the serial pre-phase (extract + clear) happens inside the mutex, batches themselves are processed **serially** (preserving dependency order), while files *inside* a batch run in parallel. See [§7 Workspace Mutex](#7-workspace-mutex) for the design rationale.
 
 ### 6.2 Type Inference
 
@@ -249,3 +249,98 @@ init-references
 
 - **Empty documents for unreadable files**  
   If `read-string` returns `#f` or an EOF object, `init-document` still produces a valid document with empty text. This keeps the VFS consistent and prevents null-pointer-like crashes later in the pipeline.
+
+---
+
+## 7. Workspace Mutex
+
+### 7.1 Design purpose
+
+`workspace-mutex` is **not** a generic lock that protects every mutable field in the workspace. Its purpose is specific:
+
+> **Isolate editor document-sync operations from background analysis operations so that the workspace is never in a partially-updated state while `step` or `clear-references-for` is running.**
+
+In other words, it is a **read/write exclusion barrier** between two actors:
+
+| Actor | Operations | Files |
+|-------|-----------|-------|
+| **Editor (write)** | `didChange`, `didOpen`, `didClose`, `did-change-watched-files` | `protocol/apis/document-sync.sls`, `protocol/apis/file-change-notification.sls` |
+| **Background analysis (read + derived write)** | `init-references` → `step` → write references/diagnoses | `analysis/workspace.sls` |
+
+When `threaded?` is `#f` the mutex is `'()` and never acquired; the single thread naturally serialises everything. When `threaded?` is `#t` the mutex is created via `(make-mutex)` and used at every boundary where editor traffic and analysis could otherwise interleave.
+
+### 7.2 Why this matters
+
+`update-file-node-with-tail` (called by `didChange`) performs a **wholesale replacement** of a document's core state:
+
+1. Re-tokenises the text (`source-file->annotations`), producing new `document-diagnoses`.
+2. Rebuilds the AST (`document-index-node-list`).
+3. Replaces `document-text` and `document-line-length-vector`.
+4. Updates `file-linkage` and `library-node` if the library header changed.
+
+If `step` (or `clear-references-for`) is traversing the old `index-node-list` while `didChange` swaps the tree out from under it, the result is a dangling pointer or a half-initialised node — exactly the kind of crash that `c752796` fixed by serialising the clear phase.
+
+### 7.3 Critical section in `init-references`
+
+```scheme
+(if (workspace-threaded? workspace-instance)
+  (let ([path+syntax-pairs
+      (with-mutex (workspace-mutex workspace-instance)
+        (map
+          (lambda (path)
+            (let* ([...]
+                [syntax-diagnoses 
+                  (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+                    (document-diagnoses document))])
+              (document-diagnoses-set! document '())
+              (clear-references-for (car index-node-list))
+              (cons path syntax-diagnoses)))
+          paths))])
+    (threaded-map 
+      (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
+      path+syntax-pairs))
+  ...)
+```
+
+The `with-mutex` block contains the **serial pre-phase**: read `syntax-diagnoses`, clear `document-diagnoses`, clear old references. All three touch the same mutable document state. Keeping them inside the mutex guarantees that an editor `didChange` cannot slip in between the read (extract) and the write (clear), which would otherwise cause stale or lost syntax errors.
+
+`threaded-map` runs **outside** the mutex. Each worker thread operates on a *different* document, so there is no cross-document contention. Holding the mutex during the entire `threaded-map` would block the editor for the full duration of the batch analysis, defeating the purpose of parallelism.
+
+### 7.4 Critical section in `document-sync.sls`
+
+```scheme
+(define (did-change workspace params)
+  (let ([body (lambda () ... (update-file-node-with-tail workspace file-node text) ...)])
+    (if (null? (workspace-mutex workspace))
+      (body)
+      (with-mutex (workspace-mutex workspace) (body)))))
+```
+
+The body of `did-change` mutates document text, re-parses, and rebuilds the index-node tree. Wrapping it in `workspace-mutex` ensures these mutations are atomic with respect to `init-references`.
+
+### 7.5 Critical section in `file-change-notification.sls`
+
+`did-change-watched-files` (file-system watcher events such as git checkout) can attach, update, or delete file nodes. It uses the same pattern:
+
+```scheme
+(if (null? (workspace-mutex workspace))
+  (body)
+  (with-mutex (workspace-mutex workspace) (body)))
+```
+
+### 7.6 Relationship to `request-queue-mutex`
+
+The project deliberately maintains **two separate locks**:
+
+| Lock | Protected resource | Held during |
+|------|-------------------|-------------|
+| `request-queue-mutex` | `queue` (slib queue) and `tickal-task-list` | `push`, `pop`, `remove:from-request-tickal-task-list` |
+| `workspace-mutex` | Workspace mutable state (document, index-node, linkage, library-node) | `init-references` serial pre-phase, `didChange`, `expire` callback |
+
+Once a worker thread dequeues a task, `request-queue-pop` returns a thunk and **releases the queue mutex before the thunk is invoked**. The actual execution of `request-processor` (and the engine that wraps it) runs **outside** the queue mutex. This prevents a slow request from starving the I/O thread or the timer thread.
+
+`workspace-mutex` is acquired only when the thunk actually touches workspace state.
+
+### 7.7 Single-threaded fallback
+
+When `threaded?` is `#f`, `(workspace-mutex workspace)` is `'()`. Every call site checks `(null? (workspace-mutex workspace))` and skips the lock. In this mode the request-queue still exists but has only one worker thread, so natural serialization makes the mutex unnecessary.
