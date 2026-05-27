@@ -133,37 +133,47 @@
           ;; will try to acquire workspace-mutex. Holding it for the entire
           ;; batch ensures expire cannot interrupt the engine mid-analysis,
           ;; which would leave document-* fields in an inconsistent state.
-          (with-mutex (workspace-mutex workspace-instance)
-            (for-each
-              (lambda (path)
-                (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
-                    [document (file-node-document current-file-node)]
-                    [index-node-list (document-index-node-list document)])
-                  (document-diagnoses-set! document '())
-                  (clear-references-for (car index-node-list))))
-              paths)
+          (let ([path+syntax-pairs
+              (with-mutex (workspace-mutex workspace-instance)
+                (map
+                  (lambda (path)
+                    (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
+                        [document (file-node-document current-file-node)]
+                        [index-node-list (document-index-node-list document)]
+                        [syntax-diagnoses 
+                          (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+                            (document-diagnoses document))])
+                      (document-diagnoses-set! document '())
+                      (clear-references-for (car index-node-list))
+                      (cons path syntax-diagnoses)))
+                  paths))])
             (threaded-map 
-              (lambda (path) (private-init-references workspace-instance path))
-              paths))
+              (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
+              path+syntax-pairs))
           (begin
             (for-each
               (lambda (path)
                 (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
                     [document (file-node-document current-file-node)]
-                    [index-node-list (document-index-node-list document)])
+                    [index-node-list (document-index-node-list document)]
+                    [syntax-diagnoses 
+                      (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+                        (document-diagnoses document))])
                   (document-diagnoses-set! document '())
                   (clear-references-for (car index-node-list))
-                  (private-init-references workspace-instance path)))
+                  (private-init-references workspace-instance path syntax-diagnoses)))
               paths)))))
     target-paths))
 
-(define (private-init-references workspace-instance target-path)
+(define (private-init-references workspace-instance target-path . maybe-syntax-diagnoses)
   (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)]
       [syntax-diagnoses 
-        (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
-          (document-diagnoses document))])
+        (if (null? maybe-syntax-diagnoses)
+          (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+            (document-diagnoses document))
+          (car maybe-syntax-diagnoses))])
     ; (pretty-print 'test0)
     ; (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)
