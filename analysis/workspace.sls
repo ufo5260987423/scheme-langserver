@@ -126,31 +126,44 @@
 (define (init-references workspace-instance target-paths) 
   (for-each 
     (lambda (batch)
-      (if (workspace-threaded? workspace-instance)
-        ;; Cancel-barrier: did-change may mark completion/hover/definition
-        ;; tasks as stop?=#t in the tickal-task-list. Their expire callbacks
-        ;; will try to acquire workspace-mutex. Holding it for the entire
-        ;; batch ensures expire cannot interrupt the engine mid-analysis,
-        ;; which would leave document-* fields in an inconsistent state.
-        (with-mutex (workspace-mutex workspace-instance)
-          (threaded-map 
-            (lambda (path) (private-init-references workspace-instance path))
-            (filter string? batch)))
-        (for-each 
-          (lambda (path) (private-init-references workspace-instance path))
-          (filter string? batch))))
+      (let ([paths (filter string? batch)])
+        (if (workspace-threaded? workspace-instance)
+          ;; Cancel-barrier: did-change may mark completion/hover/definition
+          ;; tasks as stop?=#t in the tickal-task-list. Their expire callbacks
+          ;; will try to acquire workspace-mutex. Holding it for the entire
+          ;; batch ensures expire cannot interrupt the engine mid-analysis,
+          ;; which would leave document-* fields in an inconsistent state.
+          (with-mutex (workspace-mutex workspace-instance)
+            (for-each
+              (lambda (path)
+                (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
+                    [document (file-node-document current-file-node)]
+                    [index-node-list (document-index-node-list document)])
+                  (document-diagnoses-set! document '())
+                  (clear-references-for (car index-node-list))))
+              paths)
+            (threaded-map 
+              (lambda (path) (private-init-references workspace-instance path))
+              paths))
+          (begin
+            (for-each
+              (lambda (path)
+                (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
+                    [document (file-node-document current-file-node)]
+                    [index-node-list (document-index-node-list document)])
+                  (document-diagnoses-set! document '())
+                  (clear-references-for (car index-node-list))
+                  (private-init-references workspace-instance path)))
+              paths)))))
     target-paths))
 
 (define (private-init-references workspace-instance target-path)
-  (clear-expander-doc-cache!)
   (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)]
       [syntax-diagnoses 
         (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
           (document-diagnoses document))])
-    (document-diagnoses-set! document '())
-    (clear-references-for (car index-node-list))
     ; (pretty-print 'test0)
     ; (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)

@@ -85,14 +85,9 @@ The generation pipeline is triggered by `init-references` (batch analysis) or
 
 #### 3.1.1 `private-init-references`
 
-For each target path:
+For each target path (after `init-references` has already cleared stale diagnostics and import/export references serially):
 
-1. **Clear old diagnostics**:
-   ```scheme
-   (document-diagnoses-set! document '())
-   ```
-
-2. **Run the abstract interpreter** (`step`):
+1. **Run the abstract interpreter** (`step`):
    - Resolves identifier references across the file graph.
    - If resolution fails, appends a warning:
      ```scheme

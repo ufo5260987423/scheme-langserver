@@ -110,17 +110,16 @@ Builds the dependency graph. See `doc/file-linkage.md` for details. The result i
 
 ### 3.6 `init-references`
 
-Accepts a list of **batches** (each batch is a list of file paths). For every batch it calls `private-init-references` on each path.
+Accepts a list of **batches** (each batch is a list of file paths).
 
-If `threaded?` is true the batch is processed with `threaded-map` inside a `with-mutex` block so that the shared workspace state is updated safely. If false, plain `for-each` is used.
+If `threaded?` is true the batch is processed inside a `with-mutex` block. Before dispatching parallel work, `init-references` first serially clears per-document state (`document-diagnoses-set!` and `clear-references-for`) for every path in the batch. It then uses `threaded-map` to run `private-init-references` on each path concurrently. If false, plain `for-each` is used and the same clear-then-analyse sequence happens serially.
 
 `private-init-references` performs the actual per-file analysis:
 
-1. Clears existing diagnoses.
-2. Runs the abstract interpreter (`step`) with the current file-node, library-node, linkage, and document.
-3. Runs `process-library-identifier-excluded-references` to resolve identifiers that are not covered by the library system (e.g. top-level bindings).
-4. Optionally runs `construct-substitutions-for` (type inference) if `type-inference?` is enabled. Errors during type inference are caught and logged as warnings rather than crashing the server.
-5. Marks the document as **not refreshable** (`document-refreshable?-set! document #f`), indicating it is up-to-date.
+1. Runs the abstract interpreter (`step`) with the current file-node, library-node, linkage, and document.
+2. Runs `process-library-identifier-excluded-references` to resolve identifiers that are not covered by the library system (e.g. top-level bindings).
+3. Optionally runs `construct-substitutions-for` (type inference) if `type-inference?` is enabled. Errors during type inference are caught and logged as warnings rather than crashing the server.
+4. Marks the document as **not refreshable** (`document-refreshable?-set! document #f`), indicating it is up-to-date.
 
 ---
 
