@@ -52,7 +52,7 @@ Previous releases: see [release-log.md](./doc/release-log.md).
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 8. Catching local identifier bindings in `define-syntax`, `let-syntax`, and other macro forms via hand-written rules.
-9. **Automatic macro resolution** for `syntax-rules` / `syntax-case` macros via generic expansion and `shallow-copy` reference back-propagation. Currently enabled for the `(ufo-match)` library; auxiliary macros (`match-next`, `match-one`, `match-two`, etc.) are handled by the same rule.
+9. **Automatic macro resolution** (experimental) for `syntax-rules` / `syntax-case` macros via generic expansion and `shallow-copy` reference back-propagation. The mechanism is functionally correct but too slow for production use on real-world projects (it triggers heavy macro expansion and cross-document reference back-propagation for every macro use site). For this reason it is **not enabled by default**; `(ufo-match)` currently falls back to a hand-written `match-process` rule instead. If you are interested in pushing this research forward—e.g. via lazy expansion, incremental caching, or selective rule generation—contributions and discussions are very welcome!
 10. Cross-platform parallel indexing.
 11. Custom source-code annotator compatible with `.sps` files.
 12. Peephole optimization for API requests using suspendable tasks.
