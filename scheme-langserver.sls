@@ -233,11 +233,11 @@
                 ;in case of specific parallel-log-debug.sps trouble
                 [(and debug? thread-pool (not request-message)) 
                   (server-shutdown?-set! server-instance #t)
-                  (thread-pool-stop! thread-pool)]
+                  (exit 0)]
 
                 [(not request-message) 
                   (server-shutdown?-set! server-instance #t)
-                  (when thread-pool (thread-pool-stop! thread-pool))]
+                  (exit 0)]
 
                 [thread-pool
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
