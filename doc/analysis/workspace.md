@@ -284,8 +284,8 @@ If `step` (or `clear-references-for`) is traversing the old `index-node-list` wh
 
 ```scheme
 (if (workspace-threaded? workspace-instance)
-  (let ([path+syntax-pairs
-      (with-mutex (workspace-mutex workspace-instance)
+  (with-mutex (workspace-mutex workspace-instance)
+    (let ([path+syntax-pairs
         (map
           (lambda (path)
             (let* ([...]
@@ -295,16 +295,16 @@ If `step` (or `clear-references-for`) is traversing the old `index-node-list` wh
               (document-diagnoses-set! document '())
               (clear-references-for (car index-node-list))
               (cons path syntax-diagnoses)))
-          paths))])
-    (threaded-map 
-      (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
-      path+syntax-pairs))
+          paths)])
+      (threaded-map 
+        (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
+        path+syntax-pairs)))
   ...)
 ```
 
-The `with-mutex` block contains the **serial pre-phase**: read `syntax-diagnoses`, clear `document-diagnoses`, clear old references. All three touch the same mutable document state. Keeping them inside the mutex guarantees that an editor `didChange` cannot slip in between the read (extract) and the write (clear), which would otherwise cause stale or lost syntax errors.
+The `with-mutex` block now covers the **entire batch**: serial extraction of `syntax-diagnoses`, clearing of per-document state, and the subsequent `threaded-map` parallel analysis. This guarantees that no editor `didChange` can interleave with `step` or `clear-references-for` at any point during the batch.
 
-`threaded-map` runs **outside** the mutex. Each worker thread operates on a *different* document, so there is no cross-document contention. Holding the mutex during the entire `threaded-map` would block the editor for the full duration of the batch analysis, defeating the purpose of parallelism.
+**Trade-off**: holding the mutex for the full duration of `threaded-map` means `didChange` notifications are blocked until the batch finishes. In practice the batches are small (topological slices from `shrink-paths`) and the blocking time is acceptable. The alternative — running `threaded-map` outside the mutex — left a theoretical race where `didChange` could replace `document-index-node-list` while a `default-pool` worker was still traversing the old tree via `step`.
 
 ### 7.4 Critical section in `document-sync.sls`
 
@@ -335,7 +335,7 @@ The project deliberately maintains **two separate locks**:
 | Lock | Protected resource | Held during |
 |------|-------------------|-------------|
 | `request-queue-mutex` | `queue` (slib queue) and `tickal-task-list` | `push`, `pop`, `remove:from-request-tickal-task-list` |
-| `workspace-mutex` | Workspace mutable state (document, index-node, linkage, library-node) | `init-references` serial pre-phase, `didChange`, `expire` callback |
+| `workspace-mutex` | Workspace mutable state (document, index-node, linkage, library-node) | `init-references` entire batch (serial pre-phase + `threaded-map`), `didChange`, `expire` callback |
 
 Once a worker thread dequeues a task, `request-queue-pop` returns a thunk and **releases the queue mutex before the thunk is invoked**. The actual execution of `request-processor` (and the engine that wraps it) runs **outside** the queue mutex. This prevents a slow request from starving the I/O thread or the timer thread.
 

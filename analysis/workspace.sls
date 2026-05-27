@@ -133,8 +133,8 @@
           ;; will try to acquire workspace-mutex. Holding it for the entire
           ;; batch ensures expire cannot interrupt the engine mid-analysis,
           ;; which would leave document-* fields in an inconsistent state.
-          (let ([path+syntax-pairs
-              (with-mutex (workspace-mutex workspace-instance)
+          (with-mutex (workspace-mutex workspace-instance)
+            (let ([path+syntax-pairs
                 (map
                   (lambda (path)
                     (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
@@ -146,10 +146,10 @@
                       (document-diagnoses-set! document '())
                       (clear-references-for (car index-node-list))
                       (cons path syntax-diagnoses)))
-                  paths))])
-            (threaded-map 
-              (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
-              path+syntax-pairs))
+                  paths)])
+              (threaded-map 
+                (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
+                path+syntax-pairs)))
           (begin
             (for-each
               (lambda (path)

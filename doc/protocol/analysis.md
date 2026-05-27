@@ -122,7 +122,7 @@ The design deliberately separates the lock that protects queue metadata from the
 | Lock | Protected resource | Held during |
 |------|-------------------|-------------|
 | `request-queue-mutex` | `queue` (slib queue) and `tickal-task-list` | `push`, `pop` (dequeue only), `remove:from-request-tickal-task-list` |
-| `workspace-mutex` | Mutable workspace fields (file-node, library-node, linkage, undiagnosed-paths) | `init-references` (batch processing), `expire` callback when `stop?` is true |
+| `workspace-mutex` | Mutable workspace fields (file-node, library-node, linkage, undiagnosed-paths) | `init-references` entire batch (serial pre-phase + `threaded-map`), `expire` callback when `stop?` is true |
 
 Crucially, once the worker thread dequeues a task, `request-queue-pop` returns a thunk and **releases the queue mutex before the thunk is invoked**. Therefore, the actual execution of `request-processor` (and the engine that wraps it) runs **outside** the queue mutex. This prevents a slow request from starving the I/O thread or the timer thread.
 
@@ -164,6 +164,8 @@ If the worker thread has already dequeued the task and passed it to `make-engine
   - If `stop?` is still `#f`, it calls `(remains ticks complete expire)` to grant another time slice and continue.
 
 The `workspace-mutex` acquisition in `expire` is deliberate: it ensures that the task is torn down only when no other thread is modifying the workspace, preventing orphaned or inconsistent index state.
+
+> **Note on deadlock avoidance**: `init-references` now holds `workspace-mutex` for the entire duration of its inner `threaded-map`. However, `expire` is invoked only in the request-queue worker thread, and during `threaded-map` that worker is blocked on `de-optional`/`condition-wait`, where the Chez engine does **not** consume ticks. Therefore `expire` cannot fire while `init-references` still holds the mutex, and the two cannot deadlock.
 
 #### 7.4 Why engine time slicing is necessary for cancellation
 
