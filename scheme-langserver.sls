@@ -233,11 +233,16 @@
                 ;in case of specific parallel-log-debug.sps trouble
                 [(and debug? thread-pool (not request-message)) 
                   (server-shutdown?-set! server-instance #t)
-                  (exit 0)]
+                  (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
+                  (thread-pool-stop! thread-pool)
+                  server-instance]
 
                 [(not request-message) 
                   (server-shutdown?-set! server-instance #t)
-                  (exit 0)]
+                  (when thread-pool
+                    (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
+                    (thread-pool-stop! thread-pool))
+                  server-instance]
 
                 [thread-pool
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
