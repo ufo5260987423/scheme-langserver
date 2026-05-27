@@ -154,7 +154,7 @@ match → match-next → match-one → match-two → match-check-ellipsis → ma
 
 `ufo-match` 是一个**"宏家族"**：`match` 展开后产生 `match-next` 调用，`match-next` 展开后产生 `match-one` 调用，`match-one` 展开后产生 `match-two` 调用……每一层展开都会引入新的宏调用，形成深度数十层的级联。`expansion-generator->rule` 中的 `memory` 只防止**同一表达式**的重复展开，但无法阻止**不同表达式**的链式展开。
 
-作为对比，`simple-let`（`test-simple-macro-auto-resolve.sps` 通过的原因）展开后直接变成 primitive `let`，不再引入新宏调用，因此不会级联。
+作为对比，`simple-let`（`test-auto-resolve-basic.sps` 中保留了原 `test-simple-macro-auto-resolve.sps` 的测试用例）展开后直接变成 primitive `let`，不再引入新宏调用，因此不会级联。
 
 ### 4. 已知限制：`ellipse-pair-form` 处理
 `syntax-rules->generator:map+expansion` 中的 `private:expansion+index-node->pairs` 对 `ellipse-pair-form`（如 `(p ...)` 展开为多个元素）存在长度不匹配问题。这会导致某些含 ellipsis 的宏调用无法正确建立展开前后的节点对应关系，进而影响 `shallow-copy` 的引用回传。
@@ -169,7 +169,7 @@ match → match-next → match-one → match-two → match-check-ellipsis → ma
 1. 对 `ufo-match` 这种宏家族，自动展开会导致级联超时。
 2. `ellipse-pair-form` 的节点对应关系尚未完善。
 
-`router.sls` 中相关代码已注释保留（见 `analysis/identifier/self-defined-rules/router.sls:58-69`），以便未来有新办法时重新开发。
+`router.sls` 中相关代码已注释保留（见 `analysis/identifier/self-defined-rules/router.sls:51-65`），以便未来有新办法时重新开发。
 
 ## 未来可能的开发方向
 
