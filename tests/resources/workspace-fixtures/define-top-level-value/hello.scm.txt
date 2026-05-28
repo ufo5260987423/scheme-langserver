@@ -1,0 +1,2 @@
+(define-top-level-value x 42)
+(display x)

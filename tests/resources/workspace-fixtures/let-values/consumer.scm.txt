@@ -1,0 +1,9 @@
+(library (consumer)
+  (export consumer)
+  (import (rnrs (6)))
+
+  (define (consumer)
+    (let-values (((x y) (values 1 2))
+                 ((a b) (values 3 4)))
+      (+ x y a b)))
+)

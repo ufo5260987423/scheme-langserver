@@ -188,7 +188,7 @@ When `threaded?` is `#t`:
 - `init-references` wraps each batch inside `(with-mutex mutex ...)`.
 - Within the mutex it uses `threaded-map` to analyse files in a batch concurrently.
 
-Because the serial pre-phase (extract + clear) happens inside the mutex, batches themselves are processed **serially** (preserving dependency order), while files *inside* a batch run in parallel. See [§7 Workspace Mutex](#7-workspace-mutex) for the design rationale.
+Because the entire batch (serial pre-phase + `threaded-map`) happens inside the mutex, editor sync and background analysis are fully isolated for the duration of the batch. Batches themselves are processed **serially** by the single-consumer request-queue, while files *inside* a batch run in parallel under the mutex. See [§7 Workspace Mutex](#7-workspace-mutex) for the design rationale.
 
 ### 6.2 Type Inference
 

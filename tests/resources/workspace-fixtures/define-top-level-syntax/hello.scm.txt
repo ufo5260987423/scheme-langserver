@@ -1,0 +1,3 @@
+(define-top-level-syntax my-when
+  (syntax-rules ()
+    [(_ test body ...) (if test (begin body ...) #f)]))

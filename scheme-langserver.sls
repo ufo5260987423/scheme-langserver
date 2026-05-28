@@ -220,7 +220,14 @@
                       (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance)))
                     (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
-                  #f)])
+                  #f)]
+              [private:shutdown-server
+                (lambda ()
+                  (server-shutdown?-set! server-instance #t)
+                  (when thread-pool
+                    (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
+                    (thread-pool-stop! thread-pool))
+                  server-instance)])
             (when thread-pool
               (start-timer interval-timer)
               (thread-pool-add-job thread-pool 
@@ -232,17 +239,10 @@
               (cond 
                 ;in case of specific parallel-log-debug.sps trouble
                 [(and debug? thread-pool (not request-message)) 
-                  (server-shutdown?-set! server-instance #t)
-                  (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
-                  (thread-pool-stop! thread-pool)
-                  server-instance]
+                  (private:shutdown-server)]
 
                 [(not request-message) 
-                  (server-shutdown?-set! server-instance #t)
-                  (when thread-pool
-                    (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
-                    (thread-pool-stop! thread-pool))
-                  server-instance]
+                  (private:shutdown-server)]
 
                 [thread-pool
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))

@@ -1,0 +1,10 @@
+(library (consumer)
+  (export consumer)
+  (import (rnrs (6)))
+
+  (define-record-type point
+    (fields (mutable x)))
+
+  (define (consumer)
+    (make-point 1))
+)

@@ -1,0 +1,7 @@
+(library (consumer)
+  (export foo bar)
+  (import (rnrs (6)))
+
+  (define foo 1)
+  (define bar 2)
+)
