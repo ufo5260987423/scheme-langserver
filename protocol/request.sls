@@ -10,6 +10,7 @@
     read-message)
   (import 
     (chezscheme) 
+    (ufo-try)
     (scheme-langserver util json)
     (scheme-langserver util association)
     (scheme-langserver util io)
@@ -24,18 +25,21 @@
         (immutable params)))
 
 (define (read-message server-instance)
-    (guard (e [else 
-                (do-log "read-message error" server-instance)
-                (do-log (with-output-to-string (lambda () (pretty-print e))) server-instance)
-                #f])
-      (let* ([header-hashtable (read-headers (server-input-port server-instance))]
-              [json-content (read-content header-hashtable (server-input-port server-instance))])
-        (do-log "read-message" server-instance)
-        (do-log-timestamp  server-instance)
-        (do-log json-content server-instance)
-        (if (equal? "" json-content)
-            #f
-            (parse-content json-content)))))
+    (let ([input-port (server-input-port server-instance)])
+      (try
+        (let* ([header-hashtable (read-headers input-port)]
+                [json-content (read-content header-hashtable input-port)])
+          (do-log "read-message" server-instance)
+          (do-log-timestamp  server-instance)
+          (do-log json-content server-instance)
+          (if (equal? "" json-content)
+              (raise 'eof)
+              (parse-content json-content)))
+        (except e
+          [(or (eof-object? e) (eq? e 'eof) (i/o-error? e) (i/o-read-error? e))
+           (raise 'eof)]
+          [else
+           (raise (list 'parse-error e))]))))
 
 ;; header
 ;;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#headerPart
