@@ -73,7 +73,9 @@
     (if (equal? "exit" method)
       (exit (if (server-shutdown? server-instance) 0 1))
       (if (server-shutdown? server-instance)
-        (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
+        (if (and id (not (null? id)))
+          (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
+          '())
         (case method
           ["initialize" (send-message server-instance (initialize server-instance id params))] 
           ["initialized" '()] 

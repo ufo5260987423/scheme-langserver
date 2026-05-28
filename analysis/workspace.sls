@@ -217,7 +217,6 @@
     (document-text-set! target-document text)
     (document-line-length-vector-set! target-document (text->line-length-vector text))
     (document-index-node-list-set! target-document new-index-nodes)
-    (document-ordered-reference-list-set! target-document '())
     (document-refreshable?-set! target-document #t)
 
     (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
