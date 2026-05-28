@@ -227,7 +227,16 @@
                   (when thread-pool
                     (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
                     (thread-pool-stop! thread-pool))
-                  server-instance)])
+                  server-instance)]
+              [private:safe-read-message
+                (lambda ()
+                  (guard (e [else 
+                              ; 安全地尝试记录日志；log-port 可能也已断开
+                              (guard (inner [else (void)])
+                                (do-log "read-message fatal error" server-instance)
+                                (do-log (with-output-to-string (lambda () (pretty-print e))) server-instance))
+                              #f])
+                    (read-message server-instance)))])
             (when thread-pool
               (start-timer interval-timer)
               (thread-pool-add-job thread-pool 
@@ -235,35 +244,20 @@
                   (let loop ()
                     ((request-queue-pop request-queue request-processor))
                     (if (not (and (server-shutdown? server-instance) (request-queue-empty? request-queue))) (loop))))))
-            (let loop ()
-              (try
-                (let ([request-message (read-message server-instance)])
-                  (cond 
-                    ;in case of specific parallel-log-debug.sps trouble
-                    [(and debug? thread-pool (not request-message)) 
-                      (private:shutdown-server)]
+            (let loop ([request-message (private:safe-read-message)])
+              (cond 
+                ;in case of specific parallel-log-debug.sps trouble
+                [(and debug? thread-pool (not request-message)) 
+                  (private:shutdown-server)]
 
-                    [(not request-message) 
-                      (private:shutdown-server)]
+                [(not request-message) 
+                  (private:shutdown-server)]
 
-                    [thread-pool
-                      (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
-                      (loop)]
-                    [else
-                      (request-processor request-message)
-                      (loop)]))
-                (except e
-                  [(eq? e 'eof)
-                    (do-log "[EOF] client disconnected, shutting down" server-instance)
-                    (private:shutdown-server)]
-                  [(and (list? e) (eq? (car e) 'parse-error))
-                    (let ([condition (cadr e)])
-                      (do-log "[PARSE] recoverable error, continuing to next message" server-instance)
-                      (do-log (with-output-to-string (lambda () (pretty-print condition))) server-instance)
-                      (loop))]
-                  [else
-                    (do-log "[UNEXPECTED] fatal error, shutting down" server-instance)
-                    (do-log (with-output-to-string (lambda () (pretty-print e))) server-instance)
-                    (private:shutdown-server)])))
+                [thread-pool
+                  (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
+                  (loop (private:safe-read-message))]
+                [else
+                  (request-processor request-message)
+                  (loop (private:safe-read-message))]))
             server-instance)]))
 )
