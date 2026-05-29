@@ -282,6 +282,8 @@ Look at the `(export ...)` list at the top of the `.sls` file.
 ### Pre-commit hook: never use `--no-verify`
 The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.
 
+> **Note:** The hook is intentionally slow (often 2–5 minutes on a cold cache) because it runs the full protocol API test suite in parallel. It first compiles shared modules via a warm-up test, then forks the remaining tests. If you see it hanging, it is usually waiting for Chez Scheme to compile `.so` files, not deadlocked. Be patient, or run `bash test.sh` manually beforehand to warm the cache.
+
 ---
 
 ## 8. Known Issues (as of current branch)
