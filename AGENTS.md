@@ -279,6 +279,32 @@ grep -r "library-import-process" tests/
 ### Checking if a symbol is exported
 Look at the `(export ...)` list at the top of the `.sls` file.
 
+### Debugging from LSP client logs
+The server can write a structured log (`read-message` / `send-message` pairs with timestamps) that is invaluable for tracking down latency or silent crashes.
+
+**Key technique:** compare `read-message` timestamps with `send-message` timestamps for the same `id`.
+```bash
+# Extract request/response timeline
+awk '
+/^(read-message|send-message)$/ { mode=$0; next }
+/^2026 / { if(mode!="") ts=$0; next }
+mode=="read-message" && /"id":13,/ { printf "req  id=13 @ %s\n", ts }
+mode=="send-message" && /"id":13,/ { printf "resp id=13 @ %s\n", ts }
+' ~/ready-for-analyse.log
+```
+
+**If `send-message` stops but `read-message` continues**, the main loop is alive but the **request-queue worker thread is stuck or dead**. Check:
+1. Did the last processed request trigger `init-references` under `workspace-mutex`?
+2. Is `make-engine` + `expire` interacting badly with `workspace-mutex`?
+3. Could a type-inference path (e.g. `type:interpret` → `private-generate-cartesian-product-procedure`) be throwing uncaught exceptions inside the engine wrapper?
+
+**Replay scripts**
+- `bin/log-debug.sps` — single-threaded replay (`#f` threaded). Fast, good for verifying fixes.
+- `bin/parallel-log-debug.sps` — multi-threaded replay (`#t` threaded). Closer to real clients, but request ordering differs because all messages are injected instantly.
+
+**A vector-in-list bug to watch for**
+`analysis/type/substitutions/rules/trivial.sls` defines `index-of` using `car`/`cdr`/`null?`. If a caller passes a **vector** (e.g. `(index-of (list->vector rests) index-node)`), the `car` call throws `"~s is not a pair"`. In multi-threaded mode this exception may be swallowed by the engine layer instead of reaching `private:try-catch`, leaving the worker thread dead and all subsequent requests orphaned.
+
 ### Pre-commit hook: never use `--no-verify`
 The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.
 
