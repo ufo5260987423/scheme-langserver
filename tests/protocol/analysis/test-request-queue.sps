@@ -101,9 +101,9 @@
 (test-end)
 
 ;; ------------------------------------------------------------------
-;; 6. textDocument/didChange cancels stale document-state requests
+;; 6. textDocument/didChange does NOT cancel pending requests (LSP spec)
 ;; ------------------------------------------------------------------
-(test-begin "request-queue-didChange-cancels-stale")
+(test-begin "request-queue-didChange-does-not-cancel")
 (let* ([queue (make-request-queue)]
     [calls '()]
     [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
@@ -115,7 +115,7 @@
   (request-queue-push queue change processor workspace)
   
   ; Pop order is FIFO: hover, pub, change.
-  ; didChange push marked both hover and pub as stop?.
+  ; Per LSP spec, servers should not cancel requests on didChange.
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
   (let ([th2 (request-queue-pop queue processor)])
@@ -124,9 +124,11 @@
     (th3))
   
   (test-equal "queue empty after three pops" #t (request-queue-empty? queue))
-  ; Only didChange should have invoked the processor.
-  (test-equal "only didChange ran" 1 (length calls))
-  (test-equal "didChange method" "textDocument/didChange" (car calls)))
+  ; All three requests should have invoked the processor.
+  (test-equal "all three ran" 3 (length calls))
+  (test-equal "hover ran" "textDocument/hover" (list-ref calls 2))
+  (test-equal "pub ran" "private:publish-diagnostics" (list-ref calls 1))
+  (test-equal "didChange ran" "textDocument/didChange" (list-ref calls 0)))
 (test-end)
 
 ;; ------------------------------------------------------------------

@@ -9,6 +9,7 @@
     server-error-end
     server-not-initialized
     unknown-error-code
+    content-modified
 
     request-cancelled)
   (import (rnrs))
@@ -27,5 +28,6 @@
 
 ;; Defined by LSP protocol
 (define request-cancelled -32800)
+(define content-modified -32801)
 
 )
