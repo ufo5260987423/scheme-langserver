@@ -59,7 +59,7 @@
       [type-inference? (workspace-type-inference? workspace)]
       ; [type-inference? #f]
       )
-      ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
+    ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#completionList
     (list->vector 
       (cond 
         [(not (index-node? target-index-node)) 
@@ -81,24 +81,21 @@
             (sort-identifier-references whole-list))]))))
 
 (define (private-generate-position-expression index-node)
-  (if (and (not (null? (index-node-parent index-node))) (is-first-child? index-node))
-    (let* ([ancestor (index-node-parent index-node)]
-        [children (index-node-children ancestor)]
-        [rests (cdr children)])
-      `(,ancestor <- (inner:list? ,@rests)))
-    (let* ([ancestor (index-node-parent index-node)]
-        [children (index-node-children ancestor)]
-        [head (car children)]
-        [rests (cdr children)]
-        [index (index-of (list->vector rests) index-node)]
-        [symbols (generate-symbols-with "d" (length rests))])
-      (if (= index (length rests))
-        '()
-        `((with ((a b c)) 
-          ((with ((x ,@symbols x0 ...))
-            ,(vector-ref (list->vector symbols) index))
-            c)) 
-          ,head)))))
+  (let ([ancestor (index-node-parent index-node)])
+    (if (and (not (null? ancestor)) (is-first-child? index-node))
+      `(,ancestor <- (inner:list? ,@(cdr (index-node-children ancestor))))
+      (let* ([children (index-node-children ancestor)]
+          [head (car children)]
+          [rests (cdr children)]
+          [index (index-of rests index-node)]
+          [symbols (generate-symbols-with "d" (length rests))])
+        (if (= index (length rests))
+          '()
+          `((with ((a b c)) 
+            ((with ((x ,@symbols x0 ...))
+              ,(vector-ref (list->vector symbols) index))
+              c)) 
+            ,head))))))
 
 (define (sort-with-type-inferences target-document position-index-node target-identifier-reference-list)
   (let* ([position-expression (private-generate-position-expression position-index-node)]

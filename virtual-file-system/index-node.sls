@@ -188,7 +188,14 @@
 (define (is-first-child? index-node)
   (if (null? (index-node-parent index-node))
     #f
-    (eq? index-node (car (index-node-children (index-node-parent index-node))))))
+    (let ([children (index-node-children (index-node-parent index-node))])
+      (if (list? children)
+        (eq? index-node (car children))
+        (begin
+          (display (string-append "[DEBUG-is-first-child] children is not list: " 
+            (if (vector? children) "vector" "other")) (current-error-port))
+          (newline (current-error-port))
+          #f)))))
 
 (define (get-root-ancestor index-node)
   (if (null? (index-node-parent index-node))
