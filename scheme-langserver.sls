@@ -237,7 +237,7 @@
                               (guard (inner [else (void)])
                                 (do-log "read-message fatal error" server-instance)
                                 (do-log (with-output-to-string (lambda () (pretty-print e))) server-instance))
-                              #f])
+                              'invalid])
                     (read-message server-instance)))])
             (when thread-pool
               (start-timer interval-timer)
@@ -248,6 +248,9 @@
                     (if (not (and (or (server-shutdown? server-instance) debug?) (request-queue-empty? request-queue))) (loop))))))
             (let loop ([request-message (private:safe-read-message)])
               (cond 
+                [(eq? request-message 'invalid)
+                  (loop (private:safe-read-message))]
+
                 ;in case of specific parallel-log-debug.sps trouble
                 [(and debug? thread-pool (not request-message)) 
                   (private:shutdown-server)]
