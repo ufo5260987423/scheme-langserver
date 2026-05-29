@@ -23,6 +23,7 @@
     (scheme-langserver protocol apis definition)
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
+    (scheme-langserver protocol apis workspace-symbol)
     (scheme-langserver protocol apis document-diagnostic)
     (scheme-langserver protocol apis file-change-notification)
     (only (scheme-langserver protocol apis file-change-notification) did-change-watched-files)
@@ -124,6 +125,7 @@
           ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
           ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
           ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
+          ["workspace/symbol" (send-message server-instance (success-response id (workspace-symbol workspace params)))]
           ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
 
           ["shutdown"
@@ -158,6 +160,7 @@
               'referencesProvider #t
               'completionProvider (make-alist 'triggerCharacters (vector))
               'documentSymbolProvider #t
+              'workspaceSymbolProvider #t
               'documentFormattingProvider #f
               'workspace 
                 (make-alist 
