@@ -29,7 +29,7 @@ The server has been tested on [Chez Scheme](https://cisco.github.io/ChezScheme/)
 See the [setup guide](./doc/startup.md).
 
 ## Debugging
-For troubleshooting tips, see [how-to-debug.md](./doc/how-to-debug.md).
+For troubleshooting tips, see [debugging.md](./doc/debugging.md).
 
 ## Recent Status
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
@@ -37,7 +37,29 @@ Active development is focused on bug fixes, performance profiling, and expanding
 ## Release
 2.0.3 Fixed pretty-print bugs that were mixed with standard I/O.
 
-Previous releases: see [release-log.md](./doc/release-log.md).
+### Previous releases
+- 2.0.2 Publish diagnoses, though now only can figure out "fail to find library".
+- 2.0.1 Fix many bugs.
+- 2.0.0 Fix many bugs and switch between different top environments.
+- 1.2.9 Now, enjoy type inference!
+- 1.2.8 Now hover and auto completion is ready for use. I also have done many things about parsing fault tolerance.
+- 1.2.7 Fix bugs on uri parsing, do you know LSP request uri may wrongly process escape characters?
+- 1.2.6 Fault tolerant parser
+- 1.2.5 Fix: Some protocol api bugs. And now it's basically smooth with Magic Scheme and Vscode.
+- 1.2.4 Fix: hover api. It failed when processing meta.
+- 1.2.3 Why completion api doesn't work well? I don't know and just fix.
+- 1.2.2 I just fixed some bugs processing my own other projects.
+- 1.2.1 I just fixed some bugs processing SS/SCM codes.
+- 1.2.0 Re-construct the identifier catching mechanism with abstract interpreter.
+- 1.1.1 Scheme-langserver now releases type information used in corresponding libraries! Its soundness is still not guaranteed!
+- 1.1.0 Type inference has been embedded into autocompletion! And it uses a homemade DSL.
+- 1.0.13 Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism.
+- 1.0.12 Add ss/scm-import-rnrs option.
+- 1.0.11 Gradual Typing system, all basic rules have been passed.
+- 1.0.10 Fix bugs in 1.0.9.
+- 1.0.9 Abandoned: add parallel and synchronize mechanism.
+- 1.0.8 Build index as document synchronizing instead of workspace initializing.
+- 1.0.7 Catch syntax-* identifier bindings.
 
 ### Features
 1. Completion for top-level and local identifier bindings.
@@ -105,14 +127,30 @@ Possible future targets include [OMN (Opusmodus Notation)](https://opusmodus.com
 find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ```
 ## Detailed Document
-1. [Scheme-langserver: Treat Scheme Code Editing as the First-Class Concern](./doc/paper.pdf).
-2. [Catching identifier bindings](./doc/analysis/identifier.md)
-3. [Macro auto-resolution](./doc/analysis/macro-auto-resolve.md) — generic `syntax-rules` expansion vs hand-written rules
-4. [Synchronizing](./doc/util/synchronize.md)
-5. [Type inference](./doc/analysis/type-inference.md) (the Chinese version is deprecated and being rewritten into a book)
-6. [API Analysis](./doc/protocol/analysis.md)
-7. [Deepwiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
-8. [Scheme-langserver Development Guide](./doc/Scheme-langserver%20development%20guide%20en.md).
+
+### Core Analysis
+1. [Catching identifier bindings](./doc/analysis/identifier.md) — how the abstract interpreter resolves `define`, `lambda`, `let`, `define-record-type`, etc.
+2. [Macro auto-resolution](./doc/analysis/macro-auto-resolve.md) — generic `syntax-rules` expansion vs hand-written rules
+3. [Type system & inference](./doc/analysis/type.md) — complete type-inference pipeline and DSL
+4. [Workspace lifecycle](./doc/analysis/workspace.md) — initialization, incremental updates, and refresh batches
+5. [File dependency graph](./doc/analysis/file-linkage.md) — topological sorting and linkage matrix
+
+### Protocol & Concurrency
+6. [API request scheduling](./doc/protocol/analysis.md) — request queue, engine time-slicing, cancellation, and document-sync protection
+7. [Diagnostic publication](./doc/publish-diagnoses.md) — how diagnostics are generated, accumulated, and sent
+
+### Debugging & Development
+8. [Debugging guide](./doc/debugging.md) — enable logs, replay logs, and iterative printf debugging
+9. [Development guide (中文)](./doc/development-guide.md) / [English version](./doc/development-guide-en.md)
+10. [AGENTS.md](./AGENTS.md) — build steps, testing conventions, coding style, and common traps for contributors
+
+### Research & Experiments
+11. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme
+12. [Macro resolution notes](./doc/macro-resolution-notes.md) — debugging notes for macro identifier capture
+13. [Syntax candy DSL](./doc/analysis/syntax-candy.md) — pattern matcher for type-rule authoring
+14. [Record type inference analysis](./doc/record-type-inference-analysis.md) — `define-record-type` in the type system
+15. [Type inference benchmark](./doc/analysis/type-inference-benchmark.md) — performance measurement methodology
+16. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
 
 ## License
 [MIT](./LICENSE)
