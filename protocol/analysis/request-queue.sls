@@ -17,11 +17,13 @@
     (immutable mutex)
     (immutable condition)
     (immutable queue)
-    (mutable tickal-task-list))
+    (mutable tickal-task-list)
+    (immutable debug?))
   (protocol
     (lambda (new)
-      (lambda ()
-        (new (make-mutex) (make-condition) (make-queue) '())))))
+      (case-lambda
+        [() (new (make-mutex) (make-condition) (make-queue) '() #f)]
+        [(debug?) (new (make-mutex) (make-condition) (make-queue) '() debug?)]))))
 
 ;ticks is an empirical constant for Chez Scheme's engine time-slicing.
 ;It bounds how many abstract instructions a single task may execute before
@@ -111,25 +113,26 @@
               (when tickal-task 
                 (tickal-task-stop?-set! tickal-task #t)))))]
       ["textDocument/didChange"
-        (for-each
-          (lambda (task)
-            (let ([method (request-method (tickal-task-request task))])
-              (when (or
-                (string=? method "private:publish-diagnostics")
-                (string=? method "textDocument/hover")
-                (string=? method "textDocument/completion")
-                (string=? method "textDocument/references")
-                (string=? method "textDocument/definition")
-                (string=? method "textDocument/documentSymbol")
-                (string=? method "textDocument/diagnostic")
-                (string=? method "textDocument/documentHighlight")
-                (string=? method "textDocument/signatureHelp")
-                (string=? method "textDocument/formatting")
-                (string=? method "textDocument/prepareRename")
-                (string=? method "textDocument/rangeFormatting")
-                (string=? method "textDocument/onTypeFormatting"))
-                (tickal-task-stop?-set! task #t))))
-          (request-queue-tickal-task-list queue))
+        (when (not (request-queue-debug? queue))
+          (for-each
+            (lambda (task)
+              (let ([method (request-method (tickal-task-request task))])
+                (when (or
+                  (string=? method "private:publish-diagnostics")
+                  (string=? method "textDocument/hover")
+                  (string=? method "textDocument/completion")
+                  (string=? method "textDocument/references")
+                  (string=? method "textDocument/definition")
+                  (string=? method "textDocument/documentSymbol")
+                  (string=? method "textDocument/diagnostic")
+                  (string=? method "textDocument/documentHighlight")
+                  (string=? method "textDocument/signatureHelp")
+                  (string=? method "textDocument/formatting")
+                  (string=? method "textDocument/prepareRename")
+                  (string=? method "textDocument/rangeFormatting")
+                  (string=? method "textDocument/onTypeFormatting"))
+                  (tickal-task-stop?-set! task #t))))
+            (request-queue-tickal-task-list queue)))
         (make-tickal-task request queue workspace)]
       [else (make-tickal-task request queue workspace)])
       ; Because the pool is limited to have only one thread.

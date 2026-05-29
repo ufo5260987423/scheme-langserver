@@ -39,11 +39,11 @@
       [(condition? c)
         (do-log "Failed to send error response" server-instance)])))
 
-(define (private:try-catch server-instance request)
+(define (private:try-catch server-instance request debug?)
   (let ([method (request-method request)]
       [id (request-id request)])
     (try 
-      (process-request server-instance request)
+      (process-request server-instance request debug?)
       (except c 
         [(condition? c) 
           (do-log 
@@ -65,14 +65,14 @@
         (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params) 'publish))
       (unpublish-diagnostics->list (server-workspace server-instance)))))
 
-(define (process-request server-instance request)
+(define (process-request server-instance request debug?)
   (let* ([method (request-method request)]
       [id (request-id request)]
       [params (request-params request)]
       [workspace (server-workspace server-instance)])
     (if (equal? "exit" method)
       (exit (if (server-shutdown? server-instance) 0 1))
-      (if (server-shutdown? server-instance)
+      (if (and (not debug?) (server-shutdown? server-instance))
         (if (and id (not (null? id)))
           (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
           '())
@@ -211,9 +211,9 @@
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug?)
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) #f)]
-              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) #f)]
+              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue debug?) #f)]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
-              [request-processor (lambda (r) (private:try-catch server-instance r))]
+              [request-processor (lambda (r) (private:try-catch server-instance r debug?))]
               [interval-timer 
                 (if (and enable-multi-thread? threaded?) 
                   (init-interval-timer 
@@ -245,7 +245,7 @@
                 (lambda () 
                   (let loop ()
                     ((request-queue-pop request-queue request-processor))
-                    (if (not (and (server-shutdown? server-instance) (request-queue-empty? request-queue))) (loop))))))
+                    (if (not (and (or (server-shutdown? server-instance) debug?) (request-queue-empty? request-queue))) (loop))))))
             (let loop ([request-message (private:safe-read-message)])
               (cond 
                 ;in case of specific parallel-log-debug.sps trouble
@@ -256,6 +256,7 @@
                   (private:shutdown-server)]
 
                 [thread-pool
+                  (when debug? (sleep (make-time 'time-duration 1000000 0)))
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
                   (loop (private:safe-read-message))]
                 [else
