@@ -322,7 +322,34 @@ grep -c "test-equal\|test-assert" tests/analysis/dependency/test-file-linkage.sp
 
 # Run LSP message-level robustness tests
 source .akku/bin/activate && scheme --script tests/robustness-lsp-replay.sps
+
+# Log replay — single-threaded (deterministic)
+source .akku/bin/activate && scheme --script bin/log-debug.sps
+
+# Log replay — multi-threaded (concurrent, closer to real-world)
+source .akku/bin/activate && scheme --script bin/parallel-log-debug.sps
+
+# Clear caches before replaying after any code change
+rm -rf .akku/libobj/scheme-langserver
+
+# Compare response counts between single-thread and multi-thread replays
+# (different counts often reveal concurrency-related bugs)
+grep -c '"id":' ~/scheme-langserver.out
 ```
+
+### Log Replay Debugging Tips
+
+Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstruct the LSP JSON-RPC stream and run the server, writing outputs to `~/scheme-langserver.out` (responses) and `~/scheme-langserver.log` (diagnostics).
+
+**Key things to check when responses are missing:**
+
+1. **Client cancellation** — Search the log for `$/cancelRequest` with the same `id`. LSP allows clients to cancel stale requests; the server silently drops them (no response is expected).
+
+2. **I/O errors at EOF** — If the client disconnects without sending `exit`, `send-message` may fail with `Broken pipe`. This produces `error: failed on ...` + `Failed to send error response` pairs in the log. These are normal I/O errors, not logic bugs.
+
+3. **didChange no longer auto-cancels** — As of the LSP-compliance fix, `textDocument/didChange` only enqueues itself; it no longer wipes pending hover/definition/documentSymbol requests. If you see massive response loss in multi-thread replay, suspect stale `.so` caches first.
+
+4. **Response diffing** — `parallel-log-debug.sps` should now produce the same (or more) responses as `log-debug.sps`. If multi-thread returns fewer responses despite the fix, check `~/scheme-langserver.log` for exceptions.
 
 ---
 
