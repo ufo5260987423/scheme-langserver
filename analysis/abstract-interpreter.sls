@@ -146,7 +146,16 @@
               (except c 
                 [else 
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: Fail to catch identifiers" "identifier" "identifier-resolution-failure"))])))]
-        [else '()])]
+        [else 
+          (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))])
+            (if (symbol? expression)
+              (let ([refs (find-available-references-for current-document current-index-node expression)])
+                (for-each 
+                  (lambda (ref)
+                    (identifier-reference-usage-count-set! ref (+ 1 (identifier-reference-usage-count ref))))
+                  refs)
+                refs)
+              '()))])]
       [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list memory)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]

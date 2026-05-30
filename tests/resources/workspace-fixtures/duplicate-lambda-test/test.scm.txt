@@ -1,0 +1,5 @@
+(library (test)
+  (export f)
+  (import (chezscheme))
+  (define (f x x)
+    x))

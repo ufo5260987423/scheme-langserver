@@ -49,6 +49,7 @@
     (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier rules library-import)
 
     (scheme-langserver analysis package-manager akku)
@@ -197,6 +198,7 @@
     ; (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)
     (process-library-identifier-excluded-references document)
+    (private:check-unused-imports document)
     ; (pretty-print 'test1)
     (if (workspace-type-inference? workspace-instance)
       (try 
@@ -212,6 +214,98 @@
             (error 'init-error target-path '())])))
     (document-diagnoses-set! document (append syntax-diagnoses (document-diagnoses document)))
     (document-refreshable?-set! document #f)))
+
+(define (private:mark-used-imports document)
+  (let ([used-ht (make-eq-hashtable)])
+    (let loop ([nodes (document-index-node-list document)] [in-import? #f])
+      (for-each
+        (lambda (node)
+          (let ([expression (annotation-stripped (index-node-datum/annotations node))])
+            (cond
+              [(and (pair? expression) (eq? 'import (car expression)))
+                (loop (index-node-children node) #t)]
+              [in-import?
+                (loop (index-node-children node) #t)]
+              [else
+                (if (and (null? (index-node-children node)) (symbol? expression))
+                  (for-each
+                    (lambda (ref)
+                      (if (not (eq? (identifier-reference-document ref) document))
+                        (eq-hashtable-set! used-ht ref #t)))
+                    (find-available-references-for document node expression)))
+                (loop (index-node-children node) #f)])))
+        nodes))
+    used-ht))
+
+(define (private:check-unused-imports document)
+  (let* ([used-ht (private:mark-used-imports document)]
+      [seen (make-eq-hashtable)])
+    (let loop ([nodes (document-index-node-list document)])
+      (for-each
+        (lambda (node)
+          (let ([expression (annotation-stripped (index-node-datum/annotations node))])
+            (if (and (pair? expression) (eq? 'import (car expression)))
+              (for-each (lambda (child) (private:check-import-clause document child used-ht seen)) (cdr (index-node-children node))))
+            (loop (index-node-children node))))
+        nodes))))
+
+(define (private:check-import-clause document index-node used-ht seen)
+  (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
+    (match expression
+      [('only (library-identifier **1) (? symbol? identifier) **1)
+        (let loop ([nodes (cddr (index-node-children index-node))] [idents identifier])
+          (if (not (null? nodes))
+            (let* ([current-node (car nodes)]
+                [refs (index-node-references-import-in-this-node current-node)])
+              (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
+                (private:append-unused-import-diagnose document current-node (car idents) seen))
+              (loop (cdr nodes) (cdr idents)))))]
+      [('except (library-identifier **1) (? symbol? identifier) **1)
+        (let loop ([nodes (cddr (index-node-children index-node))] [idents identifier])
+          (if (not (null? nodes))
+            (let* ([current-node (car nodes)]
+                [refs (index-node-references-import-in-this-node current-node)])
+              (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
+                (private:append-unused-import-diagnose document current-node (car idents) seen))
+              (loop (cdr nodes) (cdr idents)))))]
+      [('rename (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1)
+        (let loop ([nodes (cddr (index-node-children index-node))] [internal-names internal-name])
+          (if (not (null? nodes))
+            (let* ([current-node (cadr (index-node-children (car nodes)))]
+                [refs (index-node-references-import-in-this-node current-node)])
+              (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
+                (private:append-unused-import-diagnose document current-node (car internal-names) seen))
+              (loop (cdr nodes) (cdr internal-names)))))]
+      [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1)
+        (let loop ([nodes (cddr (index-node-children index-node))] [internal-names internal-name])
+          (if (not (null? nodes))
+            (let* ([current-node (cadr (index-node-children (car nodes)))]
+                [refs (index-node-references-import-in-this-node current-node)])
+              (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
+                (private:append-unused-import-diagnose document current-node (car internal-names) seen))
+              (loop (cdr nodes) (cdr internal-names)))))]
+      [('prefix (library-identifier **1) (? symbol? prefix-id))
+        '()]
+      [('for _ ...)
+        '()]
+      [(library-identifier **1)
+        (let ([parent (index-node-parent index-node)])
+          (if (index-node? parent)
+            (let ([refs (index-node-references-import-in-this-node parent)])
+              (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
+                (private:append-unused-import-diagnose document index-node (library-identifier->string expression) seen)
+                '()))
+            '()))]
+      [else '()])))
+
+(define (private:append-unused-import-diagnose document index-node identifier seen)
+  (if (not (eq-hashtable-contains? seen index-node))
+    (begin
+      (eq-hashtable-set! seen index-node #t)
+      (append-new-diagnoses document
+        `(,(index-node-start index-node) ,(index-node-end index-node) 2
+          ,(string-append "Unused import: " (if (symbol? identifier) (symbol->string identifier) identifier))
+          "import" "unused-import")))))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]

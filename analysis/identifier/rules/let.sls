@@ -8,6 +8,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system library-node)
@@ -20,17 +21,19 @@
         [expression (annotation-stripped ann)])
       (match expression
         [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
-          (fold-left 
-            (lambda (exclude-list identifier-parent-index-node)
-              (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                  [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
-                  [extended-exclude-list (append exclude-list target-identifier-reference)])
-                (index-node-excluded-references-set! (cadr (index-node-children index-node)) extended-exclude-list)
-                extended-exclude-list))
-            '()
-            (filter 
-              (lambda (i) (not (null? (index-node-children i)))) 
-              (index-node-children (cadr (index-node-children index-node)))))]
+          (let ([binding-nodes (filter 
+                    (lambda (i) (not (null? (index-node-children i)))) 
+                    (index-node-children (cadr (index-node-children index-node))))])
+            (check-duplicate-bindings document binding-nodes)
+            (fold-left 
+              (lambda (exclude-list identifier-parent-index-node)
+                (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                    [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
+                    [extended-exclude-list (append exclude-list target-identifier-reference)])
+                  (index-node-excluded-references-set! (cadr (index-node-children index-node)) extended-exclude-list)
+                  extended-exclude-list))
+              '()
+              binding-nodes))]
         [else '()]))))
 
 ; reference-identifier-type include 
@@ -40,16 +43,18 @@
       [expression (annotation-stripped ann)])
     (match expression
       [(_ (? symbol? loop-identifier) (fuzzy0 **1) fuzzy ... ) 
-        (fold-left 
-          (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
-              (index-node-excluded-references-set! (caddr (index-node-children index-node)) extended-exclude-list)
-              extended-exclude-list))
-          (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
-          (filter 
-            (lambda (i) (not (null? (index-node-children i))))
-            (index-node-children (caddr (index-node-children index-node)))))]
+        (let ([binding-nodes (filter 
+                  (lambda (i) (not (null? (index-node-children i))))
+                  (index-node-children (caddr (index-node-children index-node))))])
+          (check-duplicate-bindings document binding-nodes)
+          (fold-left 
+            (lambda (exclude-list identifier-parent-index-node)
+              (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                  [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
+                (index-node-excluded-references-set! (caddr (index-node-children index-node)) extended-exclude-list)
+                extended-exclude-list))
+            (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
+            binding-nodes))]
       [(_ (? symbol? loop-identifier) fuzzy **1 ) 
         (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)]
       [else ((generate-naive-let-process-with 'variable) root-file-node root-library-node document index-node)])))

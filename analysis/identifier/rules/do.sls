@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system library-node)
@@ -19,8 +20,10 @@
     (match expression
       [(_ ((var init+update ... ) **1) fuzzy ... ) 
         (let* ([children (index-node-children index-node)]
-          [var-index-node (cadr children)])
-          (map (lambda (i) (private-process document i index-node var-index-node)) (index-node-children var-index-node)))]
+          [var-index-node (cadr children)]
+          [var-nodes (index-node-children var-index-node)])
+          (check-duplicate-bindings document var-nodes)
+          (map (lambda (i) (private-process document i index-node var-index-node)) var-nodes))]
       [else '()])))
 
 (define (private-process document target-index-node initialization-index-node exclude-index-node)

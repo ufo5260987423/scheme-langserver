@@ -24,6 +24,11 @@
     identifier-reference-top-environment
     identifier-reference-syntax-expander
     identifier-reference-syntax-expander-set!
+    identifier-reference-usage-count
+    identifier-reference-usage-count-set!
+
+    check-duplicate-identifiers
+    collect-parameter-pairs
 
     identifier-compare?
 
@@ -67,14 +72,15 @@
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)
     (mutable top-environment)
-    (mutable syntax-expander))
+    (mutable syntax-expander)
+    (mutable usage-count))
   (protocol
     (lambda (new)
       (case-lambda
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f)]
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0)]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f)]))))
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0)]))))
 
 (define (is-ancestor-of? identifier-reference0 identifier-reference1)
   (if (eq? identifier-reference0 identifier-reference1)
@@ -311,6 +317,40 @@
   (if (null? (identifier-reference-parents identifier-reference))
     `(,identifier-reference)
     (fold-right append '() (map root-ancestor (identifier-reference-parents identifier-reference)))))
+
+(define (check-duplicate-identifiers document identifier-index-node-pairs)
+  (let loop ([rest identifier-index-node-pairs] [seen '()])
+    (if (null? rest)
+      '()
+      (let* ([pair (car rest)]
+          [sym (car pair)]
+          [node (cdr pair)])
+        (if (and (symbol? sym) (find (lambda (s) (eq? s sym)) seen))
+          (append-new-diagnoses document 
+            `(,(index-node-start node) ,(index-node-end node) 1 
+              ,(string-append "Duplicate identifier: " (symbol->string sym)) 
+              "identifier" "duplicate-identifier")))
+        (loop (cdr rest) (if (symbol? sym) (cons sym seen) seen))))))
+
+(define (collect-parameter-pairs param-list-node)
+  (let ([expression (annotation-stripped (index-node-datum/annotations param-list-node))])
+    (cond
+      [(symbol? expression) `(,(cons expression param-list-node))]
+      [(and (pair? expression) (list? expression))
+        (fold-left
+          (lambda (acc child)
+            (let ([sym (annotation-stripped (index-node-datum/annotations child))])
+              (if (symbol? sym) (cons (cons sym child) acc) acc)))
+          '()
+          (index-node-children param-list-node))]
+      [(pair? expression)
+        (let ([children (index-node-children param-list-node)])
+          (if (= (length children) 2)
+            (append 
+              (collect-parameter-pairs (car children))
+              (collect-parameter-pairs (cadr children)))
+            '()))]
+      [else '()])))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]
