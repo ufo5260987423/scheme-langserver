@@ -24,9 +24,7 @@
     (scheme-langserver virtual-file-system file-node)
 
     (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis package-manager txt-filter)
-
-    (only (srfi :13 strings) string-replace))
+    (scheme-langserver analysis package-manager txt-filter))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didCreateFiles
 (define (did-create workspace params)

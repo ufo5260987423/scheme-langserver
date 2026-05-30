@@ -22,9 +22,7 @@
     
     (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
     (scheme-langserver analysis identifier self-defined-rules goldfish let1)
-    (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda)
-    
-    (only (srfi :13 strings) string-contains))
+    (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda))
 
 (define (route&add 
   rules target-identifier

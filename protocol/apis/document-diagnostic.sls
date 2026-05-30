@@ -18,9 +18,7 @@
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node)
-
-    (only (srfi :13 strings) string-replace))
+    (scheme-langserver virtual-file-system file-node))
 
 (define (unpublish-diagnostics->list workspace)
   ; Snapshot and clear immediately so that even if the traversal

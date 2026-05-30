@@ -6,7 +6,7 @@
     meta-library?)
   (import 
     (rnrs)
-    (only (chezscheme) annotation-stripped pretty-print print-graph)
+    (only (chezscheme) annotation-stripped)
     (ufo-match)
     (scheme-langserver util contain)
     (scheme-langserver util binary-search)

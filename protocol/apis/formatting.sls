@@ -18,9 +18,7 @@
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node)
-
-    (only (srfi :13 strings) string-prefix?))
+    (scheme-langserver virtual-file-system file-node))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_formatting
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentRangeFormattingParams
