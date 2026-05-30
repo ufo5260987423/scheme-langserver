@@ -88,7 +88,7 @@ send-message
 {"jsonrpc":"2.0","id":"3","result":[{"label":"length-a"},{"label":"length-b"},{"label":"lambda"},{"label":"latin-1-codec"},{"label":"lcm"},{"label":"least-fixnum"},{"label":"length"},{"label":"let"},{"label":"let*"},{"label":"let*-values"},{"label":"let-syntax"},{"label":"let-values"},{"label":"letrec"},{"label":"letrec*"},{"label":"letrec-syntax"},{"label":"lexical-violation?"},{"label":"list"},{"label":"list->string"},{"label":"list->vector"},{"label":"list-ref"},{"label":"list-sort"},{"label":"list-tail"},{"label":"list?"},{"label":"log"},{"label":"lookahead-char"},{"label":"lookahead-u8"}]}
 ```
 15. Abstract interpreter that resolves identifiers across multiple file extensions: `.scm`, `.ss`, `.sps`, `.sls`, `.sld`.
-16. Code diagnostics. Currently supports detecting library-not-found errors.
+16. Code diagnostics. Supports detecting library-not-found errors, duplicate identifiers in binding forms (e.g. `(lambda (x x) ...)`), and unused imports (e.g. `(only (rnrs) car)` where `car` is never referenced).
 ![Fail to find library](./doc/figure/diagnose-failt-to-find-library.png "Fail to find library")
 
 ### Roadmap

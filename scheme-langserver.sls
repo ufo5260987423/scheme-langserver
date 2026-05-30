@@ -26,7 +26,6 @@
     (scheme-langserver protocol apis workspace-symbol)
     (scheme-langserver protocol apis document-diagnostic)
     (scheme-langserver protocol apis file-change-notification)
-    (only (scheme-langserver protocol apis file-change-notification) did-change-watched-files)
 
     (scheme-langserver virtual-file-system file-node)
 

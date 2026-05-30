@@ -305,6 +305,20 @@ mode=="send-message" && /"id":13,/ { printf "resp id=13 @ %s\n", ts }
 **A vector-in-list bug to watch for**
 `analysis/type/substitutions/rules/trivial.sls` defines `index-of` using `car`/`cdr`/`null?`. If a caller passes a **vector** (e.g. `(index-of (list->vector rests) index-node)`), the `car` call throws `"~s is not a pair"`. In multi-threaded mode this exception may be swallowed by the engine layer instead of reaching `private:try-catch`, leaving the worker thread dead and all subsequent requests orphaned.
 
+### `check-duplicate-identifiers` and `collect-parameter-pairs`
+Two helpers live in `analysis/identifier/util.sls` (extracted from `reference.sls`):
+
+- `check-duplicate-identifiers document pairs` — takes a list of `(symbol . index-node)` pairs, detects duplicates with an `eq-hashtable`, and appends a `"Duplicate identifier: ..."` diagnosis (severity 1 / Error).
+- `collect-parameter-pairs index-node` — recursively extracts parameter symbols and their index-nodes from lambda/define parameter lists; handles flat lists, nested lists, and improper-list rest args. Returns a list of `(symbol . index-node)` cons cells.
+
+Used in `lambda.sls`, `case-lambda.sls`, `let.sls`, `letrec.sls`, `let-values.sls`, `do.sls`, `define.sls`, and `with-syntax.sls`.
+
+### `usage-count` tracking
+The `identifier-reference` record has a mutable `usage-count` field (default 0).
+- **Do not** increment it inside `find-available-references-for` (that function is called for internal lookups, guard checks, etc., not all of which represent a genuine "use").
+- **Do** increment it explicitly in `abstract-interpreter.sls` when `step` successfully resolves a leaf symbol (the `[else` branch of the top-level `cond`).
+- A post-phase `private:check-unused-imports` in `workspace.sls` scans import clauses after `step` and reports imported references with `usage-count = 0` as `"Unused import: ..."` (severity 2 / Warning). Supports plain, `only`, `except`, `rename`, and `alias` imports.
+
 ### Pre-commit hook: never use `--no-verify`
 The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.
 
@@ -407,4 +421,4 @@ Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstr
 | `document` | uri, text, index-node-list, ordered-reference-list, diagnoses | Parsed source |
 | `index-node` | datum/annotations, parent, children, excluded-references, import-in-this-node, export-to-other-node | AST node |
 | `file-linkage` | path->id-map, id->path-map, matrix | Dependency graph |
-| `identifier-reference` | identifier, document, index-node, initialization-index-node, library-identifier, type, parents, type-expressions | Symbol reference |
+| `identifier-reference` | identifier, document, index-node, initialization-index-node, library-identifier, type, parents, type-expressions, **usage-count** (mutable) | Symbol reference |
