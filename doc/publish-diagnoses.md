@@ -89,13 +89,14 @@ For each target path (after `init-references` has already cleared stale diagnost
 
 1. **Run the abstract interpreter** (`step`):
    - Resolves identifier references across the file graph.
+   - Increments `usage-count` on every `identifier-reference` that is successfully resolved as a leaf symbol (used for unused-import detection below).
    - If resolution fails, appends a warning:
      ```scheme
      (append-new-diagnoses current-document
        `(start end 2 "Scheme-langserver Warnning: Fail to catch identifiers"))
      ```
 
-3. **Process excluded references** (`process-library-identifier-excluded-references`):
+2. **Process excluded references** (`process-library-identifier-excluded-references`):
    - Validates `import` forms.
    - If a library cannot be found, appends:
      ```scheme
@@ -104,12 +105,32 @@ For each target path (after `init-references` has already cleared stale diagnost
      ```
    - Similar checks exist for `load` ("Fail to find file:...").
 
-4. **Type inference** (optional, when `type-inference?` is enabled):
+3. **Duplicate identifier detection** (binding-rule post-processors):
+   - Each binding rule (`lambda`, `let`, `do`, `define`, `case-lambda`, `let*`, `letrec`, `let-values`, etc.) calls `check-duplicate-identifiers` (in `analysis/identifier/util.sls`) after extracting parameter pairs.
+   - If a duplicate is found, appends:
+     ```scheme
+     `(start end 1 "Duplicate identifier: x" "identifier" "duplicate-identifier")
+     ```
+   - Severity **1** (Error).
+
+4. **Unused import detection** (`private:check-unused-imports`):
+   - Runs after `step` and `process-library-identifier-excluded-references`.
+   - Walks every `import` clause in the document.
+   - For each imported `identifier-reference`, checks whether `usage-count` is 0.
+   - Supports plain imports, `only`, `except`, `rename`, and `alias`.
+   - If unused, appends:
+     ```scheme
+     `(start end 2 "Unused import: car" "identifier" "unused-import")
+     ```
+   - Severity **2** (Warning).
+   - Built-in bindings (`library-identifier` is `'()` or built-in libraries such as `(rnrs)`) are skipped.
+
+5. **Type inference** (optional, when `type-inference?` is enabled):
    - Runs `construct-substitutions-for`.
    - Errors during type inference are caught and logged, but currently **do not**
      produce user-visible diagnostics (they are only warnings in the server log).
 
-5. **Mark document as non-refreshable**:
+6. **Mark document as non-refreshable**:
    ```scheme
    (document-refreshable?-set! document #f)
    ```

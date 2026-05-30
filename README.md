@@ -92,12 +92,17 @@ send-message
 ![Fail to find library](./doc/figure/diagnose-failt-to-find-library.png "Fail to find library")
 
 ### Roadmap
-17. Renaming support.
-18. Full R6RS compatibility.
-19. Step-by-step macro expander for self-defined macros.
-20. Code evaluation within the language server.
-21. Cross-language semantic support via AST transformers.
-22. Extract expression/statement into a procedure (refactoring).
+17. Renaming support (`textDocument/rename` + `prepareRename`).
+18. Formatting (`textDocument/formatting`).
+19. Signature help (`textDocument/signatureHelp`).
+20. Workspace symbol search (`workspace/symbol`).
+21. Document highlight (`textDocument/documentHighlight`).
+22. Code actions (`textDocument/codeAction`) — e.g. "Remove unused import", "Organize imports".
+23. Full R6RS compatibility.
+24. Step-by-step macro expander for self-defined macros.
+25. Code evaluation within the language server.
+26. Cross-language semantic support via AST transformers.
+27. Extract expression/statement into a procedure (refactoring).
 
 ## Contributing
 Pull requests are welcome! Please see [AGENTS.md](./AGENTS.md) for project conventions, build steps, and coding style before opening a PR.
