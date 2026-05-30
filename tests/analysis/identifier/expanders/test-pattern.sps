@@ -56,6 +56,37 @@
         match
         expression
         ((_ (fuzzy0 **1) fuzzy1 ...)
+          (let ([binding-nodes (filter
+                                 (lambda (i)
+                                   (not (null? (index-node-children i))))
+                                 (index-node-children
+                                   (cadr (index-node-children index-node))))])
+            (check-duplicate-bindings document binding-nodes)
+            (fold-left
+              (lambda (exclude-list identifier-parent-index-node)
+                (let* ([identifier-index-node (car (index-node-children
+                          identifier-parent-index-node))]
+                    [target-identifier-reference (let-parameter-process index-node
+                        identifier-index-node
+                        index-node document type)]
+                    [extended-exclude-list (append
+                        exclude-list
+                        target-identifier-reference)])
+                  (index-node-excluded-references-set!
+                    (cadr (index-node-children index-node))
+                    extended-exclude-list)
+                  extended-exclude-list))
+              '()
+              binding-nodes)))
+        (else '())) (match . match) (atom . expression)
+      ((pat . body)
+        (_ (fuzzy0 **1) fuzzy1 ...)
+        (let ([binding-nodes (filter
+                               (lambda (i)
+                                 (not (null? (index-node-children i))))
+                               (index-node-children
+                                 (cadr (index-node-children index-node))))])
+          (check-duplicate-bindings document binding-nodes)
           (fold-left
             (lambda (exclude-list identifier-parent-index-node)
               (let* ([identifier-index-node (car (index-node-children
@@ -71,17 +102,20 @@
                   extended-exclude-list)
                 extended-exclude-list))
             '()
-            (filter
-              (lambda (i) (not (null? (index-node-children i))))
-              (index-node-children
-                (cadr (index-node-children index-node))))))
-        (else '())) (match . match) (atom . expression)
-      ((pat . body)
-        (_ (fuzzy0 **1) fuzzy1 ...)
+            binding-nodes)))
+       (pat _ (fuzzy0 **1) fuzzy1 ...)
+      (body
+        let
+        ((binding-nodes
+           (filter
+             (lambda (i) (not (null? (index-node-children i))))
+             (index-node-children
+               (cadr (index-node-children index-node))))))
+        (check-duplicate-bindings document binding-nodes)
         (fold-left
           (lambda (exclude-list identifier-parent-index-node)
             (let* ([identifier-index-node (car (index-node-children
-                      identifier-parent-index-node))]
+                       identifier-parent-index-node))]
                 [target-identifier-reference (let-parameter-process index-node
                     identifier-index-node
                     index-node document type)]
@@ -93,31 +127,7 @@
                 extended-exclude-list)
               extended-exclude-list))
           '()
-          (filter
-            (lambda (i) (not (null? (index-node-children i))))
-            (index-node-children
-              (cadr (index-node-children index-node))))))
-       (pat _ (fuzzy0 **1) fuzzy1 ...)
-      (body
-        fold-left
-        (lambda (exclude-list identifier-parent-index-node)
-          (let* ([identifier-index-node (car (index-node-children
-                    identifier-parent-index-node))]
-              [target-identifier-reference (let-parameter-process index-node
-                  identifier-index-node
-                  index-node document type)]
-              [extended-exclude-list (append
-                  exclude-list
-                  target-identifier-reference)])
-            (index-node-excluded-references-set!
-              (cadr (index-node-children index-node))
-              extended-exclude-list)
-            extended-exclude-list))
-        '()
-        (filter
-          (lambda (i) (not (null? (index-node-children i))))
-          (index-node-children
-            (cadr (index-node-children index-node)))))
+          binding-nodes))
       ((pat . body) else '()) 
       (pat . else) 
       (body quote ()))))
@@ -206,46 +216,52 @@
         v
         (expression (set! expression))
         ((_ (fuzzy0 **1) fuzzy1 ...)
-          (fold-left
-            (lambda (exclude-list identifier-parent-index-node)
-              (let* ([identifier-index-node (car (index-node-children
-                        identifier-parent-index-node))]
-                  [target-identifier-reference (let-parameter-process index-node
-                      identifier-index-node
-                      index-node document type)]
-                  [extended-exclude-list (append
-                      exclude-list
-                      target-identifier-reference)])
-                (index-node-excluded-references-set!
-                  (cadr (index-node-children index-node))
-                  extended-exclude-list)
-                extended-exclude-list))
-            '()
-            (filter
-              (lambda (i) (not (null? (index-node-children i))))
-              (index-node-children
-                (cadr (index-node-children index-node)))))
+          (let ([binding-nodes (filter
+                                 (lambda (i)
+                                   (not (null? (index-node-children i))))
+                                 (index-node-children
+                                   (cadr (index-node-children index-node))))])
+            (check-duplicate-bindings document binding-nodes)
+            (fold-left
+              (lambda (exclude-list identifier-parent-index-node)
+                (let* ([identifier-index-node (car (index-node-children
+                          identifier-parent-index-node))]
+                    [target-identifier-reference (let-parameter-process index-node
+                        identifier-index-node
+                        index-node document type)]
+                    [extended-exclude-list (append
+                        exclude-list
+                        target-identifier-reference)])
+                  (index-node-excluded-references-set!
+                    (cadr (index-node-children index-node))
+                    extended-exclude-list)
+                  extended-exclude-list))
+              '()
+              binding-nodes))
           '())
         (else
-          (fold-left
-            (lambda (exclude-list identifier-parent-index-node)
-              (let* ([identifier-index-node (car (index-node-children
-                        identifier-parent-index-node))]
-                  [target-identifier-reference (let-parameter-process index-node
-                      identifier-index-node
-                      index-node document type)]
-                  [extended-exclude-list (append
-                      exclude-list
-                      target-identifier-reference)])
-                (index-node-excluded-references-set!
-                  (cadr (index-node-children index-node))
-                  extended-exclude-list)
-                extended-exclude-list))
-            '()
-            (filter
-              (lambda (i) (not (null? (index-node-children i))))
-              (index-node-children
-                (cadr (index-node-children index-node)))))
+          (let ([binding-nodes (filter
+                                 (lambda (i)
+                                   (not (null? (index-node-children i))))
+                                 (index-node-children
+                                   (cadr (index-node-children index-node))))])
+            (check-duplicate-bindings document binding-nodes)
+            (fold-left
+              (lambda (exclude-list identifier-parent-index-node)
+                (let* ([identifier-index-node (car (index-node-children
+                          identifier-parent-index-node))]
+                    [target-identifier-reference (let-parameter-process index-node
+                        identifier-index-node
+                        index-node document type)]
+                    [extended-exclude-list (append
+                        exclude-list
+                        target-identifier-reference)])
+                  (index-node-excluded-references-set!
+                    (cadr (index-node-children index-node))
+                    extended-exclude-list)
+                  extended-exclude-list))
+              '()
+              binding-nodes))
           '())))
       (expansion->printable-object expansion)))
 (test-end)
