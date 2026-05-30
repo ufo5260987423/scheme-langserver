@@ -61,6 +61,14 @@
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnostic
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#diagnosticSeverity
+;
+; NOTE: `document-diagnoses` stores diagnoses in the format
+;   (start-bias end-bias severity message source code)
+; where `start-bias` and `end-bias` are character offsets into the document.
+; `document+bias->position-list` converts these offsets to (line character).
+; Callers such as `append-new-diagnoses` must supply bias values, not raw
+; line/character pairs.  For point diagnostics (e.g. syntax errors at an
+; unknown exact position) both biases may be 0, which maps to line 0 char 0.
 (define (private:make-diagnostic document diagnose)
   (let* ([s (car diagnose)]
       [e (cadr diagnose)]
