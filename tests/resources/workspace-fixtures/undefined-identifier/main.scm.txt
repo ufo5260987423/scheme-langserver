@@ -1,0 +1,14 @@
+(library (fixtures undefined-identifier main)
+  (export run)
+  (import (rnrs))
+
+  (define (run)
+    (undefined-function 1 2))
+
+  (define (test-quote)
+    '(undefined-in-quote))
+
+  (define (test-let)
+    (let ([x 1])
+      (undefined-in-let x)))
+)
