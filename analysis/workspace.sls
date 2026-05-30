@@ -148,7 +148,26 @@
                       (cons path syntax-diagnoses)))
                   paths)])
               (threaded-map 
-                (lambda (pair) (private-init-references workspace-instance (car pair) (cdr pair)))
+                (lambda (pair) 
+                  (let* ([target-path (car pair)]
+                      [syntax-diagnoses (cdr pair)]
+                      [current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
+                      [document (file-node-document current-file-node)])
+                    (try 
+                      (private-init-references workspace-instance target-path syntax-diagnoses)
+                      (except c
+                        [(condition? c)
+                          (append-new-diagnoses document 
+                            `(0 0 1 ,(string-append "Analysis error: " 
+                                (with-output-to-string (lambda () (pretty-print c)))) 
+                                "analysis" "analysis-error"))
+                          '()]
+                        [else 
+                          (append-new-diagnoses document 
+                            `(0 0 1 ,(string-append "Analysis error: " 
+                                (with-output-to-string (lambda () (pretty-print c)))) 
+                                "analysis" "analysis-error"))
+                          '()]))))
                 path+syntax-pairs)))
           (begin
             (for-each
