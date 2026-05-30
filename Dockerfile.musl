@@ -42,7 +42,7 @@ COPY virtual-file-system /root/scheme-langserver/virtual-file-system/
 COPY analysis /root/scheme-langserver/analysis/
 COPY tests /root/scheme-langserver/tests/
 
-COPY scheme-langserver.sls output-type-analysis.ss test.sh run.ss build.sh /root/scheme-langserver/
+COPY scheme-langserver.sls test.sh run.ss build.sh /root/scheme-langserver/
 
 RUN akku install
 
