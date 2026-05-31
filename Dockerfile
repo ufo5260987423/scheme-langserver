@@ -31,7 +31,7 @@ RUN git clone https://github.com/ufo5260987423/chez-exe.git
 
 WORKDIR /root/chez-exe/
 
-RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a
+RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a -Wl,--no-fatal-warnings
 RUN make install
 
 
