@@ -77,7 +77,7 @@ RUN akku install
 FROM debian:bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y git make build-essential uuid-dev
+RUN apt-get update && apt-get install -y git make build-essential uuid-dev libtinfo-dev
 
 # add chez scheme
 COPY --from=build-chez /usr/bin/scheme /usr/bin/

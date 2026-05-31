@@ -79,7 +79,7 @@ FROM alpine:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apk update && apk add --no-cache \
-        git alpine-sdk util-linux-dev libuuid make util-linux-static
+        git alpine-sdk util-linux-dev libuuid make util-linux-static ncurses-dev
 
 # add chez scheme
 COPY --from=build-chez /usr/bin/scheme /usr/bin/
