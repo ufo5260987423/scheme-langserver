@@ -13,22 +13,12 @@
   (scheme-langserver analysis package-manager akku)
   (scheme-langserver analysis tokenizer))
 
-(define (chez-major-version)
-  (let ([v (scheme-version)])
-    (let ([start 20])
-      (let loop ([i start] [acc 0])
-        (if (and (< i (string-length v)) (char-numeric? (string-ref v i)))
-          (loop (+ i 1) (+ (* acc 10) (- (char->integer (string-ref v i)) (char->integer #\0))))
-          acc)))))
-
 (test-begin "read ss")
   (test-equal 16 (length (source-file->annotations "./run.ss")))
 (test-end)
 
 (test-begin "read sps")
-  (if (>= (chez-major-version) 10)
-    (test-equal 6 (length (source-file->annotations "./bin/log-debug.sps")))
-    (test-assert (list? (source-file->annotations "./bin/log-debug.sps"))))
+  (test-equal 6 (length (source-file->annotations "./bin/log-debug.sps")))
 (test-end)
 
 (test-begin "read scm")
@@ -140,9 +130,7 @@
 (test-end)
 
 (test-begin "tolerant: non-flonum in flvector")
-  (if (>= (chez-major-version) 10)
-    (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/flvector-type.ss.test")))
-    (test-assert #t))
+  (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/flvector-type.ss.test")))
 (test-end)
 
 (test-begin "tolerant: non-octet in bytevector")
@@ -154,15 +142,11 @@
 (test-end)
 
 (test-begin "tolerant: stencil vector no mask")
-  (if (>= (chez-major-version) 10)
-    (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/stencil-no-mask.ss.test")))
-    (test-assert #t))
+  (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/stencil-no-mask.ss.test")))
 (test-end)
 
 (test-begin "tolerant: invalid stencil vector mask")
-  (if (>= (chez-major-version) 10)
-    (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/stencil-invalid-mask.ss.test")))
-    (test-assert #t))
+  (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/stencil-invalid-mask.ss.test")))
 (test-end)
 
 (test-begin "tolerant: record non-symbol")
