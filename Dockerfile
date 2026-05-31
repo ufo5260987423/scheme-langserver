@@ -31,7 +31,64 @@ RUN git clone https://github.com/ufo5260987423/chez-exe.git
 
 WORKDIR /root/chez-exe/
 
-RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a -Wl,--no-fatal-warnings
+# glibc static libc.a does not provide getlogin, but Chez 10.x full-chez.a
+# references it. Provide a stub so static linking succeeds.
+RUN echo 'char *getlogin(void) { return (char*)0; }' > getlogin_stub.c && \
+    cc -c getlogin_stub.c -o /usr/local/lib/getlogin_stub.o && \
+    rm getlogin_stub.c
+
+# compile-chez-program ignores the (system ...) return value, so linker
+# failures are silently swallowed. Patch it to exit non-zero on failure.
+RUN cat > /tmp/patch.pl <<'PERL_EOF'
+use strict;
+use warnings;
+open(my $fh, '<', 'compile-chez-program.ss') or die $!;
+my $content = do { local $/; <$fh> };
+close($fh);
+my $old = '(build-included-binary-file embed-file "scheme_program" compiled-name)
+(case (os-name)
+  [windows
+   (system (format "cl /nologo /MD /Fe:~a ~a ~a ~a ~a ~{ ~a~}" exe-name win-main solibs chez-file embed-file compiler-args))]
+  [else
+   (system (apply format
+                  (string-append "cc -o ~a ~a"
+                                 (if (use-libkernel) " ~a ~a ~a" "")
+                                 " ~a ~a ~a ~{ ~s~}")
+                  (append (list exe-name chez-file)
+                          (if (use-libkernel) (list libkernel-file liblz4-file libz-file) \'())
+                          (list embed-file mbits solibs compiler-args))))])
+
+(display basename)
+(newline)';
+my $new = '(build-included-binary-file embed-file "scheme_program" compiled-name)
+(let ([ret
+       (case (os-name)
+         [windows
+          (system (format "cl /nologo /MD /Fe:~a ~a ~a ~a ~a ~{ ~a~}" exe-name win-main solibs chez-file embed-file compiler-args))]
+         [else
+          (system (apply format
+                         (string-append "cc -o ~a ~a"
+                                        (if (use-libkernel) " ~a ~a ~a" "")
+                                        " ~a ~a ~a ~{ ~s~}")
+                         (append (list exe-name chez-file)
+                                 (if (use-libkernel) (list libkernel-file liblz4-file libz-file) \'())
+                                 (list embed-file mbits solibs compiler-args))))])])
+  (unless (zero? ret)
+    (exit 1)))
+
+(display basename)
+(newline)';
+if ($content =~ s/\Q$old\E/$new/s) {
+    open($fh, '>', 'compile-chez-program.ss') or die $!;
+    print $fh $content;
+    close($fh);
+} else {
+    die "Pattern not found in compile-chez-program.ss\n";
+}
+PERL_EOF
+perl /tmp/patch.pl
+
+RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a -Wl,--no-fatal-warnings /usr/local/lib/getlogin_stub.o
 RUN make install
 
 
@@ -76,6 +133,7 @@ COPY --from=build-chez /usr/lib/csv10.4.1/ /usr/lib/csv10.4.1/
 COPY --from=build-chez /usr/local/bin/compile-chez-program /usr/local/bin/
 COPY --from=build-chez /usr/local/lib/full-chez.a /usr/local/lib/
 COPY --from=build-chez /usr/local/lib/petite-chez.a /usr/local/lib/
+COPY --from=build-chez /usr/local/lib/getlogin_stub.o /usr/local/lib/
 
 # add project
 COPY --from=akku-install /root/scheme-langserver/ /root/scheme-langserver/
