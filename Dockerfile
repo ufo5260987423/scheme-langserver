@@ -39,54 +39,8 @@ RUN echo 'char *getlogin(void) { return (char*)0; }' > getlogin_stub.c && \
 
 # compile-chez-program ignores the (system ...) return value, so linker
 # failures are silently swallowed. Patch it to exit non-zero on failure.
-RUN cat > /tmp/patch.pl <<'PERL_EOF'
-use strict;
-use warnings;
-open(my $fh, '<', 'compile-chez-program.ss') or die $!;
-my $content = do { local $/; <$fh> };
-close($fh);
-my $old = '(build-included-binary-file embed-file "scheme_program" compiled-name)
-(case (os-name)
-  [windows
-   (system (format "cl /nologo /MD /Fe:~a ~a ~a ~a ~a ~{ ~a~}" exe-name win-main solibs chez-file embed-file compiler-args))]
-  [else
-   (system (apply format
-                  (string-append "cc -o ~a ~a"
-                                 (if (use-libkernel) " ~a ~a ~a" "")
-                                 " ~a ~a ~a ~{ ~s~}")
-                  (append (list exe-name chez-file)
-                          (if (use-libkernel) (list libkernel-file liblz4-file libz-file) \'())
-                          (list embed-file mbits solibs compiler-args))))])
-
-(display basename)
-(newline)';
-my $new = '(build-included-binary-file embed-file "scheme_program" compiled-name)
-(let ([ret
-       (case (os-name)
-         [windows
-          (system (format "cl /nologo /MD /Fe:~a ~a ~a ~a ~a ~{ ~a~}" exe-name win-main solibs chez-file embed-file compiler-args))]
-         [else
-          (system (apply format
-                         (string-append "cc -o ~a ~a"
-                                        (if (use-libkernel) " ~a ~a ~a" "")
-                                        " ~a ~a ~a ~{ ~s~}")
-                         (append (list exe-name chez-file)
-                                 (if (use-libkernel) (list libkernel-file liblz4-file libz-file) \'())
-                                 (list embed-file mbits solibs compiler-args))))])])
-  (unless (zero? ret)
-    (exit 1)))
-
-(display basename)
-(newline)';
-if ($content =~ s/\Q$old\E/$new/s) {
-    open($fh, '>', 'compile-chez-program.ss') or die $!;
-    print $fh $content;
-    close($fh);
-} else {
-    die "Pattern not found in compile-chez-program.ss\n";
-}
-PERL_EOF
-perl /tmp/patch.pl
+COPY docker/compile-chez-program.patch.pl /tmp/patch.pl
+RUN perl /tmp/patch.pl
 
 RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a -Wl,--no-fatal-warnings /usr/local/lib/getlogin_stub.o
 RUN make install
