@@ -51,6 +51,16 @@
   (let ([end (string-find-delimiter source (+ 1 position))])
     (private:replace-region source position (- end position))))
 
+(define (private:compute-error-position condition port)
+  (cond
+    [(or (private:message-matches? (condition-message condition) "unexpected close parenthesis")
+         (private:message-matches? (condition-message condition) "unexpected close bracket")
+         (private:message-matches? (condition-message condition) "unexpected dot (.)")
+         (private:message-matches? (condition-message condition) "parenthesized list terminated by bracket")
+         (private:message-matches? (condition-message condition) "bracketed list terminated by parenthesis"))
+     (max 0 (- (port-position port) 1))]
+    [else (port-position port)]))
+
 (define (private:tolerant-parse->patch source . maybe-fallback)
   (let ([fallback (if (null? maybe-fallback) 0 (car maybe-fallback))])
   (let loop ([port (open-input-string source)])
@@ -355,12 +365,7 @@
                     `(,ann . ,(loop (port-position port)))))
                 (except e
                   [(and tolerant? (condition? e))
-                    (let ([error-position 
-                            (cond
-                              [(or (private:message-matches? (condition-message e) "unexpected close parenthesis")
-                                   (private:message-matches? (condition-message e) "unexpected close bracket"))
-                               (max 0 (- (port-position port) 1))]
-                              [else (port-position port)])])
+                    (let ([error-position (private:compute-error-position e port)])
                       (when maybe-document
                         (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
                       (let ([after (private:tolerant-parse->patch source error-position)])
@@ -368,20 +373,16 @@
                           (source-file->annotations after path start-position #f maybe-document)
                           (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
                   [(condition? e)
-                    (let ([error-position 
-                            (cond
-                              [(or (private:message-matches? (condition-message e) "unexpected close parenthesis")
-                                   (private:message-matches? (condition-message e) "unexpected close bracket"))
-                               (max 0 (- (port-position port) 1))]
-                              [else (port-position port)])])
+                    (let ([error-position (private:compute-error-position e port)])
                       (when maybe-document
                         (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
                       (error 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
                   [else 
-                    (when maybe-document
-                      (append-new-diagnoses maybe-document '(0 0 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
-                    (warning 'tokenizer-error0 path `(,source ,path ,position ,tolerant?))
-                    '()])))))
+                    (let ([error-position (max 0 (- (port-position port) 1))])
+                      (when maybe-document
+                        (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
+                      (warning 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant?))
+                      '())])))))
           (begin
             (when maybe-document
               (append-new-diagnoses maybe-document `(0 0 1 ,(string-append "File not found: " path) "syntax" "file-not-found")))
