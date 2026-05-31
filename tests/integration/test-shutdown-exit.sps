@@ -121,7 +121,7 @@
     (call-with-port
       (open-file-output-port "/tmp/exit-only.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
       (lambda (p) (display exit-script p) (newline p)))
-    (test-equal 1 (system "source .akku/bin/activate && scheme --script /tmp/exit-only.sps >/dev/null 2>&1")))
+    (test-equal 1 (system ". .akku/bin/activate && scheme --script /tmp/exit-only.sps >/dev/null 2>&1")))
 
   ;; Test 5: exit after shutdown terminates with code 0
   (let ([exit-script
@@ -139,7 +139,7 @@
     (call-with-port
       (open-file-output-port "/tmp/shutdown-exit.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
       (lambda (p) (display exit-script p) (newline p)))
-    (test-equal 0 (system "source .akku/bin/activate && scheme --script /tmp/shutdown-exit.sps >/dev/null 2>&1")))
+    (test-equal 0 (system ". .akku/bin/activate && scheme --script /tmp/shutdown-exit.sps >/dev/null 2>&1")))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
