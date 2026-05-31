@@ -51,7 +51,8 @@
   (let ([end (string-find-delimiter source (+ 1 position))])
     (private:replace-region source position (- end position))))
 
-(define (private:tolerant-parse->patch source)
+(define (private:tolerant-parse->patch source . maybe-fallback)
+  (let ([fallback (if (null? maybe-fallback) 0 (car maybe-fallback))])
   (let loop ([port (open-input-string source)])
     (try 
       (if (eof-object? (get-datum port))
@@ -226,19 +227,19 @@
                   (private:message-matches? msg "unexpected close parenthesis")
                   (private:message-matches? msg "unexpected close bracket")
                   (private:message-matches? msg "unexpected end-of-file reading ~a"))
-                (let* ([position (or position 0)]
+                (let* ([position (or position fallback 0)]
                     [head (if (zero? position) "" (string-take source position))]
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
                   (private:tolerant-parse->patch (string-append head " " rest)))]
               [(or (private:message-matches? msg "parenthesized list terminated by bracket")
                   (private:message-matches? msg "bracketed list terminated by parenthesis"))
-                (let* ([position (if position (- position 1) 0)]
+                (let* ([position (if position (- position 1) fallback)]
                     [head (if (zero? position) "" (string-take source position))]
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
                   (private:tolerant-parse->patch (string-append head " " rest)))]
               [(or (private:message-matches? msg "expected one item after dot (.)")
                   (private:message-matches? msg "more than one item found after dot (.)"))
-                (let* ([position (or position 0)]
+                (let* ([position (or position fallback 0)]
                     [dot-pos 
                       (let search ([i (min position (- (string-length source) 1))])
                         (cond
@@ -247,22 +248,23 @@
                           [else (search (- i 1))]))])
                   (private:tolerant-parse->patch (private:replace-region source dot-pos 1)))]
               [(private:message-matches? msg "invalid syntax #!~a")
-                (let* ([position (or position 0)]
+                (let* ([position (or position fallback 0)]
                     [head (if (zero? position) "" (string-take source position))]
                     [l 2]
                     [rest (string-take-right source (max 0 (- (string-length source) position l)))])
                   (private:tolerant-parse->patch (string-append head (make-string l #\space) rest)))]
               [(private:message-matches? msg "invalid number syntax ~a")
-                (private:tolerant-parse->patch (private:replace-token source (or position 0)))]
+                (private:tolerant-parse->patch (private:replace-token source (or position fallback 0)))]
               [(private:message-matches? msg "cannot represent ~a")
-                (private:tolerant-parse->patch (private:replace-token source (or position 0)))]
+                (private:tolerant-parse->patch (private:replace-token source (or position fallback 0)))]
               [else (warning 'tokenizer-warning3 "" `(,(condition-who e) ,msg ,(condition-irritants e)))
                 source]))]
         [else (warning 'tokenizer-warning4 "" `(,e))
-          source]))))
+          source])))))
 
-(define (private:condition->diagnose condition source)
-  (let* ([msg (condition-message condition)]
+(define (private:condition->diagnose condition source . maybe-fallback)
+  (let* ([fallback (if (null? maybe-fallback) 0 (car maybe-fallback))]
+         [msg (condition-message condition)]
          [irritants (condition-irritants condition)]
          [position 
            (cond
@@ -270,7 +272,7 @@
               (caddr irritants)]
              [(and (condition? condition) (pair? irritants) (pair? (car irritants)) (string? (caar irritants)) (>= (length (car irritants)) 3) (number? (caddar irritants)))
               (caddar irritants)]
-             [else (or (private:extract-position-from-message msg) 0)])]
+             [else (or (private:extract-position-from-message msg) fallback)])]
          [start (max 0 (or position 0))]
          [end 
            (cond
@@ -353,16 +355,28 @@
                     `(,ann . ,(loop (port-position port)))))
                 (except e
                   [(and tolerant? (condition? e))
-                    (when maybe-document
-                      (append-new-diagnoses maybe-document (append (private:condition->diagnose e source) '("syntax" "syntax-error"))))
-                    (let ([after (private:tolerant-parse->patch source)])
-                      (if (= (string-length after) (string-length source))
-                        (source-file->annotations after path start-position #f maybe-document)
-                        (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
+                    (let ([error-position 
+                            (cond
+                              [(or (private:message-matches? (condition-message e) "unexpected close parenthesis")
+                                   (private:message-matches? (condition-message e) "unexpected close bracket"))
+                               (max 0 (- (port-position port) 1))]
+                              [else (port-position port)])])
+                      (when maybe-document
+                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
+                      (let ([after (private:tolerant-parse->patch source error-position)])
+                        (if (= (string-length after) (string-length source))
+                          (source-file->annotations after path start-position #f maybe-document)
+                          (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
                   [(condition? e)
-                    (when maybe-document
-                      (append-new-diagnoses maybe-document (append (private:condition->diagnose e source) '("syntax" "syntax-error"))))
-                    (error 'tokenizer-error0 path `(,source ,path ,position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e)))]
+                    (let ([error-position 
+                            (cond
+                              [(or (private:message-matches? (condition-message e) "unexpected close parenthesis")
+                                   (private:message-matches? (condition-message e) "unexpected close bracket"))
+                               (max 0 (- (port-position port) 1))]
+                              [else (port-position port)])])
+                      (when maybe-document
+                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
+                      (error 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
                   [else 
                     (when maybe-document
                       (append-new-diagnoses maybe-document '(0 0 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
