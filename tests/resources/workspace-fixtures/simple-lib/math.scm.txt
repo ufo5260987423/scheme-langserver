@@ -1,0 +1,4 @@
+(library (fixtures simple-lib math)
+  (export add)
+  (import (rnrs))
+  (define (add a b) (+ a b)))

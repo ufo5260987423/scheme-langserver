@@ -24,6 +24,11 @@
     identifier-reference-top-environment
     identifier-reference-syntax-expander
     identifier-reference-syntax-expander-set!
+    identifier-reference-usage-count
+    identifier-reference-usage-count-set!
+
+    check-duplicate-identifiers
+    collect-parameter-pairs
 
     identifier-compare?
 
@@ -63,21 +68,22 @@
     ;(1) rename/prefix a identifier-reference in library importion/exportion
     ;(2) record-type inherent
     (mutable parents)
-    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'void? ...
+    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'inner:void? ...
     ;; NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)
     (mutable top-environment)
-    (mutable syntax-expander))
+    (mutable syntax-expander)
+    (mutable usage-count))
   (protocol
     (lambda (new)
       (case-lambda
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f)]
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0)]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f)]))))
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0)]))))
 
 (define (is-ancestor-of? identifier-reference0 identifier-reference1)
-  (if (equal? identifier-reference0 identifier-reference1)
+  (if (eq? identifier-reference0 identifier-reference1)
     #t
     (if (find (lambda (parent) (is-ancestor-of? identifier-reference0 parent)) (identifier-reference-parents identifier-reference1))
       #t
@@ -110,7 +116,7 @@
                       (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
                         (and 
                           (index-node? tmp) 
-                          (not (contain? target-index-node-blacklist tmp)) 
+                          (not (contain? target-index-node-blacklist tmp eq?)) 
                           (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     exclude-reference)))
               (index-node-references-import-in-this-node-set!
@@ -122,10 +128,10 @@
                       (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
                         (and 
                           (index-node? tmp) 
-                          (not (contain? target-index-node-blacklist tmp)) 
+                          (not (contain? target-index-node-blacklist tmp eq?)) 
                           (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     imported-reference)))
-              (map 
+              (for-each 
                 (lambda (item) (private-export-transform item document target-index-node-list mapper-vector))
                 exported-reference))
             '()))))))
@@ -158,7 +164,7 @@
       (equal? '**1 expression) 
       (equal? '... expression) 
       (equal? 'something? expression) 
-      (equal? 'void? expression) 
+      (equal? 'inner:void? expression) 
       (equal? 'inner:list? expression) 
       (equal? 'inner:pair? expression) 
       (equal? 'inner:vector? expression) 
@@ -169,25 +175,26 @@
   (let ([e (annotation-stripped (index-node-datum/annotations index-node))])
     (if (symbol? e)
       (let* ([as (find-available-references-for document index-node e)]
-          [ras (apply append (map root-ancestor as))]
+          [ras (fold-right append '() (map root-ancestor as))]
           [metas (filter meta? ras)])
-        (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) metas)))))
+        (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) metas)))))
 
 (define (identifier-compare? target1 target2)
-  (string<=?
-    (symbol->string (identifier-reference-identifier target1))
-    (symbol->string (identifier-reference-identifier target2))))
+  (let ([id1 (identifier-reference-identifier target1)]
+      [id2 (identifier-reference-identifier target2)])
+    (or (eq? id1 id2)
+      (string<=? (symbol->string id1) (symbol->string id2)))))
 
 (define (append-references-into-ordered-references-for document index-node list)
   (if (null? index-node)
     (document-ordered-reference-list-set! document 
       (ordered-dedupe 
         (sort-identifier-references 
-          (append (document-ordered-reference-list document) list))))
+          (fold-left (lambda (acc x) (cons x acc)) (document-ordered-reference-list document) list))))
     (index-node-references-import-in-this-node-set! index-node
       (ordered-dedupe 
         (sort-identifier-references 
-          (append (index-node-references-import-in-this-node index-node) list))))))
+          (fold-left (lambda (acc x) (cons x acc)) (index-node-references-import-in-this-node index-node) list))))))
 
 (define (sort-identifier-references identifier-references)
   (sort identifier-compare? identifier-references))
@@ -198,14 +205,14 @@
       #t
       (let loop ([body 
             (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-              (apply append (map identifier-reference-parents (find-available-references-for document current-index-node))))])
+              (fold-left append '() (map identifier-reference-parents (find-available-references-for document current-index-node))))])
         (if (null? body)
           (raise "no such identifier for specific libraries")
           (if (private-check-library-identifier? body library-identifier-rest)
             #t
             (loop 
               (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
-                (apply append (map identifier-reference-parents body))))))))))
+                (fold-right append '() (map identifier-reference-parents body))))))))))
 
 (define (private-check-library-identifier? candidates library-identifier-rest)
   (if (null? candidates)
@@ -227,22 +234,22 @@
             (if (null? grandparent)
               #f
               (and 
-                (not (equal? bigest-sibling index-node))
-                (contain? sibling index-node)
+                (not (eq? bigest-sibling index-node))
+                (contain? sibling index-node eq?)
                 (match (annotation-stripped (index-node-datum/annotations grandparent))
-                  [('library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
-                  [('define-library _ ...) (not (equal? (cadr (index-node-children grandparent)) parent))]
+                  [('library _ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
+                  [('define-library _ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
                   [else #f])))))])
     (if (null? parent)
       #f
       (match (annotation-stripped (index-node-datum/annotations parent))
         [('library identifier _ ...) 
           (and 
-            (equal? (cadr (index-node-children parent)) index-node)
+            (eq? (cadr (index-node-children parent)) index-node)
             (not (check?)))]
         [('define-library identifier _ ...) 
           (and 
-            (equal? (cadr (index-node-children parent)) index-node)
+            (eq? (cadr (index-node-children parent)) index-node)
             (not (check?)))]
         [('import identifier **1) (check?)]
         [('only identifier _ ...) (check?)]
@@ -252,19 +259,24 @@
         [('alias identifier _ ...) (check?)]
         [else #f]))))
 
+(define (private:list->eq-set lst)
+  (let ([ht (make-eq-hashtable)])
+    (for-each (lambda (item) (eq-hashtable-set! ht item #t)) lst)
+    ht))
+
 (define find-available-references-for
   (case-lambda
     [(document current-index-node)
       (let* ([local (index-node-references-import-in-this-node current-index-node)]
-          [local-identifiers (map identifier-reference-identifier local)]
-          [exclude (index-node-excluded-references current-index-node)])
+          [local-ht (private:list->eq-set (map identifier-reference-identifier local))]
+          [exclude-ht (private:list->eq-set (index-node-excluded-references current-index-node))])
         (filter
-          (lambda (reference) (not (member reference exclude)))
+          (lambda (reference) (not (eq-hashtable-contains? exclude-ht reference)))
           (append 
             local
             (filter 
               (lambda (reference)
-                (not (member (identifier-reference-identifier reference) local-identifiers)))
+                (not (eq-hashtable-contains? local-ht (identifier-reference-identifier reference))))
               (if (null? (index-node-parent current-index-node))
                 (document-ordered-reference-list document) 
                 (find-available-references-for document (index-node-parent current-index-node)))))))]
@@ -272,8 +284,8 @@
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])
         (if (and 
-            (find (lambda (i) (equal? identifier (identifier-reference-identifier i))) export-list)
-            (equal? expression identifier))
+            (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) export-list)
+            (eq? expression identifier))
           '()
           (find-available-references-for document current-index-node identifier '())))]
     [(document current-index-node identifier exclude)
@@ -290,24 +302,55 @@
           tmp-result))]))
 
 (define (private-binary-search reference-list identifier exclude)
-  (let ([prev
-        (binary-search
-          (list->vector reference-list)
-          identifier-compare?
-          (make-identifier-reference identifier '() '() '() '() '() '() '()))])
+  (let ([exclude-ht (private:list->eq-set exclude)]
+        [prev
+          (binary-search
+            (list->vector reference-list)
+            identifier-compare?
+            (make-identifier-reference identifier '() '() '() '() '() '() '()))])
     (filter
       (lambda (reference)
-        (not 
-          (find 
-            (lambda (ex-reference)
-              (equal? ex-reference reference))
-            exclude)))
-        prev)))
+        (not (eq-hashtable-contains? exclude-ht reference)))
+      prev)))
 
 (define (root-ancestor identifier-reference)
   (if (null? (identifier-reference-parents identifier-reference))
     `(,identifier-reference)
-    (apply append (map root-ancestor (identifier-reference-parents identifier-reference)))))
+    (fold-right append '() (map root-ancestor (identifier-reference-parents identifier-reference)))))
+
+(define (check-duplicate-identifiers document identifier-index-node-pairs)
+  (let loop ([rest identifier-index-node-pairs] [seen '()])
+    (if (null? rest)
+      '()
+      (let* ([pair (car rest)]
+          [sym (car pair)]
+          [node (cdr pair)])
+        (if (and (symbol? sym) (find (lambda (s) (eq? s sym)) seen))
+          (append-new-diagnoses document 
+            `(,(index-node-start node) ,(index-node-end node) 1 
+              ,(string-append "Duplicate identifier: " (symbol->string sym)) 
+              "identifier" "duplicate-identifier")))
+        (loop (cdr rest) (if (symbol? sym) (cons sym seen) seen))))))
+
+(define (collect-parameter-pairs param-list-node)
+  (let ([expression (annotation-stripped (index-node-datum/annotations param-list-node))])
+    (cond
+      [(symbol? expression) `(,(cons expression param-list-node))]
+      [(and (pair? expression) (list? expression))
+        (fold-left
+          (lambda (acc child)
+            (let ([sym (annotation-stripped (index-node-datum/annotations child))])
+              (if (symbol? sym) (cons (cons sym child) acc) acc)))
+          '()
+          (index-node-children param-list-node))]
+      [(pair? expression)
+        (let ([children (index-node-children param-list-node)])
+          (if (= (length children) 2)
+            (append 
+              (collect-parameter-pairs (car children))
+              (collect-parameter-pairs (cadr children)))
+            '()))]
+      [else '()])))
 
 (define (find-references-in document index-node available-references predicate?)
   (let* ([ann (index-node-datum/annotations index-node)]
@@ -318,7 +361,7 @@
         (let ([result 
               (find 
                 (lambda (candidate-reference) 
-                  (if (find (lambda (cr) (equal? cr candidate-reference)) available-references)
+                  (if (find (lambda (cr) (eq? cr candidate-reference)) available-references)
                     #t
                     #f))
                 (find-available-references-for document index-node maybe-symbol))])
@@ -332,6 +375,6 @@
       [else 
         (if (null? children)
           '()
-          (apply append
+          (fold-left append '()
             (map (lambda (child-index-node) (find-references-in document child-index-node available-references predicate?)) children)))])))
 )

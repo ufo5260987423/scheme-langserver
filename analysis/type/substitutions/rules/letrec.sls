@@ -4,11 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
-
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -26,6 +22,6 @@
             [key-value-index-nodes (index-node-children (cadr children))])
           (extend-index-node-substitution-list index-node return-index-node)
           (extend-index-node-substitution-list return-index-node index-node)
-          (map let:private-process-key-value key-value-index-nodes))]
+          (for-each let:private-process-key-value key-value-index-nodes))]
       [else '()])))
 )

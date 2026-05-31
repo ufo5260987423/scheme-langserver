@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-only)
+  (export consumer-only)
+  (import (rnrs)
+          (only (fixtures import-test lib) foo bar))
+  (define (consumer-only) foo))

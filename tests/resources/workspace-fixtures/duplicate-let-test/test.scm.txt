@@ -1,0 +1,6 @@
+(library (test)
+  (export f)
+  (import (chezscheme))
+  (define (f)
+    (let ((x 1) (x 2))
+      x)))

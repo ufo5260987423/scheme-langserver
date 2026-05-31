@@ -1,0 +1,3 @@
+(import (rnrs)
+        (alias (fixtures import-test lib) (foo aliased-foo)))
+aliased-foo

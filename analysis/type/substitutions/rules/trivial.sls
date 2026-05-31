@@ -6,9 +6,7 @@
   (import 
     (chezscheme) 
 
-    (scheme-langserver util dedupe)
     (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
@@ -57,7 +55,7 @@
         [(number? expression) (extend-index-node-substitution-list index-node private-number?)]
 
         [(and (symbol? expression) (not quoted?))
-          (map 
+          (for-each 
             (lambda (identifier-reference) 
               (private-process document identifier-reference index-node))
             (find-available-references-for document index-node expression))]
@@ -99,11 +97,18 @@
           (extend-index-node-substitution-list index-node identifier-reference)]
         [(and (equal? 'predicator type) (not (null? target-index-node)))
           (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))]
-        ;it's in r6rs library?
+        ;it's in r6rs library or imported from another file
         [(null? target-index-node)
-          (map 
-            (lambda (t) (extend-index-node-substitution-list index-node t))
-            type-expressions)]
+          (if (null? type-expressions)
+            ;; When type-expressions are empty (e.g. predicator after record.sls
+            ;; stopped setting them), fall back to type-specific defaults so that
+            ;; imported identifiers still get useful hover information.
+            (if (equal? 'predicator type)
+              (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))
+              '())
+            (for-each 
+              (lambda (t) (extend-index-node-substitution-list index-node t))
+              type-expressions))]
         ; this can't be excluded by identifier-catching rules
         [(equal? index-node target-index-node) '()]
         ;local
@@ -132,7 +137,7 @@
                   [children (index-node-children ancestor)]
                   [head (car children)]
                   [rests (cdr children)]
-                  [index (index-of (list->vector rests) index-node)]
+                  [index (index-of rests index-node)]
                   [symbols (generate-symbols-with "d" (length rests))])
                 (if (= index (length rests))
                   '()
@@ -150,10 +155,10 @@
             (extend-index-node-substitution-list
               index-node
               (identifier-reference-index-node identifier-reference))
-            (map 
+            (for-each 
               (lambda (t) (extend-index-node-substitution-list index-node t))
               type-expressions))]))
-    (map 
+    (for-each 
       (lambda (parent) (private-process document parent index-node))
       (identifier-reference-parents identifier-reference))))
 
@@ -163,12 +168,12 @@
       (loop `(,@result ,(string->symbol (string-append base-string (number->string (length result))))))
       result)))
 
-(define (index-of target-vector target-index-node)
-  (let loop ([i 0])
+(define (index-of target-list target-index-node)
+  (let loop ([i 0] [lst target-list])
     (cond 
-      [(= i (vector-length target-vector)) i]
-      [(equal? (vector-ref target-vector i) target-index-node) i]
-      [else (loop (+ i 1))])))
+      [(null? lst) i]
+      [(equal? (car lst) target-index-node) i]
+      [else (loop (+ i 1) (cdr lst))])))
 
 (define (private-unquote-splicing? index-node document current-expression)
   (if (pair? current-expression)

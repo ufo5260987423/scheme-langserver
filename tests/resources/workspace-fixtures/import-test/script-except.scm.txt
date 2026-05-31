@@ -1,0 +1,3 @@
+(import (rnrs)
+        (except (fixtures import-test lib) baz))
+foo

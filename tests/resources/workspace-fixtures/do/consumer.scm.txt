@@ -1,0 +1,10 @@
+(library (consumer)
+  (export consumer)
+  (import (rnrs (6)))
+
+  (define (consumer)
+    (do ((i 0 (+ i 1))
+         (j 10 (- j 1)))
+        ((> i j) (+ i j))
+      (display i)))
+)

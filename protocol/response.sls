@@ -19,8 +19,7 @@
     (scheme-langserver util association)
     (scheme-langserver util io)
     (scheme-langserver protocol server)
-    (scheme-langserver protocol alist-access-object)
-    (only (srfi :13 strings) string-index string-take string-drop ))
+    (scheme-langserver protocol alist-access-object))
 
 (define-record-type response
   (fields 

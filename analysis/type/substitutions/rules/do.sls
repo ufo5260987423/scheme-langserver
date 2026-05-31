@@ -4,13 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util cartesian-product)
-
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type substitutions util)
-
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document))
+    (scheme-langserver virtual-file-system index-node))
 
 (define (do-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
@@ -20,7 +14,7 @@
       [(_ ((var init update ...) **1) (test result ...) _ ... ) 
         (let* ([children (index-node-children index-node)]
             [var-index-node (cadr children)])
-          (map private-process (index-node-children var-index-node)))]
+          (for-each private-process (index-node-children var-index-node)))]
       [else '()])))
 
 (define (private-process target-index-node)
@@ -35,7 +29,7 @@
       [((? symbol? var) init update)
         (let* ([var-index-node (car children)]
             [init-index-node (cadr children)]
-            [update-index-node (caddr (children))])
+            [update-index-node (caddr children)])
           (extend-index-node-substitution-list var-index-node init-index-node)
           (extend-index-node-substitution-list var-index-node update-index-node))]
       [else '()])))

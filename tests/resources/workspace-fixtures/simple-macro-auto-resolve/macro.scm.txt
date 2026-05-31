@@ -1,0 +1,8 @@
+(library (simple-macro)
+  (export simple-let)
+  (import (chezscheme))
+
+  (define-syntax simple-let
+    (syntax-rules ()
+      [(_ ((var val)) body)
+       (let ((var val)) body)])))

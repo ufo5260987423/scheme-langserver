@@ -5,7 +5,6 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
@@ -16,7 +15,7 @@
       [children (index-node-children index-node)])
     (match expression
       [(_ clause **1)
-        (map 
+        (for-each 
           (lambda (clause-index-node) (private-clause-process index-node clause-index-node))
           (cdr children))]
       [else '()])))

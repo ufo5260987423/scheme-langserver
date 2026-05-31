@@ -176,7 +176,7 @@
           '())]
       [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
-            (equal? parameter like-parameter)
+            (eq? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
             (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
           (let* ([clause-index-nodes (cdddr (index-node-children (car (reverse children))))]
@@ -186,8 +186,8 @@
               [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))]
               [body-index-node-children (index-node-children body-index-node)])
             (if (or 
-                (equal? (car body-expression) 'quasisyntax)
-                (equal? (car body-expression) 'syntax))
+                (eq? (car body-expression) 'quasisyntax)
+                (eq? (car body-expression) 'syntax))
               (private:template-variable+expanded template-index-node (car body-index-node-children) (cadr body-expression) expanded-index-node template+callees callee-document #f)
               (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees callee-document #f)))
           '())]
@@ -207,7 +207,7 @@
           '())]
       [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
-            (equal? parameter like-parameter)
+            (eq? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
             (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
           (let* ([template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))])
@@ -241,7 +241,7 @@
 
 (define (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees document is-...?)
   (cond 
-    [(equal? body-expression '...) '()]
+    [(eq? body-expression '...) '()]
     [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) is-...? (assoc body-expression template+callees))
       `((,body-expression . ,expanded-index-node))]
     [(and (private:syntax-parameter-index-node? template-index-node body-index-node document body-expression) is-...? (assoc `(,body-expression ...) template+callees))
@@ -258,13 +258,13 @@
     [(or (null? body-expression) (null? body-index-node) (null? expanded-index-node)) '()]
     [(and (pair? body-expression) (index-node? body-index-node)) 
       (if (or
-          (equal? (car body-expression) 'quasisyntax)
-          (equal? (car body-expression) 'syntax)
-          (equal? (car body-expression) 'quasiquote)
-          (equal? (car body-expression) 'unquote)
-          (equal? (car body-expression) 'unquote-splicing)
-          (equal? (car body-expression) 'unsyntax)
-          (equal? (car body-expression) 'unsyntax-splicing))
+          (eq? (car body-expression) 'quasisyntax)
+          (eq? (car body-expression) 'syntax)
+          (eq? (car body-expression) 'quasiquote)
+          (eq? (car body-expression) 'unquote)
+          (eq? (car body-expression) 'unquote-splicing)
+          (eq? (car body-expression) 'unsyntax)
+          (eq? (car body-expression) 'unsyntax-splicing))
         '()
         (private:template-variable+expanded template-index-node (index-node-children body-index-node) body-expression (index-node-children expanded-index-node) template+callees document is-...?))]
     [(vector? body-expression) 
@@ -273,7 +273,7 @@
       (private:template-variable+expanded template-index-node body-index-node `(,(car body-expression) ,(cdr body-expression)) expanded-index-node template+callees document is-...?)]
 
     [(>= (length body-expression) 2)
-      (if (equal? (cadr body-expression) '...)
+      (if (eq? (cadr body-expression) '...)
         (if is-...?
           (raise 'IdontKnowWhy)
           (let loop ([auto-increase 0]
@@ -296,8 +296,8 @@
     (find 
       (lambda (x) 
         (and 
-          (equal? 'syntax-parameter (identifier-reference-type x))
-          (equal? template-index-node (identifier-reference-index-node x))))
+          (eq? 'syntax-parameter (identifier-reference-type x))
+          (eq? template-index-node (identifier-reference-index-node x))))
       (find-available-references-for document index-node expression))
     #f))
 
@@ -314,7 +314,7 @@
     [(not (list? template)) 
       (private:template-variable+callee `(,(car template) ,(cdr template)) callee-index-node `(,(car callee-expression) ,(cdr callee-expression)) keywords)]
     [(>= (length template) 2)
-      (if (equal? (cadr template) '...)
+      (if (eq? (cadr template) '...)
         (let* ([new-callee-expression (syntax->datum (eval `(syntax-case ',callee-expression ,keywords (,template #'(,(car template) ,(cadr template))))))]
             [size (length new-callee-expression)])
           (append 
@@ -350,7 +350,7 @@
           '())]
       [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
-            (equal? parameter like-parameter)
+            (eq? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
             (root-meta-check callee-document (car (index-node-children (car (reverse children)))) 'syntax-case))
           (syntax->datum (eval `(syntax-case ',callee-expression ,keywords ,@clauses)))

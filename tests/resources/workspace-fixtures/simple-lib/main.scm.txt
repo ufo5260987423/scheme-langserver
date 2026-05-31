@@ -1,0 +1,5 @@
+(library (fixtures simple-lib main)
+  (export run)
+  (import (rnrs)
+          (fixtures simple-lib math))
+  (define (run) (add 1 2)))

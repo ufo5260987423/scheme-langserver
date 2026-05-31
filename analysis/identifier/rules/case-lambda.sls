@@ -27,7 +27,9 @@
                 ; Because case-lambda has many clauses, and some maybe don't contain any parameters
                 [(() body ...) (loop (cdr rest))]
                 [((param-identifier **1) body ...)
-                  (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))])
+                  (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))]
+                      [param-pairs (collect-parameter-pairs identifier-index-node-parent)])
+                    (check-duplicate-identifiers document param-pairs)
                     (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children identifier-index-node-parent)])
                       (if (null? param-identifier-index-node-list)
                         (loop (cdr rest))
@@ -36,7 +38,9 @@
                           (cdr param-identifier-index-node-list)))))]
                 [((identifier . rest) fuzzy ... ) 
                   (let* ([omg-index-node (car (index-node-children identifier-index-node-grand-parent))]
-                      [reference (make-identifier-reference 
+                      [param-pairs (collect-parameter-pairs omg-index-node)])
+                    (check-duplicate-identifiers document param-pairs)
+                    (let ([reference (make-identifier-reference 
                           identifier 
                           document 
                           omg-index-node
@@ -45,49 +49,48 @@
                           'parameter
                           '()
                           '())])
-                    (index-node-references-export-to-other-node-set! 
-                      (identifier-reference-index-node reference)
-                      (append 
-                        (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                        `(,reference)))
-                    (append-references-into-ordered-references-for document index-node `(,reference))
-                    (let loop ([rest rest])
-                      (cond 
-                        [(pair? rest) 
-                          (let ([reference (make-identifier-reference 
-                              (car rest)
-                              document 
-                              omg-index-node
-                              index-node
-                              '()
-                              'parameter
-                              '()
-                              '())])
-                            (index-node-references-export-to-other-node-set! 
-                              (identifier-reference-index-node reference)
-                              (append 
-                                (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                                `(,reference)))
-                            (append-references-into-ordered-references-for document index-node `(,reference)))
-                          (loop (cdr rest))]
-                        [(not (null? rest)) 
-                          (let ([reference (make-identifier-reference 
-                              rest
-                              document 
-                              omg-index-node
-                              index-node
-                              '()
-                              'parameter
-                              '()
-                              '())])
-                            (index-node-references-export-to-other-node-set! 
-                              (identifier-reference-index-node reference)
-                              (append 
-                                (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                                `(,reference)))
-                            (append-references-into-ordered-references-for document index-node `(,reference)))]
-                        [else '()])))
-                        ]
+                      (index-node-references-export-to-other-node-set! 
+                        (identifier-reference-index-node reference)
+                        (append 
+                          (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                          `(,reference)))
+                      (append-references-into-ordered-references-for document index-node `(,reference))
+                      (let loop ([rest rest])
+                        (cond 
+                          [(pair? rest) 
+                            (let ([reference (make-identifier-reference 
+                                (car rest)
+                                document 
+                                omg-index-node
+                                index-node
+                                '()
+                                'parameter
+                                '()
+                                '())])
+                              (index-node-references-export-to-other-node-set! 
+                                (identifier-reference-index-node reference)
+                                (append 
+                                  (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                                  `(,reference)))
+                              (append-references-into-ordered-references-for document index-node `(,reference)))
+                            (loop (cdr rest))]
+                          [(not (null? rest)) 
+                            (let ([reference (make-identifier-reference 
+                                rest
+                                document 
+                                omg-index-node
+                                index-node
+                                '()
+                                'parameter
+                                '()
+                                '())])
+                              (index-node-references-export-to-other-node-set! 
+                                (identifier-reference-index-node reference)
+                                (append 
+                                  (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                                  `(,reference)))
+                              (append-references-into-ordered-references-for document index-node `(,reference)))]
+                          [else '()]))))]
                 [else '()]
               ))))]
       [else '()])))

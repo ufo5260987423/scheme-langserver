@@ -1,0 +1,3 @@
+(import (rnrs)
+        (for (fixtures import-test lib) run))
+foo

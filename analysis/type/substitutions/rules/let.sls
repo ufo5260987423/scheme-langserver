@@ -6,9 +6,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
 
@@ -34,16 +31,16 @@
 
           (extend-index-node-substitution-list index-node return-index-node)
           (extend-index-node-substitution-list return-index-node index-node)
-          (map 
+          (for-each 
             (lambda (t) (extend-index-node-substitution-list loop-index-node t))
             loop-procedure-details)
-          (map let:private-process-key-value key-value-index-nodes))]
+          (for-each let:private-process-key-value key-value-index-nodes))]
       [(_ (((? symbol? identifier) value) ...) fuzzy **1) 
         (let* ([return-index-node (car (reverse children))]
             [key-value-index-nodes (index-node-children (cadr children))])
           (extend-index-node-substitution-list index-node return-index-node)
           (extend-index-node-substitution-list return-index-node index-node)
-          (map let:private-process-key-value key-value-index-nodes))]
+          (for-each let:private-process-key-value key-value-index-nodes))]
       [else '()])))
 
 (define (let:private-process-key-value parent-index-node)

@@ -1,0 +1,5 @@
+(library (fixtures two-libs main)
+  (export main)
+  (import (rnrs)
+          (fixtures two-libs helper))
+  (define (main) (helper-fn 21)))

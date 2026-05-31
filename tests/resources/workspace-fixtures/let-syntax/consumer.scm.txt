@@ -1,0 +1,8 @@
+(library (consumer)
+  (export consumer)
+  (import (rnrs (6)))
+
+  (define (consumer)
+    (let-syntax ([my-when (syntax-rules () [(_ test body ...) (if test (begin body ...) #f)])])
+      (my-when #t 42)))
+)

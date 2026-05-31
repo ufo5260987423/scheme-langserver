@@ -24,14 +24,18 @@
         (immutable params)))
 
 (define (read-message server-instance)
-    (let* ([header-hashtable (read-headers (server-input-port server-instance))]
-            [json-content (read-content header-hashtable (server-input-port server-instance))])
+    (guard (e [else 
+                (do-log "read-message parse error" server-instance)
+                (do-log (with-output-to-string (lambda () (pretty-print e))) server-instance)
+                'invalid])
+      (let* ([header-hashtable (read-headers (server-input-port server-instance))]
+              [json-content (read-content header-hashtable (server-input-port server-instance))])
         (do-log "read-message" server-instance)
         (do-log-timestamp  server-instance)
         (do-log json-content server-instance)
         (if (equal? "" json-content)
             #f
-            (parse-content json-content))))
+            (parse-content json-content)))))
 
 ;; header
 ;;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#headerPart
@@ -46,17 +50,21 @@
                 (loop (read-to-CRNL port) header-hashtable)))))
 
 (define (get-content-length header-hashtable)
-    (let ([content-length (hashtable-ref header-hashtable "Content-Length" string=?)])
+    (let ([content-length (hashtable-ref header-hashtable "Content-Length" #f)])
         (if (string? content-length)
-            (string->number content-length)
-            0)))
+          (let ([n (string->number content-length)])
+            (if (and (integer? n) (>= n 0) (<= n 10485760)) n 0))
+          0)))
 
 (define (read-content header-hashtable port)
     (let ([utf8-transcoder (make-transcoder (utf-8-codec))]
             [content-length (get-content-length header-hashtable)])
         (if (zero? content-length)
             ""
-            (bytevector->string (get-bytevector-n port content-length) utf8-transcoder))))
+            (let ([bv (get-bytevector-n port content-length)])
+              (if (eof-object? bv)
+                  ""
+                  (bytevector->string bv utf8-transcoder))))))
 
 (define (parse-content json-string)
     (let ([content-alist (read-json json-string)])

@@ -19,7 +19,8 @@
     
     refresh-file-linkage&get-refresh-path
     get-init-reference-batches
-    shrink-paths)
+    shrink-paths
+    shrink-file-linkage!)
   (import 
     (chezscheme)
     (scheme-langserver analysis util)
@@ -96,12 +97,38 @@
                   (lambda (index-node) (get-imported-libraries-from-index-node root-library-node index-node top-environment))
                   new-index-node-list)))])
         (if (null? id)
-          ;;todo shrink matrix
-          '()
+          (begin
+            ;; File is not in the linkage (script file or already removed)
+            '())
           (begin 
-            (map (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
-            (map (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
+            (for-each (lambda(row-id) (matrix-set! matrix row-id id 0)) old-imported-file-ids)
+            (for-each (lambda(column-id) (matrix-set! matrix id column-id 1)) (dedupe new-imported-file-ids))
             (map (lambda(current-id) (hashtable-ref id->path-map current-id #f)) `(,@reference-id-from ,id ,@reference-id-to)))))]))
+
+(define (shrink-file-linkage! linkage removed-path)
+  (let* ([path->id-map (file-linkage-path->id-map linkage)]
+      [id->path-map (file-linkage-id->path-map linkage)]
+      [removed-id (hashtable-ref path->id-map removed-path #f)])
+    (if removed-id
+      (let* ([old-node-count (sqrt (vector-length (file-linkage-matrix linkage)))]
+          [new-path->id-map (make-hashtable string-hash equal?)]
+          [new-id->path-map (make-eq-hashtable)]
+          [next-id 0])
+        (let loop ([id 0])
+          (if (< id old-node-count)
+            (begin
+              (when (not (= id removed-id))
+                (let ([path (hashtable-ref id->path-map id #f)])
+                  (when path
+                    (hashtable-set! new-path->id-map path next-id)
+                    (hashtable-set! new-id->path-map next-id path)
+                    (set! next-id (+ 1 next-id)))))
+              (loop (+ 1 id)))
+            (void)))
+        (file-linkage-path->id-map-set! linkage new-path->id-map)
+        (file-linkage-id->path-map-set! linkage new-id->path-map)
+        (file-linkage-matrix-set! linkage (matrix-shrink (file-linkage-matrix linkage) removed-id)))
+      (void))))
 
 (define (get-reference-path-to linkage to-path)
   (let* ([matrix (file-linkage-matrix linkage)]
@@ -143,25 +170,66 @@
       shrinked-ids)))
 
 (define (shrink-ids matrix ids)
-  (let ([tmp 
-      (filter
-        (lambda (current-from) 
-          (zero? 
-            (apply + 
-              (map 
-                (lambda (to) (matrix-take matrix current-from to))
-                ids))))
-        ids)])
-    (cond 
-      [(null? ids) '()]
-      [(null? tmp) 
-        ;here, the ids is basically a super node representing cycles
-        ;so, ramdom remove one to break
-        `(,@(shrink-ids matrix (cdr ids))
-          (,(car ids)))]
-      [else 
-        `(,tmp 
-          ,@(shrink-ids matrix (filter (lambda (id) (not (memq id tmp))) ids)))])))
+  (if (null? ids)
+      '()
+      (let* ([id-set (make-eq-hashtable)]
+          [out-degrees (make-eq-hashtable)]
+          [in-adj (make-eq-hashtable)])
+        ; Build id-set for O(1) membership test
+        (for-each (lambda (id) (hashtable-set! id-set id #t)) ids)
+        
+        ; Build adjacency lists and out-degrees for the subgraph induced by ids
+        (for-each 
+          (lambda (from)
+            (let ([neighbors '()])
+              (for-each 
+                (lambda (to)
+                  (when (and (hashtable-ref id-set to #f) (not (zero? (matrix-take matrix from to))))
+                    (set! neighbors (cons to neighbors))))
+                ids)
+              (hashtable-set! out-degrees from (length neighbors))
+              (for-each 
+                (lambda (to)
+                  (hashtable-set! in-adj to 
+                    (cons from (hashtable-ref in-adj to '()))))
+                neighbors)))
+          ids)
+        
+        ; Kahn's algorithm: peel layers of nodes with zero out-degree.
+        ; Each layer can be analysed in parallel because its members no
+        ; longer depend on any remaining node in the current set.
+        (let loop ([queue (filter (lambda (id) (zero? (hashtable-ref out-degrees id 0))) ids)]
+            [remaining (length ids)]
+            [batches '()])
+          (cond
+            [(null? queue)
+              (if (zero? remaining)
+                (reverse batches)
+                ; Remaining nodes form one or more SCCs.  Rather than
+                ; serialising them one-by-one (which destroys parallelism),
+                ; pack the whole SCC as a single batch so that all its
+                ; members are processed concurrently.
+                (let ([scc (filter (lambda (id) (> (hashtable-ref out-degrees id 0) 0)) ids)])
+                  (reverse (cons scc batches))))]
+            [else
+              (let peel ([q queue] [next-q '()] [batch '()] [rem remaining])
+                (if (null? q)
+                    (loop next-q rem (cons batch batches))
+                    (let* ([node (car q)]
+                            [in-neighbors (hashtable-ref in-adj node '())])
+                      ; Decrement out-degree of every node that has an edge to node.
+                      ; When a node's out-degree drops to zero it becomes ready for
+                      ; the next batch.
+                      (for-each 
+                        (lambda (neighbor)
+                          (let ([deg (hashtable-ref out-degrees neighbor 0)])
+                            (when (> deg 0)
+                              (let ([new-deg (- deg 1)])
+                                (hashtable-set! out-degrees neighbor new-deg)
+                                (when (zero? new-deg)
+                                  (set! next-q (cons neighbor next-q)))))))
+                        in-neighbors)
+                      (peel (cdr q) next-q (cons node batch) (- rem 1)))))])))))
 
 (define (file-linkage-head linkage)
   (let* ([matrix (file-linkage-matrix linkage)]

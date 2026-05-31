@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-except)
+  (export consumer-except)
+  (import (rnrs)
+          (except (fixtures import-test lib) baz))
+  (define (consumer-except) foo))

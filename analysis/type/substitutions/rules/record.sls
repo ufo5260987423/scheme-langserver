@@ -4,13 +4,8 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util cartesian-product)
-    (ufo-try)
-    (scheme-langserver util sub-list)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
@@ -31,21 +26,24 @@
               (if (and predicator constructor)
                 (if (null? (identifier-reference-type-expressions predicator))
                   (begin
-                    (map 
+                    (for-each 
                       (lambda (getter)
                         (identifier-reference-type-expressions-set! 
                           getter
                           `((something? <- (inner:list? ,predicator)))))
                       getters)
-                    (map 
+                    (for-each 
                       (lambda (setter)
                         (identifier-reference-type-expressions-set! 
                           setter
-                          `((void? <- (inner:list? ,predicator something?)))))
+                          `((inner:void? <- (inner:list? ,predicator something?)))))
                       setters)
-                    (identifier-reference-type-expressions-set! 
-                      predicator
-                      `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
+                    ;; Predicator type-expressions are handled by trivial.sls (hard-coded).
+                    ;; Keeping it here risks inconsistency because trivial.sls and record.sls
+                    ;; may run in different orders depending on Scheme library semantics.
+                    ;; (identifier-reference-type-expressions-set! 
+                    ;;   predicator
+                    ;;   `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
                     (identifier-reference-type-expressions-set! 
                       constructor 
                       `((,predicator <- (inner:list? something? ...)))))))))

@@ -1,0 +1,3 @@
+(import (rnrs)
+        (only (fixtures import-test lib) foo bar))
+foo

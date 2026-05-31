@@ -23,117 +23,120 @@
     (scheme-langserver protocol apis definition)
     (scheme-langserver protocol apis document-sync)
     (scheme-langserver protocol apis document-symbol)
+    (scheme-langserver protocol apis workspace-symbol)
     (scheme-langserver protocol apis document-diagnostic)
     (scheme-langserver protocol apis file-change-notification)
+
+    (scheme-langserver virtual-file-system file-node)
 
     (scheme-langserver util association)
     (scheme-langserver util path))
 
-(define (private:try-catch server-instance request)
+(define (private:send-error-response server-instance id method)
+  (try
+    (send-message server-instance (fail-response id unknown-error-code method))
+    (except c
+      [(condition? c)
+        (do-log "Failed to send error response" server-instance)])))
+
+(define (private:try-catch server-instance request debug?)
   (let ([method (request-method request)]
       [id (request-id request)])
     (try 
-      (process-request server-instance request)
+      (process-request server-instance request debug?)
       (except c 
         [(condition? c) 
           (do-log 
             (string-append "error: " (with-output-to-string (lambda () (pretty-print `(,(condition-message c) ,@(condition-irritants c))))))
             server-instance)
           (do-log-timestamp server-instance)
-          (send-message server-instance (fail-response id unknown-error-code method))]
+          (private:send-error-response server-instance id method)]
         [else 
           (do-log 
             (string-append "error: " (with-output-to-string (lambda () (pretty-print c))))
             server-instance)
           (do-log-timestamp server-instance) 
-          (send-message server-instance (fail-response id unknown-error-code method))]))))
+          (private:send-error-response server-instance id method)]))))
 
 (define (private:publish-diagnostics server-instance)
   (if (not (null? (server-workspace server-instance)))
-    (map 
+    (for-each 
       (lambda (params)
         (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params) 'publish))
       (unpublish-diagnostics->list (server-workspace server-instance)))))
 
-(define (process-request server-instance request)
+(define (process-request server-instance request debug?)
   (let* ([method (request-method request)]
-        [id (request-id request)]
-        [params (request-params request)]
-        [workspace (server-workspace server-instance)])
-    (if 
-      (and 
-        (server-shutdown? server-instance)
-        (not (equal? "initialize" method)))
-      (send-message server-instance (fail-response id server-not-initialized "not initialized"))
-      (case method
-        ["initialize" (send-message server-instance (initialize server-instance id params))] 
-        ["initialized" '()] 
-        ["private:publish-diagnoses" (private:publish-diagnostics server-instance)] 
+      [id (request-id request)]
+      [params (request-params request)]
+      [workspace (server-workspace server-instance)])
+    (if (equal? "exit" method)
+      (exit (if (server-shutdown? server-instance) 0 1))
+      (if (and (not debug?) (server-shutdown? server-instance))
+        (if (and id (not (null? id)))
+          (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
+          '())
+        (case method
+          ["initialize" (send-message server-instance (initialize server-instance id params))] 
+          ["initialized" '()] 
+          ["private:publish-diagnostics" (private:publish-diagnostics server-instance)] 
 
-        ["textDocument/didOpen" (did-open workspace params)]
-        ["textDocument/didClose" (did-close workspace params)]
-        ["textDocument/didChange" (did-change workspace params)]
+          ["textDocument/didOpen" (did-open workspace params)]
+          ["textDocument/didClose" (did-close workspace params)]
+          ["textDocument/didChange" (did-change workspace params)]
+          ["textDocument/didSave" (did-save workspace params)]
 
-        ["workspace/didCreateFiles" (did-create workspace params)]
-        ["workspace/didRenameFiles" (did-rename workspace params)]
-        ["workspace/didDeleteFiles" (did-delete workspace params)]
-        ;; lsp-bridge (and many other clients) send this after `initialized`.
-        ;; It's a notification so we must not reply even if we ignore it.
-        ["workspace/didChangeConfiguration" '()]
+          ["workspace/didCreateFiles" (did-create workspace params)]
+          ["workspace/didRenameFiles" (did-rename workspace params)]
+          ["workspace/didDeleteFiles" (did-delete workspace params)]
+          ["workspace/didChangeWatchedFiles" (did-change-watched-files workspace params)]
+          ;; lsp-bridge (and many other clients) send this after `initialized`.
+          ;; It's a notification so we must not reply even if we ignore it.
+          ["workspace/didChangeConfiguration" '()]
+          ["workspace/didChangeWorkspaceFolders"
+            (let* ([event (assq-ref params 'event)]
+                [added (vector->list (assq-ref event 'added))])
+              ; For now, scheme-langserver supports a single root workspace.
+              ; When new folders are added, re-init the workspace to pick them up.
+              (when (and (not (null? added)) (not (null? (server-workspace server-instance))))
+                (let* ([first-added (car added)]
+                    [new-uri (assq-ref first-added 'uri)]
+                    [new-path (uri->path new-uri)]
+                    [current-path (file-node-path (workspace-file-node (server-workspace server-instance)))])
+                  (when (not (string=? new-path current-path))
+                    (server-workspace-set! server-instance 
+                      (init-workspace 
+                        new-path 
+                        'akku 
+                        (server-top-environment server-instance)
+                        (not (null? (server-mutex server-instance)))
+                        (server-type-inference? server-instance)))))))
+            '()]
 
-        ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
-        ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
-        ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
-        ; ["textDocument/documentHighlight" 
-        ;   (try
-        ;     (send-message server-instance (success-response id (find-highlight workspace params)))
-        ;     (except c
-        ;       [else 
-        ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-                ; (do-log-timestamp server-instance)
-        ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
-          ; ["textDocument/signatureHelp"
-          ;  (text-document/signatureHelp id params)]
-        ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
-        ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
-        ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
-        ;TODO: pretty-format with comments
-        ; ["textDocument/formatting"
-        ;   (try
-        ;     (send-message server-instance (success-response id (formatting workspace params)))
-        ;     (except c
-        ;       [else 
-        ;         (do-log `(format ,(condition-message c) ,@(condition-irritants c)) server-instance)
-        ;         (do-log-timestamp server-instance)
-        ;         (send-message server-instance (fail-response id unknown-error-code method))]))]
+          ; Defensive: some clients (e.g. certain VS Code extensions, lsp-bridge)
+          ; send codeAction requests even when the server does not advertise
+          ; codeActionProvider. Returning an empty vector avoids method-not-found
+          ; noise in client logs.
+          ["textDocument/codeAction" (send-message server-instance (success-response id (vector)))]
 
-        ["$/cancelRequest" (send-message server-instance (fail-response id request-cancelled (assoc-ref params 'method)))]
-          ; ["textDocument/prepareRename"
-          ;  (text-document/prepareRename id params)]
-          ; ["textDocument/rangeFormatting"
-          ;  (text-document/range-formatting! id params)]
-          ; ["textDocument/onTypeFormatting"
-          ;  (text-document/on-type-formatting! id params)]
-          ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesClientCapabilities
-        [else
-          ;; For JSON-RPC notifications, `id` is absent => `#f`.
-          ;; LSP requires servers to ignore unknown notifications and not respond.
-          (if id
-            (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
-            '())]))))
-	; public static final string text_document_code_lens = "textdocument/codelens";
-	; public static final string text_document_signature_help = "textdocument/signaturehelp";
-	; public static final string text_document_rename = "textdocument/rename";
-	; public static final string workspace_execute_command = "workspace/executecommand";
-	; public static final string workspace_symbol = "workspace/symbol";
-	; public static final string workspace_watched_files = "workspace/didchangewatchedfiles";
-	; public static final string code_action = "textdocument/codeaction";
-	; public static final string typedefinition = "textdocument/typedefinition";
-	; public static final string document_highlight = "textdocument/documenthighlight";
-	; public static final string foldingrange = "textdocument/foldingrange";
-	; public static final string workspace_change_folders = "workspace/didchangeworkspacefolders";
-	; public static final string implementation = "textdocument/implementation";
-	; public static final string selection_range = "textdocument/selectionrange";
+          ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
+          ["textDocument/completion" (send-message server-instance (success-response id (completion workspace params)))]
+          ["textDocument/references" (send-message server-instance (success-response id (find-references workspace params)))]
+          ["textDocument/definition" (send-message server-instance (success-response id (definition workspace params)))]
+          ["textDocument/documentSymbol" (send-message server-instance (success-response id (document-symbol workspace params)))]
+          ["workspace/symbol" (send-message server-instance (success-response id (workspace-symbol workspace params)))]
+          ["textDocument/diagnostic" (send-message server-instance (success-response id (diagnostic workspace params)))]
+
+          ["shutdown"
+            (server-shutdown?-set! server-instance #t)
+            (send-message server-instance (success-response id 'null))]
+          ["$/cancelRequest" '()]
+          [else
+            ;; For JSON-RPC notifications, `id` is absent => `#f`.
+            ;; LSP requires servers to ignore unknown notifications and not respond.
+            (if id
+              (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
+              '())])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (initialize server-instance id params)
@@ -142,10 +145,6 @@
         [window (assq-ref client-capabilities 'window)]
         [workDoneProgress? (if window (assq-ref window 'workDoneProgress) #f)]
         [textDocument (assq-ref params 'textDocument)]
-        ; [renameProvider 
-        ;   (if (assq-ref (assq-ref (assq-ref params 'textDocumet) 'rename) 'prepareSupport)
-        ;     (make-alist 'prepareProvider #t)
-        ;     #t)]
         [workspace-configuration-body (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
 
         [text-document-body (make-alist 
@@ -158,34 +157,18 @@
               'hoverProvider #t
               'definitionProvider #t
               'referencesProvider #t
-              ; 'diagnosticProvider (make-alist 'interFileDependencies #t 'workspaceDiagnostics #f)
-              ; 'workspaceSymbol #t
-              ; 'typeDefinitionProvider #t
-              ; 'selectionRangeProvider #t
-              ; 'callHierarchyProvider #t
               'completionProvider (make-alist 'triggerCharacters (vector))
-              ; 'signatureHelpProvider (make-alist 'triggerCharacters (vector " " ")" "]"))
-              ; 'implementationProvider #t
-              ; 'renameProvider renameProvider
-              ; 'codeActionProvider #t
-              ; 'documentHighlightProvider #t
               'documentSymbolProvider #t
-              ; 'documentLinkProvider #t
+              'workspaceSymbolProvider #t
               'documentFormattingProvider #f
               'workspace 
-                (make-alist 'fileOperations 
-                  (make-alist 
-                  ;however, these three are only triggered when create/rename/delete file with vscode's origin create/renmae/delete
-                  ;so that we must to add fault tolerant to re-init workspace
-                    'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
-                    'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
-                    'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))))
-              ; 'documentRangeFormattingProvider #f
-              ; 'documentOnTypeFormattingProvider (make-alist 'firstTriggerCharacter ")" 'moreTriggerCharacter (vector "\n" "]"))
-              ; 'codeLensProvider #t
-              ; 'foldingRangeProvider #t
-              ; 'colorProvider #t
-              ; 'workspace workspace-configuration
+                (make-alist 
+                  'fileOperations 
+                    (make-alist 
+                      'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
+                      'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
+                      'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*")))))
+                  'didChangeWatchedFiles (make-alist 'dynamicRegistration #f))
               )])
 
     (if (null? (server-mutex server-instance))
@@ -232,40 +215,57 @@
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) #f)]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) #f)]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
-              [request-processor (lambda (r) (private:try-catch server-instance r))]
+              [request-processor (lambda (r) (private:try-catch server-instance r debug?))]
               [interval-timer 
                 (if (and enable-multi-thread? threaded?) 
                   (init-interval-timer 
                     (make-time 'time-duration 0 1)
                     (lambda () 
-                      (request-queue-push request-queue (make-request '() "private:publish-diagnoses" '()) request-processor (server-workspace server-instance)))
+                      (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance)))
                     (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
-                  #f)])
+                  #f)]
+              [private:shutdown-server
+                (lambda ()
+                  (server-shutdown?-set! server-instance #t)
+                  (when thread-pool
+                    (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
+                    (thread-pool-stop! thread-pool))
+                  server-instance)]
+              [private:safe-read-message
+                (lambda ()
+                  (guard (e [else 
+                              ; 安全地尝试记录日志；log-port 可能也已断开
+                              (guard (inner [else (void)])
+                                (do-log "read-message fatal error" server-instance)
+                                (do-log (with-output-to-string (lambda () (pretty-print e))) server-instance))
+                              'invalid])
+                    (read-message server-instance)))])
             (when thread-pool
               (start-timer interval-timer)
               (thread-pool-add-job thread-pool 
                 (lambda () 
                   (let loop ()
                     ((request-queue-pop request-queue request-processor))
-                    (if (not (and (server-shutdown? server-instance) (request-queue-empty? request-queue))) (loop))))))
-            (let loop ([request-message (read-message server-instance)])
+                    (if (not (and (or (server-shutdown? server-instance) debug?) (request-queue-empty? request-queue))) (loop))))))
+            (let loop ([request-message (private:safe-read-message)])
               (cond 
+                [(eq? request-message 'invalid)
+                  (loop (private:safe-read-message))]
+
                 ;in case of specific parallel-log-debug.sps trouble
                 [(and debug? thread-pool (not request-message)) 
-                  (server-shutdown?-set! server-instance #t)
-                  (thread-pool-stop! thread-pool)]
+                  (private:shutdown-server)]
 
                 [(not request-message) 
-                  (server-shutdown?-set! server-instance #t)]
-                [(or (equal? "shutdown" (request-method request-message)) (equal? "exit" (request-method request-message))) 
-                  (server-shutdown?-set! server-instance #t)
-                  (if (and thread-pool debug?) (thread-pool-stop! thread-pool))]
+                  (private:shutdown-server)]
+
                 [thread-pool
+                  (when debug? (sleep (make-time 'time-duration 1000000 0)))
                   (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
-                  (loop (read-message server-instance))]
+                  (loop (private:safe-read-message))]
                 [else
                   (request-processor request-message)
-                  (loop (read-message server-instance))]))
+                  (loop (private:safe-read-message))]))
             server-instance)]))
 )

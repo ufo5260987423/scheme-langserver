@@ -1,0 +1,465 @@
+#!/usr/bin/env scheme-script
+;; -*- mode: scheme; coding: utf-8 -*- !#
+;; Copyright (c) 2022 WANG Zheng
+;; SPDX-License-Identifier: MIT
+#!r6rs
+
+(import 
+    (chezscheme)
+    (srfi :64 testing)
+    (scheme-langserver protocol analysis request-queue)
+    (scheme-langserver protocol request)
+    (scheme-langserver analysis workspace))
+
+(define fixture
+  (string-append (current-directory) "/tests/resources/workspace-fixtures/empty-project"))
+
+(define workspace (init-workspace fixture 'txt 'r6rs #t #f))
+
+;; ------------------------------------------------------------------
+;; 1. basic creation and emptiness
+;; ------------------------------------------------------------------
+(test-begin "request-queue-basic")
+(let ([queue (make-request-queue)])
+  (test-equal "empty after creation" #t (request-queue-empty? queue)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 2. basic push / pop / processor invocation
+;; ------------------------------------------------------------------
+(test-begin "request-queue-push-pop")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
+    [req (make-request 1 "textDocument/hover" '())])
+  (request-queue-push queue req processor workspace)
+  (test-equal "not empty after push" #f (request-queue-empty? queue))
+  
+  (let ([thunk (request-queue-pop queue processor)])
+    (test-equal "pop returns procedure" #t (procedure? thunk))
+    (thunk))
+  
+  (test-equal "processor called once" 1 (length calls))
+  (test-equal "processor got hover" "textDocument/hover" (car calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 3. private:publish-diagnostics deduplication
+;; ------------------------------------------------------------------
+(test-begin "request-queue-dedup-publish-diagnoses")
+(let* ([queue (make-request-queue)]
+    [processor (lambda (r) 'ok)]
+    [req1 (make-request '() "private:publish-diagnostics" '())]
+    [req2 (make-request '() "private:publish-diagnostics" '())])
+  (request-queue-push queue req1 processor workspace)
+  (request-queue-push queue req2 processor workspace)
+  
+  (let ([thunk (request-queue-pop queue processor)])
+    (thunk))
+  (test-equal "queue empty after single pop (dedup worked)" #t (request-queue-empty? queue)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 4. $/cancelRequest sets stop? on pending task
+;; ------------------------------------------------------------------
+(test-begin "request-queue-cancel-request")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
+    [req (make-request 42 "textDocument/completion" '())]
+    [cancel (make-request '() "$/cancelRequest" (list (cons 'id 42)))])
+  (request-queue-push queue req processor workspace)
+  (request-queue-push queue cancel processor workspace)
+  
+  (let ([thunk (request-queue-pop queue processor)])
+    (thunk))
+  
+  ; cancelRequest marks the target task as stop?=#t inside push.
+  ; The original req is skipped because stop? = #t.
+  ; cancelRequest itself is a notification and does not enter the queue.
+  (test-equal "original request was cancelled" 0 (length calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 5. malformed $/cancelRequest (missing id) does not cancel notifications
+;; ------------------------------------------------------------------
+(test-begin "request-queue-bad-cancel")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
+    [notif (make-request '() "private:publish-diagnostics" '())]
+    [bad-cancel (make-request '() "$/cancelRequest" '())])
+  (request-queue-push queue notif processor workspace)
+  (request-queue-push queue bad-cancel processor workspace)
+  
+  (test-equal "notification still in queue" #f (request-queue-empty? queue))
+  (let ([thunk (request-queue-pop queue processor)])
+    (thunk))
+  (test-equal "queue empty after pop" #t (request-queue-empty? queue))
+  (test-equal "notification ran" 1 (length calls))
+  (test-equal "notification method" "private:publish-diagnostics" (car calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 6. textDocument/didChange does NOT cancel pending requests (LSP spec)
+;; ------------------------------------------------------------------
+(test-begin "request-queue-didChange-does-not-cancel")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
+    [hover (make-request 10 "textDocument/hover" '())]
+    [pub (make-request '() "private:publish-diagnostics" '())]
+    [change (make-request '() "textDocument/didChange" '())])
+  (request-queue-push queue hover processor workspace)
+  (request-queue-push queue pub processor workspace)
+  (request-queue-push queue change processor workspace)
+  
+  ; Pop order is FIFO: hover, pub, change.
+  ; Per LSP spec, servers should not cancel requests on didChange.
+  (let ([th1 (request-queue-pop queue processor)])
+    (th1))
+  (let ([th2 (request-queue-pop queue processor)])
+    (th2))
+  (let ([th3 (request-queue-pop queue processor)])
+    (th3))
+  
+  (test-equal "queue empty after three pops" #t (request-queue-empty? queue))
+  ; All three requests should have invoked the processor.
+  (test-equal "all three ran" 3 (length calls))
+  (test-equal "hover ran" "textDocument/hover" (list-ref calls 2))
+  (test-equal "pub ran" "private:publish-diagnostics" (list-ref calls 1))
+  (test-equal "didChange ran" "textDocument/didChange" (list-ref calls 0)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 7. FIFO ordering for multiple generic requests
+;; ------------------------------------------------------------------
+(test-begin "request-queue-fifo-order")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [req1 (make-request 1 "textDocument/hover" '())]
+    [req2 (make-request 2 "textDocument/completion" '())]
+    [req3 (make-request 3 "textDocument/definition" '())])
+  (request-queue-push queue req1 processor workspace)
+  (request-queue-push queue req2 processor workspace)
+  (request-queue-push queue req3 processor workspace)
+
+  (let ([th1 (request-queue-pop queue processor)])
+    (th1))
+  (let ([th2 (request-queue-pop queue processor)])
+    (th2))
+  (let ([th3 (request-queue-pop queue processor)])
+    (th3))
+
+  (test-equal "queue empty after three pops" #t (request-queue-empty? queue))
+  (test-equal "processor called three times" 3 (length calls))
+  (test-equal "fifo order preserved"
+    '("textDocument/hover" "textDocument/completion" "textDocument/definition")
+    calls))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 8. cancelRequest only affects the matching id
+;; ------------------------------------------------------------------
+(test-begin "request-queue-cancel-specific-id")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [req-a (make-request 7 "textDocument/hover" '())]
+    [req-b (make-request 8 "textDocument/completion" '())]
+    [cancel (make-request '() "$/cancelRequest" (list (cons 'id 7)))])
+  (request-queue-push queue req-a processor workspace)
+  (request-queue-push queue req-b processor workspace)
+  (request-queue-push queue cancel processor workspace)
+
+  (let ([th1 (request-queue-pop queue processor)])
+    (th1))
+  (let ([th2 (request-queue-pop queue processor)])
+    (th2))
+
+  (test-equal "queue empty after two pops" #t (request-queue-empty? queue))
+  (test-equal "only req-b ran" 1 (length calls))
+  (test-equal "req-b method" "textDocument/completion" (car calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 9. didChange does not cancel arbitrary / non-document-state methods
+;; ------------------------------------------------------------------
+(test-begin "request-queue-didChange-not-cancel-arbitrary")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [code-action (make-request 20 "textDocument/codeAction" '())]
+    [change (make-request '() "textDocument/didChange" '())])
+  (request-queue-push queue code-action processor workspace)
+  (request-queue-push queue change processor workspace)
+
+  (let ([th1 (request-queue-pop queue processor)])
+    (th1))
+  (let ([th2 (request-queue-pop queue processor)])
+    (th2))
+
+  (test-equal "queue empty after two pops" #t (request-queue-empty? queue))
+  (test-equal "both requests ran" 2 (length calls))
+  (test-equal "codeAction preserved" "textDocument/codeAction" (car calls))
+  (test-equal "didChange ran" "textDocument/didChange" (cadr calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 10. didChange does not cancel document sync requests (didOpen/didClose)
+;; ------------------------------------------------------------------
+(test-begin "request-queue-didChange-not-cancel-sync")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [open-req (make-request '() "textDocument/didOpen" '())]
+    [change (make-request '() "textDocument/didChange" '())]
+    [close-req (make-request '() "textDocument/didClose" '())])
+  (request-queue-push queue open-req processor workspace)
+  (request-queue-push queue change processor workspace)
+  (request-queue-push queue close-req processor workspace)
+
+  (let ([th1 (request-queue-pop queue processor)])
+    (th1))
+  (let ([th2 (request-queue-pop queue processor)])
+    (th2))
+  (let ([th3 (request-queue-pop queue processor)])
+    (th3))
+
+  (test-equal "queue empty after three pops" #t (request-queue-empty? queue))
+  (test-equal "all three sync requests ran" 3 (length calls))
+  (test-equal "didOpen ran first" "textDocument/didOpen" (car calls))
+  (test-equal "didChange ran second" "textDocument/didChange" (cadr calls))
+  (test-equal "didClose ran third" "textDocument/didClose" (caddr calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 11. publish-diagnoses dedup survives interleaved requests
+;; ------------------------------------------------------------------
+(test-begin "request-queue-dedup-interleaved")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [pub1 (make-request '() "private:publish-diagnostics" '())]
+    [hover (make-request 30 "textDocument/hover" '())]
+    [pub2 (make-request '() "private:publish-diagnostics" '())])
+  (request-queue-push queue pub1 processor workspace)
+  (request-queue-push queue hover processor workspace)
+  (request-queue-push queue pub2 processor workspace)
+
+  (let ([th1 (request-queue-pop queue processor)])
+    (th1))
+  (let ([th2 (request-queue-pop queue processor)])
+    (th2))
+
+  (test-equal "queue empty after two pops" #t (request-queue-empty? queue))
+  (test-equal "two tasks executed" 2 (length calls))
+  (test-equal "first is publish-diagnoses" "private:publish-diagnostics" (car calls))
+  (test-equal "second is hover" "textDocument/hover" (cadr calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 12. completed task is removed from tickal-task-list by complete callback
+;; ------------------------------------------------------------------
+(test-begin "request-queue-complete-cleanup")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [req (make-request 100 "textDocument/hover" '())]
+    [cancel (make-request '() "$/cancelRequest" (list (cons 'id 100)))])
+  (request-queue-push queue req processor workspace)
+  ; Execute the request to completion.
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; At this point the task should have been removed from tickal-task-list
+  ; by the complete callback.  A subsequent cancel for the same id should
+  ; find nothing and therefore not invoke the processor.
+  (request-queue-push queue cancel processor workspace)
+
+  (test-equal "queue empty after completion + cancel" #t (request-queue-empty? queue))
+  (test-equal "only original request ran" 1 (length calls))
+  (test-equal "original request method" "textDocument/hover" (car calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 13. cancelled pending task is removed from tickal-task-list by job lambda
+;; ------------------------------------------------------------------
+(test-begin "request-queue-cancel-cleanup")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [req (make-request 200 "textDocument/completion" '())]
+    [cancel1 (make-request '() "$/cancelRequest" (list (cons 'id 200)))]
+    [cancel2 (make-request '() "$/cancelRequest" (list (cons 'id 200)))])
+  (request-queue-push queue req processor workspace)
+  ; First cancel sets stop?=#t.
+  (request-queue-push queue cancel1 processor workspace)
+  ; Pop the now-stopped task: job lambda sees stop?=#t and removes it.
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; Second cancel should find nothing because the task was removed above.
+  (request-queue-push queue cancel2 processor workspace)
+
+  (test-equal "queue empty" #t (request-queue-empty? queue))
+  ; cancelRequest is a notification and does not invoke the processor.
+  (test-equal "no calls" 0 (length calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 14. cancelRequest for an already-finished task is harmless
+;; ------------------------------------------------------------------
+(test-begin "request-queue-cancel-after-finish")
+(let* ([queue (make-request-queue)]
+    [calls '()]
+    [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
+    [req-a (make-request 300 "textDocument/definition" '())]
+    [cancel (make-request '() "$/cancelRequest" (list (cons 'id 300)))]
+    [req-b (make-request 301 "textDocument/hover" '())])
+  (request-queue-push queue req-a processor workspace)
+  ; Finish req-a normally.
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; Cancel the already-finished id: should be a no-op.
+  (request-queue-push queue cancel processor workspace)
+  ; Push another unrelated request to prove the queue is still healthy.
+  (request-queue-push queue req-b processor workspace)
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+
+  (test-equal "queue empty" #t (request-queue-empty? queue))
+  (test-equal "both real requests ran" 2 (length calls))
+  (test-equal "req-a ran" "textDocument/definition" (car calls))
+  (test-equal "req-b ran" "textDocument/hover" (cadr calls)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 15. long generic task survives engine expiry and completes
+;; ------------------------------------------------------------------
+(test-begin "request-queue-long-task-resumes")
+(let* ([queue (make-request-queue)]
+    [counter 0]
+    [processor (lambda (r)
+                 (let loop ([i 0])
+                   (set! counter i)
+                   (if (= i 500000)
+                       'done
+                       (loop (+ i 1)))))]
+    [req (make-request 400 "textDocument/hover" '())])
+  (request-queue-push queue req processor workspace)
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; The loop ran 500000 iterations.  Chez engine expires every ~100000
+  ; reductions, so this verifies the "else" branch of expire (remains).
+  (test-equal "long task finished after engine expires" 500000 counter))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 16. didChange is never interrupted by engine expiry
+;; ------------------------------------------------------------------
+(test-begin "request-queue-didChange-resumes-on-expire")
+(let* ([queue (make-request-queue)]
+    [counter 0]
+    [processor (lambda (r)
+                 (let loop ([i 0])
+                   (set! counter i)
+                   (if (= i 500000)
+                       'done
+                       (loop (+ i 1)))))]
+    [req (make-request '() "textDocument/didChange" '())])
+  (request-queue-push queue req processor workspace)
+  (let ([th (request-queue-pop queue processor)])
+    (th))
+  ; didChange's expire callback unconditionally calls remains, so it
+  ; must reach the final iteration no matter how many times it expires.
+  (test-equal "didChange finished despite engine expires" 500000 counter))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 17. cancelRequest stops a running long task via expire
+;; ------------------------------------------------------------------
+(test-begin "request-queue-cancel-stops-running-task")
+(let* ([queue (make-request-queue)]
+    [counter 0]
+    [consumer-done #f]
+    ; Distinguish cancelRequest handling (fast) from the long job.
+    [processor (lambda (r)
+                 (if (string=? "$/cancelRequest" (request-method r))
+                     'ok
+                     (let loop ([i 0])
+                       (set! counter i)
+                       (if (= i 50000000)
+                           'done
+                           (loop (+ i 1))))))]
+    [req (make-request 500 "textDocument/hover" '())]
+    [cancel (make-request '() "$/cancelRequest" (list (cons 'id 500)))])
+  ; Consumer thread pops and executes.
+  (fork-thread
+    (lambda ()
+      (let ([th (request-queue-pop queue processor)])
+        (th))
+      (set! consumer-done #t)))
+
+  (request-queue-push queue req processor workspace)
+
+  ; Wait until the engine has actually started running (counter >= 100000).
+  (let loop ([i 0])
+    (cond
+      [(>= counter 100000) 'ok]
+      [(< i 100)
+        (sleep (make-time 'time-duration 1000000 0))
+        (loop (+ i 1))]
+      [else (error 'test "engine did not start in time")]))
+
+  ; Now cancel while the engine is inside the long loop.
+  (request-queue-push queue cancel processor workspace)
+
+  ; Wait for the consumer thread to finish (engine terminated or completed).
+  (let loop ([i 0])
+    (cond
+      [consumer-done 'ok]
+      [(< i 300)
+        (sleep (make-time 'time-duration 1000000 0))
+        (loop (+ i 1))]
+      [else (error 'test "consumer thread hung")]))
+
+  ; If cancel worked, counter never reached 50000000.
+  (test-equal "cancel stopped task before completion" #f (= counter 50000000)))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 18. pop on empty queue blocks until push wakes it up
+;; ------------------------------------------------------------------
+(test-begin "request-queue-pop-blocks-and-wakes")
+(let* ([queue (make-request-queue)]
+    [result #f]
+    [processor (lambda (r)
+                 (if (string=? "$/cancelRequest" (request-method r))
+                     'ok
+                     (set! result (request-method r))))]
+    [req (make-request 600 "textDocument/hover" '())])
+  ; Consumer thread starts first and blocks on empty queue.
+  (fork-thread
+    (lambda ()
+      (let ([th (request-queue-pop queue processor)])
+        (th))))
+
+  ; Give the consumer a moment to enter condition-wait.
+  (sleep (make-time 'time-duration 10000000 0))
+
+  ; Producer pushes a request; this should signal the condition.
+  (request-queue-push queue req processor workspace)
+
+  ; Wait for the consumer to be woken and process the request.
+  (let loop ([i 0])
+    (cond
+      [result 'ok]
+      [(< i 200)
+        (sleep (make-time 'time-duration 1000000 0))
+        (loop (+ i 1))]
+      [else (error 'test "timeout waiting for pop to wake up")]))
+
+  (test-equal "pop was woken and processed request" "textDocument/hover" result))
+(test-end)
+
+(exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

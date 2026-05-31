@@ -23,97 +23,96 @@
       (lambda ()
         (new (make-mutex) (make-condition) (make-queue) '())))))
 
+;ticks is an empirical constant for Chez Scheme's engine time-slicing.
+;It bounds how many abstract instructions a single task may execute before
+;entering the expire callback.  The value 100000 was chosen to let typical
+;LSP requests finish in one slice while forcing long-running analysis
+;(e.g. type inference) to yield periodically so that cancellation can be checked.
 (define ticks 100000)
 
 (define-record-type tickal-task 
   (fields 
     (immutable request)
-    (immutable request-queue)
     (mutable stop?)
-    (mutable expire)
-    (mutable complete))
+    (immutable expire)
+    (immutable complete))
   (protocol
-    ;must have request-queue-mutex
+    ; Must have request-queue-mutex
     (lambda (new)
       (lambda (request request-queue workspace)
-        (letrec* ([new-task (new request request-queue #f '() '())]
-            [complete 
-              (lambda (ticks value) 
-                (remove:from-request-tickal-task-list request-queue new-task)
-                value)]
-            ;this expire mainly aims to interrupt type infernece, so that acquires workspace mutex.
-            ;it shouldn't be supposed that it interrupt the workspace refreshing procedure.
-            [expire 
-              (lambda (remains) 
-                (cond 
-                  [(or 
-                    (equal? "textDocument/didChange" (request-method request))
-                    (equal? "textDocument/didOpen" (request-method request))
-                    (equal? "textDocument/didClose" (request-method request)))
-                    (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]
-                  [(tickal-task-stop? new-task)
-                    (with-mutex (workspace-mutex workspace)
-                      (remove:from-request-tickal-task-list request-queue new-task))]
-                  [else (remains ticks (tickal-task-complete new-task) (tickal-task-expire new-task))]))])
-          (enqueue! (request-queue-queue request-queue) new-task)
-          (request-queue-tickal-task-list-set! 
-            request-queue
-            `(,@(request-queue-tickal-task-list request-queue) ,new-task))
-
-          (tickal-task-expire-set! new-task expire)
-          (tickal-task-complete-set! new-task complete)
-
-          new-task)))))
+        (let ([new-task #f])
+          (letrec ([complete 
+                (lambda (ticks value) 
+                  (remove:from-request-tickal-task-list request-queue new-task)
+                  value)]
+            ; This expire mainly aims to interrupt type inference, so that acquires workspace mutex.
+            ; It shouldn't be supposed that it interrupt the workspace refreshing procedure.
+              [expire 
+                (lambda (remains) 
+                  (cond 
+                    [(or 
+                        (string=? "textDocument/didChange" (request-method request))
+                        (string=? "textDocument/didOpen" (request-method request))
+                        (string=? "textDocument/didClose" (request-method request)))
+                      (remains ticks complete expire)]
+                    [(tickal-task-stop? new-task)
+                      (with-mutex (workspace-mutex workspace)
+                        (remove:from-request-tickal-task-list request-queue new-task))]
+                    [else (remains ticks complete expire)]))])
+            (set! new-task (new request #f expire complete))
+            (enqueue! (request-queue-queue request-queue) new-task)
+            (request-queue-tickal-task-list-set! 
+              request-queue
+              (cons new-task (request-queue-tickal-task-list request-queue)))
+            new-task))))))
 
 (define (request-queue-empty? queue)
-  (queue-empty? (request-queue-queue queue)))
+  (with-mutex (request-queue-mutex queue)
+    (queue-empty? (request-queue-queue queue))))
 
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
-    (if (queue-empty? (request-queue-queue queue))
-      ;by default, this will release request-queue-mutex 
-      ;and re-enter when request-queue-condition is signed.
-      (condition-wait (request-queue-condition queue) (request-queue-mutex queue)))
-    (letrec* ([task (dequeue! (request-queue-queue queue))]
+    (let loop ()
+      (when (queue-empty? (request-queue-queue queue))
+        ; By default, this will release request-queue-mutex 
+        ; and re-enter when request-queue-condition is signed.
+        (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
+        (loop)))
+    (let* ([task (dequeue! (request-queue-queue queue))]
         [request (tickal-task-request task)]
         [job (lambda () 
-              (if (tickal-task-stop? task)
-                (remove:from-request-tickal-task-list queue task)
-                (request-processor request)))])
-      ;will be in another thread
+          (if (tickal-task-stop? task)
+            (remove:from-request-tickal-task-list queue task)
+            (request-processor request)))])
+      ; May be called in the consumer thread or directly
       (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
 
 (define (remove:from-request-tickal-task-list queue task)
   (with-mutex (request-queue-mutex queue)
     (request-queue-tickal-task-list-set! 
       queue
-      (remove task (request-queue-tickal-task-list queue)))))
+      (remq task (request-queue-tickal-task-list queue)))))
 
 (define (request-queue-push queue request potential-request-processor workspace)
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
-      ["private:publish-diagnoses"
-        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
+      ["private:publish-diagnostics"
+        (let* ([predicator (lambda (task) (string=? "private:publish-diagnostics" (request-method (tickal-task-request task))))]
             [tickal-task (find predicator (request-queue-tickal-task-list queue))])
           (when (not tickal-task)
             (make-tickal-task request queue workspace)))]
       ["$/cancelRequest"
-        (let* ([id (assq-ref (request-params request) 'id)]
-            ;here, id is cancel target id
-            [predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
-            [tickal-task (find predicator (request-queue-tickal-task-list queue))])
-          ;must cancel in local thread.
-          (when tickal-task 
-            (tickal-task-stop?-set! tickal-task #t)
-            (potential-request-processor 
-              (make-request id "$/cancelRequest" (make-alist 'method (request-method (tickal-task-request tickal-task)))))))]
+        (let ([id (assq-ref (request-params request) 'id)])
+          (when id
+            (let* ([predicator (lambda (task) (equal? id (request-id (tickal-task-request task))))]
+                [tickal-task (find predicator (request-queue-tickal-task-list queue))])
+              ; Mark the target task as cancelled. Its expire callback will
+              ; remove it from the tickal-task-list when the engine slice ends.
+              (when tickal-task 
+                (tickal-task-stop?-set! tickal-task #t)))))]
       ["textDocument/didChange"
-        (let* ([predicator (lambda (task) (equal? "private:publish-diagnoses" (request-method (tickal-task-request task))))]
-            [tickal-task (find predicator (request-queue-tickal-task-list queue))])
-          (when tickal-task
-            (tickal-task-stop?-set! tickal-task #t))
-          (make-tickal-task request queue workspace))]
+        (make-tickal-task request queue workspace)]
       [else (make-tickal-task request queue workspace)])
-      ;because the pool is limited to have only one thread.
-    (condition-signal (request-queue-condition queue))))
+      ; Because the pool is limited to have only one thread.
+      (condition-signal (request-queue-condition queue))))
 )

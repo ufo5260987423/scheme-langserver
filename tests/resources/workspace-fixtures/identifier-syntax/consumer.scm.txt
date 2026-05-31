@@ -1,0 +1,14 @@
+(library (consumer)
+  (export consumer)
+  (import (rnrs (6)))
+
+  (define-syntax foo
+    (identifier-syntax
+      [id (list id)]
+      [(set! id v) (set! bar v)]))
+
+  (define bar 0)
+
+  (define (consumer)
+    foo)
+)

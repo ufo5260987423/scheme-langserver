@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-prefix)
+  (export consumer-prefix)
+  (import (rnrs)
+          (prefix (fixtures import-test lib) t:))
+  (define (consumer-prefix) t:foo))

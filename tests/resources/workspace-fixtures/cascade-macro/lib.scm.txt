@@ -1,0 +1,14 @@
+(library (cascade-macro)
+  (export macro-a macro-b)
+  (import (chezscheme))
+
+  (define-syntax macro-a
+    (syntax-rules ()
+      ((_ x)
+       (macro-b x))))
+
+  (define-syntax macro-b
+    (syntax-rules ()
+      ((_ y)
+       (let ((z y))
+         z)))))

@@ -14,14 +14,17 @@
     type:<-?
     type:=?
 
-    make-type:environment)
+    make-type:environment
+
+    execute-macro
+    macro-head-execute-with
+    private-with)
   (import 
     (chezscheme)
     (ufo-match)
 
     (scheme-langserver virtual-file-system index-node)
 
-    (scheme-langserver util binary-search)
     (scheme-langserver util contain)
     (scheme-langserver util cartesian-product)
     (scheme-langserver util dedupe)
@@ -29,7 +32,6 @@
 
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
@@ -57,6 +59,7 @@
     [(index-node? target) 'something?]
     [(null? target) target]
     [(symbol? target) target]
+    [(inner:lambda? target) (map private-substitute-index-node&macro target)]
     [(list? target) 
       (let ([tmp (map private-substitute-index-node&macro target)])
         (if (equal? 'something? (car tmp))
@@ -79,10 +82,8 @@
         [(and (inner:record? right) (identifier-reference? right)) 
           (equal? right (cadr left))]
         [(and (identifier-reference? left) (identifier-reference? right)) 
-          (if (null? (identifier-reference-parents right))
-            #f
-            (if (contain? (identifier-reference-parents right) left)
-              #t
+          (and (not (null? (identifier-reference-parents right)))
+            (or (contain? (identifier-reference-parents right) left)
               (fold-left
                 (lambda (l r)
                   (if l
@@ -143,11 +144,11 @@
     [(expression) (type:partially-solved? expression 1)]
     [(expression minium-solved-leaves) 
       (letrec ([get-leaves 
-            (lambda (current-expression)
+            (lambda (current-expression acc)
               (if (list? current-expression)
-                (apply append (map get-leaves current-expression))
-                `(,current-expression)))])
-        (<= minium-solved-leaves (length (filter type:solved? (get-leaves expression))))) ]))
+                (fold-left (lambda (a e) (get-leaves e a)) acc current-expression)
+                (cons current-expression acc)))])
+        (<= minium-solved-leaves (length (filter type:solved? (get-leaves expression '()))))) ]))
 
 (define type:recursive-interpret-result-list
   (case-lambda 
@@ -173,7 +174,7 @@
               (+ 1 i)
               (filter (lambda (maybe) (not (type:solved? maybe))) r0)
               env-iterator
-              (append result r1)))))]))
+              (fold-left (lambda (acc item) (cons item acc)) result r1)))))]))
 
 (define type:depature&interpret->result-list
   (case-lambda
@@ -218,7 +219,7 @@
               [((? inner:macro? l) params ...)
                 (type:environment-result-list-set! 
                   env 
-                  (apply append 
+                  (fold-left append '()
                     (map 
                       (lambda (for-template) 
                         ;avoid nested macros
@@ -254,7 +255,7 @@
                 env 
                 (if (null? tmp)
                   `(,expression)
-                  (apply append 
+                  (fold-left append '()
                     (map 
                       (lambda (reified)
                         (if (equal? reified expression) 
@@ -264,7 +265,15 @@
           ; [(and (inner:lambda? expression) (inner:contain? expression inner:macro?)) (type:environment-result-list-set! env `(,expression))]
           [(inner:macro? expression) 
           (type:environment-result-list-set! env `(,expression))]
-          [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression) (inner:lambda? expression))
+          [(inner:lambda? expression)
+            (let ([return-results (type:interpret-result-list (inner:lambda-return expression) env new-memory)]
+                [param-results (type:interpret-result-list (inner:lambda-param expression) env new-memory)])
+              (type:environment-result-list-set! env
+                (apply append
+                  (map (lambda (r)
+                      (map (lambda (p) `(,r <- ,p)) param-results))
+                    return-results))))]
+          [(or (inner:list? expression) (inner:vector? expression) (inner:pair? expression))
             (type:environment-result-list-set! env 
               (apply 
                 (private-generate-cartesian-product-procedure)
@@ -284,7 +293,7 @@
                 env 
                 (if (null? filtered)
                   `(,expression)
-                  (apply append 
+                  (fold-left append '()
                     (map 
                       (lambda (r) (type:interpret-result-list `(,r ,@(cdr expression)) env new-memory))
                       filtered)))))]
@@ -318,10 +327,12 @@
 
 (define (execute-macro expression)
   (match expression
-    [(('with ((? inner:macro-template? denotions) **1) body) (? inner:trivial? inputs) **1)
-      (if (candy:matchable? denotions inputs)
-        (execute-macro (private-with body (candy:match-left denotions inputs)))
-        expression)]
+    [(('with ((? inner:macro-template? denotions) **1) body) inputs ...)
+      (let ([expanded-inputs (map execute-macro inputs)])
+        (if (and (andmap inner:trivial? expanded-inputs)
+                 (candy:matchable? denotions expanded-inputs))
+          (execute-macro (private-with body (candy:match-left denotions expanded-inputs)))
+          expression))]
     ;only usable in with-macro
     [('with-append (? list? a) (? list? b)) (execute-macro (append a b))]
     ;only usable in with-macro
@@ -344,9 +355,7 @@
           [(identifier-reference? denotion) left]
           [(and (list? denotion) (list? input)) 
             (if (candy:matchable? denotion input)
-              (if (or (contain? input '**1) (contain? input '...))
-                (private-with body (candy:match-right denotion input))
-                (private-with body (candy:match-left denotion input)))
+              (private-with body (candy:match-left denotion input))
               (raise 'macro-not-match:private-with-list?))]
           [else (raise 'macro-not-match:private-with-else)])))
     body 

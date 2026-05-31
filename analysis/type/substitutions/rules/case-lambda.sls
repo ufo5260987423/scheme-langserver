@@ -4,8 +4,6 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util cartesian-product)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type substitutions util)
 
@@ -18,7 +16,7 @@
       [children (index-node-children index-node)])
     (match expression
       [(_ clause **1) 
-        (map 
+        (for-each 
           (lambda (clause-index-node)
             (private-clause-process index-node clause-index-node))
           (cdr children))]
@@ -29,7 +27,7 @@
       [expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
     (match expression
       [(((? symbol? parameter) ...) _ **1) 
-        (map 
+        (for-each 
           (lambda (t) (extend-index-node-substitution-list root-index-node t))
           (construct-lambdas-with 
             `(,(car (reverse children)))

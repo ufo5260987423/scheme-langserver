@@ -5,9 +5,6 @@
     (chezscheme)
     (ufo-try)
 
-    (scheme-langserver util dedupe)
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -29,12 +26,13 @@
     (scheme-langserver analysis type substitutions rules define)
     (scheme-langserver analysis type substitutions rules application)
     (scheme-langserver analysis type substitutions rules begin)
+    (scheme-langserver analysis type substitutions rules unless)
     (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver analysis type substitutions self-defined-rules router))
 
 (define (construct-substitutions-for document)
-  (map
+  (for-each
     (lambda (index-node) (step document index-node '()))
     (document-index-node-list document)))
 
@@ -58,7 +56,7 @@
             current-index-node 
             (car (index-node-children current-index-node)))
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (map
+            (for-each
               (lambda (current)
                 (step current-document current available-identifiers 'quasiquoted expanded+callee-list))
               (index-node-children current-index-node)))]
@@ -67,7 +65,7 @@
             current-index-node 
             (car (index-node-children current-index-node)))
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (map
+            (for-each
               (lambda (current)
                 (step current-document current available-identifiers 'quasisyntax expanded+callee-list))
               (index-node-children current-index-node)))]
@@ -86,28 +84,34 @@
                   [else '()])])
             (if (symbol? head-expression)
               (try 
-                (map
+                (for-each
                   (lambda (current) ((car (cdr current)) current-document current-index-node))
                   target-rules)
                 (except c
-                  [else '()]))
+                  [(condition? c) 
+                    (append-new-diagnoses current-document `(0 0 2 ,(string-append "Type rule warning: " (condition-message c)) "type" "type-rule-warning"))
+                    '()]
+                  [else (raise c)]))
               ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
             (try 
-              (map
+              (for-each
                 (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
                 children)
               (except c 
-                [else '()])))])]
+                [(condition? c) 
+                  (append-new-diagnoses current-document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c)) "type" "type-inference-warning"))
+                  '()]
+                [else (raise c)])))])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
             ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))]
             [else #f])
-          (map
+          (for-each
             (lambda (current) (step current-document current expanded+callee-list))
             (index-node-children current-index-node))
-          (map
+          (for-each
             (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed expanded+callee-list))
             (index-node-children current-index-node)))]))
 
@@ -137,7 +141,7 @@
 
               [(equal? r '(if)) (private-add-rule rules `((,if-process) . ,identifier))]
               [(equal? r '(cond)) (private-add-rule rules `((,cond-process) . ,identifier))]
-              [(equal? r '(unless)) (private-add-rule rules `((,begin-process) . ,identifier))]
+              [(equal? r '(unless)) (private-add-rule rules `((,unless-process) . ,identifier))]
 
               [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
               [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
@@ -156,20 +160,36 @@
       (lambda (identifier) 
         (not 
           (or 
-            (equal? 'parameter (identifier-reference-type identifier))
-            (equal? 'syntax-parameter (identifier-reference-type identifier)))))
+            (eq? 'parameter (identifier-reference-type identifier))
+            (eq? 'syntax-parameter (identifier-reference-type identifier)))))
       identifier-list)))
 
 (define private:find-available-references-for 
   (case-lambda 
     [(expanded+callee-list current-document current-index-node)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
-          (private:find-available-references-for expanded+callee-list current-document (cdr result))
+          (let* ([is-new-format (list? result)]
+              [callee-node (if is-new-format (cadr result) (cdr result))]
+              [expander-doc (if is-new-format (caddr result) #f)]
+              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node)])
+            (if (null? callee-result)
+              (if expander-doc
+                (find-available-references-for expander-doc current-index-node)
+                '())
+              callee-result))
           (find-available-references-for current-document current-index-node)))]
     [(expanded+callee-list current-document current-index-node expression)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
-          (private:find-available-references-for expanded+callee-list current-document (cdr result) expression)
+          (let* ([is-new-format (list? result)]
+              [callee-node (if is-new-format (cadr result) (cdr result))]
+              [expander-doc (if is-new-format (caddr result) #f)]
+              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node expression)])
+            (if (null? callee-result)
+              (if expander-doc
+                (find-available-references-for expander-doc current-index-node expression)
+                '())
+              callee-result))
           (find-available-references-for current-document current-index-node expression)))]))
 )

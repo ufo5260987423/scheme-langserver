@@ -7,6 +7,7 @@
     make-server
     server?
     server-mutex
+    server-log-mutex
     server-shutdown?
     server-shutdown?-set!
     server-workspace
@@ -33,6 +34,8 @@
     (immutable thread-pool)
     ;;for output-port
     (immutable mutex)
+    ;;for log-port
+    (immutable log-mutex)
     (immutable request-queue)
     (immutable type-inference?)
     (mutable workspace)
@@ -50,6 +53,7 @@
             log-port 
             thread-pool
             (if thread-pool (make-mutex) '())
+            (if thread-pool (make-mutex) '())
             request-queue
             type-inference?
             workspace
@@ -64,6 +68,7 @@
             log-port 
             thread-pool
             (if thread-pool (make-mutex) '())
+            (if thread-pool (make-mutex) '())
             request-queue
             type-inference?
             workspace
@@ -74,10 +79,15 @@
 
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))
-    (begin 
-      (put-string (server-log-port server-instance) message)
-      (put-string (server-log-port server-instance) "\n")
-      (flush-output-port (server-log-port server-instance)))))
+    (if (null? (server-log-mutex server-instance))
+      (begin 
+        (put-string (server-log-port server-instance) message)
+        (put-string (server-log-port server-instance) "\n")
+        (flush-output-port (server-log-port server-instance)))
+      (with-mutex (server-log-mutex server-instance)
+        (put-string (server-log-port server-instance) message)
+        (put-string (server-log-port server-instance) "\n")
+        (flush-output-port (server-log-port server-instance))))))
 
 (define (do-log-timestamp server-instance)
   (let* ([date (current-date)]
@@ -91,8 +101,13 @@
               (lambda (f) (f date))
               (list date-month date-day date-hour date-minute date-second date-nanosecond))))])
     (if (not (null? (server-log-port server-instance)))
-      (begin 
-        (put-string (server-log-port server-instance) current-date-string)
-        (put-string (server-log-port server-instance) "\n")
-        (flush-output-port (server-log-port server-instance))))))
+      (if (null? (server-log-mutex server-instance))
+        (begin 
+          (put-string (server-log-port server-instance) current-date-string)
+          (put-string (server-log-port server-instance) "\n")
+          (flush-output-port (server-log-port server-instance)))
+        (with-mutex (server-log-mutex server-instance)
+          (put-string (server-log-port server-instance) current-date-string)
+          (put-string (server-log-port server-instance) "\n")
+          (flush-output-port (server-log-port server-instance)))))))
 )

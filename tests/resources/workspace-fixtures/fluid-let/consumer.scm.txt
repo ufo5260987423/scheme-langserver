@@ -1,0 +1,12 @@
+(library (consumer)
+  (export consumer)
+  (import (rnrs (6)))
+
+  (define x 0)
+  (define y 0)
+
+  (define (consumer)
+    (fluid-let ([x 10]
+                [y 20])
+      (+ x y)))
+)

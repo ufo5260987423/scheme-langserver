@@ -15,6 +15,7 @@
     (scheme-langserver analysis identifier primitive-variable)
 
     (scheme-langserver analysis identifier expanders syntax-rules)
+    (scheme-langserver analysis identifier expanders syntax-case)
 
     (scheme-langserver analysis identifier reference)
 
@@ -104,10 +105,10 @@
               (index-node-children current-index-node)))]
         [(syntax? current-index-node current-document) 
           (index-node-excluded-references-set! current-index-node 
-            (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
+            (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
         [(quasisyntax? current-index-node current-document)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (equal? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
+            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
             (map 
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasisyntaxed expanded+callee-list memory))
@@ -130,7 +131,7 @@
               (map (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
               (except c 
                 [else 
-                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warnning: Fail to catch identifiers"))]))
+                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: Fail to catch identifiers" "identifier" "identifier-resolution-failure"))]))
             (fold-left
               (lambda (l child-index-node)
                 (step root-file-node root-library-node file-linkage current-document child-index-node expanded+callee-list memory))
@@ -144,8 +145,17 @@
                 target-rules)
               (except c 
                 [else 
-                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warnning: Fail to catch identifiers"))])))]
-        [else '()])]
+                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: Fail to catch identifiers" "identifier" "identifier-resolution-failure"))])))]
+        [else 
+          (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))])
+            (if (symbol? expression)
+              (let ([refs (find-available-references-for current-document current-index-node expression)])
+                (for-each 
+                  (lambda (ref)
+                    (identifier-reference-usage-count-set! ref (+ 1 (identifier-reference-usage-count ref))))
+                  refs)
+                refs)
+              '()))])]
       [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list memory)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
@@ -203,17 +213,17 @@
             [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
             [(equal? r '(let-values)) (private-add-rule rules `((,let-values-process) . ,identifier))]
             [(equal? r '(let*-values)) (private-add-rule rules `((,let*-values-process) . ,identifier))]
-            [(equal? r '(let-syntax)) (private-add-rule rules `((,let-syntax-process) . ,identifier))]
+            [(equal? r '(let-syntax)) (private-add-rule rules `((,let-syntax-process . ,let-syntax:attach-generator) . ,identifier))]
             [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
             [(equal? r '(letrec*)) (private-add-rule rules `((,letrec*-process) . ,identifier))]
-            [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process) . ,identifier))]
+            [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process . ,letrec-syntax:attach-generator) . ,identifier))]
             [(and (equal? r '(fluid-let)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-process) . ,identifier))]
             [(and (equal? r '(fluid-let-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-syntax-process) . ,identifier))]
 
             [(and (equal? r '(syntax-case)) (private:top-env=? 'r6rs top))
-              (private-add-rule rules `((,syntax-case-process) . ,identifier))]
+              (private-add-rule rules `((,syntax-case-process . ,syntax-case->generator:map+expansion) . ,identifier))]
             [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process . ,syntax-rules->generator:map+expansion) . ,identifier))]
             [(and (equal? r '(identifier-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,identifier-syntax-process) . ,identifier))]
@@ -260,25 +270,63 @@
         (not 
           (or 
             ; (equal? 'syntax-variable (identifier-reference-type identifier))
-            (equal? 'parameter (identifier-reference-type identifier))
-            (equal? 'syntax-parameter (identifier-reference-type identifier))
-            (equal? 'procedure (identifier-reference-type identifier))
-            (equal? 'variable (identifier-reference-type identifier)))))
+            (eq? 'parameter (identifier-reference-type identifier))
+            (eq? 'syntax-parameter (identifier-reference-type identifier))
+            (eq? 'procedure (identifier-reference-type identifier))
+            (eq? 'variable (identifier-reference-type identifier)))))
       identifier-list)))
+
+(define (private:find-expander-doc-for-node node expanded+callee-list)
+  (let loop ([current node])
+    (if (or (not current) (null? current))
+      #f
+      (let ([entry (assq current expanded+callee-list)])
+        (if entry
+          (let ([is-new-format (list? entry)])
+            (if is-new-format (caddr entry) #f))
+          (loop (index-node-parent current)))))))
 
 (define private:find-available-references-for 
   (case-lambda 
     [(expanded+callee-list current-document current-index-node)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
-          (private:find-available-references-for expanded+callee-list current-document (cdr result))
-          (find-available-references-for current-document current-index-node)))]
+          (let* ([is-new-format (list? result)]
+              [callee-node (if is-new-format (cadr result) (cdr result))]
+              [expander-doc (if is-new-format (caddr result) #f)]
+              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node)])
+            (if (null? callee-result)
+              (if expander-doc
+                (find-available-references-for expander-doc current-index-node)
+                '())
+              callee-result))
+          (let ([refs (find-available-references-for current-document current-index-node)])
+            (if (null? refs)
+              (let ([expander-doc (private:find-expander-doc-for-node current-index-node expanded+callee-list)])
+                (if expander-doc
+                  (find-available-references-for expander-doc current-index-node)
+                  '()))
+              refs))))]
     [(expanded+callee-list current-document current-index-node expression)
-      (let ([result (assoc current-index-node expanded+callee-list)])
+      (let ([result (assq current-index-node expanded+callee-list)])
         (if result 
-          (private:find-available-references-for expanded+callee-list current-document (cdr result) expression)
-          (find-available-references-for current-document current-index-node expression)))]))
+          (let* ([is-new-format (list? result)]
+              [callee-node (if is-new-format (cadr result) (cdr result))]
+              [expander-doc (if is-new-format (caddr result) #f)]
+              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node expression)])
+            (if (null? callee-result)
+              (if expander-doc
+                (find-available-references-for expander-doc current-index-node expression)
+                '())
+              callee-result))
+          (let ([refs (find-available-references-for current-document current-index-node expression)])
+            (if (null? refs)
+              (let ([expander-doc (private:find-expander-doc-for-node current-index-node expanded+callee-list)])
+                (if expander-doc
+                  (find-available-references-for expander-doc current-index-node expression)
+                  '()))
+              refs))))]))
 
 (define (private:top-env=? standard top)
-  (contain? (map identifier-reference-top-environment top) standard))
+  (find (lambda (item) (eq? standard (identifier-reference-top-environment item))) top))
 )

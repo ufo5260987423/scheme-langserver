@@ -6,7 +6,7 @@
     meta-library?)
   (import 
     (rnrs)
-    (only (chezscheme) annotation-stripped pretty-print print-graph)
+    (only (chezscheme) annotation-stripped)
     (ufo-match)
     (scheme-langserver util contain)
     (scheme-langserver util binary-search)
@@ -21,21 +21,21 @@
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
       [identifiers (find-available-references-for document index-node (annotation-stripped (index-node-datum/annotations index-node)))]
       [root-identifiers (apply append (map root-ancestor identifiers))])
-    (find (lambda (i) (or (meta? i) (equal? (identifier-reference-identifier i) target-expression))) root-identifiers)))
+    (find (lambda (i) (or (meta? i) (eq? (identifier-reference-identifier i) target-expression))) root-identifiers)))
 
 (define (meta-library? list-instance top-environment)
   (contain? 
     (cond 
-      [(equal? 'r6rs top-environment) '((rnrs) (scheme) (chezscheme) (rnrs conditions) (rnrs (6)) (rnrs base (6)) (rnrs arithmetic fixnums (6)) 
+      [(eq? 'r6rs top-environment) '((rnrs) (scheme) (chezscheme) (rnrs conditions) (rnrs (6)) (rnrs base (6)) (rnrs arithmetic fixnums (6)) 
         (rnrs bytevectors (6)) (rnrs conditions (6)) (rnrs control (6)) (rnrs exceptions (6)) (rnrs hashtables (6)) (rnrs lists (6)) 
         (rnrs mutable-pairs (6)) (rnrs mutable-strings (6)) (rnrs io ports (6)) (rnrs io simple (6)) (rnrs records syntactic (6)) (rnrs unicode (6)) 
         (rnrs base) (rnrs files) (rnrs syntax-case) (rnrs exceptions) (rnrs lists) (rnrs bytevectors) (rnrs control)
         (rnrs unicode) (rnrs enums) (rnrs r5rs) (rnrs eval) (rnrs hashtables) (rnrs sorting) (rnrs programs) (rnrs mutable-pairs) 
         (rnrs mutable-strings) (rnrs io ports) (rnrs io simple) (rnrs arithmetic flonums) (rnrs arithmetic bitwise) (rnrs arithmetic fixnums)
         (rnrs records syntactic) (rnrs records procedural) (rnrs records inspection) (chezscheme csv7) (scheme csv7))]
-      [(equal? 'r7rs top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
+      [(eq? 'r7rs top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
         (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs))]
-      [(equal? 's7 top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
+      [(eq? 's7 top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
         (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs) (s7))]
       [else #f])
     list-instance))
@@ -49,7 +49,7 @@
           (init-type-expressions)
           (set! initialized? #t)))
       (cond
-        [(equal? top-environment 'r6rs)
+        [(eq? top-environment 'r6rs)
           (cond
             [(equal? list-instance '(rnrs)) rnrs]
             [(equal? list-instance '(scheme)) scheme] 
@@ -216,7 +216,7 @@ scheme-time scheme-write scheme-r5rs s7))
         [(equal? meta-identifier '...) '...]
         [(equal? meta-identifier '**1) '**1]
         [(equal? meta-identifier 'something?) 'something?]
-        [(equal? meta-identifier 'void?) 'void?]
+        [(equal? meta-identifier 'inner:void?) 'inner:void?]
         [else
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
             (if target-identifier target-identifier meta-identifier))])]

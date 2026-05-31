@@ -7,6 +7,7 @@
     (scheme-langserver util contain)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier rules syntax-case)
     (scheme-langserver analysis identifier rules let-syntax)
 
@@ -26,6 +27,7 @@
       [(_ (((? symbol? syntax-parameter) _ ...) **1) body ...) 
         (let* ([syntax-parameter-_s (cadr children)]
             [syntax-parameters (map car (map index-node-children (index-node-children syntax-parameter-_s)))])
+          (check-duplicate-syntax-bindings document syntax-parameters)
           (map 
             (lambda (current-syntax-parameter-index-node)
               (let* ([expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]

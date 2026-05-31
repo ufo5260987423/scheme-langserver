@@ -2,7 +2,8 @@
   (export 
     did-open
     did-close
-    did-change)
+    did-change
+    did-save)
   (import 
     (chezscheme) 
 
@@ -40,7 +41,7 @@
         ;assume that each other are encoding the same way (for example a client encoding colons in drive letters cannot assume 
         ;server responses will have encoded colons). The same applies to casing of drive letters - one party should not assume 
         ;the other party will return paths with drive letters cased the same as itself.
-        (null? (walk-file (workspace-file-node workspace) (substring uri 7 (string-length uri)))))
+        (null? (resolve-uri->file-node (workspace-file-node workspace) uri)))
         ;TODO:well, can be optimized
         (refresh-workspace workspace)]
       ; [(not (null? target-file))
@@ -51,6 +52,22 @@
 
 (define (did-close workspace params)
   (did-open workspace params))
+
+; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didSave
+(define (did-save workspace params)
+  (let* ([text-document (assq-ref params 'textDocument)]
+      [uri (assq-ref text-document 'uri)]
+      [path (uri->path uri)]
+      [file-node (walk-file (workspace-file-node workspace) path)]
+      [text (assq-ref params 'text)])
+    (when (file-node? file-node)
+      (if (string? text)
+        (update-file-node-with-tail workspace file-node text)
+        ; Client did not provide text (common for VS Code). Re-read from disk
+        ; to ensure VFS is in sync with the saved file state.
+        (let ([disk-text (read-string path)])
+          (when (string? disk-text)
+            (update-file-node-with-tail workspace file-node disk-text)))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didChange
 ;this procedure should be uninterruptable

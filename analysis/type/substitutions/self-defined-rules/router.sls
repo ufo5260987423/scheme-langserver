@@ -2,11 +2,6 @@
   (export route&add)
   (import 
     (rnrs)
-    (scheme-langserver util path)
-    (scheme-langserver util contain)
-
-    (scheme-langserver analysis util)
-
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver analysis type substitutions rules application)

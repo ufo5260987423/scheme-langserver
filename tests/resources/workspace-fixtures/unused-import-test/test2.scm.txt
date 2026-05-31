@@ -1,0 +1,6 @@
+(library (test2)
+  (export f)
+  (import (chezscheme))
+  (import (only (chezscheme) car cdr))
+  (define (f)
+    1))

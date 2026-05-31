@@ -26,6 +26,8 @@ output-type-analysis
 *.generated.c
 *.wpo
 
+/dist
+
 # IntelliJ
 out/
 
@@ -34,3 +36,5 @@ out/
 *.log
 
 
+benchmark-type-inference.json
+debug-trace/

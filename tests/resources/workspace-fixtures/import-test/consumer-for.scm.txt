@@ -1,0 +1,5 @@
+(library (fixtures import-test consumer-for)
+  (export consumer-for)
+  (import (rnrs)
+          (for (fixtures import-test lib) run))
+  (define (consumer-for) foo))
