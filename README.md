@@ -23,7 +23,7 @@ The root cause is that Scheme and other Lisp dialects present a formidable chall
 
 **scheme-langserver** is a Language Server Protocol (LSP) implementation for Scheme that provides completion, goto definition, hover, and type inference through static code analysis based on the [R6RS standard](http://www.r6rs.org/). It handles incomplete code gracefully and is published via [Akku](https://akkuscm.org/), a Scheme package manager.
 
-The server has been tested on [Chez Scheme](https://cisco.github.io/ChezScheme/) 9.4 and 9.5.
+The server has been tested on [Chez Scheme](https://cisco.github.io/ChezScheme/) 9.4, 9.5, and 10.x.
 
 ## Compilation, Installation & Configuration
 See the [setup guide](./doc/startup.md).
@@ -32,34 +32,28 @@ See the [setup guide](./doc/startup.md).
 For troubleshooting tips, see [debugging.md](./doc/debugging.md).
 
 ## Recent Status
-Active development is focused on bug fixes, performance profiling, and expanding the type inference system. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
+Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
 
 ## Release
-2.0.3 Fixed pretty-print bugs that were mixed with standard I/O.
+2.1.0 — Major release with expanded diagnostics, macro auto-resolution, performance optimizations, and Docker CI upgraded to Chez 10.4.1.
+
+### What's new in 2.1.0
+- **LSP protocol**: `workspace/symbol` search is now supported.
+- **Diagnostics**:
+  - Diagnostics now include standard LSP `source` and `code` fields.
+  - **Duplicate identifier detection** in binding forms (`lambda`, `case-lambda`, `let`, `letrec`, `let-values`, `do`, `define`, `with-syntax`).
+  - **Unused import detection** for `only`, `except`, `rename`, and `alias` modifiers.
+  - Tokenizer syntax errors are now surfaced as document diagnostics.
+  - Silent type-inference and type-rule failures are diagnosed.
+  - Empty diagnostic arrays are sent to clear stale client-side errors.
+- **Macro auto-resolution**: extended from `syntax-rules` to `syntax-case`, `let-syntax`, and `letrec-syntax`. Multi-layer macro cascade reference propagation is fixed.
+- **Type inference**: `define-record-type` now infers record types; `car`/`cdr` family macros (`caar`, `cadr`, `caddr`, `cadddr`, `caaar`, `cadar`, etc.) have dedicated type rules.
+- **Performance**: OPT-1~5 optimizations (expander-doc caching, hashtable reverse maps, tail-recursive accumulators, incremental all-pairs maintenance); MEM-1/3/6 memory optimizations for auto macro expansion; dedupe and reference hot-paths switched to `eq?` hashtables; matrix operations rewritten with `cons`+`reverse`.
+- **Robustness**: hardened LSP message parsing against EOF, invalid `Content-Length`, and malformed JSON; `shutdown`/`exit` lifecycle fully compliant with the LSP spec; `didChange` auto-cancellation removed to comply with the spec; request-queue concurrency hardened with cancel barriers and log-mutex.
+- **Infrastructure**: Docker build chain upgraded from Chez 9.6.4 to 10.4.1; `chez-exe` switched to the `ufo5260987423/chez-exe` fork for 10.x compatibility; test suite refactored to use AST search instead of hard-coded positions.
 
 ### Previous releases
-- 2.0.2 Publish diagnoses, though now only can figure out "fail to find library".
-- 2.0.1 Fix many bugs.
-- 2.0.0 Fix many bugs and switch between different top environments.
-- 1.2.9 Now, enjoy type inference!
-- 1.2.8 Now hover and auto completion is ready for use. I also have done many things about parsing fault tolerance.
-- 1.2.7 Fix bugs on uri parsing, do you know LSP request uri may wrongly process escape characters?
-- 1.2.6 Fault tolerant parser
-- 1.2.5 Fix: Some protocol api bugs. And now it's basically smooth with Magic Scheme and Vscode.
-- 1.2.4 Fix: hover api. It failed when processing meta.
-- 1.2.3 Why completion api doesn't work well? I don't know and just fix.
-- 1.2.2 I just fixed some bugs processing my own other projects.
-- 1.2.1 I just fixed some bugs processing SS/SCM codes.
-- 1.2.0 Re-construct the identifier catching mechanism with abstract interpreter.
-- 1.1.1 Scheme-langserver now releases type information used in corresponding libraries! Its soundness is still not guaranteed!
-- 1.1.0 Type inference has been embedded into autocompletion! And it uses a homemade DSL.
-- 1.0.13 Fix bug: sometimes can't shutdown server. Optimization: re-construct document-sync mechanism.
-- 1.0.12 Add ss/scm-import-rnrs option.
-- 1.0.11 Gradual Typing system, all basic rules have been passed.
-- 1.0.10 Fix bugs in 1.0.9.
-- 1.0.9 Abandoned: add parallel and synchronize mechanism.
-- 1.0.8 Build index as document synchronizing instead of workspace initializing.
-- 1.0.7 Catch syntax-* identifier bindings.
+See [doc/release-history.md](doc/release-history.md) for the full changelog.
 
 ### Features
 1. Completion for top-level and local identifier bindings.
@@ -73,39 +67,41 @@ Active development is focused on bug fixes, performance profiling, and expanding
 ![Find references with telescope.nvim](./doc/figure/find-references.png "Find references with telescope.nvim")
 7. Document symbol.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
-8. Catching local identifier bindings in `define-syntax`, `let-syntax`, and other macro forms via hand-written rules.
-9. **Automatic macro resolution** (experimental) for `syntax-rules` / `syntax-case` macros via generic expansion and `shallow-copy` reference back-propagation. The mechanism is functionally correct but too slow for production use on real-world projects (it triggers heavy macro expansion and cross-document reference back-propagation for every macro use site). For this reason it is **not enabled by default**; `(ufo-match)` currently falls back to a hand-written `match-process` rule instead. If you are interested in pushing this research forward—e.g. via lazy expansion, incremental caching, or selective rule generation—contributions and discussions are very welcome!
-10. Cross-platform parallel indexing.
-11. Custom source-code annotator compatible with `.sps` files.
-12. Peephole optimization for API requests using suspendable tasks.
-13. Type inference via a homemade DSL interpreter, now integrated into auto-completion. Parameters whose types match the expected signature are ranked higher, as shown below where `length-a` and `length-b` (both `integer?`) appear first because they match the parameter type required by `<=`.
+8. **Workspace symbol search** (`workspace/symbol`).
+9. Catching local identifier bindings in `define-syntax`, `let-syntax`, and other macro forms via hand-written rules.
+10. **Automatic macro resolution** (experimental). The generic expander for `syntax-rules`, `syntax-case`, `let-syntax`, and `letrec-syntax`—plus multi-layer macro cascade propagation—is functionally correct but **not enabled in production** because it is too slow for real-world projects (it triggers heavy macro expansion and cross-document reference back-propagation for every macro use site). The routing code in `analysis/identifier/self-defined-rules/router.sls` currently falls back to hand-written rules such as `match-process` for `ufo-match`. If you are interested in pushing this research forward—e.g. via lazy expansion, incremental caching, or selective rule generation—contributions and discussions are very welcome!
+11. Cross-platform parallel indexing.
+12. Custom source-code annotator compatible with `.sps` files.
+13. Peephole optimization for API requests using suspendable tasks.
+14. Type inference via a homemade DSL interpreter, now integrated into auto-completion. Parameters whose types match the expected signature are ranked higher, as shown below where `length-a` and `length-b` (both `integer?`) appear first because they match the parameter type required by `<=`.
 ![Autocompletion with type inference](./doc/figure/auto-completion-with-type-inference.png "Autocompletion with type inference")
-14. Supports R6RS, R7RS, and [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html) by switching top environments.
+15. Supports R6RS, R7RS, and [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html) by switching top environments.
 
 ```bash
 send-message
 2023 11 21 11 26 41 967266866
 {"jsonrpc":"2.0","id":"3","result":[{"label":"length-a"},{"label":"length-b"},{"label":"lambda"},{"label":"latin-1-codec"},{"label":"lcm"},{"label":"least-fixnum"},{"label":"length"},{"label":"let"},{"label":"let*"},{"label":"let*-values"},{"label":"let-syntax"},{"label":"let-values"},{"label":"letrec"},{"label":"letrec*"},{"label":"letrec-syntax"},{"label":"lexical-violation?"},{"label":"list"},{"label":"list->string"},{"label":"list->vector"},{"label":"list-ref"},{"label":"list-sort"},{"label":"list-tail"},{"label":"list?"},{"label":"log"},{"label":"lookahead-char"},{"label":"lookahead-u8"}]}
 ```
-15. Abstract interpreter that resolves identifiers across multiple file extensions: `.scm`, `.ss`, `.sps`, `.sls`, `.sld`.
-16. Code diagnostics. Supports detecting library-not-found errors, duplicate identifiers in binding forms (e.g. `(lambda (x x) ...)`), and unused imports (e.g. `(only (rnrs) car)` where `car` is never referenced).
+16. Abstract interpreter that resolves identifiers across multiple file extensions: `.scm`, `.ss`, `.sps`, `.sls`, `.sld`.
+17. Code diagnostics with LSP-standard `source` and `code` fields. Detects library-not-found, duplicate identifiers in binding forms (e.g. `(lambda (x x) ...)`), unused imports (e.g. `(only (rnrs) car)` where `car` is never referenced), and tokenizer syntax errors.
 ![Fail to find library](./doc/figure/diagnose-failt-to-find-library.png "Fail to find library")
 
 ### Roadmap
-17. Renaming support (`textDocument/rename` + `prepareRename`).
-18. Formatting (`textDocument/formatting`).
-19. Signature help (`textDocument/signatureHelp`).
-20. Workspace symbol search (`workspace/symbol`).
-21. Document highlight (`textDocument/documentHighlight`).
-22. Code actions (`textDocument/codeAction`) — e.g. "Remove unused import", "Organize imports".
-23. Full R6RS compatibility.
-24. Step-by-step macro expander for self-defined macros.
-25. Code evaluation within the language server.
-26. Cross-language semantic support via AST transformers.
-27. Extract expression/statement into a procedure (refactoring).
+18. Renaming support (`textDocument/rename` + `prepareRename`).
+19. Formatting (`textDocument/formatting`).
+20. Signature help (`textDocument/signatureHelp`).
+21. Code actions (`textDocument/codeAction`) — e.g. "Remove unused import", "Organize imports".
+22. Full R6RS compatibility.
+23. Step-by-step macro expander for self-defined macros.
+24. Code evaluation within the language server.
+25. Cross-language semantic support via AST transformers.
+26. Extract expression/statement into a procedure (refactoring).
 
 ## Contributing
 Pull requests are welcome! Please see [AGENTS.md](./AGENTS.md) for project conventions, build steps, and coding style before opening a PR.
+
+### Vibe Coding with KIMI
+Since mid-2025, active development on this project has been assisted by [KIMI](https://kimi.moonshot.cn/) (Moonshot AI) in a vibe-coding workflow: the maintainer describes intent in natural language, KIMI explores the codebase, proposes changes, and iterates with tests. If you notice commits authored or co-authored by `kimi`, that is the AI agent trail. Human review and final approval always remain with the maintainer.
 
 ## Testing
 Almost all key procedures and APIs are covered by tests. Run the full suite with:
