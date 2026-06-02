@@ -113,13 +113,11 @@ jobs:
       - name: Generate tools.ini manually
         run: |
           cd chez-exe
-          @"
-[NMAKE]
-scheme = C:\ChezScheme\bin\ta6nt\scheme.exe
-bootpath = C:\ChezScheme\boot
-installbindir = C:\ChezScheme\bin
-installlibdir = C:\ChezScheme\lib
-"@ | Out-File -Encoding ASCII "tools.ini"
+          echo '[NMAKE]' > tools.ini
+          echo 'scheme = C:\ChezScheme\bin\ta6nt\scheme.exe' >> tools.ini
+          echo 'bootpath = C:\ChezScheme\boot' >> tools.ini
+          echo 'installbindir = C:\ChezScheme\bin' >> tools.ini
+          echo 'installlibdir = C:\ChezScheme\lib' >> tools.ini
           echo "Generated tools.ini:"
           Get-Content "tools.ini"
 
