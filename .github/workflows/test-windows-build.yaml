@@ -162,11 +162,11 @@ jobs:
           cd chez-exe
           $zlib = Get-ChildItem -Path "C:\vcpkg" -Recurse -Filter "zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 1
           $lz4 = Get-ChildItem -Path "C:\vcpkg" -Recurse -Filter "lz4.lib" -ErrorAction SilentlyContinue | Select-Object -First 1
-          $libs = "rpcrt4.lib ole32.lib advapi32.lib User32.lib petite-chez.lib legacy_stdio_definitions.lib"
-          if ($zlib) { $libs += " `""$($zlib.FullName)"`"" }
-          if ($lz4) { $libs += " `""$($lz4.FullName)"`"" }
+          $libs = @("rpcrt4.lib", "ole32.lib", "advapi32.lib", "User32.lib", "petite-chez.lib", "legacy_stdio_definitions.lib")
+          if ($zlib) { $libs += $zlib.FullName }
+          if ($lz4) { $libs += $lz4.FullName }
           echo "Linking with: $libs"
-          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj $libs
+          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj @libs
 
       - name: Verify run.exe
         run: |
