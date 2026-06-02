@@ -162,6 +162,7 @@ jobs:
           $vcpkgLib = "C:\vcpkg\installed\x64-windows-static\lib"
           $zlib = Get-ChildItem $vcpkgLib -Filter "zlib*.lib" | Select-Object -First 1
           if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "libz*.lib" | Select-Object -First 1 }
+          if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "zs.lib" | Select-Object -First 1 }
           $lz4 = Get-ChildItem $vcpkgLib -Filter "lz4*.lib" | Select-Object -First 1
           echo "zlib found: $($zlib.FullName)"
           echo "lz4 found: $($lz4.FullName)"
