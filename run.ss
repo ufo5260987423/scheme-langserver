@@ -19,8 +19,6 @@ Options:
 
   -e, --top-environment         Switch between different top environments, for example R6RS, R7RS, s7, goldfish, etc.(default: R6RS)
 
-  -d, --debug                   Enable debug mode. (default:disable)
-
 
 Example Usage:
   ~a -l /path/to/scheme-langserver.log\n"
@@ -30,7 +28,6 @@ Example Usage:
 (define default-multi-thread #t)
 (define default-type-inference #t)
 (define default-top-environment 'r6rs)
-(define default-debug #f)
 
 (define (make-default-options)
   (let ((ht (make-hashtable string-hash equal?)))
@@ -38,36 +35,23 @@ Example Usage:
     (hashtable-set! ht "multi-thread" default-multi-thread)
     (hashtable-set! ht "type-inference" default-type-inference)
     (hashtable-set! ht "top-environment" default-top-environment)
-    (hashtable-set! ht "debug" default-debug)
     ht))
 
 (define (log-path-proc option name arg seeds)
   (hashtable-set! seeds "log-path" arg)
   seeds)
 
-(define (multi-thread-proc option name arg seeds)
-  (cond
-    ((string-ci=? arg "enable")
-      (hashtable-set! seeds "multi-thread" #t))
-    ((string-ci=? arg "disable")
-      (hashtable-set! seeds "multi-thread" #f)))
-  seeds)
+(define (boolean-option-proc key)
+  (lambda (option name arg seeds)
+    (cond
+      [(string-ci=? arg "enable")
+        (hashtable-set! seeds key #t)]
+      [(string-ci=? arg "disable")
+        (hashtable-set! seeds key #f)])
+    seeds))
 
-(define (debug-proc option name arg seeds)
-  (cond
-    ((string-ci=? arg "enable")
-      (hashtable-set! seeds "debug" #t))
-    ((string-ci=? arg "disable")
-      (hashtable-set! seeds "debug" #f)))
-  seeds)
-
-(define (type-inference-proc option name arg seeds)
-  (cond
-    ((string-ci=? arg "enable")
-      (hashtable-set! seeds "type-inference" #t))
-    ((string-ci=? arg "disable")
-      (hashtable-set! seeds "type-inference" #f)))
-  seeds)
+(define multi-thread-proc (boolean-option-proc "multi-thread"))
+(define type-inference-proc (boolean-option-proc "type-inference"))
 
 (define (top-environment-parse str)
   (cond
@@ -77,16 +61,15 @@ Example Usage:
     ((string-ci=? str "goldfish") 's7)
     (else #f)))
 
-
 (define (top-environment-proc option name arg seeds)
-(let ((val (top-environment-parse arg)))
-  (if val
-    (begin
-      (hashtable-set! seeds "top-environment" val)
-      seeds)
-    (begin
-      (display "Invalid value for --top-environment. Valid values: r6rs, r7rs, s7\n")
-      (exit 1)))))
+  (let ((val (top-environment-parse arg)))
+    (if val
+      (begin
+        (hashtable-set! seeds "top-environment" val)
+        seeds)
+      (begin
+        (display "Invalid value for --top-environment. Valid values: r6rs, r7rs, s7\n")
+        (exit 1)))))
 
 (define options
   (list
@@ -101,9 +84,7 @@ Example Usage:
     (option '(#\t "type-inference") #t #f
            type-inference-proc)
     (option '(#\e "top-environment") #t #f
-           top-environment-proc)
-    (option '(#\d "debug") #t #f
-           debug-proc)))
+           top-environment-proc)))
 
 (let* ([args 
         (args-fold
@@ -112,12 +93,10 @@ Example Usage:
           (lambda (opt name arg seeds)
             (format (current-error-port) "Unrecognized option: ~a\n" name)
             (display-help)
-            (exit 0))
+            (exit 1))
           (lambda (operand seeds)
             seeds)
           (make-default-options))])
-  ;; TODO: use options
-  ;; (apply init-server operands)
   (init-server
     (standard-input-port)
     (standard-output-port)
@@ -125,7 +104,7 @@ Example Usage:
       (hashtable-ref args "log-path" default-log-path) 
       (file-options replace) 
       'block 
-      (make-transcoder (utf-8-codec))) ;; log port
+      (make-transcoder (utf-8-codec)))
     (hashtable-ref args "multi-thread" default-multi-thread)
     (hashtable-ref args "type-inference" default-type-inference)
     (hashtable-ref args "top-environment" default-top-environment)))

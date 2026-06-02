@@ -209,7 +209,7 @@
         [(input-port output-port log-port enable-multi-thread? type-inference?) 
           (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment)
-          (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs #f)]
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment #f)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug?)
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) #f)]
