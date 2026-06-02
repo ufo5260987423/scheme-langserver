@@ -79,8 +79,6 @@ jobs:
         run: |
           ./ChezScheme.exe /S
           Start-Sleep -Seconds 30
-          echo "Installed directories:"
-          Get-ChildItem -Path "C:\Program Files" -Filter "Chez Scheme*" | ForEach-Object { echo $_.FullName }
 
       - name: Copy to short path
         run: |
@@ -89,8 +87,22 @@ jobs:
           if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }
           Copy-Item -Path $src -Destination $dst -Recurse
           echo "Copied to $dst"
-          echo "Contents:"
-          Get-ChildItem $dst -Depth 1
+
+      - name: Verify Chez Scheme files
+        run: |
+          echo "=== C:\ChezScheme contents ==="
+          Get-ChildItem "C:\ChezScheme" -Depth 1
+          echo "=== boot dir ==="
+          Get-ChildItem "C:\ChezScheme\boot"
+          echo "=== scheme.h check ==="
+          if (Test-Path "C:\ChezScheme\boot\scheme.h") {
+            echo "scheme.h FOUND"
+          } else {
+            echo "scheme.h MISSING"
+            exit 1
+          }
+          echo "=== csv*md.lib check ==="
+          Get-ChildItem "C:\ChezScheme" -Recurse -Filter "csv*md.lib" | ForEach-Object { echo "FOUND: $($_.FullName)" }
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -98,24 +110,33 @@ jobs:
       - name: Clone gwatt/chez-exe
         run: git clone https://github.com/gwatt/chez-exe.git
 
-      - name: Build chez-exe
+      - name: Generate tools.ini manually
         run: |
           cd chez-exe
-          C:\ChezScheme\bin\ta6nt\scheme.exe --script gen-config.ss --bootpath C:\ChezScheme\boot --kernel libkernel.a
-          echo "Generated files:"
-          Get-ChildItem .
-          echo "Running nmake..."
-          nmake
+          @"
+[NMAKE]
+scheme = C:\ChezScheme\bin\ta6nt\scheme.exe
+bootpath = C:\ChezScheme\boot
+installbindir = C:\ChezScheme\bin
+installlibdir = C:\ChezScheme\lib
+"@ | Out-File -Encoding ASCII "tools.ini"
+          echo "Generated tools.ini:"
+          Get-Content "tools.ini"
+
+      - name: Build chez-exe with nmake
+        run: |
+          cd chez-exe
+          nmake /f Makefile.win
 
       - name: Inspect build outputs
         run: |
           cd chez-exe
-          echo "Checking for console_main.obj:"
-          if (Test-Path "console_main.obj") { echo "FOUND console_main.obj" } else { echo "NOT FOUND" }
-          echo "Checking for petite-chez.lib:"
-          if (Test-Path "petite-chez.lib") { echo "FOUND petite-chez.lib" } else { echo "NOT FOUND" }
-          echo "All files:"
+          echo "=== All files ==="
           Get-ChildItem
+          echo "=== Check console_main.obj ==="
+          if (Test-Path "console_main.obj") { echo "FOUND console_main.obj" } else { echo "NOT FOUND" }
+          echo "=== Check petite-chez.lib ==="
+          if (Test-Path "petite-chez.lib") { echo "FOUND petite-chez.lib" } else { echo "NOT FOUND" }
 
       - name: Link run.exe
         run: |
@@ -131,6 +152,7 @@ jobs:
             ls run.exe
           } else {
             echo "FAILED: run.exe not found"
+            exit 1
           }
 
       - name: Copy .version
