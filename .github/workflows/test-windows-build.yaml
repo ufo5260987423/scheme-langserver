@@ -57,6 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-build-files
+          include-hidden-files: true
           path: |
             run.generated.c
             .version
@@ -184,7 +185,8 @@ jobs:
           }
 
       - name: Copy .version
-        run: copy .version chez-exe\
+        run: |
+          if (Test-Path ".version") { copy .version chez-exe\ } else { echo "2.1.0" | Out-File chez-exe\.version -Encoding ASCII }
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
