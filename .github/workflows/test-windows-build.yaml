@@ -147,11 +147,26 @@ jobs:
           echo "=== Check petite-chez.lib ==="
           if (Test-Path "petite-chez.lib") { echo "FOUND petite-chez.lib" } else { echo "NOT FOUND" }
 
+      - name: Find zlib/LZ4 libraries
+        run: |
+          echo "=== Searching for zlib ==="
+          Get-ChildItem -Path "C:\vcpkg" -Recurse -Filter "zlib*.lib" -ErrorAction SilentlyContinue | ForEach-Object { echo "FOUND zlib: $($_.FullName)" }
+          echo "=== Searching for lz4 ==="
+          Get-ChildItem -Path "C:\vcpkg" -Recurse -Filter "lz4*.lib" -ErrorAction SilentlyContinue | ForEach-Object { echo "FOUND lz4: $($_.FullName)" }
+          echo "=== vcpkg list ==="
+          if (Test-Path "C:\vcpkg\vcpkg.exe") { & "C:\vcpkg\vcpkg.exe" list } else { echo "vcpkg.exe not found" }
+
       - name: Link run.exe
         run: |
           copy run.generated.c chez-exe\
           cd chez-exe
-          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj rpcrt4.lib ole32.lib advapi32.lib User32.lib petite-chez.lib legacy_stdio_definitions.lib
+          $zlib = Get-ChildItem -Path "C:\vcpkg" -Recurse -Filter "zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 1
+          $lz4 = Get-ChildItem -Path "C:\vcpkg" -Recurse -Filter "lz4.lib" -ErrorAction SilentlyContinue | Select-Object -First 1
+          $libs = "rpcrt4.lib ole32.lib advapi32.lib User32.lib petite-chez.lib legacy_stdio_definitions.lib"
+          if ($zlib) { $libs += " `""$($zlib.FullName)"`"" }
+          if ($lz4) { $libs += " `""$($lz4.FullName)"`"" }
+          echo "Linking with: $libs"
+          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj $libs
 
       - name: Verify run.exe
         run: |
