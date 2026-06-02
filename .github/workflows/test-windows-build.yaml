@@ -163,6 +163,7 @@ jobs:
       - name: Link run.exe
         run: |
           copy run.generated.c chez-exe\
+          if (Test-Path ".version") { copy .version chez-exe\ } else { echo "2.1.0" | Out-File chez-exe\.version -Encoding ASCII }
           cd chez-exe
           $version = (Get-Content ".version" -Raw).Trim()
           if (-not $version) { $version = "2.1.0" }
