@@ -43,17 +43,20 @@ Ok, you can make an issue [here](https://github.com/ufo5260987423/scheme-langser
 
 ### Debug
 
-If you're an expert, you may recur the bug with log `{path-to-log}` and `log-debug.sps`.
+If you're an expert, you may recur the bug with log `{path-to-log}` and the replay scripts.
 
-1. You should have scheme-langserver's source in `{path-to-scheme-langserver}` and you can find out `{path-to-scheme-langserver/bin/log-debug.sps}`;
-2. Rename `{path-to-log}`, usually `~/scheme-langserver.log`, as `~/ready-for-analyse.log`;
-   > If your log is not `~/ready-for-analyse.log`, you should do few modification to `{path-to-scheme-langserver/bin/log-debug.sps}`
+1. You should have scheme-langserver's source in `{path-to-scheme-langserver}` and you can find `bin/log-debug.sps` (single-threaded) and `bin/parallel-log-debug.sps` (multi-threaded) there.
+2. Rename `{path-to-log}`, usually `~/scheme-langserver.log`, as `~/ready-for-analyse.log`.
+   > If your log is not `~/ready-for-analyse.log`, you should do few modification to the replay script.
 3. Run
    ```bash
    cd {path-to-scheme-langserver}
-   scheme --script bin/log-debug.sps
+   scheme --script bin/log-debug.sps          # deterministic, single-threaded
+   scheme --script bin/parallel-log-debug.sps # concurrent, closer to real clients
    ```
-   or run `log-debug.sps` in Scheme REPL. Mostly bugs will cause exceptions on screen.
+   or run them in a Scheme REPL. Mostly bugs will cause exceptions on screen.
+
+See the detailed sections below for choosing between the two scripts, iterative printf debugging, and thread-safe printing tips.
 
 If you're an old-fashiond schemer, you may find [this page](https://www.scheme.com/debug/debug.html#g1) helpful. But personally I use `pretty-print` to print useful informations.
 

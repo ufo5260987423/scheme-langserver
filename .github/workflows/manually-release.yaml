@@ -22,6 +22,7 @@ jobs:
             $(docker build -q .) \
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss --static
+                     test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
                      mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
                      '
 

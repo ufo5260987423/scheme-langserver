@@ -31,7 +31,18 @@ RUN git clone https://github.com/ufo5260987423/chez-exe.git
 
 WORKDIR /root/chez-exe/
 
-RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a
+# glibc static libc.a does not provide getlogin, but Chez 10.x full-chez.a
+# references it. Provide a stub so static linking succeeds.
+RUN echo 'char *getlogin(void) { return (char*)0; }' > getlogin_stub.c && \
+    cc -c getlogin_stub.c -o /usr/local/lib/getlogin_stub.o && \
+    rm getlogin_stub.c
+
+# compile-chez-program ignores the (system ...) return value, so linker
+# failures are silently swallowed. Patch it to exit non-zero on failure.
+COPY docker/compile-chez-program.patch.pl /tmp/patch.pl
+RUN perl /tmp/patch.pl
+
+RUN /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a -Wl,--no-fatal-warnings /usr/local/lib/getlogin_stub.o
 RUN make install
 
 
@@ -66,7 +77,7 @@ RUN akku install
 FROM debian:bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y git make build-essential uuid-dev
+RUN apt-get update && apt-get install -y git make build-essential uuid-dev libtinfo-dev
 
 # add chez scheme
 COPY --from=build-chez /usr/bin/scheme /usr/bin/
@@ -76,6 +87,7 @@ COPY --from=build-chez /usr/lib/csv10.4.1/ /usr/lib/csv10.4.1/
 COPY --from=build-chez /usr/local/bin/compile-chez-program /usr/local/bin/
 COPY --from=build-chez /usr/local/lib/full-chez.a /usr/local/lib/
 COPY --from=build-chez /usr/local/lib/petite-chez.a /usr/local/lib/
+COPY --from=build-chez /usr/local/lib/getlogin_stub.o /usr/local/lib/
 
 # add project
 COPY --from=akku-install /root/scheme-langserver/ /root/scheme-langserver/
