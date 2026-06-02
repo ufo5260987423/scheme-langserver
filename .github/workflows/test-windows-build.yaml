@@ -113,7 +113,7 @@ jobs:
       - name: Clone gwatt/chez-exe
         run: git clone https://github.com/gwatt/chez-exe.git
 
-      - name: Generate tools.ini manually
+      - name: Generate tools.ini and patch Makefile.win for /MT
         run: |
           cd chez-exe
           echo '[NMAKE]' > tools.ini
@@ -123,10 +123,18 @@ jobs:
           echo 'installlibdir = C:\ChezScheme\lib' >> tools.ini
           echo "Generated tools.ini:"
           Get-Content "tools.ini"
+          echo "Patching Makefile.win for /MT static CRT..."
+          (Get-Content "Makefile.win") `
+            -replace '/MD ', '/MT ' `
+            -replace 'csv\*md\.lib', 'csv*mt.lib' |
+            Set-Content "Makefile.win"
+          echo "Patched Makefile.win:"
+          Get-Content "Makefile.win"
 
       - name: Build chez-exe with nmake
         run: |
           cd chez-exe
+          nmake /f Makefile.win clean
           nmake /f Makefile.win
 
       - name: Inspect build outputs
@@ -143,7 +151,7 @@ jobs:
         run: |
           copy run.generated.c chez-exe\
           cd chez-exe
-          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj rpcrt4.lib ole32.lib advapi32.lib User32.lib petite-chez.lib
+          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj rpcrt4.lib ole32.lib advapi32.lib User32.lib petite-chez.lib legacy_stdio_definitions.lib
 
       - name: Verify run.exe
         run: |
