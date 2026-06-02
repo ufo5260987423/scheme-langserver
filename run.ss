@@ -17,12 +17,16 @@ Options:
 
   -h, --help                    Print help information.
 
+  -v, --version                 Print version information.
+
   -e, --top-environment         Switch between different top environments, for example R6RS, R7RS, s7, goldfish, etc.(default: R6RS)
 
 
 Example Usage:
   ~a -l /path/to/scheme-langserver.log\n"
       prog-name prog-name)))
+
+(define version "2.1.0")
 
 (define default-log-path "./.scheme-langserver.log")
 (define default-multi-thread #t)
@@ -76,6 +80,10 @@ Example Usage:
    (option '(#\h "help") #f #f
            (lambda (opt name arg seeds)
              (display-help)
+             (exit 0)))
+   (option '(#\v "version") #f #f
+           (lambda (opt name arg seeds)
+             (format (current-output-port) "scheme-langserver ~a\n" version)
              (exit 0)))
     (option '(#\l "log-path") #t #f
            log-path-proc)
