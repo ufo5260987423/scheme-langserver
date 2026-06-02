@@ -150,16 +150,21 @@ jobs:
       - name: Install zlib and LZ4 via vcpkg
         run: |
           cd C:\vcpkg
-          .\vcpkg install zlib:x64-windows-static lz4:x64-windows-static
-          echo "=== Installed libs ==="
-          Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib"
+          .\vcpkg install zlib:x64-windows-static
+          .\vcpkg install lz4:x64-windows-static
+          echo "=== All installed .lib files ==="
+          Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib" -Filter "*.lib"
 
       - name: Link run.exe
         run: |
           copy run.generated.c chez-exe\
           cd chez-exe
-          $zlib = Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib" -Filter "zlib*.lib" | Select-Object -First 1
-          $lz4 = Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib" -Filter "lz4*.lib" | Select-Object -First 1
+          $vcpkgLib = "C:\vcpkg\installed\x64-windows-static\lib"
+          $zlib = Get-ChildItem $vcpkgLib -Filter "zlib*.lib" | Select-Object -First 1
+          if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "libz*.lib" | Select-Object -First 1 }
+          $lz4 = Get-ChildItem $vcpkgLib -Filter "lz4*.lib" | Select-Object -First 1
+          echo "zlib found: $($zlib.FullName)"
+          echo "lz4 found: $($lz4.FullName)"
           $libs = @("rpcrt4.lib", "ole32.lib", "advapi32.lib", "User32.lib", "petite-chez.lib", "legacy_stdio_definitions.lib")
           if ($zlib) { $libs += $zlib.FullName }
           if ($lz4) { $libs += $lz4.FullName }
