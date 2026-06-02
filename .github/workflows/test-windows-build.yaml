@@ -93,16 +93,19 @@ jobs:
           echo "=== C:\ChezScheme contents ==="
           Get-ChildItem "C:\ChezScheme" -Depth 1
           echo "=== boot dir ==="
-          Get-ChildItem "C:\ChezScheme\boot"
-          echo "=== scheme.h check ==="
-          if (Test-Path "C:\ChezScheme\boot\scheme.h") {
-            echo "scheme.h FOUND"
-          } else {
-            echo "scheme.h MISSING"
-            exit 1
-          }
-          echo "=== csv*md.lib check ==="
-          Get-ChildItem "C:\ChezScheme" -Recurse -Filter "csv*md.lib" | ForEach-Object { echo "FOUND: $($_.FullName)" }
+          Get-ChildItem "C:\ChezScheme\boot" -Depth 1
+          echo "=== boot\ta6nt dir ==="
+          Get-ChildItem "C:\ChezScheme\boot\ta6nt"
+          echo "=== bin\ta6nt dir ==="
+          Get-ChildItem "C:\ChezScheme\bin\ta6nt"
+          echo "=== Searching for scheme.h ==="
+          $h = Get-ChildItem -Path "C:\ChezScheme" -Recurse -Filter "scheme.h" | Select-Object -First 1
+          if ($h) { echo "scheme.h FOUND at: $($h.FullName)" } else { echo "scheme.h MISSING"; exit 1 }
+          echo "=== Searching for petite.boot ==="
+          $pb = Get-ChildItem -Path "C:\ChezScheme" -Recurse -Filter "petite.boot" | Select-Object -First 1
+          if ($pb) { echo "petite.boot FOUND at: $($pb.FullName)" } else { echo "petite.boot MISSING"; exit 1 }
+          echo "=== Searching for csv*.lib ==="
+          Get-ChildItem "C:\ChezScheme" -Recurse -Filter "csv*.lib" | ForEach-Object { echo "FOUND: $($_.FullName)" }
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -115,7 +118,7 @@ jobs:
           cd chez-exe
           echo '[NMAKE]' > tools.ini
           echo 'scheme = C:\ChezScheme\bin\ta6nt\scheme.exe' >> tools.ini
-          echo 'bootpath = C:\ChezScheme\boot' >> tools.ini
+          echo 'bootpath = C:\ChezScheme\boot\ta6nt' >> tools.ini
           echo 'installbindir = C:\ChezScheme\bin' >> tools.ini
           echo 'installlibdir = C:\ChezScheme\lib' >> tools.ini
           echo "Generated tools.ini:"
