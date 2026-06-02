@@ -151,12 +151,18 @@ jobs:
         run: |
           cd C:\vcpkg
           .\vcpkg install zlib:x64-windows-static lz4:x64-windows-static
+          echo "=== Installed libs ==="
+          Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib"
 
       - name: Link run.exe
         run: |
           copy run.generated.c chez-exe\
           cd chez-exe
-          $libs = @("rpcrt4.lib", "ole32.lib", "advapi32.lib", "User32.lib", "petite-chez.lib", "legacy_stdio_definitions.lib", "C:\vcpkg\installed\x64-windows-static\lib\zlib.lib", "C:\vcpkg\installed\x64-windows-static\lib\lz4.lib")
+          $zlib = Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib" -Filter "zlib*.lib" | Select-Object -First 1
+          $lz4 = Get-ChildItem "C:\vcpkg\installed\x64-windows-static\lib" -Filter "lz4*.lib" | Select-Object -First 1
+          $libs = @("rpcrt4.lib", "ole32.lib", "advapi32.lib", "User32.lib", "petite-chez.lib", "legacy_stdio_definitions.lib")
+          if ($zlib) { $libs += $zlib.FullName }
+          if ($lz4) { $libs += $lz4.FullName }
           echo "Linking with: $libs"
           cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj @libs
 
