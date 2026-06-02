@@ -51,7 +51,11 @@ jobs:
           compile-chez-program run.ss
 
       - name: Generate .version
-        run: git describe --tags --always --dirty > .version 2>/dev/null || echo "2.1.0" > .version
+        run: |
+          git describe --tags --always --dirty > .version 2>/dev/null || \
+            git rev-parse --short HEAD > .version 2>/dev/null || \
+            echo "2.1.0" > .version
+          echo "Version: $(cat .version)"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
