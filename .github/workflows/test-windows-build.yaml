@@ -164,27 +164,34 @@ jobs:
         run: |
           copy run.generated.c chez-exe\
           cd chez-exe
+          $version = (Get-Content ".version" -Raw).Trim()
+          if (-not $version) { $version = "2.1.0" }
+          $exeName = "scheme-langserver-$version-windows-x86_64.exe"
           $vcpkgLib = "C:\vcpkg\installed\x64-windows-static\lib"
           $zlib = Get-ChildItem $vcpkgLib -Filter "zlib*.lib" | Select-Object -First 1
           if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "libz*.lib" | Select-Object -First 1 }
           if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "zs.lib" | Select-Object -First 1 }
           $lz4 = Get-ChildItem $vcpkgLib -Filter "lz4*.lib" | Select-Object -First 1
+          echo "Version: $version, Output: $exeName"
           echo "zlib found: $($zlib.FullName)"
           echo "lz4 found: $($lz4.FullName)"
           $libs = @("rpcrt4.lib", "ole32.lib", "advapi32.lib", "User32.lib", "petite-chez.lib", "legacy_stdio_definitions.lib")
           if ($zlib) { $libs += $zlib.FullName }
           if ($lz4) { $libs += $lz4.FullName }
           echo "Linking with: $libs"
-          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj @libs
+          cl /nologo /MT /Fe:$exeName run.generated.c console_main.obj @libs
 
-      - name: Verify run.exe
+      - name: Verify executable
         run: |
           cd chez-exe
-          if (Test-Path "run.exe") {
-            echo "SUCCESS: run.exe exists"
-            ls run.exe
+          $version = (Get-Content ".version" -Raw).Trim()
+          if (-not $version) { $version = "2.1.0" }
+          $exeName = "scheme-langserver-$version-windows-x86_64.exe"
+          if (Test-Path $exeName) {
+            echo "SUCCESS: $exeName exists"
+            ls $exeName
           } else {
-            echo "FAILED: run.exe not found"
+            echo "FAILED: $exeName not found"
             exit 1
           }
 
@@ -195,7 +202,7 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: scheme-langserver-windows-test
+          name: scheme-langserver-windows
           path: |
-            chez-exe\run.exe
+            chez-exe\scheme-langserver-*.exe
             chez-exe\.version
