@@ -81,18 +81,19 @@ jobs:
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
           docker run \
             -v ./build:/root/scheme-langserver/build/ \
+            -e VERSION="$VERSION" \
             $(docker build -q --build-arg VERSION="$VERSION" .) \
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss --static
                      test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
-                     mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
+                     mv run "build/scheme-langserver-${VERSION}-x86_64-linux-glibc" || exit 1
                      '
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: build/scheme-langserver-x86_64-linux-glibc
+          path: build/scheme-langserver-*-x86_64-linux-glibc
 
   build-windows:
     runs-on: windows-latest
@@ -213,7 +214,7 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
-          cp linux-build/scheme-langserver-x86_64-linux-glibc release/
+          cp linux-build/scheme-langserver-*-x86_64-linux-glibc release/
           cp windows-build/scheme-langserver-*.exe release/
 
       - name: generate tag
