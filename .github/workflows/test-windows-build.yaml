@@ -24,19 +24,21 @@ jobs:
           ./configure --threads --disable-x11
           make -j$(nproc)
           sudo make install
+          cd ..
+          rm -rf csv10.4.1
 
-      - name: Install gwatt/chez-exe
+      - name: Install ufo5260987423/chez-exe (Linux fork with libkernel.a support)
         run: |
-          git clone https://github.com/gwatt/chez-exe.git
+          git clone https://github.com/ufo5260987423/chez-exe.git
           cd chez-exe
           /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a
-          make install
+          sudo make install
 
       - name: Install Akku
         run: |
           wget -q https://gitlab.com/-/project/6808260/uploads/094ce726ce3c6cf8c14560f1e31aaea0/akku-1.1.0.amd64-linux.tar.xz
           tar -xf akku-1.1.0.amd64-linux.tar.xz
-          cd akku-1.1.0.amd64-linux && bash install
+          cd akku-1.1.0.amd64-linux && bash install.sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install project dependencies
@@ -97,6 +99,17 @@ jobs:
             echo "FAILED: /SILENT /DIR= also did not work"
           }
 
+      - name: Verify Chez Scheme installation
+        run: |
+          echo "Checking C:\ChezScheme ..."
+          if (Test-Path "C:\ChezScheme") { ls "C:\ChezScheme" -Recurse -Depth 2 } else { echo "C:\ChezScheme does NOT exist" }
+          echo "Checking C:\Program Files\Chez Scheme* ..."
+          Get-ChildItem -Path "C:\Program Files" -Filter "Chez Scheme*" -ErrorAction SilentlyContinue | ForEach-Object { echo $_.FullName; ls $_.FullName -Recurse -Depth 2 }
+          echo "Checking C:\Program Files (x86)\Chez Scheme* ..."
+          Get-ChildItem -Path "C:\Program Files (x86)" -Filter "Chez Scheme*" -ErrorAction SilentlyContinue | ForEach-Object { echo $_.FullName; ls $_.FullName -Recurse -Depth 2 }
+          echo "Searching for scheme.h ..."
+          Get-ChildItem -Path "C:\ChezScheme" -Recurse -Filter "scheme.h" -ErrorAction SilentlyContinue | ForEach-Object { echo "scheme.h found at: $($_.FullName)" }
+
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -106,7 +119,30 @@ jobs:
       - name: Run gen-config.ss
         run: |
           cd chez-exe
-          C:\ChezScheme\bin\scheme.exe --script gen-config.ss --bootpath C:\ChezScheme\lib\csv10.4.1\ta6nt
+          $scheme = $null
+          if (Test-Path "C:\ChezScheme") {
+            $scheme = (Get-ChildItem -Path "C:\ChezScheme" -Recurse -Filter "scheme.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+          }
+          if (-not $scheme) {
+            $dir = (Get-ChildItem -Path "C:\Program Files" -Filter "Chez Scheme*" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+            if ($dir) { $scheme = (Get-ChildItem -Path $dir -Recurse -Filter "scheme.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName }
+          }
+          if (-not $scheme) {
+            $dir = (Get-ChildItem -Path "C:\Program Files (x86)" -Filter "Chez Scheme*" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+            if ($dir) { $scheme = (Get-ChildItem -Path $dir -Recurse -Filter "scheme.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName }
+          }
+          if (-not $scheme) { echo "ERROR: scheme.exe not found anywhere"; exit 1 }
+          echo "Using scheme: $scheme"
+          $bootpath = "C:\ChezScheme\lib\csv10.4.1\ta6nt"
+          if (-not (Test-Path "$bootpath\scheme.h")) {
+            $schemeH = (Get-ChildItem -Path "C:\ChezScheme" -Recurse -Filter "scheme.h" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+            if ($schemeH) {
+              $incDir = Split-Path $schemeH
+              echo "scheme.h not in bootpath, copying from $incDir"
+              copy "$incDir\scheme.h" "$bootpath\"
+            }
+          }
+          & $scheme --script gen-config.ss --bootpath $bootpath --kernel libkernel.a
 
       - name: Inspect chez-exe files
         run: |
