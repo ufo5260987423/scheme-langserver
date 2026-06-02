@@ -1,0 +1,173 @@
+name: Test Windows Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-c:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses-dev uuid-dev zlib1g-dev liblz4-dev curl wget
+
+      - name: Install Chez Scheme 10.4.1
+        run: |
+          curl -L https://github.com/cisco/ChezScheme/releases/download/v10.4.1/csv10.4.1.tar.gz | tar -zx
+          cd csv10.4.1
+          ./configure --threads --disable-x11
+          make -j$(nproc)
+          sudo make install
+
+      - name: Install gwatt/chez-exe
+        run: |
+          git clone https://github.com/gwatt/chez-exe.git
+          cd chez-exe
+          /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a
+          make install
+
+      - name: Install Akku
+        run: |
+          wget -q https://gitlab.com/-/project/6808260/uploads/094ce726ce3c6cf8c14560f1e31aaea0/akku-1.1.0.amd64-linux.tar.xz
+          tar -xf akku-1.1.0.amd64-linux.tar.xz
+          cd akku-1.1.0.amd64-linux && bash install
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install project dependencies
+        run: akku install
+
+      - name: Generate run.generated.c
+        run: |
+          source .akku/bin/activate
+          rm -f run.generated.c run.chez run.so run.wpo
+          compile-chez-program run.ss
+
+      - name: Generate .version
+        run: git describe --tags --always --dirty > .version 2>/dev/null || echo "2.1.0" > .version
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-files
+          path: |
+            run.generated.c
+            .version
+
+  build-windows:
+    runs-on: windows-latest
+    needs: generate-c
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build-files
+
+      - name: Download Chez Scheme installer
+        run: |
+          curl -L -o ChezScheme.exe https://github.com/cisco/ChezScheme/releases/download/v10.4.1/ChezScheme10.4.1.exe
+          echo "Installer downloaded, size:"
+          ls ChezScheme.exe
+
+      - name: Test silent install (NSIS /S)
+        run: |
+          ./ChezScheme.exe /S /D=C:\ChezScheme
+          Start-Sleep -Seconds 30
+          if (Test-Path "C:\ChezScheme\bin\scheme.exe") {
+            echo "SUCCESS: Chez Scheme installed with /S /D="
+            C:\ChezScheme\bin\scheme.exe --version
+          } else {
+            echo "FAILED: /S /D= did not work, trying /SILENT /DIR=..."
+          }
+
+      - name: Test silent install (Inno Setup /SILENT)
+        if: failure()
+        run: |
+          ./ChezScheme.exe /SILENT /DIR="C:\ChezScheme"
+          Start-Sleep -Seconds 30
+          if (Test-Path "C:\ChezScheme\bin\scheme.exe") {
+            echo "SUCCESS: Chez Scheme installed with /SILENT /DIR="
+            C:\ChezScheme\bin\scheme.exe --version
+          } else {
+            echo "FAILED: /SILENT /DIR= also did not work"
+          }
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Clone gwatt/chez-exe
+        run: git clone https://github.com/gwatt/chez-exe.git
+
+      - name: Run gen-config.ss
+        run: |
+          cd chez-exe
+          C:\ChezScheme\bin\scheme.exe --script gen-config.ss --bootpath C:\ChezScheme\lib\csv10.4.1\ta6nt
+
+      - name: Inspect chez-exe files
+        run: |
+          cd chez-exe
+          echo "Files in chez-exe directory:"
+          ls
+          echo ""
+          echo "Checking for Makefile / Makefile.win / makefile:"
+          if (Test-Path "Makefile.win") { echo "Found: Makefile.win" }
+          if (Test-Path "Makefile") { echo "Found: Makefile" }
+          if (Test-Path "makefile") { echo "Found: makefile" }
+          if (Test-Path "tools.ini") { echo "Found: tools.ini" }
+
+      - name: Build chez-exe with nmake
+        run: |
+          cd chez-exe
+          if (Test-Path "Makefile.win") {
+            nmake /f Makefile.win
+          } elseif (Test-Path "Makefile") {
+            nmake /f Makefile
+          } else {
+            echo "No Makefile found, trying default nmake..."
+            nmake
+          }
+
+      - name: Inspect build outputs
+        run: |
+          cd chez-exe
+          echo "Checking for console_main.obj:"
+          if (Test-Path "console_main.obj") { echo "FOUND console_main.obj" } else { echo "NOT FOUND console_main.obj" }
+          echo "Checking for petite-chez.lib:"
+          if (Test-Path "petite-chez.lib") { echo "FOUND petite-chez.lib" } else { echo "NOT FOUND petite-chez.lib" }
+          echo "Checking for full-chez.lib:"
+          if (Test-Path "full-chez.lib") { echo "FOUND full-chez.lib" } else { echo "NOT FOUND full-chez.lib" }
+          echo "All files in chez-exe:"
+          ls
+
+      - name: Link run.exe
+        run: |
+          copy run.generated.c chez-exe\
+          cd chez-exe
+          cl /nologo /MT /Fe:run.exe run.generated.c console_main.obj rpcrt4.lib ole32.lib advapi32.lib User32.lib petite-chez.lib
+
+      - name: Verify run.exe
+        run: |
+          cd chez-exe
+          if (Test-Path "run.exe") {
+            echo "SUCCESS: run.exe exists"
+            echo "File size:"
+            ls run.exe
+          } else {
+            echo "FAILED: run.exe was not created"
+          }
+
+      - name: Copy .version
+        run: copy .version chez-exe\
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheme-langserver-windows-test
+          path: |
+            chez-exe\run.exe
+            chez-exe\.version

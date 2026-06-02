@@ -33,7 +33,7 @@
 1. 下载阶段 1 的 artifact（`run.generated.c` + `.version`）
 2. 下载并安装 Chez Scheme Windows 版（`ChezScheme10.4.1.exe`）
 3. 激活 MSVC（`ilammy/msvc-dev-cmd@v1`，runner 自带 VS2022）
-4. 克隆 `ufo5260987423/chez-exe` 并构建 Windows 版（获取 `console_main.obj` 和 `petite-chez.lib`）
+4. 克隆 `gwatt/chez-exe` 并构建 Windows 版（获取 `console_main.obj` 和 `petite-chez.lib`）
 5. 用 `cl.exe` 链接生成 `run.exe`（使用 `/MT` 静态 CRT，不依赖 VC++ Redistributable）
 6. 将 `run.exe` 和 `.version` 作为 release artifact 上传
 
@@ -69,27 +69,29 @@ ChezScheme10.4.1.exe /SILENT
 
 ---
 
-### 风险点 2：`ufo5260987423/chez-exe` fork 的 Windows 构建
+### 风险点 2：`gwatt/chez-exe` 原始仓库的 Windows 构建
 
-**问题**：`prepare-windows-build.sh` 中引用的 `chez-exe` 原始仓库是 `gwatt/chez-exe`，但本项目实际使用的是 `ufo5260987423/chez-exe` fork。需要确认这个 fork 是否包含**完整的 Windows 构建支持**。
+**问题**：需要确认 `gwatt/chez-exe` 原始仓库在 Windows 上的构建流程是否完整可用。
+
+> **注意**：`ufo5260987423/chez-exe` fork 仅用于解决 NixOS 构建问题，Windows 构建应基于原始仓库 `gwatt/chez-exe`。
 
 **需要验证的内容**：
 1. `gen-config.ss` 在 Windows 上是否能正确生成 `tools.ini`（从代码看，Windows 分支存在，生成 `tools.ini` 而非 `make.in`）
 2. 仓库中是否有 `Makefile.win` 或类似的 nmake 构建文件
 3. `nmake install` 在 Windows 上是否能正确编译出 `console_main.obj`、`gui_main.obj` 和 `petite-chez.lib`
 
-**当前状态**：该 fork 的 Windows 构建流程**尚未在 CI 中验证过**。如果 `nmake` 构建失败，整个 workflow 会中断。
+**当前状态**：`gwatt/chez-exe` 的 Windows 构建流程**尚未在 CI 中验证过**。如果 `nmake` 构建失败，整个 workflow 会中断。
 
 **验证方法**：在本地 Windows 或 GitHub Actions 测试环境中尝试：
 ```batch
-git clone https://github.com/ufo5260987423/chez-exe.git
+git clone https://github.com/gwatt/chez-exe.git
 cd chez-exe
 scheme --script gen-config.ss --bootpath C:\ChezScheme\lib\csv10.4.1\ta6nt
 dir Makefile.win  REM 确认 Makefile.win 是否存在
 nmake /f Makefile.win
 ```
 
-**备选方案**：如果 fork 的 Windows 构建有问题，可以回退到原始仓库 `gwatt/chez-exe`，或者手动提取 `console_main.obj` 和 `petite-chez.lib`（如果 Chez Scheme 官方提供预构建的 Windows 库）。
+**备选方案**：如果 `nmake` 构建失败，可以尝试直接复制 Chez Scheme Windows 安装目录中的 `main.obj` 和静态库来替代 chez-exe 的构建产物。
 
 ---
 
@@ -104,9 +106,23 @@ nmake /f Makefile.win
 - `release.yaml`：在 `push: tags: "*.*.*"` 时触发，目前只构建 Linux glibc 版本。Windows 构建可以作为**新增 job** 加入同一个 workflow，也可以作为**独立的 workflow**（如 `windows-release.yaml`）。
 - `manually-release.yaml`：手动触发，同样可以加入 Windows 构建 job。
 
+## 没有 Docker 怎么调试？
+
+GitHub Actions 本身就是**远程 CI 服务**，完全不需要本地 Docker。
+
+调试方案：
+1. **写一个 `workflow_dispatch` 手动触发的测试 workflow**（`.github/workflows/test-windows-build.yaml`）
+2. **push 到 GitHub 后**，在仓库的 Actions 页面点击 "Run workflow" 手动触发
+3. **每一步的日志**（stdout/stderr）都可以在 GitHub 网页上实时查看
+4. **如果某一步失败**，根据日志调整 workflow 文件，重新 push，再次触发
+
+这种迭代方式比本地 Docker 更直接，因为测试环境和生产环境完全一致（都是 GitHub 的官方 runner）。
+
 ## 建议的下一步行动
 
-1. **验证风险点 1**：在测试环境中确认 `ChezScheme10.4.1.exe` 的静默安装参数
-2. **验证风险点 2**：在测试环境中确认 `ufo5260987423/chez-exe` fork 能否在 Windows 上成功构建
-3. **创建 workflow 文件**：基于验证结果编写 `.github/workflows/windows-build.yaml`
-4. **测试 end-to-end**：从 tag push 到 Windows artifact 上传的完整流程
+1. **推送测试 workflow**：创建 `.github/workflows/test-windows-build.yaml` 并 push 到 GitHub
+2. **手动触发测试**：在 Actions 页面点击 "Run workflow"，观察日志
+3. **逐个验证风险点**：
+   - 阶段 1（Linux）：确认 `run.generated.c` 能正常生成
+   - 阶段 2（Windows）：确认静默安装参数、`nmake` 构建、链接是否成功
+4. **基于测试结果**，把验证通过的步骤固化到正式的 `.github/workflows/windows-release.yaml` 中
