@@ -26,7 +26,28 @@ Example Usage:
   ~a -l /path/to/scheme-langserver.log\n"
       prog-name prog-name)))
 
-(define version "2.1.0")
+(define (private:get-version)
+  (or
+    (guard (e [else #f])
+      (let-values ([(to-stdin from-stdout from-stderr pid)
+                    (open-process-ports "git describe --tags --always --dirty 2>/dev/null"
+                                        (buffer-mode block)
+                                        (native-transcoder))])
+        (let ([line (get-line from-stdout)])
+          (close-output-port to-stdin)
+          (close-input-port from-stdout)
+          (close-input-port from-stderr)
+          (if (or (eof-object? line) (string=? line ""))
+            #f
+            line))))
+    (guard (e [else #f])
+      (call-with-input-file ".version"
+        (lambda (p)
+          (let ([line (get-line p)])
+            (if (eof-object? line) #f line)))))
+    "2.1.0"))
+
+(define version (private:get-version))
 
 (define default-log-path "./.scheme-langserver.log")
 (define default-multi-thread #t)

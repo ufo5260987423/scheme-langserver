@@ -12,14 +12,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Linux glibc image
-        run: docker build .
+        run: |
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
+          docker build --build-arg VERSION="$VERSION" .
 
       - name: Compile executable on Linux glibc
         run: |
           mkdir -p build
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
           docker run \
             -v ./build:/root/scheme-langserver/build/ \
-            $(docker build -q .) \
+            $(docker build -q --build-arg VERSION="$VERSION" .) \
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss --static
                      test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }

@@ -94,6 +94,9 @@ COPY --from=build-chez /usr/local/lib/getlogin_stub.o /usr/local/lib/
 # add project
 COPY --from=akku-install /root/scheme-langserver/ /root/scheme-langserver/
 
+ARG VERSION=2.1.0
+RUN echo "$VERSION" > /root/scheme-langserver/.version
+
 # Remove .so files compiled by akku's built-in Chez 9.5.2 to avoid
 # fasl-object version mismatch with Chez 10.x. Chez 10.x will load
 # .sls sources directly (slower but compatible).
