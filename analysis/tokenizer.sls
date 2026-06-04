@@ -344,14 +344,82 @@
              [else (+ start 1)])])
     `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " msg))))
 
+; R7RS-specific fixes. These are only invoked when top-environment is r7rs/s7/goldfish.
+(define (private:r7rs-fixable? condition source position)
+  (let ([msg (condition-message condition)]
+      [irritants (condition-irritants condition)])
+    (cond
+      [(private:message-matches? msg "invalid sharp-sign prefix #~c")
+        (private:r7rs-fix-u8 source position irritants)]
+      [(private:message-matches? msg "invalid character name #\\~a")
+        (private:r7rs-fix-char source position irritants)]
+      [else #f])))
+
+(define (private:r7rs-fix-u8 source position irritants)
+  (let ([src-len (string-length source)])
+    (define (check-at pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))
+        (< (+ pos 1) src-len)
+        (char=? #\u (string-ref source (+ pos 1)))
+        (< (+ pos 2) src-len)
+        (char=? #\8 (string-ref source (+ pos 2)))
+        (< (+ pos 3) src-len)
+        (char=? #\( (string-ref source (+ pos 3)))))
+    (let ([pos (let loop ([p position])
+                  (cond
+                    [(< p (- position 5)) #f]
+                    [(check-at p) p]
+                    [else (loop (- p 1))]))])
+      (if pos
+        (let ([head (string-take source (+ pos 1))]
+            [rest (string-take-right source (- src-len (+ pos 3)))])
+          (string-append head "vu8" rest))
+        #f))))
+
+(define (private:r7rs-fix-char source position irritants)
+  (let* ([name
+            (cond
+              [(and (pair? irritants) (string? (car irritants)))
+                (car irritants)]
+              [(and (pair? irritants) (pair? (car irritants)) (string? (caar irritants)))
+                (caar irritants)]
+              [else #f])]
+      [replacement
+        (case name
+          [("null") "nul"]
+          [("escape") "esc"]
+          [else #f])])
+    (if replacement
+      (let* ([src-len (string-length source)]
+          [old-name-len (string-length name)]
+          [old-len (+ 2 old-name-len)]
+          [search-str (string-append "#\\" name)]
+          [found (let loop ([pos (max 0 (- position old-len))])
+                   (cond
+                     [(>= pos src-len) #f]
+                     [(and (<= (+ pos old-len) src-len)
+                           (string=? search-str (substring source pos (+ pos old-len))))
+                       pos]
+                     [else (loop (+ pos 1))]))])
+        (if found
+          (let ([head (string-take source found)]
+              [rest (string-take-right source (- src-len (+ found old-len)))])
+            (string-append head (string-append "#\\" replacement) rest))
+          #f))
+      #f)))
+
 (define source-file->annotations
   (case-lambda
     ([path] (source-file->annotations (read-string path) path))
-    ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t))
-    ([source path start-position] (source-file->annotations source path start-position #t))
+    ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t #f 'r6rs))
+    ([source path start-position] (source-file->annotations source path start-position #t #f 'r6rs))
     ([source path start-position tolerant?]
-      (source-file->annotations source path start-position tolerant? #f))
+      (source-file->annotations source path start-position tolerant? #f 'r6rs))
     ([source path start-position tolerant? maybe-document]
+      (source-file->annotations source path start-position tolerant? maybe-document 'r6rs))
+    ([source path start-position tolerant? maybe-document top-environment]
       (if (file-exists? path)
         (let ([port (open-string-input-port source)]
             [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
@@ -366,12 +434,18 @@
                 (except e
                   [(and tolerant? (condition? e))
                     (let ([error-position (private:compute-error-position e port)])
-                      (when maybe-document
-                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
-                      (let ([after (private:tolerant-parse->patch source error-position)])
-                        (if (= (string-length after) (string-length source))
-                          (source-file->annotations after path start-position #f maybe-document)
-                          (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
+                      (cond
+                        [(and (memq top-environment '(r7rs s7 goldfish))
+                              (private:r7rs-fixable? e source error-position))
+                         => (lambda (patched-source)
+                              (source-file->annotations patched-source path start-position tolerant? maybe-document top-environment))]
+                        [else
+                          (when maybe-document
+                            (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
+                          (let ([after (private:tolerant-parse->patch source error-position)])
+                            (if (= (string-length after) (string-length source))
+                              (source-file->annotations after path start-position #f maybe-document top-environment)
+                              (error 'tokenizer-error (condition-message e) (condition-irritants e))))]))]
                   [(condition? e)
                     (let ([error-position (private:compute-error-position e port)])
                       (when maybe-document
@@ -411,6 +485,11 @@
             [(and (not inline-comment?) (eqv? #\| (lookahead-char ip)))
               (get-char ip)
               (consume-block-comment ip)
+              (loop (get-char ip) #f)]
+            [(and (not inline-comment?) (eqv? #\; (lookahead-char ip)))
+              (get-char ip)
+              (guard (e [else (void)])
+                (get-datum ip))
               (loop (get-char ip) #f)]
             [else (loop (get-char ip) inline-comment?)])]
         [(and (not inline-comment?) (eqv? c #\( )) (- (port-position ip) 1)]

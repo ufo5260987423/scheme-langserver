@@ -40,7 +40,7 @@
     (let* ([tmp (make-test-file "(define (foo) 1)")]
            [d (make-document (path->uri tmp) "(define (foo" '())])
       (document-diagnoses-set! d '())
-      (source-file->annotations "(define (foo" tmp (consume-sps-auxiliary "(define (foo") #t d)
+      (source-file->annotations "(define (foo" tmp (consume-sps-auxiliary "(define (foo") #t d 'r6rs)
       (let ([result (length (document-diagnoses d))])
         (delete-file tmp)
         result))))
@@ -53,7 +53,7 @@
     (let* ([tmp (make-test-file "(define (foo) 1)")]
            [d (make-document (path->uri tmp) "(define (foo" '())])
       (document-diagnoses-set! d '())
-      (source-file->annotations "(define (foo" tmp (consume-sps-auxiliary "(define (foo") #t d)
+      (source-file->annotations "(define (foo" tmp (consume-sps-auxiliary "(define (foo") #t d 'r6rs)
       (let ([msg (cadddr (car (document-diagnoses d)))])
         (delete-file tmp)
         (string-prefix? "Syntax error:" msg)))))
@@ -100,6 +100,52 @@
         (let ([diagnoses (document-diagnoses d)])
           (test-equal "syntax diagnose preserved after refresh" 1 (length diagnoses))
           (string-prefix? "Syntax error:" (cadddr (car diagnoses))))))))
+
+(test-equal "R7RS #u8(...) is parsed as #vu8(...) in r7rs mode"
+  '(define x #vu8(1 2 3))
+  (guard (e [else 
+              (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
+              'exception])
+    (let* ([tmp (make-test-file "(define x #u8(1 2 3))")]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'r7rs)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
+
+(test-equal "R7RS #\\null is parsed as #\\nul in r7rs mode"
+  '(define x #\nul)
+  (guard (e [else 
+              (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
+              'exception])
+    (let* ([tmp (make-test-file "(define x #\\null)")]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'r7rs)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
+
+(test-equal "R7RS #\\escape is parsed as #\\esc in r7rs mode"
+  '(define x #\esc)
+  (guard (e [else 
+              (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
+              'exception])
+    (let* ([tmp (make-test-file "(define x #\\escape)")]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'r7rs)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
+
+(test-equal "R6RS mode tolerant-parses #u8(...) instead of bytevector"
+  '(define x u8 (1 2 3))
+  (guard (e [else 'exception])
+    (let* ([tmp (make-test-file "(define x #u8(1 2 3))")]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'r6rs)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
 
 (test-end)
 

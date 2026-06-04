@@ -324,7 +324,7 @@
           (document-diagnoses-set! target-document '())
           (map 
             (lambda (item) (init-index-node '() item)) 
-            (source-file->annotations text (uri->path (document-uri target-document)) (consume-sps-auxiliary text) #t target-document)))])
+            (source-file->annotations text (uri->path (document-uri target-document)) (consume-sps-auxiliary text) #t target-document (workspace-top-environment workspace-instance))))])
 ;;For old dependency
     (map (lambda (document) (document-refreshable?-set! document #t))
       (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
@@ -461,7 +461,7 @@
       [(string? s) 
         (let ([d (make-document uri s (find-meta meta-lib top-environment))])
           (document-diagnoses-set! d '())
-          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d))) 
+          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d top-environment))) 
           d)]
       [(eof-object? s) 
         (make-document uri "" (find-meta meta-lib top-environment))]
