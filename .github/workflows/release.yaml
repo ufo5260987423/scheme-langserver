@@ -34,6 +34,7 @@ jobs:
           make bootquick XM=ta6nt
           cp xc-ta6nt/s/xpatch ../ta6nt-xpatch.ss
           cd ..
+          rm -rf csv10.4.1
 
       - name: Install ufo5260987423/chez-exe
         run: |
