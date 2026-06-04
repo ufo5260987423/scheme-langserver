@@ -1,99 +1,18 @@
-# stub from https://github.com/softprops/action-gh-release
-name: Release
+# stub from https://github.com/softprops/action-gh-release 
+name: Release 
 on:
   push:
     tags:
       - "*.*.*"
+  # pull_request:
+  #   branches: main
 
 jobs:
-  generate-c:
+  build-and-release:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    permissions:
+      contents: write
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libncurses-dev uuid-dev zlib1g-dev liblz4-dev curl wget
-
-      - name: Install Chez Scheme 10.4.1
-        run: |
-          curl -L https://github.com/cisco/ChezScheme/releases/download/v10.4.1/csv10.4.1.tar.gz | tar -zx
-          cd csv10.4.1
-          ./configure --threads --disable-x11
-          make -j$(nproc)
-          sudo make install
-
-      - name: Build pb Chez Scheme and ta6nt cross-compilation patch
-        run: |
-          cd csv10.4.1
-          ./configure --pb
-          make -j$(nproc)
-          make bootquick XM=ta6nt
-          cp xc-ta6nt/s/xpatch ../ta6nt-xpatch.ss
-          # 保留 pb scheme（加载 xpatch 必须用 pb 版本的 Chez Scheme）
-          mkdir -p ../pb-chez/bin ../pb-chez/boot
-          cp pb/bin/pb/scheme ../pb-chez/bin/
-          cp -r boot/pb/* ../pb-chez/boot/
-          cd ..
-          rm -rf csv10.4.1
-
-      - name: Install ufo5260987423/chez-exe
-        run: |
-          git clone https://github.com/ufo5260987423/chez-exe.git
-          cd chez-exe
-          /usr/bin/scheme --script gen-config.ss --bootpath /usr/lib/csv10.4.1/ta6le --kernel libkernel.a
-          sudo make install
-
-      - name: Install Akku
-        run: |
-          wget -q https://gitlab.com/-/project/6808260/uploads/094ce726ce3c6cf8c14560f1e31aaea0/akku-1.1.0.amd64-linux.tar.xz
-          tar -xf akku-1.1.0.amd64-linux.tar.xz
-          cd akku-1.1.0.amd64-linux && bash install.sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install project dependencies
-        run: akku install
-
-      - name: Generate run.generated.c for ta6nt
-        run: |
-          source .akku/bin/activate
-          rm -rf .akku/libobj/scheme-langserver
-          rm -f run.generated.c run.chez run.so run.wpo
-          cat > compile-for-windows.ss << 'EOF'
-          (import (chezscheme))
-          (load "ta6nt-xpatch.ss")
-          (include "chez-exe/utils.ss")
-          (chez-lib-dir ".")
-          (compile-imported-libraries #t)
-          (generate-wpo-files #t)
-          (compile-program "run.ss")
-          (compile-whole-program "run.wpo" "run.chez" #t)
-          (build-included-binary-file "run.generated.c" "scheme_program" "run.chez")
-          EOF
-          ./pb-chez/bin/scheme -b ./pb-chez/boot/petite.boot -b ./pb-chez/boot/scheme.boot --script compile-for-windows.ss
-
-      - name: Generate .version
-        run: |
-          git describe --tags --always --dirty > .version 2>/dev/null || \
-            git rev-parse --short HEAD > .version 2>/dev/null || \
-            echo "2.1.0" > .version
-          echo "Version: $(cat .version)"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build-files
-          include-hidden-files: true
-          path: |
-            run.generated.c
-            .version
-
-  build-linux:
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -105,13 +24,15 @@ jobs:
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
           docker build --build-arg VERSION="$VERSION" .
 
+      # - name: Build Linux musl image
+      #   run: docker build -f Dockerfile.musl .
+
       - name: Compile executable on Linux glibc
         run: |
           mkdir -p build
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
           docker run \
             -v ./build:/root/scheme-langserver/build/ \
-            -e VERSION="$VERSION" \
             $(docker build -q --build-arg VERSION="$VERSION" .) \
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss --static
@@ -119,149 +40,19 @@ jobs:
                      mv run "build/scheme-langserver-${VERSION}-x86_64-linux-glibc" || exit 1
                      '
 
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: build/scheme-langserver-*-x86_64-linux-glibc
-
-  build-windows:
-    runs-on: windows-latest
-    needs: generate-c
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-build-files
-
-      - name: Download Chez Scheme installer
-        run: |
-          curl -L -o ChezScheme.exe https://github.com/cisco/ChezScheme/releases/download/v10.4.1/ChezScheme10.4.1.exe
-          echo "Installer downloaded"
-
-      - name: Install Chez Scheme
-        run: |
-          ./ChezScheme.exe /S
-          Start-Sleep -Seconds 30
-
-      - name: Copy to short path
-        run: |
-          $src = "C:\Program Files\Chez Scheme 10.4.1"
-          $dst = "C:\ChezScheme"
-          if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }
-          Copy-Item -Path $src -Destination $dst -Recurse
-          echo "Copied to $dst"
-
-      - name: Verify Chez Scheme files
-        run: |
-          echo "=== boot\ta6nt dir ==="
-          Get-ChildItem "C:\ChezScheme\boot\ta6nt"
-          echo "=== bin\ta6nt dir ==="
-          Get-ChildItem "C:\ChezScheme\bin\ta6nt"
-
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Clone gwatt/chez-exe
-        run: git clone https://github.com/gwatt/chez-exe.git
-
-      - name: Generate tools.ini and patch Makefile.win
-        run: |
-          cd chez-exe
-          echo '[NMAKE]' > tools.ini
-          echo 'scheme = C:\ChezScheme\bin\ta6nt\scheme.exe' >> tools.ini
-          echo 'bootpath = C:\ChezScheme\boot\ta6nt' >> tools.ini
-          echo 'installbindir = C:\ChezScheme\bin' >> tools.ini
-          echo 'installlibdir = C:\ChezScheme\lib' >> tools.ini
-          echo "Generated tools.ini:"
-          Get-Content "tools.ini"
-          echo "Patching Makefile.win for /MT static CRT..."
-          (Get-Content "Makefile.win") `
-            -replace '/MD ', '/MT ' `
-            -replace 'csv\*md\.lib', 'csv*mt.lib' |
-            Set-Content "Makefile.win"
-
-      - name: Build chez-exe with nmake
-        run: |
-          cd chez-exe
-          nmake /f Makefile.win clean
-          nmake /f Makefile.win
-
-      - name: Install zlib and LZ4 via vcpkg
-        run: |
-          cd C:\vcpkg
-          .\vcpkg install zlib:x64-windows-static
-          .\vcpkg install lz4:x64-windows-static
-
-      - name: Link run.exe
-        run: |
-          copy run.generated.c chez-exe\
-          if (Test-Path ".version") { copy .version chez-exe\ } else { echo "2.1.0" | Out-File chez-exe\.version -Encoding ASCII }
-          cd chez-exe
-          $version = (Get-Content ".version" -Raw).Trim()
-          if (-not $version) { $version = "2.1.0" }
-          $exeName = "scheme-langserver-$version-x86_64-windows.exe"
-          $vcpkgLib = "C:\vcpkg\installed\x64-windows-static\lib"
-          $zlib = Get-ChildItem $vcpkgLib -Filter "zlib*.lib" | Select-Object -First 1
-          if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "libz*.lib" | Select-Object -First 1 }
-          if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "zs.lib" | Select-Object -First 1 }
-          $lz4 = Get-ChildItem $vcpkgLib -Filter "lz4*.lib" | Select-Object -First 1
-          echo "Version: $version, Output: $exeName"
-          $libs = @("rpcrt4.lib", "ole32.lib", "advapi32.lib", "User32.lib", "petite-chez.lib", "legacy_stdio_definitions.lib")
-          if ($zlib) { $libs += $zlib.FullName }
-          if ($lz4) { $libs += $lz4.FullName }
-          cl /nologo /MT /Fe:$exeName run.generated.c console_main.obj @libs
-
-      - name: Verify executable
-        run: |
-          cd chez-exe
-          $version = (Get-Content ".version" -Raw).Trim()
-          if (-not $version) { $version = "2.1.0" }
-          $exeName = "scheme-langserver-$version-x86_64-windows.exe"
-          if (Test-Path $exeName) {
-            echo "SUCCESS: $exeName exists"
-            ls $exeName
-          } else {
-            echo "FAILED: $exeName not found"
-            exit 1
-          }
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: chez-exe\scheme-langserver-*.exe
-
-  release:
-    runs-on: ubuntu-latest
-    needs: [build-linux, build-windows]
-    permissions:
-      contents: write
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Prepare release files
-        run: |
-          mkdir -p release
-          cp linux-build/scheme-langserver-*-x86_64-linux-glibc release/
-          cp windows-build/scheme-langserver-*.exe release/
-
-      - name: Generate hashes
-        run: |
-          cd release
-          echo -e "### File Hashes\n" > ../body.txt
-          echo -e "| File | MD5 | SHA256 |" >> ../body.txt
-          echo -e "| ---- | --- | ------ |" >> ../body.txt
-          for f in *; do
-            md5=$(md5sum "$f" | awk '{print $1}')
-            sha256=$(sha256sum "$f" | awk '{print $1}')
-            echo "| $f | \`$md5\` | \`$sha256\` |" >> ../body.txt
-          done
+      # - name: Compile executable on Linux musl
+      #   run: |
+      #     mkdir -p build
+      #     docker run \
+      #       -v ./build:/root/scheme-langserver/build/ \
+      #       $(docker build -f Dockerfile.musl -q .) \
+      #       ash -c 'source .akku/bin/activate
+      #               compile-chez-program run.ss --static
+      #               mv run build/scheme-langserver-x86_64-linux-musl || exit 1
+      #               '
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           repo: ufo5260987423/scheme-langserver
-          files: release/*
-          body_path: body.txt
+          files: build/scheme-langserver-*-x86_64-linux-glibc
