@@ -350,7 +350,14 @@
       [irritants (condition-irritants condition)])
     (cond
       [(private:message-matches? msg "invalid sharp-sign prefix #~c")
-        (private:r7rs-fix-u8 source position irritants)]
+        (cond
+          [(and (pair? irritants) (eqv? #\u (car irritants)))
+            (private:r7rs-fix-u8 source position irritants)]
+          [(and (pair? irritants) (eqv? #\< (car irritants)))
+            (private:s7-fix-eof source position)]
+          [(and (pair? irritants) (eqv? #\_ (car irritants)))
+            (private:s7-fix-underscore source position)]
+          [else #f])]
       [(private:message-matches? msg "invalid character name #\\~a")
         (private:r7rs-fix-char source position irritants)]
       [else #f])))
@@ -409,6 +416,66 @@
             (string-append head (string-append "#\\" replacement) rest))
           #f))
       #f)))
+
+(define (private:s7-fix-eof source position)
+  (let ([src-len (string-length source)])
+    (define (check-at pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))
+        (< (+ pos 1) src-len)
+        (char=? #\< (string-ref source (+ pos 1)))
+        (< (+ pos 2) src-len)
+        (char=? #\e (string-ref source (+ pos 2)))
+        (< (+ pos 3) src-len)
+        (char=? #\o (string-ref source (+ pos 3)))
+        (< (+ pos 4) src-len)
+        (char=? #\f (string-ref source (+ pos 4)))
+        (< (+ pos 5) src-len)
+        (char=? #\> (string-ref source (+ pos 5)))))
+    (let ([pos (let loop ([p position])
+                 (cond
+                   [(< p (- position 5)) #f]
+                   [(check-at p) p]
+                   [else (loop (- p 1))]))])
+      (if pos
+        (let ([head (string-take source pos)]
+            [rest (string-take-right source (- src-len (+ pos 6)))])
+          (string-append head "|#<eof>|" rest))
+        #f))))
+
+(define (private:s7-fix-underscore source position)
+  (let ([src-len (string-length source)])
+    (define (identifier-char? c)
+      (or (char<=? #\a c #\z)
+        (char<=? #\A c #\Z)
+        (char<=? #\0 c #\9)
+        (memv c '(#\- #\? #\! #\* #\+ #\. #\/ #\: #\< #\= #\> #\@ #\^ #\~))))
+    (define (read-identifier pos)
+      (let loop ([p pos] [chars '()])
+        (if (and (< p src-len) (identifier-char? (string-ref source p)))
+          (loop (+ p 1) (cons (string-ref source p) chars))
+          (list->string (reverse chars)))))
+    (define (check-at pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))
+        (< (+ pos 1) src-len)
+        (char=? #\_ (string-ref source (+ pos 1)))))
+    (let ([pos (let loop ([p position])
+                 (cond
+                   [(< p (- position 5)) #f]
+                   [(check-at p) p]
+                   [else (loop (- p 1))]))])
+      (if pos
+        (let ([id (read-identifier (+ pos 2))])
+          (if (string=? id "")
+            #f
+            (let* ([head (string-take source pos)]
+                [id-len (string-length id)]
+                [rest (string-take-right source (- src-len (+ pos 2 id-len)))])
+              (string-append head id rest))))
+        #f))))
 
 (define source-file->annotations
   (case-lambda
