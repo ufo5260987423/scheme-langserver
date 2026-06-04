@@ -26,8 +26,14 @@ jobs:
           ./configure --threads --disable-x11
           make -j$(nproc)
           sudo make install
+
+      - name: Build ta6nt cross-compilation patch
+        run: |
+          cd csv10.4.1
+          ./configure --pb
+          make bootquick XM=ta6nt
+          cp xc-ta6nt/s/xpatch ../ta6nt-xpatch.ss
           cd ..
-          rm -rf csv10.4.1
 
       - name: Install ufo5260987423/chez-exe
         run: |
@@ -46,11 +52,22 @@ jobs:
       - name: Install project dependencies
         run: akku install
 
-      - name: Generate run.generated.c
+      - name: Generate run.generated.c for ta6nt
         run: |
           source .akku/bin/activate
           rm -f run.generated.c run.chez run.so run.wpo
-          compile-chez-program run.ss
+          cat > compile-for-windows.ss << 'EOF'
+          (import (chezscheme))
+          (load "ta6nt-xpatch.ss")
+          (include "chez-exe/utils.ss")
+          (chez-lib-dir ".")
+          (compile-imported-libraries #t)
+          (generate-wpo-files #t)
+          (compile-program "run.ss")
+          (compile-whole-program "run.wpo" "run.chez" #t)
+          (build-included-binary-file "run.generated.c" "scheme_program" "run.chez")
+          EOF
+          /usr/bin/scheme --script compile-for-windows.ss
 
       - name: Generate .version
         run: |
