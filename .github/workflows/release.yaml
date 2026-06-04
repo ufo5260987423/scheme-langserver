@@ -27,12 +27,17 @@ jobs:
           make -j$(nproc)
           sudo make install
 
-      - name: Build ta6nt cross-compilation patch
+      - name: Build pb Chez Scheme and ta6nt cross-compilation patch
         run: |
           cd csv10.4.1
           ./configure --pb
+          make -j$(nproc)
           make bootquick XM=ta6nt
           cp xc-ta6nt/s/xpatch ../ta6nt-xpatch.ss
+          # 保留 pb scheme（加载 xpatch 必须用 pb 版本的 Chez Scheme）
+          mkdir -p ../pb-chez/bin ../pb-chez/boot
+          cp pb/bin/pb/scheme ../pb-chez/bin/
+          cp -r boot/pb/* ../pb-chez/boot/
           cd ..
           rm -rf csv10.4.1
 
@@ -56,6 +61,7 @@ jobs:
       - name: Generate run.generated.c for ta6nt
         run: |
           source .akku/bin/activate
+          rm -rf .akku/libobj/scheme-langserver
           rm -f run.generated.c run.chez run.so run.wpo
           cat > compile-for-windows.ss << 'EOF'
           (import (chezscheme))
@@ -68,7 +74,7 @@ jobs:
           (compile-whole-program "run.wpo" "run.chez" #t)
           (build-included-binary-file "run.generated.c" "scheme_program" "run.chez")
           EOF
-          /usr/bin/scheme --script compile-for-windows.ss
+          ./pb-chez/bin/scheme -b ./pb-chez/boot/petite.boot -b ./pb-chez/boot/scheme.boot --script compile-for-windows.ss
 
       - name: Generate .version
         run: |
