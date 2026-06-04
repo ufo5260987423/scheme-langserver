@@ -189,7 +189,7 @@ jobs:
           cd chez-exe
           $version = (Get-Content ".version" -Raw).Trim()
           if (-not $version) { $version = "2.1.0" }
-          $exeName = "scheme-langserver-$version-windows-x86_64.exe"
+          $exeName = "scheme-langserver-$version-x86_64-windows.exe"
           $vcpkgLib = "C:\vcpkg\installed\x64-windows-static\lib"
           $zlib = Get-ChildItem $vcpkgLib -Filter "zlib*.lib" | Select-Object -First 1
           if (-not $zlib) { $zlib = Get-ChildItem $vcpkgLib -Filter "libz*.lib" | Select-Object -First 1 }
@@ -206,7 +206,7 @@ jobs:
           cd chez-exe
           $version = (Get-Content ".version" -Raw).Trim()
           if (-not $version) { $version = "2.1.0" }
-          $exeName = "scheme-langserver-$version-windows-x86_64.exe"
+          $exeName = "scheme-langserver-$version-x86_64-windows.exe"
           if (Test-Path $exeName) {
             echo "SUCCESS: $exeName exists"
             ls $exeName
