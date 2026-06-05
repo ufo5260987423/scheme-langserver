@@ -1,5 +1,20 @@
 # Release History
 
+## 2.1.1
+Bug-fix release with R7RS/S7 tokenizer compatibility, identifier analysis fixes, and improved diagnostics.
+
+### What's new in 2.1.1
+- **Bug fixes**:
+  - Fix `typed-lambda` / `lambda` dotted formals crash when encountering typed pair parameters like `(ht hash-table?)`.
+  - Fix `identifier-compare?` to guard `symbol->string` with `symbol?` checks.
+  - Fix `rename` / `alias` import unused-import false positives.
+  - Skip reference initialization for files with empty `index-node-list`.
+- **Tokenizer**:
+  - R7RS compatibility: `#u8(...)` → `#vu8(...)`, `#\null` → `#\nul`, `#\escape` → `#\esc`, `#;` datum comments.
+  - S7 compatibility: `#<eof>`, `#<undefined>`, `#<fails:...>`, `#<predicate?>`, `#_id`, `#"..."` raw strings.
+- **Diagnostics**: Analysis errors now use `display-condition` for clearer compound-condition output.
+- **Docs**: Added `doc/top-environment.md` documenting the `top-environment` mechanism.
+
 ## 2.1.0
 Major release with expanded diagnostics, macro auto-resolution, performance optimizations, and Docker CI upgraded to Chez 10.4.1.
 
