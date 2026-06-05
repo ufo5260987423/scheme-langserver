@@ -34,7 +34,7 @@ jobs:
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss --static
                      test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
-                     mv run "build/scheme-langserver-${VERSION}-x86_64-linux-glibc" || exit 1
+                     mv run "build/scheme-langserver-x86_64-linux-glibc" || exit 1
                      '
 
       - name: Compile executable on Linux musl
@@ -48,7 +48,7 @@ jobs:
             ash -c 'source .akku/bin/activate
                     compile-chez-program run.ss --static
                     test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
-                    mv run "build/scheme-langserver-${VERSION}-x86_64-linux-musl" || exit 1
+                    mv run "build/scheme-langserver-x86_64-linux-musl" || exit 1
                     '
 
       - name: generate tag
