@@ -22,6 +22,7 @@ jobs:
       - name: Build Linux glibc image
         run: |
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           docker build --build-arg VERSION="$VERSION" .
 
       # - name: Build Linux musl image
@@ -32,6 +33,7 @@ jobs:
           mkdir -p build
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
           docker run \
+            -e VERSION="$VERSION" \
             -v ./build:/root/scheme-langserver/build/ \
             $(docker build -q --build-arg VERSION="$VERSION" .) \
             bash -c 'source .akku/bin/activate
