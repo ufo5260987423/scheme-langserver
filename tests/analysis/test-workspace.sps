@@ -350,6 +350,29 @@
 (test-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 17. Rename import unused-import detection
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-begin "rename import used identifier is not flagged as unused")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/rename-import-test")]
+     [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+     [root (workspace-file-node workspace)]
+     [main-node (walk-file root (string-append fixture "/main.scm.txt"))]
+     [doc (file-node-document main-node)])
+   (test-equal 0 (length (filter (lambda (d) (string-contains (cadddr d) "Unused import")) (document-diagnoses doc)))))
+(test-end)
+
+(test-begin "rename import unused identifier is flagged as unused")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/rename-import-test")]
+     [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+     [root (workspace-file-node workspace)]
+     [main2-node (walk-file root (string-append fixture "/main2.scm.txt"))]
+     [doc (file-node-document main2-node)])
+   (test-equal 1 (length (filter (lambda (d) (string-contains (cadddr d) "Unused import")) (document-diagnoses doc))))
+   (test-equal #t (if (find (lambda (d) (string-contains (cadddr d) "my-bar")) (document-diagnoses doc)) #t #f)))
+(test-end)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

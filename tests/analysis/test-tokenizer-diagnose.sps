@@ -147,6 +147,53 @@
         (delete-file tmp)
         result))))
 
+(test-equal "S7 #<fails:...> is parsed as symbol in goldfish mode"
+  (list 'define 'x (string->symbol "#<fails:...>"))
+  (guard (e [else 
+              (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
+              'exception])
+    (let* ([tmp (make-test-file (string-append "(define x #" "<fails:" "...>" ")"))]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'goldfish)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
+
+(test-equal "S7 raw string #\"\"\"\" is parsed as empty string in goldfish mode"
+  '(define x "")
+  (guard (e [else 
+              (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
+              'exception])
+    (let* ([tmp (make-test-file "(define x #\"\"\"\")")]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'goldfish)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
+
+(test-equal "S7 raw string #\"\"hello\"\" is parsed as string in goldfish mode"
+  '(define x "")
+  (guard (e [else 
+              (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
+              'exception])
+    (let* ([tmp (make-test-file "(define x #\"\"hello\"\")")]
+           [text (call-with-input-file tmp get-string-all)]
+           [annotations (source-file->annotations text tmp (consume-sps-auxiliary text) #t #f 'goldfish)])
+      (let ([result (annotation-stripped (car annotations))])
+        (delete-file tmp)
+        result))))
+
+(test-equal "R6RS mode reports diagnose for S7 #<fails:...>"
+  1
+  (guard (e [else -1])
+    (let* ([tmp (make-test-file (string-append "(define x #" "<fails:" "...>" ")"))]
+           [d (make-document (path->uri tmp) (call-with-input-file tmp get-string-all) '())])
+      (document-diagnoses-set! d '())
+      (source-file->annotations (document-text d) tmp (consume-sps-auxiliary (document-text d)) #t d 'r6rs)
+      (let ([result (length (document-diagnoses d))])
+        (delete-file tmp)
+        result))))
+
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

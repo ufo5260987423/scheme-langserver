@@ -354,10 +354,14 @@
           [(and (pair? irritants) (eqv? #\u (car irritants)))
             (private:r7rs-fix-u8 source position irritants)]
           [(and (pair? irritants) (eqv? #\< (car irritants)))
-            (private:s7-fix-eof source position)]
+            (private:s7-fix-bracket-symbol source position)]
+          [(and (pair? irritants) (eqv? #\" (car irritants)))
+            (or (private:s7-fix-raw-string source position)
+                (private:s7-fix-quote-char source position))]
           [(and (pair? irritants) (eqv? #\_ (car irritants)))
             (private:s7-fix-underscore source position)]
-          [else #f])]
+          [else
+            (private:s7-fix-sharp-symbol source position)])]
       [(private:message-matches? msg "invalid character name #\\~a")
         (private:r7rs-fix-char source position irritants)]
       [else #f])))
@@ -417,33 +421,6 @@
           #f))
       #f)))
 
-(define (private:s7-fix-eof source position)
-  (let ([src-len (string-length source)])
-    (define (check-at pos)
-      (and (>= pos 0)
-        (< pos src-len)
-        (char=? #\# (string-ref source pos))
-        (< (+ pos 1) src-len)
-        (char=? #\< (string-ref source (+ pos 1)))
-        (< (+ pos 2) src-len)
-        (char=? #\e (string-ref source (+ pos 2)))
-        (< (+ pos 3) src-len)
-        (char=? #\o (string-ref source (+ pos 3)))
-        (< (+ pos 4) src-len)
-        (char=? #\f (string-ref source (+ pos 4)))
-        (< (+ pos 5) src-len)
-        (char=? #\> (string-ref source (+ pos 5)))))
-    (let ([pos (let loop ([p position])
-                 (cond
-                   [(< p (- position 5)) #f]
-                   [(check-at p) p]
-                   [else (loop (- p 1))]))])
-      (if pos
-        (let ([head (string-take source pos)]
-            [rest (string-take-right source (- src-len (+ pos 6)))])
-          (string-append head "|#<eof>|" rest))
-        #f))))
-
 (define (private:s7-fix-underscore source position)
   (let ([src-len (string-length source)])
     (define (identifier-char? c)
@@ -475,6 +452,149 @@
                 [id-len (string-length id)]
                 [rest (string-take-right source (- src-len (+ pos 2 id-len)))])
               (string-append head id rest))))
+        #f))))
+
+(define (private:s7-fix-bracket-symbol source position)
+  (let ([src-len (string-length source)])
+    (define (find-open pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))
+        (< (+ pos 1) src-len)
+        (char=? #\< (string-ref source (+ pos 1)))))
+    (define (find-close pos)
+      (let loop ([p pos])
+        (cond
+          [(>= p src-len) #f]
+          [(char=? #\> (string-ref source p)) p]
+          [else (loop (+ p 1))])))
+    (let ([open-pos (let loop ([p position])
+                      (cond
+                        [(< p (- position 50)) #f]
+                        [(find-open p) p]
+                        [else (loop (- p 1))]))])
+      (if open-pos
+        (let ([close-pos (find-close (+ open-pos 2))])
+          (if close-pos
+            (let ([head (string-take source open-pos)]
+                [body (substring source open-pos (+ close-pos 1))]
+                [rest (string-take-right source (- src-len close-pos 1))])
+              (string-append head "|" body "|" rest))
+            #f))
+        #f))))
+
+(define (private:s7-fix-raw-string source position)
+  (let ([src-len (string-length source)])
+    (define (find-prefix pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))
+        (< (+ pos 1) src-len)
+        (char=? #\" (string-ref source (+ pos 1)))))
+    (define (read-delimiter pos)
+      (let loop ([p pos] [chars '()])
+        (cond
+          [(>= p src-len) (values #f '())]
+          [(char=? #\" (string-ref source p)) (values p (reverse chars))]
+          [else (loop (+ p 1) (cons (string-ref source p) chars))])))
+    (define (find-suffix start delimiter)
+      (let ([del-len (length delimiter)])
+        (let loop ([p start])
+          (cond
+            [(>= p src-len) #f]
+            [(and (char=? #\" (string-ref source p))
+                (let check ([i 0])
+                  (cond
+                    [(= i del-len)
+                      (and (< (+ p del-len 1) src-len)
+                        (char=? #\" (string-ref source (+ p del-len 1)))
+                        (+ p del-len 1))]
+                    [(>= (+ p 1 i) src-len) #f]
+                    [(char=? (list-ref delimiter i) (string-ref source (+ p 1 i)))
+                      (check (+ i 1))]
+                    [else #f])))
+             => (lambda (end) end)]
+            [else (loop (+ p 1))]))))
+    (let ([open-pos (let loop ([p position])
+                      (cond
+                        [(< p (- position 20)) #f]
+                        [(find-prefix p) p]
+                        [else (loop (- p 1))]))])
+      (if open-pos
+        (let-values ([(del-end delimiter) (read-delimiter (+ open-pos 2))])
+          (if del-end
+            (let ([body-start (+ del-end 1)])
+              (let ([close-pos (find-suffix body-start delimiter)])
+                (if close-pos
+                  (let ([head (string-take source open-pos)]
+                      [rest (string-take-right source (- src-len close-pos 1))])
+                    (string-append head "\"\"" rest))
+                  #f)))
+            #f))
+        #f))))
+
+(define (private:s7-fix-quote-char source position)
+  (let ([src-len (string-length source)])
+    (define (delimiter? c)
+      (or (char=? c #\space)
+          (char=? c #\newline)
+          (char=? c #\return)
+          (char=? c #\tab)
+          (char=? c #\()
+          (char=? c #\))
+          (char=? c #\[)
+          (char=? c #\])
+          (char=? c #\;)))
+    (define (check-at pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))
+        (< (+ pos 1) src-len)
+        (char=? #\" (string-ref source (+ pos 1)))
+        (or (>= (+ pos 2) src-len)
+            (delimiter? (string-ref source (+ pos 2))))))
+    (let ([pos (let loop ([p position])
+                 (cond
+                   [(< p (- position 5)) #f]
+                   [(check-at p) p]
+                   [else (loop (- p 1))]))])
+      (if pos
+        (let ([head (string-take source pos)]
+            [rest (string-take-right source (- src-len (+ pos 2)))])
+          (string-append head "#\\x22" rest))
+        #f))))
+
+(define (private:s7-fix-sharp-symbol source position)
+  (let ([src-len (string-length source)])
+    (define (token-char? c)
+      (or (char<=? #\a c #\z)
+        (char<=? #\A c #\Z)
+        (char<=? #\0 c #\9)
+        (memv c '(#\- #\? #\! #\* #\+ #\. #\/ #\: #\< #\= #\> #\@ #\^ #\~ #\#))))
+    (define (read-token pos)
+      (let loop ([p pos] [chars '()])
+        (if (and (< p src-len)
+              (or (token-char? (string-ref source p))
+                (and (= p (+ pos 1)) (char=? #\tab (string-ref source p)))))
+          (loop (+ p 1) (cons (string-ref source p) chars))
+          (list->string (reverse chars)))))
+    (define (check-at pos)
+      (and (>= pos 0)
+        (< pos src-len)
+        (char=? #\# (string-ref source pos))))
+    (let ([pos (let loop ([p position])
+                 (cond
+                   [(< p (- position 20)) #f]
+                   [(check-at p) p]
+                   [else (loop (- p 1))]))])
+      (if pos
+        (let ([token (read-token pos)])
+          (if (or (string=? token "#") (string=? token ""))
+            #f
+            (let* ([head (string-take source pos)]
+                [token-len (string-length token)]
+                [rest (string-take-right source (- src-len (+ pos token-len)))])
+              (string-append head "|" token "|" rest))))
         #f))))
 
 (define source-file->annotations

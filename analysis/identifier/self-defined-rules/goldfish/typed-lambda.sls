@@ -38,58 +38,22 @@
       [(_ (? symbol? identifier) fuzzy ... ) 
         (typed-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document)]
       [(_ (identifier . rest) fuzzy ... ) 
-        (let* ([omg-index-node (cadr (index-node-children index-node))]
-            [reference (make-identifier-reference 
-                identifier 
-                document 
-                omg-index-node
-                index-node
-                '()
-                'parameter
-                '()
-                '())])
-          (index-node-references-export-to-other-node-set! 
-            (identifier-reference-index-node reference)
-            (append 
-              (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-              `(,reference)))
-          (append-references-into-ordered-references-for document index-node `(,reference))
-          (let loop ([rest rest])
-            (cond 
-              [(pair? rest) 
-                (let ([reference (make-identifier-reference 
-                    (car rest)
-                    document 
-                    omg-index-node
-                    index-node
-                    '()
-                    'parameter
-                    '()
-                    '())])
-                  (index-node-references-export-to-other-node-set! 
-                    (identifier-reference-index-node reference)
-                    (append 
-                      (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                      `(,reference)))
-                  (append-references-into-ordered-references-for document index-node `(,reference)))
-                (loop (cdr rest))]
-              [(not (null? rest)) 
-                (let ([reference (make-identifier-reference 
-                    rest
-                    document 
-                    omg-index-node
-                    index-node
-                    '()
-                    'parameter
-                    '()
-                    '())])
-                  (index-node-references-export-to-other-node-set! 
-                    (identifier-reference-index-node reference)
-                    (append 
-                      (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                      `(,reference)))
-                  (append-references-into-ordered-references-for document index-node `(,reference)))]
-              [else '()])))]
+        (let* ([formals-index-node (cadr (index-node-children index-node))]
+            [formals-children (index-node-children formals-index-node)])
+          (let loop ([children formals-children])
+            (if (not (null? children))
+              (let* ([identifier-index-node (car children)]
+                  [identifier-index-node-parent (index-node-parent identifier-index-node)])
+                (let* ([ann (index-node-datum/annotations identifier-index-node)]
+                    [expression (annotation-stripped ann)])
+                  (match expression
+                    [(? symbol? x)
+                      (typed-parameter-process index-node identifier-index-node index-node '() document)]
+                    [(? pair? y)
+                      (let* ([sub-identifier-index-node (car (index-node-children identifier-index-node))]
+                          [sub-identifier-index-node-parent (index-node-parent sub-identifier-index-node)])
+                        (typed-parameter-process index-node sub-identifier-index-node index-node '() document))]))
+                (loop (cdr children))))))]
       [else '()])))
 
 (define (typed-parameter-process initialization-index-node index-node lambda-node exclude document )

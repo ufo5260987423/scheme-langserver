@@ -161,13 +161,13 @@
                         [(condition? c)
                           (append-new-diagnoses document 
                             `(0 0 1 ,(string-append "Analysis error: " 
-                                (with-output-to-string (lambda () (pretty-print c)))) 
+                                (with-output-to-string (lambda () (display-condition c)))) 
                                 "analysis" "analysis-error"))
                           '()]
                         [else 
                           (append-new-diagnoses document 
                             `(0 0 1 ,(string-append "Analysis error: " 
-                                (with-output-to-string (lambda () (pretty-print c)))) 
+                                (with-output-to-string (lambda () (write c)))) 
                                 "analysis" "analysis-error"))
                           '()]))))
                 path+syntax-pairs)))

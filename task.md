@@ -126,3 +126,238 @@ GitHub Actions 本身就是**远程 CI 服务**，完全不需要本地 Docker�
    - 阶段 1（Linux）：确认 `run.generated.c` 能正常生成
    - 阶段 2（Windows）：确认静默安装参数、`nmake` 构建、链接是否成功
 4. **基于测试结果**，把验证通过的步骤固化到正式的 `.github/workflows/windows-release.yaml` 中
+
+---
+
+# tokenizer.sls R6RS / R7RS 双兼容改造方案
+
+> 方案时间：2026-06-04  
+> 核心约束：**Chez Scheme R6RS 解析器必须继续正常工作；R7RS 兼容通过 tokenizer 层适配实现，不修改 Chez 本身。**
+
+## 1. 关键认知：`top-environment` 是解释器级别的
+
+`top-environment`（`'r6rs`、`'r7rs`、`'s7`、`'goldfish`）模拟的是 Scheme **解释器/运行时的环境**，不是单个文件的属性。同一个 workspace（项目）中的所有文件共享同一个 `top-environment`。
+
+**因此**：
+- `document` record **不增加** `top-environment` 字段（document 是文件级别的抽象）。
+- `source-file->annotations` 通过**显式参数**接收 `top-environment`。
+- 调用者（`workspace.sls`）在调用 tokenizer 时传入 workspace 级别的 `top-environment`。
+
+## 2. `top-environment` 完整传递链追踪
+
+### 2.1 主启动路径
+
+```
+run.ss (命令行 --top-environment)
+  └─(hashtable-ref args "top-environment" 'r6rs)
+    └─> init-server (scheme-langserver.sls)           ; 参数7: top-environment
+         └─> make-server (server record)               ; 字段: top-environment
+              └─> initialize handler
+                   └─(server-top-environment server-instance)
+                     └─> init-workspace (workspace.sls) ; 参数4: top-environment
+                          ├─> init-virtual-file-system
+                          ├─> init-library-node
+                          ├─> init-file-linkage
+                          └─> init-document (workspace.sls:452)
+                               └─> source-file->annotations
+                                    【当前】5 参数，无 dialect 信息
+                                    【需要】6 参数，传入 top-environment
+```
+
+### 2.2 增量更新路径
+
+```
+update-file-node-with-tail (workspace.sls:310)
+  └─> source-file->annotations text path start-pos #t target-document
+       【当前】5 参数，无 dialect 信息
+       【需要】6 参数，传入 (workspace-top-environment workspace-instance)
+```
+
+### 2.3 宏展开路径
+
+```
+self-defined-syntax.sls / syntax-rules.sls / macro-expander.sls
+  └─> source-file->annotations string path    ; 2 参数调用
+       走默认路径 → top-environment='r6rs
+       ✅ 合理：宏展开输出是 Chez R6RS 形式
+```
+
+### 2.4 测试/调试路径
+
+```
+parallel-log-debug.sps
+  └─> init-server ... 'r6rs #t
+       和主启动路径一致
+
+tests/analysis/test-tokenizer*.sps
+  └─> source-file->annotations path          ; 1 参数
+       或 source-file->annotations source path  ; 2 参数
+       默认 top-environment='r6rs，无需修改
+
+tests/analysis/test-tokenizer-diagnose.sps:43,56
+  └─> source-file->annotations source path start-pos #t d
+       【需要】改为 6 参数，传 'r6rs
+```
+
+## 3. 需要修改的文件与调用点清单
+
+| 文件 | 行号 | 修改内容 |
+|------|------|----------|
+| `analysis/tokenizer.sls` | `source-file->annotations` case-lambda | 增加第 6 参数 `top-environment`（默认 `'r6rs`） |
+| `analysis/tokenizer.sls` | `consume-sps-auxiliary` | 修复 `#;` 处理（通用修复，见 4.3） |
+| `analysis/tokenizer.sls` | tolerant parse `except` 分支 | 插入 dialect 感知逻辑（见 4.4） |
+| `analysis/workspace.sls` | `init-document` 第 464 行 | `source-file->annotations` 改为 6 参数，传入 `top-environment` |
+| `analysis/workspace.sls` | `update-file-node-with-tail` 第 327 行 | `source-file->annotations` 改为 6 参数，传入 `(workspace-top-environment workspace-instance)` |
+| `analysis/tokenizer.sls` | 内部递归第 373 行 | `source-file->annotations` 改为 6 参数，传入 `top-environment` |
+| `tests/analysis/test-tokenizer-diagnose.sps` | 第 43、56 行 | `source-file->annotations` 改为 6 参数，传 `'r6rs` |
+
+**不需要修改的文件**：
+- `virtual-file-system/document.sls`：`document` record 不增加字段
+- 宏展开代码（`self-defined-syntax.sls`、`syntax-rules.sls`、`macro-expander.sls`）：2 参数调用默认 `'r6rs`
+- 测试文件中的 1/2 参数调用：默认 `'r6rs`
+
+## 4. 具体修改方案
+
+### 4.1 `source-file->annotations` 接口扩展
+
+在现有 5 参数 arity 基础上增加第 6 参数 `top-environment`，默认 `'r6rs`：
+
+```scheme
+(define source-file->annotations
+  (case-lambda
+    ([path]
+      (source-file->annotations (read-string path) path 'r6rs))
+    ([source path]
+      (source-file->annotations source path (consume-sps-auxiliary source) #t #f 'r6rs))
+    ([source path start-position]
+      (source-file->annotations source path start-position #t #f 'r6rs))
+    ([source path start-position tolerant?]
+      (source-file->annotations source path start-position tolerant? #f 'r6rs))
+    ([source path start-position tolerant? maybe-document]
+      (source-file->annotations source path start-position tolerant? maybe-document 'r6rs))
+    ([source path start-position tolerant? maybe-document top-environment]
+      ; 实际处理逻辑...
+      ...)))
+```
+
+**向后兼容性**：所有现有的 1~5 参数调用无需修改，自动默认 `'r6rs`。
+
+### 4.2 `workspace.sls` 调用点修改
+
+**`init-document` 中**（第 464 行）：
+```scheme
+; 修改前
+(source-file->annotations s path (consume-sps-auxiliary s) #t d)
+
+; 修改后
+(source-file->annotations s path (consume-sps-auxiliary s) #t d top-environment)
+```
+
+**`update-file-node-with-tail` 中**（第 327 行）：
+```scheme
+; 修改前
+(source-file->annotations text (uri->path (document-uri target-document)) 
+  (consume-sps-auxiliary text) #t target-document)
+
+; 修改后
+(source-file->annotations text (uri->path (document-uri target-document))
+  (consume-sps-auxiliary text) #t target-document
+  (workspace-top-environment workspace-instance))
+```
+
+### 4.3 `consume-sps-auxiliary` 修复 `#;`（通用修复，不依赖 dialect）
+
+当前代码遇到 `#` 后如果 lookahead 不是 `|`，就继续读取。下一个字符 `;` 触发行注释模式，导致 `#;datum` 只被跳过一行。
+
+修复：在 `#` 分支中识别 `#;`，用 `get-datum` 跳过完整 datum：
+
+```scheme
+[(eqv? c #\#) 
+  (cond
+    [(and (not inline-comment?) (eqv? #\| (lookahead-char ip)))
+      (get-char ip)
+      (consume-block-comment ip)
+      (loop (get-char ip) #f)]
+    [(and (not inline-comment?) (eqv? #\; (lookahead-char ip)))
+      (get-char ip) ; consume ;
+      ; 跳过被注释的 datum。Chez 的 get-datum 本身支持 #;，
+      ; 因此这对 R6RS 和 R7RS 都适用。
+      (guard (e [else (void)])
+        (get-datum ip))
+      (loop (get-char ip) #f)]
+    [else (loop (get-char ip) inline-comment?)])]
+```
+
+### 4.4 tolerant parse 增加 dialect 感知
+
+在 `source-file->annotations` 的 `except` 分支中，当 `tolerant?` 为真时，先检查 `top-environment`，再决定修复策略：
+
+```scheme
+(except e
+  [(and tolerant? (condition? e))
+    (let ([error-position (private:compute-error-position e port)])
+      (cond
+        ; R7RS 模式下，先尝试 R7RS 特有修复
+        [(and (memq top-environment '(r7rs s7 goldfish))
+              (private:r7rs-fixable? e source error-position))
+         => (lambda (patched-source)
+              (source-file->annotations patched-source path start-position
+                tolerant? maybe-document top-environment))]
+        ; 否则走现有 R6RS tolerant parse
+        [else
+          (when maybe-document
+            (append-new-diagnoses maybe-document ...))
+          (let ([after (private:tolerant-parse->patch source error-position)])
+            (if (= (string-length after) (string-length source))
+              (source-file->annotations after path start-position #f
+                maybe-document top-environment)
+              (error 'tokenizer-error (condition-message e) (condition-irritants e))))]))]
+  [(condition? e) ...]
+  [else ...])
+```
+
+### 4.5 R7RS 错误映射函数
+
+`private:r7rs-fixable?` 接收 condition、source、position，返回 `#f` 或修复后的 source 字符串。
+
+**`#u8(...)` → `#vu8(...)`**：
+
+当 `condition-message` 匹配 "invalid sharp-sign prefix" 且 `condition-irritants` 的字符是 `u` 时，检查 source 中 position 附近是否确实是 `#u8(`。如果是，将 `#u8(` 替换为 `#vu8(`。
+
+**`#\null` / `#\escape` → `#\nul` / `#\esc`**：
+
+当 `condition-message` 匹配 "invalid character name" 时，根据 `condition-irritants` 中的字符名映射：
+- `"null"` → `#\nul`
+- `"escape"` → `#\esc`
+- 其他 → `#f`（不可修复，回退到现有 tolerant parse）
+
+**为什么不全局预处理 source 字符串？**
+- 全局替换 `"#u8("` → `"#vu8("` 会污染字符串内容，如 `"use #u8(1 2 3)"` 被错误修改。
+- 在 condition handler 中修复：只在 Chez 明确报错的位置替换，不影响字符串和注释。
+
+## 5. 实施步骤
+
+1. **Phase 1**：修改 `tokenizer.sls`：
+   - 扩展 `source-file->annotations` 接口（6 参数 arity）
+   - 修复 `consume-sps-auxiliary` 的 `#;` 处理
+   - 添加 `private:r7rs-fixable?` 及相关映射函数
+   - 在 `except` 分支中插入 dialect 感知逻辑
+2. **Phase 2**：修改 `workspace.sls`：
+   - `init-document` 第 464 行：6 参数调用，传入 `top-environment`
+   - `update-file-node-with-tail` 第 327 行：6 参数调用，传入 `(workspace-top-environment workspace-instance)`
+   - 内部递归第 373 行：6 参数调用，传入 `top-environment`
+3. **Phase 3**：更新测试：
+   - `test-tokenizer-diagnose.sps` 第 43、56 行：改为 6 参数，传 `'r6rs`
+   - 新增 R7RS 专项测试（`#u8`、`#\null`、多行 `#;`）
+4. **Phase 4**：验证 R6RS 回归：跑完整 `test.sh`，确认 R6RS 模式下零行为变化
+
+## 6. 兼容性保证
+
+| 场景 | 预期行为 | 验证方式 |
+|------|----------|----------|
+| R6RS 代码 + `#u8(...)` | 报错（R6RS 不合法），tolerant parse 按现有逻辑降级 | `test-tokenizer.sps` 现有用例 |
+| R7RS 代码 + `#u8(...)` | 不报错，解析为 `#vu8(...)` | 新增 R7RS 测试用例 |
+| R6RS 代码 + `#\null` | 报错， tolerant parse 替换为空格 | 现有用例 |
+| R7RS 代码 + `#\null` | 不报错，解析为 `#\nul` | 新增 R7RS 测试用例 |
+| 任何代码 + 多行 `#;` | `consume-sps-auxiliary` 正确跳过 datum | 新增 `#;` 测试用例 |
+| 纯 R6RS 项目（如 scheme-langserver 自身） | 100% 行为不变 | 跑完整 `test.sh` |
