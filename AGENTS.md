@@ -37,10 +37,22 @@ This sets `CHEZSCHEMELIBDIRS` so Chez can find libraries under `.akku/lib/` and
 `.akku/libobj/`.
 
 ### Compiling the server
+
+#### Release builds (static binary)
 ```bash
 bash build.sh
 ```
 This produces a static binary via `compile-chez-program run.ss --static`.
+
+> **Note:** `--static` requires prerequisite tooling (e.g. musl libc toolchain). It is used in CI/release builds. For local development and testing, use the non-static build below.
+
+#### Local development builds (non-static)
+For local testing (faster, no extra dependencies):
+```bash
+source .akku/bin/activate
+compile-chez-program run.ss
+```
+This produces a dynamically linked `run` binary that is sufficient for local development, MCP integration testing, and log replay debugging. The resulting binary is much faster to build because it skips the static linking step.
 
 ### Running the server
 ```bash
