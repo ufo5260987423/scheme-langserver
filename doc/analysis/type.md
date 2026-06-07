@@ -861,6 +861,22 @@ When a file is changed:
 
 Currently the type system is used primarily for **hover information** (not yet for full `publishDiagnostics`). The `textDocument/hover` handler can look up an identifier's `type-expressions`, map them through `type:interpret->strings`, and display them to the user. The old documents listed "TODO: Diagnostic based on Type System"; the infrastructure is in place, but the actual diagnostic rules (type-mismatch errors) are not yet implemented.
 
+### 9.4 Why Type Inference Must Stay Out of High-Frequency APIs
+
+The two-phase pipeline exists precisely because **Phase II (interpretation / unification) is expensive**. Substitution generation (Phase I) is a single AST walk and is comparatively cheap, but resolving those substitutions through the DSL interpreter involves macro expansion, β-reduction, Cartesian products, and iterative fixed-point loops. On pathological recursive functions the interpreter can produce tens of thousands of intermediate type expressions and take minutes to return.
+
+This has a direct consequence for LSP API design:
+
+> **Do not invoke type inference on every request path.**
+
+`textDocument/documentSymbol` is a good example of an API that must **not** call `type:interpret-result-list` (or any helper that forces Phase II resolution) while building its response. Users open files constantly; if opening a file triggers even one `type:interpret-result-list` call per exported identifier, editors will stutter or hang on large files. The correct pattern is:
+
+- **Hover** — user explicitly positions the cursor; latency of a single `type:interpret-result-list` call is acceptable.
+- **Completion** — already pays for type inference because the user asked for completions; using the cached `type-expressions` field is fine.
+- **Document Symbol / Workspace Symbol / Diagnostics** — these fire on file open, save, or incremental sync. Keep them **type-inference-free** unless the type has already been solved and cached during workspace initialization.
+
+If a future feature (e.g. `SymbolKind` from inferred types) seems to require Phase II on every `documentSymbol` request, the correct fix is either to cache the result during `init-workspace` or to fall back to a cheap syntactic heuristic (e.g. `define.sls` already distinguishes `(define (f ...) ...)` from `(define x ...)`). Calling the interpreter from `protocol/apis/document-symbol.sls` is an architectural mistake and should be rejected in review.
+
 ---
 
 ## 10. Performance Characteristics & Known Limitations
