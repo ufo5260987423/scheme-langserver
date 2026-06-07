@@ -46,6 +46,26 @@
       [rest (string-take-right source (max 0 (- (string-length source) position length)))])
     (string-append head (make-string (max 0 length) #\space) rest)))
 
+; Helper: find next delimiter position in string
+(define (string-find-delimiter s position)
+  (cond
+    [(>= position (string-length s)) (string-length s)]
+    [else
+      (case (string-ref s position)
+        [#\( position]
+        [#\) position]
+        [#\[ position]
+        [#\] position]
+        [#\" position];"
+        [#\; position]
+        [#\# position]
+        [#\space position]
+        [#\newline position]
+        [#\linefeed position]
+        [#\tab position]
+        [#\return position]
+        [else (string-find-delimiter s (+ 1 position))])]))
+
 ; Helper: replace token starting at position up to (but not including) the next delimiter
 (define (private:replace-token source position)
   (let ([end (string-find-delimiter source (+ 1 position))])
@@ -344,56 +364,50 @@
              [else (+ start 1)])])
     `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " msg))))
 
-(define source-file->annotations
-  (case-lambda
-    ([path] (source-file->annotations (read-string path) path))
-    ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t))
-    ([source path start-position] (source-file->annotations source path start-position #t))
-    ([source path start-position tolerant?]
-      (source-file->annotations source path start-position tolerant? #f))
-    ([source path start-position tolerant? maybe-document]
-      (if (file-exists? path)
-        (let ([port (open-string-input-port source)]
-            [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
-          (set-port-position! port start-position)
-          (filter annotation? 
-            (let loop ([position start-position])
-              (try
-                (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
-                  (if (= position (port-position port))
-                    '()
-                    `(,ann . ,(loop (port-position port)))))
-                (except e
-                  [(and tolerant? (condition? e))
-                    (let ([error-position (private:compute-error-position e port)])
-                      (when maybe-document
-                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
-                      (let ([after (private:tolerant-parse->patch source error-position)])
-                        (if (= (string-length after) (string-length source))
-                          (source-file->annotations after path start-position #f maybe-document)
-                          (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
-                  [(condition? e)
-                    (let ([error-position (private:compute-error-position e port)])
-                      (when maybe-document
-                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
-                      (error 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
-                  [else 
-                    (let ([error-position (max 0 (- (port-position port) 1))])
-                      (when maybe-document
-                        (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
-                      (warning 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant?))
-                      '())])))))
-          (begin
-            (when maybe-document
-              (append-new-diagnoses maybe-document `(0 0 1 ,(string-append "File not found: " path) "syntax" "file-not-found")))
-            (warning 'no-such-file-warning path '())
-            '())))))
+(define (private:find-unclosed-parens source)
+  (let loop ([i 0] [stack '()])
+    (cond
+      [(>= i (string-length source)) (reverse stack)]
+      [(char=? #\( (string-ref source i))
+       (loop (+ i 1) (cons `(,i #\() stack))]
+      [(char=? #\[ (string-ref source i))
+       (loop (+ i 1) (cons `(,i #\[) stack))]
+      [(char=? #\) (string-ref source i))
+       (if (and (pair? stack) (char=? #\( (cadar stack)))
+         (loop (+ i 1) (cdr stack))
+         (loop (+ i 1) stack))]
+      [(char=? #\] (string-ref source i))
+       (if (and (pair? stack) (char=? #\[ (cadar stack)))
+         (loop (+ i 1) (cdr stack))
+         (loop (+ i 1) stack))]
+      [else (loop (+ i 1) stack)])))
 
-;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
-; consume
-; #!/usr/bin/env scheme-script
-; #!r6rs
-; #!...
+(define (private:append-unclosed-paren-diagnoses document source msg)
+  (let ([unclosed (private:find-unclosed-parens source)])
+    (for-each
+      (lambda (item)
+        (let ([pos (car item)])
+          (append-new-diagnoses document
+            `(,pos ,(+ pos 1) 1
+              ,(string-append "Syntax error: unclosed "
+                (if (char=? #\( (cadr item)) "parenthesis" "bracket"))
+              "syntax" "syntax-error"))))
+      unclosed)))
+
+; block comment: #| ... |#
+; may be nested
+(define (consume-block-comment char-input-port)
+  (let loop ([c (get-char char-input-port)])
+    (cond
+      [(and (eqv? c #\|) (eqv? (lookahead-char char-input-port) #\#))
+        (get-char char-input-port) 
+        (port-position char-input-port)]
+      [(and (eqv? c #\#) (eqv? (lookahead-char char-input-port) #\|))
+        (get-char char-input-port) 
+        (consume-block-comment char-input-port)]
+      [(eof-object? c) (port-position char-input-port)]
+      [else (loop (get-char char-input-port))])))
+
 ; line comment: ; ... 
 ; don't need consume datum comment  
 (define (consume-sps-auxiliary source)
@@ -416,36 +430,69 @@
         [(and (not inline-comment?) (eqv? c #\( )) (- (port-position ip) 1)]
         [else (loop (get-char ip) inline-comment?)]))))
 
-; block comment: #| ... |#
-; may be nested
-(define (consume-block-comment char-input-port)
-  (let loop ([c (get-char char-input-port)])
-    (cond
-      [(and (eqv? c #\|) (eqv? (lookahead-char char-input-port) #\#))
-        (get-char char-input-port) 
-        (port-position char-input-port)]
-      [(and (eqv? c #\#) (eqv? (lookahead-char char-input-port) #\|))
-        (get-char char-input-port) 
-        (consume-block-comment char-input-port)]
-      [(eof-object? c) (port-position char-input-port)]
-      [else (loop (get-char char-input-port))])))
+(define source-file->annotations
+  (case-lambda
+    ([path] (source-file->annotations (read-string path) path))
+    ([source path] (source-file->annotations source path (consume-sps-auxiliary source) #t))
+    ([source path start-position] (source-file->annotations source path start-position #t))
+    ([source path start-position tolerant?]
+      (source-file->annotations source path start-position tolerant? #f))
+    ([source path start-position tolerant? maybe-document]
+      (source-file->annotations source path start-position tolerant? maybe-document 10))
+    ([source path start-position tolerant? maybe-document max-depth]
+      (if (file-exists? path)
+        (let ([port (open-string-input-port source)]
+            [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+          (set-port-position! port start-position)
+          (filter annotation? 
+            (let loop ([position start-position])
+              (try
+                (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
+                  (if (= position (port-position port))
+                    '()
+                    `(,ann . ,(loop (port-position port)))))
+                (except e
+                  [(and tolerant? (condition? e))
+                    (let ([error-position (private:compute-error-position e port)])
+                      (when maybe-document
+                        (let ([msg (condition-message e)])
+                          (if (private:message-matches? msg "unexpected end-of-file reading ~a")
+                            (private:append-unclosed-paren-diagnoses maybe-document source msg)
+                            (begin
+                              (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error")))
+                              (when (or (private:message-matches? msg "parenthesized list terminated by bracket")
+                                        (private:message-matches? msg "bracketed list terminated by parenthesis"))
+                                (private:append-unclosed-paren-diagnoses maybe-document source msg))))))
+                      (let ([after (private:tolerant-parse->patch source error-position)])
+                        (if (= (string-length after) (string-length source))
+                          (if (> max-depth 0)
+                            (source-file->annotations after path start-position #t maybe-document (- max-depth 1))
+                            (begin
+                              (when maybe-document
+                                (append-new-diagnoses maybe-document
+                                  `(,error-position ,(+ error-position 1) 1 "Syntax error: max tolerant depth exceeded" "syntax" "syntax-error")))
+                              '()))
+                          (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
+                  [(condition? e)
+                    (let ([error-position (private:compute-error-position e port)])
+                      (when maybe-document
+                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
+                      (error 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
+                  [else 
+                    (let ([error-position (max 0 (- (port-position port) 1))])
+                      (when maybe-document
+                        (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
+                      (warning 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant?))
+                      '())])))))
+          (begin
+            (when maybe-document
+              (append-new-diagnoses maybe-document `(0 0 1 ,(string-append "File not found: " path) "syntax" "file-not-found")))
+            (warning 'no-such-file-warning path '())
+            '()))))))
 
-(define (string-find-delimiter s position)
-  (cond
-    [(>= position (string-length s)) (string-length s)]
-    [else
-      (case (string-ref s position)
-        [#\( position]
-        [#\) position]
-        [#\[ position]
-        [#\] position]
-        [#\" position];"
-        [#\; position]
-        [#\# position]
-        [#\space position]
-        [#\newline position]
-        [#\linefeed position]
-        [#\tab position]
-        [#\return position]
-        [else (string-find-delimiter s (+ 1 position))])]))
-)
+;https://github.com/cisco/ChezScheme/blob/e63e5af1a5d6805c96fa8977e7bd54b3b516cff6/s/7.ss#L268-L280
+; consume
+; #!/usr/bin/env scheme-script
+; #!r6rs
+; #!...
+
