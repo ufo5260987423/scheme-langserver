@@ -10,6 +10,7 @@
   (scheme-langserver) 
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
+  (scheme-langserver virtual-file-system library-node)
   (scheme-langserver virtual-file-system index-node)
 
   (scheme-langserver util dedupe)
@@ -29,7 +30,11 @@
 ;             ; [target-library-identifier '(industria crypto math)]
 ;             ; [target-library-identifier '(scheme-langserver util contain)]
 ;             ; [target-library-identifier '(hashing private compat)]
-;             [identifier-references (import-references root-library-node target-library-identifier)])
+;             [target-library-node (walk-library target-library-identifier root-library-node)]
+;             [target-document (if (null? target-library-node) 
+;                               (make-document "" "" '())
+;                               (file-node-document (car (library-node-file-nodes target-library-node))))]
+;             [identifier-references (import-references target-document root-library-node target-library-identifier)])
 ;         (print-graph #t)
 ;         (pretty-print 'output-identifier-types)
 ;         (map 
@@ -60,7 +65,11 @@
       [root-library-node (workspace-library-node workspace)]
     ; [target-library-identifier '(scheme-langserver analysis workspace)]
       [target-library-identifier '(scheme-langserver analysis type domain-specific-language interpreter)]
-      [identifier-references (import-references root-library-node target-library-identifier)])
+      [target-library-node (walk-library target-library-identifier root-library-node)]
+      [target-document (if (null? target-library-node)
+                        (make-document "" "" '())
+                        (file-node-document (car (library-node-file-nodes target-library-node))))]
+      [identifier-references (import-references target-document root-library-node target-library-identifier)])
     (print-graph #t)
     ((lambda (identifier-reference)
       (cond 
