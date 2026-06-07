@@ -33,7 +33,7 @@
       '())))
 
 (test-equal "source-file->annotations with document adds diagnose for unmatched paren"
-  1
+  2
   (guard (e [else 
               (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
               -1])
@@ -59,7 +59,7 @@
         (string-prefix? "Syntax error:" msg)))))
 
 (test-equal "init-document adds diagnose for syntax error"
-  1
+  2
   (guard (e [else 
               (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
               -1])
@@ -70,7 +70,7 @@
         result))))
 
 (test-equal "update-file-node-with-tail clears old diagnose and adds new"
-  1
+  2
   (guard (e [else 
               (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
               -1])
@@ -98,7 +98,7 @@
       (let ([d (file-node-document target)])
         (refresh-workspace-for workspace target)
         (let ([diagnoses (document-diagnoses d)])
-          (test-equal "syntax diagnose preserved after refresh" 1 (length diagnoses))
+          (test-equal "syntax diagnose preserved after refresh" 2 (length diagnoses))
           (string-prefix? "Syntax error:" (cadddr (car diagnoses))))))))
 
 (test-end)

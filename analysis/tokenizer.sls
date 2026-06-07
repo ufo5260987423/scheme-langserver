@@ -364,79 +364,35 @@
              [else (+ start 1)])])
     `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " msg))))
 
-; Find the single opener that caused the current bracket mismatch.
-; Scan backwards from `pos` (the position of the mismatched closer or EOF),
-; skipping strings, comments, character literals, and block comments.
-; Returns `(position char)` or #f if not found.
-(define (private:find-mismatched-opener source pos)
-  (let loop ([i (min pos (- (string-length source) 1))]
-             [paren-depth 0]
-             [bracket-depth 0]
-             [in-string? #f]
-             [in-comment? #f]
-             [block-depth 0])
+(define (private:find-unclosed-parens source)
+  (let loop ([i 0] [stack '()])
     (cond
-      [(< i 0) #f]
-      [in-string?
-       (let ([c (string-ref source i)])
-         (cond
-           [(and (char=? #\\ c) (> i 0))
-            (loop (- i 2) paren-depth bracket-depth in-string? in-comment? block-depth)]
-           [(char=? #\" c)
-            (loop (- i 1) paren-depth bracket-depth #f in-comment? block-depth)]
-           [else
-            (loop (- i 1) paren-depth bracket-depth in-string? in-comment? block-depth)]))]
-      [in-comment?
-       (let ([c (string-ref source i)])
-         (cond
-           [(char=? #\; c)
-            (loop (- i 1) paren-depth bracket-depth in-string? #f block-depth)]
-           [else
-            (loop (- i 1) paren-depth bracket-depth in-string? in-comment? block-depth)]))]
-      [(> block-depth 0)
-       (let ([c (string-ref source i)])
-         (cond
-           [(and (char=? #\| c) (> i 0) (char=? #\# (string-ref source (- i 1))))
-            (loop (- i 2) paren-depth bracket-depth in-string? in-comment? (- block-depth 1))]
-           [(and (char=? #\# c) (> i 0) (char=? #\| (string-ref source (- i 1))))
-            (loop (- i 2) paren-depth bracket-depth in-string? in-comment? (+ block-depth 1))]
-           [else
-            (loop (- i 1) paren-depth bracket-depth in-string? in-comment? block-depth)]))]
-      [else
-       (let ([c (string-ref source i)])
-         (cond
-           [(char=? #\; c)
-            (loop (- i 1) paren-depth bracket-depth in-string? #t block-depth)]
-           [(char=? #\" c)
-            (loop (- i 1) paren-depth bracket-depth #t in-comment? block-depth)]
-           [(and (char=? #\# c) (> i 0) (char=? #\| (string-ref source (- i 1))))
-            (loop (- i 2) paren-depth bracket-depth in-string? in-comment? (+ block-depth 1))]
-           [(and (char=? #\\ c) (> i 0) (char=? #\# (string-ref source (- i 1))))
-            (loop (- i 2) paren-depth bracket-depth in-string? in-comment? block-depth)]
-           [(char=? #\) c)
-            (loop (- i 1) (+ paren-depth 1) bracket-depth in-string? in-comment? block-depth)]
-           [(char=? #\] c)
-            (loop (- i 1) paren-depth (+ bracket-depth 1) in-string? in-comment? block-depth)]
-           [(char=? #\( c)
-            (if (> paren-depth 0)
-              (loop (- i 1) (- paren-depth 1) bracket-depth in-string? in-comment? block-depth)
-              `(,i #\())]
-           [(char=? #\[ c)
-            (if (> bracket-depth 0)
-              (loop (- i 1) paren-depth (- bracket-depth 1) in-string? in-comment? block-depth)
-              `(,i #\[))]
-           [else
-            (loop (- i 1) paren-depth bracket-depth in-string? in-comment? block-depth)]))])))
+      [(>= i (string-length source)) (reverse stack)]
+      [(char=? #\( (string-ref source i))
+       (loop (+ i 1) (cons `(,i #\() stack))]
+      [(char=? #\[ (string-ref source i))
+       (loop (+ i 1) (cons `(,i #\[) stack))]
+      [(char=? #\) (string-ref source i))
+       (if (and (pair? stack) (char=? #\( (cadar stack)))
+         (loop (+ i 1) (cdr stack))
+         (loop (+ i 1) stack))]
+      [(char=? #\] (string-ref source i))
+       (if (and (pair? stack) (char=? #\[ (cadar stack)))
+         (loop (+ i 1) (cdr stack))
+         (loop (+ i 1) stack))]
+      [else (loop (+ i 1) stack)])))
 
-(define (private:append-unclosed-paren-diagnose document source error-position)
-  (let ([opener (private:find-mismatched-opener source error-position)])
-    (when opener
-      (let ([pos (car opener)])
-        (append-new-diagnoses document
-          `(,pos ,(+ pos 1) 1
-            ,(string-append "Syntax error: unclosed "
-              (if (char=? #\( (cadr opener)) "parenthesis" "bracket"))
-            "syntax" "syntax-error"))))))
+(define (private:append-unclosed-paren-diagnoses document source msg)
+  (let ([unclosed (private:find-unclosed-parens source)])
+    (for-each
+      (lambda (item)
+        (let ([pos (car item)])
+          (append-new-diagnoses document
+            `(,pos ,(+ pos 1) 1
+              ,(string-append "Syntax error: unclosed "
+                (if (char=? #\( (cadr item)) "parenthesis" "bracket"))
+              "syntax" "syntax-error"))))
+      unclosed)))
 
 ; block comment: #| ... |#
 ; may be nested
@@ -501,12 +457,12 @@
                       (when maybe-document
                         (let ([msg (condition-message e)])
                           (if (private:message-matches? msg "unexpected end-of-file reading ~a")
-                            (private:append-unclosed-paren-diagnose maybe-document source error-position)
+                            (private:append-unclosed-paren-diagnoses maybe-document source msg)
                             (begin
                               (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error")))
                               (when (or (private:message-matches? msg "parenthesized list terminated by bracket")
                                         (private:message-matches? msg "bracketed list terminated by parenthesis"))
-                                (private:append-unclosed-paren-diagnose maybe-document source error-position))))))
+                                (private:append-unclosed-paren-diagnoses maybe-document source msg))))))
                       (let ([after (private:tolerant-parse->patch source error-position)])
                         (if (= (string-length after) (string-length source))
                           (if (> max-depth 0)
