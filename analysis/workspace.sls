@@ -390,29 +390,31 @@
     [(path parent my-filter) (init-virtual-file-system path parent my-filter 'r6rs)]
     [(path parent my-filter top-environment)
       (if (my-filter path)
-      (let* ([name (path->name path)] 
-          [folder? (file-directory? path)]
-          [document 
-            (if folder? 
-              '() 
-              (init-document path top-environment))]
-          [node (make-file-node path name parent folder? '() document)]
-          [children (if folder?
-              (map 
-                (lambda (p) 
-                  (init-virtual-file-system 
-                    (string-append path 
-                      (if (string-suffix? (string (directory-separator)) path)
-                        ""
-                        (string (directory-separator)))
-                      p) 
-                    node 
-                    my-filter
-                    top-environment)) 
-                (directory-list path))
-              '())])
-        (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
-        node)
+      (if (and (not (file-directory? path)) (file-symbolic-link? path))
+        '()
+        (let* ([name (path->name path)] 
+            [folder? (file-directory? path)]
+            [document 
+              (if folder? 
+                '() 
+                (init-document path top-environment))]
+            [node (make-file-node path name parent folder? '() document)]
+            [children (if folder?
+                (map 
+                  (lambda (p) 
+                    (init-virtual-file-system 
+                      (string-append path 
+                        (if (string-suffix? (string (directory-separator)) path)
+                          ""
+                          (string (directory-separator)))
+                        p) 
+                      node 
+                      my-filter
+                      top-environment)) 
+                  (directory-list path))
+                '())])
+          (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
+          node))
       '())]))
 
 (define attach-new-file

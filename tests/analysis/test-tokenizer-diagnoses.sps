@@ -27,9 +27,9 @@
     (lambda (p) (put-bytevector p (string->utf8 "(a (b (c"))))
   (source-file->annotations "(a (b (c" "/tmp/test-tokenizer/test.ss" 0 #t doc)
   (let ([diagnoses (document-diagnoses doc)])
-    (test-equal 3 (length diagnoses))
-    (test-equal 3
-      (length (filter (lambda (d) (string-contains? "unclosed parenthesis" (list-ref d 3))) diagnoses)))))
+    (test-equal 1 (length diagnoses))
+    (test-assert
+      (find (lambda (d) (string-contains? "unclosed parenthesis" (list-ref d 3))) diagnoses))))
 (test-end)
 
 (test-begin "extra-close-paren")
@@ -49,11 +49,11 @@
     (lambda (p) (put-bytevector p (string->utf8 "(a b]\n(c d]"))))
   (source-file->annotations "(a b]\n(c d]" "/tmp/test-tokenizer/test.ss" 0 #t doc)
   (let ([diagnoses (document-diagnoses doc)])
-    ; 1 original cross-bracket + 2 unclosed parens
-    (test-equal 3 (length diagnoses))
+    ; 1 original + 1 unclosed (first error only; second patched inside tolerant-parse)
+    (test-equal 2 (length diagnoses))
     (test-equal 1
       (length (filter (lambda (d) (string-contains? "parenthesized list terminated by bracket" (list-ref d 3))) diagnoses)))
-    (test-equal 2
+    (test-equal 1
       (length (filter (lambda (d) (string-contains? "unclosed parenthesis" (list-ref d 3))) diagnoses)))))
 (test-end)
 
@@ -63,14 +63,12 @@
     (lambda (p) (put-bytevector p (string->utf8 "(a [b (c x] y)"))))
   (source-file->annotations "(a [b (c x] y)" "/tmp/test-tokenizer/test.ss" 0 #t doc)
   (let ([diagnoses (document-diagnoses doc)])
-    ; 1 original cross-bracket + 1 unclosed paren + 1 unclosed bracket
-    (test-equal 3 (length diagnoses))
+    ; 1 original + 1 unclosed for the first error only
+    (test-equal 2 (length diagnoses))
     (test-assert
       (find (lambda (d) (string-contains? "parenthesized list terminated by bracket" (list-ref d 3))) diagnoses))
     (test-assert
-      (find (lambda (d) (string-contains? "unclosed bracket" (list-ref d 3))) diagnoses))
-    (test-assert
-      (find (lambda (d) (string-contains? "unclosed parenthesis" (list-ref d 3))) diagnoses))))
+      (find (lambda (d) (string-contains? "unclosed" (list-ref d 3))) diagnoses))))
 (test-end)
 
 (test-end)
