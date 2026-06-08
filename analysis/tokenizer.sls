@@ -438,8 +438,6 @@
     ([source path start-position tolerant?]
       (source-file->annotations source path start-position tolerant? #f))
     ([source path start-position tolerant? maybe-document]
-      (source-file->annotations source path start-position tolerant? maybe-document 10))
-    ([source path start-position tolerant? maybe-document max-depth]
       (if (file-exists? path)
         (let ([port (open-string-input-port source)]
             [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
@@ -465,13 +463,7 @@
                                 (private:append-unclosed-paren-diagnoses maybe-document source msg))))))
                       (let ([after (private:tolerant-parse->patch source error-position)])
                         (if (= (string-length after) (string-length source))
-                          (if (> max-depth 0)
-                            (source-file->annotations after path start-position #t maybe-document (- max-depth 1))
-                            (begin
-                              (when maybe-document
-                                (append-new-diagnoses maybe-document
-                                  `(,error-position ,(+ error-position 1) 1 "Syntax error: max tolerant depth exceeded" "syntax" "syntax-error")))
-                              '()))
+                          (source-file->annotations after path start-position #t maybe-document)
                           (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
                   [(condition? e)
                     (let ([error-position (private:compute-error-position e port)])
