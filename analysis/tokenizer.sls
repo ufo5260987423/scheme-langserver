@@ -89,14 +89,11 @@
           source
           (loop port))
         (except e
+          ;; Layer 1: Old-format condition-irritants: (irritants ("template" arg1 arg2 position))
           [(and (condition? e) (pair? (condition-irritants e)) (string? (car (condition-irritants e)))
             (case (car (condition-irritants e))
-              [("unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
-                (let* ([position (caddr (condition-irritants e))]
-                    [head (if (zero? position) "" (string-take source position))]
-                    [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                  (private:tolerant-parse->patch (string-append head " " rest)))]
-              [("unexpected close parenthesis" "unexpected close bracket" "unexpected end-of-file reading ~a")
+              ;; Group 1: Parenthesis / bracket
+              [("unexpected close parenthesis" "unexpected close bracket")
                 (let* ([position (caddr (condition-irritants e))]
                     [head (if (zero? position) "" (string-take source position))]
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
@@ -107,6 +104,12 @@
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
                   (private:tolerant-parse->patch (string-append head " " rest)))]
 
+              ;; Group 2: EOF / dot / sharp-sign
+              [("unexpected end-of-file reading ~a" "unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
+                (let* ([position (caddr (condition-irritants e))]
+                    [head (if (zero? position) "" (string-take source position))]
+                    [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                  (private:tolerant-parse->patch (string-append head " " rest)))]
               ["expected one item after dot (.)" 
                 (let* ([position (caddr (condition-irritants e))]
                     [dot-pos 
@@ -122,16 +125,43 @@
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
                   (private:tolerant-parse->patch (string-append head " " rest)))]
 
+              ;; Group 2: Vector family
+              ["too many vector elements supplied"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["invalid vector length ~s"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["non-fixnum found in fxvector"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["too many fxvector elements supplied"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["invalid fxvector length ~s"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["non-flonum found in flvector"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["too many flvector elements supplied"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["invalid value ~:[~s~;~a~] found in bytevector"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["non-octet found in bytevector"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["mask required for stencil vector"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["not enough stencil vector elements supplied"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["too many stencil vector elements supplied"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+              ["invalid stencil vector mask ~s"
+                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
+
+              ;; Group 3: Atom / literal
               ["invalid syntax #!~a" 
                 (let* ([position (caddr (condition-irritants e))]
                     [head (if (zero? position) "" (string-take source position))]
                     [l 2]
                     [rest (string-take-right source (max 0 (- (string-length source) position l)))])
                   (private:tolerant-parse->patch (string-append head (make-string l #\space) rest)))]
-
               ["invalid boolean #~a~c"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
               ["invalid character name #\\~a" 
                 (let* ([position (max 0 (- (caddr (condition-irritants e)) 2))]
                     [what (caadr (condition-irritants e))]
@@ -143,10 +173,8 @@
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
               ["invalid character #\\~a~a~a"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
               ["invalid delimiter ~a for ~a"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
               ["invalid character ~c in string hex escape"
                 (let* ([position (caddr (condition-irritants e))]
                     [head (string-take source position)]
@@ -162,12 +190,12 @@
                   (private:tolerant-parse->patch (private:replace-region source esc-start l)))]
               ["invalid code point value ~s in string hex escape"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
               ["invalid number syntax ~a"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
               ["cannot represent ~a"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
 
+              ;; Group 4: Gensym / record / graph-mark
               ["expected close brace terminating gensym syntax"
                 (let* ([position (caddr (condition-irritants e))]
                     [start 
@@ -177,38 +205,6 @@
                           [(char=? #\# (string-ref source i)) i]
                           [else (search (- i 1))]))])
                   (private:tolerant-parse->patch (private:replace-region source start (- (string-length source) start))))]
-
-              ["too many vector elements supplied"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["invalid vector length ~s"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
-              ["non-fixnum found in fxvector"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["too many fxvector elements supplied"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["invalid fxvector length ~s"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
-              ["non-flonum found in flvector"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["too many flvector elements supplied"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
-              ["invalid value ~:[~s~;~a~] found in bytevector"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["non-octet found in bytevector"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
-              ["mask required for stencil vector"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["not enough stencil vector elements supplied"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["too many stencil vector elements supplied"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-              ["invalid stencil vector mask ~s"
-                (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
               ["non-symbol found after #["
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
               ["unrecognized record name ~s"
@@ -217,25 +213,23 @@
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
               ["too many fields supplied for record ~s"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
-
               ["duplicate mark #~s= seen"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
               ["mark #~s= missing"
                 (private:tolerant-parse->patch (private:replace-token source (caddr (condition-irritants e))))]
 
+              ;; Group 5: Fasl
               ["unsupported old fasl format detected---use new format with binary i/o"
                 (private:tolerant-parse->patch "")]
 
               [else (warning 'tokenizer-warning1 "" `(,(condition-who e) ,(condition-message e) ,(condition-irritants e)))
                     source]))]
+
+          ;; Layer 2: New-format condition-irritants: (irritants (("template" arg1 arg2 position)))
           [(and (condition? e) (pair? (condition-irritants e)) (pair? (car (condition-irritants e))) (string? (caar (condition-irritants e))))
             (case (caar (condition-irritants e))
-              [("unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
-                (let* ([position (caddar (condition-irritants e))]
-                    [head (if (zero? position) "" (string-take source position))]
-                    [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                  (private:tolerant-parse->patch (string-append head " " rest)))]
-              [("unexpected close parenthesis" "unexpected close bracket" "unexpected end-of-file reading ~a")
+              ;; Group 1: Parenthesis / bracket
+              [("unexpected close parenthesis" "unexpected close bracket")
                 (let* ([position (caddar (condition-irritants e))]
                     [head (if (zero? position) "" (string-take source position))]
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
@@ -245,18 +239,24 @@
                     [head (if (zero? position) "" (string-take source position))]
                     [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
                   (private:tolerant-parse->patch (string-append head ")" rest)))]
+
+              ;; Group 2: EOF / dot / sharp-sign
+              [("unexpected end-of-file reading ~a" "unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
+                (let* ([position (caddar (condition-irritants e))]
+                    [head (if (zero? position) "" (string-take source position))]
+                    [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                  (private:tolerant-parse->patch (string-append head " " rest)))]
               [else (warning 'tokenizer-warning2 "" `(,(condition-who e) ,(condition-message e) ,(condition-irritants e)))
                     source])]
-          ; Handle cases where condition-irritants is #f or contains raw args (no position info)
+
+          ;; Layer 3: Fallback — condition-irritants is #f or contains raw args (no position info)
           [(condition? e)
             (let ([msg (condition-message e)]
                   [position (private:extract-position-from-message (condition-message e))])
               (cond
-                [(or (private:message-matches? msg "unexpected dot (.)")
-                    (private:message-matches? msg "invalid sharp-sign prefix #~c")
-                    (private:message-matches? msg "unexpected close parenthesis")
-                    (private:message-matches? msg "unexpected close bracket")
-                    (private:message-matches? msg "unexpected end-of-file reading ~a"))
+                ;; Group 1: Parenthesis / bracket
+                [(or (private:message-matches? msg "unexpected close parenthesis")
+                    (private:message-matches? msg "unexpected close bracket"))
                   (let* ([position (or position fallback 0)]
                       [head (if (zero? position) "" (string-take source position))]
                       [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
@@ -264,6 +264,15 @@
                 [(or (private:message-matches? msg "parenthesized list terminated by bracket")
                     (private:message-matches? msg "bracketed list terminated by parenthesis"))
                   (let* ([position (if position (- position 1) fallback)]
+                      [head (if (zero? position) "" (string-take source position))]
+                      [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                    (private:tolerant-parse->patch (string-append head " " rest)))]
+
+                ;; Group 2: EOF / dot / sharp-sign
+                [(or (private:message-matches? msg "unexpected end-of-file reading ~a")
+                    (private:message-matches? msg "unexpected dot (.)")
+                    (private:message-matches? msg "invalid sharp-sign prefix #~c"))
+                  (let* ([position (or position fallback 0)]
                       [head (if (zero? position) "" (string-take source position))]
                       [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
                     (private:tolerant-parse->patch (string-append head " " rest)))]
@@ -277,6 +286,8 @@
                             [(char=? #\. (string-ref source i)) i]
                             [else (search (- i 1))]))])
                     (private:tolerant-parse->patch (private:replace-region source dot-pos 1)))]
+
+                ;; Group 3: Atom / literal
                 [(private:message-matches? msg "invalid syntax #!~a")
                   (let* ([position (or position fallback 0)]
                       [head (if (zero? position) "" (string-take source position))]
