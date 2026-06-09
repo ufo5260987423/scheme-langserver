@@ -81,176 +81,199 @@
      (max 0 (- (port-position port) 1))]
     [else (port-position port)]))
 
-(define (private:tolerant-parse->patch source . maybe-fallback)
-  (let ([fallback (if (null? maybe-fallback) 0 (car maybe-fallback))])
-    (let loop ([port (open-input-string source)])
-      (try 
-        (if (eof-object? (get-datum port))
-          source
-          (loop port))
-        (except e
-          [(condition? e)
-            (let* ([irritants (condition-irritants e)]
-                [msg (condition-message e)]
-                [template
-                  (cond
-                    [(and (pair? irritants) (string? (car irritants))) (car irritants)]
-                    [(and (pair? irritants) (pair? (car irritants)) (string? (caar irritants))) (caar irritants)]
-                    [(private:message-matches? msg "unexpected close parenthesis") "unexpected close parenthesis"]
-                    [(private:message-matches? msg "unexpected close bracket") "unexpected close bracket"]
-                    [(private:message-matches? msg "parenthesized list terminated by bracket") "parenthesized list terminated by bracket"]
-                    [(private:message-matches? msg "bracketed list terminated by parenthesis") "bracketed list terminated by parenthesis"]
-                    [(private:message-matches? msg "unexpected end-of-file reading ~a") "unexpected end-of-file reading ~a"]
-                    [(private:message-matches? msg "unexpected dot (.)") "unexpected dot (.)"]
-                    [(private:message-matches? msg "invalid sharp-sign prefix #~c") "invalid sharp-sign prefix #~c"]
-                    [(private:message-matches? msg "expected one item after dot (.)") "expected one item after dot (.)"]
-                    [(private:message-matches? msg "more than one item found after dot (.)") "more than one item found after dot (.)"]
-                    [(private:message-matches? msg "invalid syntax #!~a") "invalid syntax #!~a"]
-                    [(private:message-matches? msg "invalid number syntax ~a") "invalid number syntax ~a"]
-                    [(private:message-matches? msg "cannot represent ~a") "cannot represent ~a"]
-                    [else #f])]
-                [position
-                  (cond
-                    [(and (pair? irritants) (string? (car irritants)) (>= (length irritants) 3) (number? (caddr irritants))) (caddr irritants)]
-                    [(and (pair? irritants) (pair? (car irritants)) (>= (length (car irritants)) 3) (number? (caddar irritants))) (caddar irritants)]
-                    [else (or (private:extract-position-from-message msg) fallback)])]
-                [what
-                  (cond
-                    [(and (pair? irritants) (pair? (cdr irritants)) (pair? (cadr irritants))) (caadr irritants)]
-                    [(and (pair? irritants) (pair? (car irritants)) (pair? (cdar irritants)) (pair? (cadar irritants))) (caadar irritants)]
-                    [else ""])])
-              (case template
-                ;; Group 1: Parenthesis / bracket
-                [("unexpected close parenthesis" "unexpected close bracket")
-                  (let* ([head (if (zero? position) "" (string-take source position))]
-                      [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                    (private:tolerant-parse->patch (string-append head " " rest)))]
-                [("parenthesized list terminated by bracket" "bracketed list terminated by parenthesis")
-                  (let* ([position (- position 1)]
-                      [head (if (zero? position) "" (string-take source position))]
-                      [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                    (private:tolerant-parse->patch (string-append head " " rest)))]
+(define private:tolerant-parse->patch
+  (case-lambda
+    ([source] (private:tolerant-parse->patch source #f 0))
+    ([source maybe-document] (private:tolerant-parse->patch source maybe-document 0))
+    ([source maybe-document fallback]
+      (let ([original-source source])
+        (let inner ([source source])
+          (let loop ([port (open-input-string source)])
+            (try 
+              (if (eof-object? (get-datum port))
+                source
+                (loop port))
+              (except e
+                [(condition? e)
+                  (let* ([irritants (condition-irritants e)]
+                      [msg (condition-message e)]
+                      [template
+                        (cond
+                          [(and (pair? irritants) (string? (car irritants))) (car irritants)]
+                          [(and (pair? irritants) (pair? (car irritants)) (string? (caar irritants))) (caar irritants)]
+                          [(private:message-matches? msg "unexpected close parenthesis") "unexpected close parenthesis"]
+                          [(private:message-matches? msg "unexpected close bracket") "unexpected close bracket"]
+                          [(private:message-matches? msg "parenthesized list terminated by bracket") "parenthesized list terminated by bracket"]
+                          [(private:message-matches? msg "bracketed list terminated by parenthesis") "bracketed list terminated by parenthesis"]
+                          [(private:message-matches? msg "unexpected end-of-file reading ~a") "unexpected end-of-file reading ~a"]
+                          [(private:message-matches? msg "unexpected dot (.)") "unexpected dot (.)"]
+                          [(private:message-matches? msg "invalid sharp-sign prefix #~c") "invalid sharp-sign prefix #~c"]
+                          [(private:message-matches? msg "expected one item after dot (.)") "expected one item after dot (.)"]
+                          [(private:message-matches? msg "more than one item found after dot (.)") "more than one item found after dot (.)"]
+                          [(private:message-matches? msg "invalid syntax #!~a") "invalid syntax #!~a"]
+                          [(private:message-matches? msg "invalid number syntax ~a") "invalid number syntax ~a"]
+                          [(private:message-matches? msg "cannot represent ~a") "cannot represent ~a"]
+                          [else #f])]
+                      [position
+                        (cond
+                          [(and (pair? irritants) (string? (car irritants)) (>= (length irritants) 3) (number? (caddr irritants))) (caddr irritants)]
+                          [(and (pair? irritants) (pair? (car irritants)) (>= (length (car irritants)) 3) (number? (caddar irritants))) (caddar irritants)]
+                          [else (or (private:extract-position-from-message msg) fallback)])]
+                      [what
+                        (cond
+                          [(and (pair? irritants) (pair? (cdr irritants)) (pair? (cadr irritants))) (caadr irritants)]
+                          [(and (pair? irritants) (pair? (car irritants)) (pair? (cdar irritants)) (pair? (cadar irritants))) (caadar irritants)]
+                          [else ""])])
+                    (when (and maybe-document (eq? original-source source))
+                      (case template
+                        [("unexpected end-of-file reading ~a" "unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
+                          (private:append-unclosed-paren-diagnoses maybe-document original-source msg)]
+                        [("parenthesized list terminated by bracket" "bracketed list terminated by parenthesis")
+                          (begin
+                            (append-new-diagnoses maybe-document (append (private:condition->diagnose e original-source fallback) '("syntax" "syntax-error")))
+                            (private:append-unclosed-paren-diagnoses maybe-document original-source msg))]
+                        [else
+                          (append-new-diagnoses maybe-document (append (private:condition->diagnose e original-source fallback) '("syntax" "syntax-error")))]))
+                    (case template
+                    ;; Group 1: Parenthesis / bracket
+                    [("unexpected close parenthesis" "unexpected close bracket")
+                      (let* ([head (if (zero? position) "" (string-take source position))]
+                          [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                        (inner (string-append head " " rest)))]
+                    [("parenthesized list terminated by bracket" "bracketed list terminated by parenthesis")
+                      (let* ([position (- position 1)]
+                          [head (if (zero? position) "" (string-take source position))]
+                          [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                        (inner (string-append head " " rest)))]
 
-                ;; Group 2: EOF / dot / sharp-sign
-                [("unexpected end-of-file reading ~a" "unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
-                  (let* ([head (if (zero? position) "" (string-take source position))]
-                      [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                    (private:tolerant-parse->patch (string-append head " " rest)))]
-                ["expected one item after dot (.)" 
-                  (let* ([dot-pos 
-                        (let search ([i (min position (- (string-length source) 1))])
-                          (cond
-                            [(< i 0) 0]
-                            [(char=? #\. (string-ref source i)) i]
-                            [else (search (- i 1))]))])
-                    (private:tolerant-parse->patch (private:replace-region source dot-pos 1)))]
-                ["more than one item found after dot (.)" 
-                  (let* ([head (if (zero? position) "" (string-take source position))]
-                      [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                    (private:tolerant-parse->patch (string-append head " " rest)))]
+                    ;; Group 2: EOF / dot / sharp-sign
+                    [("unexpected end-of-file reading ~a" "unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
+                      (let* ([head (if (zero? position) "" (string-take source position))]
+                          [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                        (inner (string-append head " " rest)))]
+                    ["expected one item after dot (.)" 
+                      (let* ([dot-pos 
+                            (let search ([i (min position (- (string-length source) 1))])
+                              (cond
+                                [(< i 0) 0]
+                                [(char=? #\. (string-ref source i)) i]
+                                [else (search (- i 1))]))])
+                        (inner (private:replace-region source dot-pos 1)))]
+                    ["more than one item found after dot (.)" 
+                      (let* ([head (if (zero? position) "" (string-take source position))]
+                          [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                        (inner (string-append head " " rest)))]
 
-                ;; Group 3: Vector family
-                ["too many vector elements supplied"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid vector length ~s"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["non-fixnum found in fxvector"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["too many fxvector elements supplied"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid fxvector length ~s"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["non-flonum found in flvector"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["too many flvector elements supplied"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid value ~:[~s~;~a~] found in bytevector"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["non-octet found in bytevector"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["mask required for stencil vector"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["not enough stencil vector elements supplied"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["too many stencil vector elements supplied"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid stencil vector mask ~s"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
+                    ;; Group 3: Vector family
+                    ["too many vector elements supplied"
+                      (inner (private:replace-token source position))]
+                    ["invalid vector length ~s"
+                      (inner (private:replace-token source position))]
+                    ["non-fixnum found in fxvector"
+                      (inner (private:replace-token source position))]
+                    ["too many fxvector elements supplied"
+                      (inner (private:replace-token source position))]
+                    ["invalid fxvector length ~s"
+                      (inner (private:replace-token source position))]
+                    ["non-flonum found in flvector"
+                      (inner (private:replace-token source position))]
+                    ["too many flvector elements supplied"
+                      (inner (private:replace-token source position))]
+                    ["invalid value ~:[~s~;~a~] found in bytevector"
+                      (inner (private:replace-token source position))]
+                    ["non-octet found in bytevector"
+                      (inner (private:replace-token source position))]
+                    ["mask required for stencil vector"
+                      (inner (private:replace-token source position))]
+                    ["not enough stencil vector elements supplied"
+                      (inner (private:replace-token source position))]
+                    ["too many stencil vector elements supplied"
+                      (inner (private:replace-token source position))]
+                    ["invalid stencil vector mask ~s"
+                      (inner (private:replace-token source position))]
 
-                ;; Group 4: Atom / literal
-                ["invalid syntax #!~a" 
-                  (let* ([head (if (zero? position) "" (string-take source position))]
-                      [l 2]
-                      [rest (string-take-right source (max 0 (- (string-length source) position l)))])
-                    (private:tolerant-parse->patch (string-append head (make-string l #\space) rest)))]
-                ["invalid boolean #~a~c"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid character name #\\~a" 
-                  (let* ([position (max 0 (- position 2))]
-                      [l (+ 2 (string-length what))]
-                      [head (if (zero? position) "" (string-take source position))]
-                      [rest (string-take-right source (max 0 (- (string-length source) position l)))])
-                    (private:tolerant-parse->patch (string-append head (make-string l #\space) rest)))]
-                ["invalid hex character escape ~a"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid character #\\~a~a~a"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid delimiter ~a for ~a"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid character ~c in string hex escape"
-                  (let* ([head (string-take source position)]
-                      [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
-                    (private:tolerant-parse->patch (string-append head " " rest)))]
-                ["invalid string character \\~c"
-                  (let* ([esc-start 
-                        (if (and (> position 0) (char=? #\\ (string-ref source (- position 1))))
-                          (- position 1)
-                          position)]
-                      [l (if (= esc-start position) 1 2)])
-                    (private:tolerant-parse->patch (private:replace-region source esc-start l)))]
-                ["invalid code point value ~s in string hex escape"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["invalid number syntax ~a"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["cannot represent ~a"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
+                    ;; Group 4: Atom / literal
+                    ["invalid syntax #!~a" 
+                      (let* ([head (if (zero? position) "" (string-take source position))]
+                          [l 2]
+                          [rest (string-take-right source (max 0 (- (string-length source) position l)))])
+                        (inner (string-append head (make-string l #\space) rest)))]
+                    ["invalid boolean #~a~c"
+                      (inner (private:replace-token source position))]
+                    ["invalid character name #\\~a" 
+                      (let* ([position (max 0 (- position 2))]
+                          [l (+ 2 (string-length what))]
+                          [head (if (zero? position) "" (string-take source position))]
+                          [rest (string-take-right source (max 0 (- (string-length source) position l)))])
+                        (inner (string-append head (make-string l #\space) rest)))]
+                    ["invalid hex character escape ~a"
+                      (inner (private:replace-token source position))]
+                    ["invalid character #\\~a~a~a"
+                      (inner (private:replace-token source position))]
+                    ["invalid delimiter ~a for ~a"
+                      (inner (private:replace-token source position))]
+                    ["invalid character ~c in string hex escape"
+                      (let* ([head (string-take source position)]
+                          [rest (string-take-right source (max 0 (- (string-length source) position 1)))])
+                        (inner (string-append head " " rest)))]
+                    ["invalid string character \\~c"
+                      (let* ([esc-start 
+                            (if (and (> position 0) (char=? #\\ (string-ref source (- position 1))))
+                              (- position 1)
+                              position)]
+                          [l (if (= esc-start position) 1 2)])
+                        (inner (private:replace-region source esc-start l)))]
+                    ["invalid code point value ~s in string hex escape"
+                      (inner (private:replace-token source position))]
+                    ["invalid number syntax ~a"
+                      (inner (private:replace-token source position))]
+                    ["cannot represent ~a"
+                      (inner (private:replace-token source position))]
 
-                ;; Group 5: Gensym / record / graph-mark
-                ["expected close brace terminating gensym syntax"
-                  (let* ([start 
-                        (let search ([i (min position (- (string-length source) 1))])
-                          (cond
-                            [(< i 0) 0]
-                            [(char=? #\# (string-ref source i)) i]
-                            [else (search (- i 1))]))])
-                    (private:tolerant-parse->patch (private:replace-region source start (- (string-length source) start))))]
-                ["non-symbol found after #["
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["unrecognized record name ~s"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["too few fields supplied for record ~s"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["too many fields supplied for record ~s"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["duplicate mark #~s= seen"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
-                ["mark #~s= missing"
-                  (private:tolerant-parse->patch (private:replace-token source position))]
+                    ;; Group 5: Gensym / record / graph-mark
+                    ["expected close brace terminating gensym syntax"
+                      (let* ([start 
+                            (let search ([i (min position (- (string-length source) 1))])
+                              (cond
+                                [(< i 0) 0]
+                                [(char=? #\# (string-ref source i)) i]
+                                [else (search (- i 1))]))])
+                        (inner (private:replace-region source start (- (string-length source) start))))]
+                    ["non-symbol found after #["
+                      (inner (private:replace-token source position))]
+                    ["unrecognized record name ~s"
+                      (inner (private:replace-token source position))]
+                    ["too few fields supplied for record ~s"
+                      (inner (private:replace-token source position))]
+                    ["too many fields supplied for record ~s"
+                      (inner (private:replace-token source position))]
+                    ["duplicate mark #~s= seen"
+                      (inner (private:replace-token source position))]
+                    ["mark #~s= missing"
+                      (inner (private:replace-token source position))]
 
-                ;; Group 6: Fasl
-                ["unsupported old fasl format detected---use new format with binary i/o"
-                  (private:tolerant-parse->patch "")]
+                    ;; Group 6: Fasl
+                    ["unsupported old fasl format detected---use new format with binary i/o"
+                      (inner "")]
 
-                [else
-                  (warning 'tokenizer-warning "" `(,(condition-who e) ,msg ,irritants))
-                  source]))]
-          [else
-            (warning 'tokenizer-warning4 "" `(,e))
-            source])))))
+                    [else
+                      (warning 'tokenizer-warning "" `(,(condition-who e) ,msg ,irritants))
+                      source]))]
+              [else
+                (warning 'tokenizer-warning4 "" `(,e))
+                source]))))))))
+
 (define (private:condition->diagnose condition source . maybe-fallback)
   (let* ([fallback (if (null? maybe-fallback) 0 (car maybe-fallback))]
          [msg (condition-message condition)]
          [irritants (condition-irritants condition)]
+         [actual-msg
+           (if (string=? msg "~? at char ~a of ~s")
+             (cond
+               [(and (pair? irritants) (string? (car irritants))) (car irritants)]
+               [(and (pair? irritants) (pair? (car irritants)) (string? (caar irritants))) (caar irritants)]
+               [else msg])
+             msg)]
          [position 
            (cond
              [(and (condition? condition) (pair? irritants) (string? (car irritants)) (>= (length irritants) 3) (number? (caddr irritants)))
@@ -261,63 +284,63 @@
          [start (max 0 (or position 0))]
          [end 
            (cond
-             [(or (private:message-matches? msg "unexpected dot (.)")
-                  (private:message-matches? msg "unexpected close parenthesis")
-                  (private:message-matches? msg "unexpected close bracket")
-                  (private:message-matches? msg "unexpected end-of-file reading ~a")
-                  (private:message-matches? msg "parenthesized list terminated by bracket")
-                  (private:message-matches? msg "bracketed list terminated by parenthesis")
-                  (private:message-matches? msg "more than one item found after dot (.)")
-                  (private:message-matches? msg "invalid character ~c in string hex escape"))
+             [(or (private:message-matches? actual-msg "unexpected dot (.)")
+                  (private:message-matches? actual-msg "unexpected close parenthesis")
+                  (private:message-matches? actual-msg "unexpected close bracket")
+                  (private:message-matches? actual-msg "unexpected end-of-file reading ~a")
+                  (private:message-matches? actual-msg "parenthesized list terminated by bracket")
+                  (private:message-matches? actual-msg "bracketed list terminated by parenthesis")
+                  (private:message-matches? actual-msg "more than one item found after dot (.)")
+                  (private:message-matches? actual-msg "invalid character ~c in string hex escape"))
               (+ start 1)]
-             [(private:message-matches? msg "invalid syntax #!~a")
+             [(private:message-matches? actual-msg "invalid syntax #!~a")
               (+ start 2)]
-             [(private:message-matches? msg "expected one item after dot (.)")
+             [(private:message-matches? actual-msg "expected one item after dot (.)")
               (let ([dot-pos 
                       (let search ([i (min start (- (string-length source) 1))])
                         (cond [(< i 0) 0] [(char=? #\. (string-ref source i)) i] [else (search (- i 1))]))])
                 (+ dot-pos 1))]
-             [(private:message-matches? msg "expected close brace terminating gensym syntax")
+             [(private:message-matches? actual-msg "expected close brace terminating gensym syntax")
               (string-length source)]
-             [(private:message-matches? msg "invalid string character \\~c")
+             [(private:message-matches? actual-msg "invalid string character \\~c")
               (let ([esc-start (if (and (> start 0) (char=? #\\ (string-ref source (- start 1)))) (- start 1) start)])
                 (+ esc-start (if (= esc-start start) 1 2)))]
-             [(private:message-matches? msg "invalid character name #\\~a")
+             [(private:message-matches? actual-msg "invalid character name #\\~a")
               (let ([what 
                       (cond
                         [(and (pair? irritants) (pair? (cdr irritants)) (pair? (cadr irritants))) (caadr irritants)]
                         [(and (pair? irritants) (pair? (car irritants)) (pair? (cdar irritants)) (pair? (cadar irritants))) (caadar irritants)]
                         [else ""])])
                 (+ start 2 (string-length what)))]
-             [(or (private:message-matches? msg "invalid boolean #~a~c")
-                  (private:message-matches? msg "invalid hex character escape ~a")
-                  (private:message-matches? msg "invalid character #\\~a~a~a")
-                  (private:message-matches? msg "invalid delimiter ~a for ~a")
-                  (private:message-matches? msg "invalid number syntax ~a")
-                  (private:message-matches? msg "cannot represent ~a")
-                  (private:message-matches? msg "too many vector elements supplied")
-                  (private:message-matches? msg "invalid vector length ~s")
-                  (private:message-matches? msg "non-fixnum found in fxvector")
-                  (private:message-matches? msg "too many fxvector elements supplied")
-                  (private:message-matches? msg "invalid fxvector length ~s")
-                  (private:message-matches? msg "non-flonum found in flvector")
-                  (private:message-matches? msg "too many flvector elements supplied")
-                  (private:message-matches? msg "invalid value ~:[~s~;~a~] found in bytevector")
-                  (private:message-matches? msg "non-octet found in bytevector")
-                  (private:message-matches? msg "mask required for stencil vector")
-                  (private:message-matches? msg "not enough stencil vector elements supplied")
-                  (private:message-matches? msg "too many stencil vector elements supplied")
-                  (private:message-matches? msg "invalid stencil vector mask ~s")
-                  (private:message-matches? msg "non-symbol found after #[")
-                  (private:message-matches? msg "unrecognized record name ~s")
-                  (private:message-matches? msg "too few fields supplied for record ~s")
-                  (private:message-matches? msg "too many fields supplied for record ~s")
-                  (private:message-matches? msg "duplicate mark #~s= seen")
-                  (private:message-matches? msg "mark #~s= missing")
-                  (private:message-matches? msg "invalid code point value ~s in string hex escape"))
+             [(or (private:message-matches? actual-msg "invalid boolean #~a~c")
+                  (private:message-matches? actual-msg "invalid hex character escape ~a")
+                  (private:message-matches? actual-msg "invalid character #\\~a~a~a")
+                  (private:message-matches? actual-msg "invalid delimiter ~a for ~a")
+                  (private:message-matches? actual-msg "invalid number syntax ~a")
+                  (private:message-matches? actual-msg "cannot represent ~a")
+                  (private:message-matches? actual-msg "too many vector elements supplied")
+                  (private:message-matches? actual-msg "invalid vector length ~s")
+                  (private:message-matches? actual-msg "non-fixnum found in fxvector")
+                  (private:message-matches? actual-msg "too many fxvector elements supplied")
+                  (private:message-matches? actual-msg "invalid fxvector length ~s")
+                  (private:message-matches? actual-msg "non-flonum found in flvector")
+                  (private:message-matches? actual-msg "too many flvector elements supplied")
+                  (private:message-matches? actual-msg "invalid value ~:[~s~;~a~] found in bytevector")
+                  (private:message-matches? actual-msg "non-octet found in bytevector")
+                  (private:message-matches? actual-msg "mask required for stencil vector")
+                  (private:message-matches? actual-msg "not enough stencil vector elements supplied")
+                  (private:message-matches? actual-msg "too many stencil vector elements supplied")
+                  (private:message-matches? actual-msg "invalid stencil vector mask ~s")
+                  (private:message-matches? actual-msg "non-symbol found after #[")
+                  (private:message-matches? actual-msg "unrecognized record name ~s")
+                  (private:message-matches? actual-msg "too few fields supplied for record ~s")
+                  (private:message-matches? actual-msg "too many fields supplied for record ~s")
+                  (private:message-matches? actual-msg "duplicate mark #~s= seen")
+                  (private:message-matches? actual-msg "mark #~s= missing")
+                  (private:message-matches? actual-msg "invalid code point value ~s in string hex escape"))
               (string-find-delimiter source start)]
              [else (+ start 1)])])
-    `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " msg))))
+    `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " actual-msg))))
 
 (define (private:find-unclosed-parens source)
   (let loop ([i 0] [stack '()])
@@ -406,20 +429,10 @@
                     `(,ann . ,(loop (port-position port)))))
                 (except e
                   [(and tolerant? (condition? e))
-                    (let ([error-position (private:compute-error-position e port)])
-                      (when maybe-document
-                        (let ([msg (condition-message e)])
-                          (if (private:message-matches? msg "unexpected end-of-file reading ~a")
-                            (private:append-unclosed-paren-diagnoses maybe-document source msg)
-                            (begin
-                              (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error")))
-                              (when (or (private:message-matches? msg "parenthesized list terminated by bracket")
-                                        (private:message-matches? msg "bracketed list terminated by parenthesis"))
-                                (private:append-unclosed-paren-diagnoses maybe-document source msg))))))
-                      (let ([after (private:tolerant-parse->patch source error-position)])
-                        (if (= (string-length after) (string-length source))
-                          (source-file->annotations after path start-position #t maybe-document)
-                          (error 'tokenizer-error (condition-message e) (condition-irritants e)))))]
+                    (let ([after (private:tolerant-parse->patch source maybe-document (private:compute-error-position e port))])
+                      (if (= (string-length after) (string-length source))
+                        (source-file->annotations after path start-position #t maybe-document)
+                        (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
                   [(condition? e)
                     (let ([error-position (private:compute-error-position e port)])
                       (when maybe-document
