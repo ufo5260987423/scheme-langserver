@@ -8,6 +8,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver util io)
+    (scheme-langserver analysis bad-brackets-scanner)
     (ufo-try))
 
 ;I mainly handle miss-matched () and [], and here's serveral options:
@@ -45,6 +46,31 @@
   (let* ([head (if (zero? position) "" (string-take source position))]
       [rest (string-take-right source (max 0 (- (string-length source) position length)))])
     (string-append head (make-string (max 0 length) #\space) rest)))
+
+; Helper: replace multiple positions with spaces, preserving string length
+(define (private:replace-positions-with-spaces source positions)
+  (let ([result (string-copy source)])
+    (for-each
+      (lambda (pos)
+        (when (and (>= pos 0) (< pos (string-length result)))
+          (string-set! result pos #\space)))
+      positions)
+    result))
+
+; Helper: generate a diagnose for a bad bracket position
+(define (private:bad-bracket-position->diagnose source pos)
+  (let ([ch (string-ref source pos)])
+    (cond
+      [(char=? ch #\()
+       `(,pos ,(+ pos 1) 1 "Syntax error: unclosed parenthesis" "syntax" "syntax-error")]
+      [(char=? ch #\[)
+       `(,pos ,(+ pos 1) 1 "Syntax error: unclosed bracket" "syntax" "syntax-error")]
+      [(char=? ch #\))
+       `(,pos ,(+ pos 1) 1 "Syntax error: unexpected close parenthesis" "syntax" "syntax-error")]
+      [(char=? ch #\])
+       `(,pos ,(+ pos 1) 1 "Syntax error: unexpected close bracket" "syntax" "syntax-error")]
+      [else
+       `(,pos ,(+ pos 1) 1 "Syntax error: bad bracket" "syntax" "syntax-error")])))
 
 ; Helper: find next delimiter position in string
 (define (string-find-delimiter s position)
@@ -86,7 +112,8 @@
     ([source] (private:tolerant-parse->patch source #f 0))
     ([source maybe-document] (private:tolerant-parse->patch source maybe-document 0))
     ([source maybe-document fallback]
-      (let ([original-source source])
+      (let ([original-source source]
+            [seen-ht (if maybe-document (make-hashtable equal-hash equal?) #f)])
         (let inner ([source source])
           (let loop ([port (open-input-string source)])
             (try 
@@ -124,16 +151,14 @@
                           [(and (pair? irritants) (pair? (cdr irritants)) (pair? (cadr irritants))) (caadr irritants)]
                           [(and (pair? irritants) (pair? (car irritants)) (pair? (cdar irritants)) (pair? (cadar irritants))) (caadar irritants)]
                           [else ""])])
-                    (when (and maybe-document (eq? original-source source))
+                    (when maybe-document
                       (case template
                         [("unexpected end-of-file reading ~a" "unexpected dot (.)" "invalid sharp-sign prefix #~c" ) 
-                          (private:append-unclosed-paren-diagnoses maybe-document original-source msg)]
+                          (void)]
                         [("parenthesized list terminated by bracket" "bracketed list terminated by parenthesis")
-                          (begin
-                            (append-new-diagnoses maybe-document (append (private:condition->diagnose e original-source fallback) '("syntax" "syntax-error")))
-                            (private:append-unclosed-paren-diagnoses maybe-document original-source msg))]
+                          (private:append-diagnose-once seen-ht maybe-document (append (private:condition->diagnose e original-source fallback) '("syntax" "syntax-error")))]
                         [else
-                          (append-new-diagnoses maybe-document (append (private:condition->diagnose e original-source fallback) '("syntax" "syntax-error")))]))
+                          (private:append-diagnose-once seen-ht maybe-document (append (private:condition->diagnose e original-source fallback) '("syntax" "syntax-error")))]))
                     (case template
                     ;; Group 1: Parenthesis / bracket
                     [("unexpected close parenthesis" "unexpected close bracket")
@@ -281,7 +306,12 @@
              [(and (condition? condition) (pair? irritants) (pair? (car irritants)) (string? (caar irritants)) (>= (length (car irritants)) 3) (number? (caddar irritants)))
               (caddar irritants)]
              [else (or (private:extract-position-from-message msg) fallback)])]
-         [start (max 0 (or position 0))]
+         [start 
+           (let ([raw-start (max 0 (or position 0))])
+             (if (or (private:message-matches? actual-msg "parenthesized list terminated by bracket")
+                     (private:message-matches? actual-msg "bracketed list terminated by parenthesis"))
+               (max 0 (- raw-start 1))
+               raw-start))]
          [end 
            (cond
              [(or (private:message-matches? actual-msg "unexpected dot (.)")
@@ -342,35 +372,11 @@
              [else (+ start 1)])])
     `(,start ,(min end (string-length source)) 1 ,(string-append "Syntax error: " actual-msg))))
 
-(define (private:find-unclosed-parens source)
-  (let loop ([i 0] [stack '()])
-    (cond
-      [(>= i (string-length source)) (reverse stack)]
-      [(char=? #\( (string-ref source i))
-       (loop (+ i 1) (cons `(,i #\() stack))]
-      [(char=? #\[ (string-ref source i))
-       (loop (+ i 1) (cons `(,i #\[) stack))]
-      [(char=? #\) (string-ref source i))
-       (if (and (pair? stack) (char=? #\( (cadar stack)))
-         (loop (+ i 1) (cdr stack))
-         (loop (+ i 1) stack))]
-      [(char=? #\] (string-ref source i))
-       (if (and (pair? stack) (char=? #\[ (cadar stack)))
-         (loop (+ i 1) (cdr stack))
-         (loop (+ i 1) stack))]
-      [else (loop (+ i 1) stack)])))
-
-(define (private:append-unclosed-paren-diagnoses document source msg)
-  (let ([unclosed (private:find-unclosed-parens source)])
-    (for-each
-      (lambda (item)
-        (let ([pos (car item)])
-          (append-new-diagnoses document
-            `(,pos ,(+ pos 1) 1
-              ,(string-append "Syntax error: unclosed "
-                (if (char=? #\( (cadr item)) "parenthesis" "bracket"))
-              "syntax" "syntax-error"))))
-      unclosed)))
+(define (private:append-diagnose-once ht document diagnose)
+  (let ([key (cons (car diagnose) (list-ref diagnose 3))])
+    (when (or (not ht) (not (hashtable-contains? ht key)))
+      (when ht (hashtable-set! ht key #t))
+      (append-new-diagnoses document diagnose))))
 
 ; block comment: #| ... |#
 ; may be nested
@@ -417,33 +423,46 @@
       (source-file->annotations source path start-position tolerant? #f))
     ([source path start-position tolerant? maybe-document]
       (if (file-exists? path)
-        (let ([port (open-string-input-port source)]
-            [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
-          (set-port-position! port start-position)
-          (filter annotation? 
-            (let loop ([position start-position])
-              (try
-                (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
-                  (if (= position (port-position port))
-                    '()
-                    `(,ann . ,(loop (port-position port)))))
-                (except e
-                  [(and tolerant? (condition? e))
-                    (let ([after (private:tolerant-parse->patch source maybe-document (private:compute-error-position e port))])
-                      (if (= (string-length after) (string-length source))
-                        (source-file->annotations after path start-position #t maybe-document)
-                        (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
-                  [(condition? e)
-                    (let ([error-position (private:compute-error-position e port)])
-                      (when maybe-document
-                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
-                      (error 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
-                  [else 
-                    (let ([error-position (max 0 (- (port-position port) 1))])
-                      (when maybe-document
-                        (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
-                      (warning 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant?))
-                      '())])))))
+        (let ([source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+          (let* ([preprocessed-source
+                   (if tolerant?
+                     (let* ([bad-positions (compute-bad-brackets source)]
+                            [cleaned-source (private:replace-positions-with-spaces source bad-positions)]
+                            [seen-ht (if maybe-document (make-hashtable equal-hash equal?) #f)])
+                       (when maybe-document
+                         (for-each
+                           (lambda (pos)
+                             (private:append-diagnose-once seen-ht maybe-document
+                               (private:bad-bracket-position->diagnose source pos)))
+                           bad-positions))
+                       cleaned-source)
+                     source)]
+                 [port (open-string-input-port preprocessed-source)])
+            (set-port-position! port start-position)
+            (filter annotation? 
+              (let loop ([position start-position])
+                (try
+                  (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
+                    (if (= position (port-position port))
+                      '()
+                      `(,ann . ,(loop (port-position port)))))
+                  (except e
+                    [(and tolerant? (condition? e))
+                      (let ([after (private:tolerant-parse->patch preprocessed-source maybe-document (private:compute-error-position e port))])
+                        (if (= (string-length after) (string-length preprocessed-source))
+                          (source-file->annotations after path start-position #t maybe-document)
+                          (error 'tokenizer-error (condition-message e) (condition-irritants e))))]
+                    [(condition? e)
+                      (let ([error-position (private:compute-error-position e port)])
+                        (when maybe-document
+                          (append-new-diagnoses maybe-document (append (private:condition->diagnose e preprocessed-source error-position) '("syntax" "syntax-error"))))
+                        (error 'tokenizer-error0 path `(,preprocessed-source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
+                    [else 
+                      (let ([error-position (max 0 (- (port-position port) 1))])
+                        (when maybe-document
+                          (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
+                        (warning 'tokenizer-error0 path `(,preprocessed-source ,path ,error-position ,tolerant?))
+                        '())]))))))
           (begin
             (when maybe-document
               (append-new-diagnoses maybe-document `(0 0 1 ,(string-append "File not found: " path) "syntax" "file-not-found")))

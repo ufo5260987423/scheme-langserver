@@ -26,7 +26,8 @@
 (test-end)
 
 (test-begin "tolerant parse")
-  (test-equal 8 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
+  ; Task 2: preprocessing returns 4 clean datums instead of 8 from old patch/retry side-effects
+  (test-equal 4 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
 (test-end)
 
 ;; The following tests verify that source-file->annotations gracefully degrades
