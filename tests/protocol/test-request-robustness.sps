@@ -25,6 +25,8 @@
       #f   ; request-queue
       '()  ; workspace
       #f   ; type-inference?
+      'r6rs ; top-environment
+      #f   ; cache-path
       )))
 
 ;; 1. Normal JSON message

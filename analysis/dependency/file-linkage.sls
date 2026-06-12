@@ -1,8 +1,10 @@
 (library (scheme-langserver analysis dependency file-linkage)
   (export 
     init-file-linkage
+    make-file-linkage
 
     file-linkage-path->id-map
+    file-linkage-path->id-map-set!
     file-linkage?
     file-linkage-id->path-map
     file-linkage-matrix

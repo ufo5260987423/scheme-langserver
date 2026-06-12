@@ -11,6 +11,7 @@
     document-ordered-reference-list-set!
     document-refreshable?
     document-refreshable?-set!
+    document-line-length-vector
     document-line-length-vector-set!
     document-diagnoses
     document-diagnoses-set!

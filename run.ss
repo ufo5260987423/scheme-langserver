@@ -15,6 +15,8 @@ Options:
 
   -t, --type-inference          Enable type inference. (default: enable)
 
+  -c, --cache-path              Directory to read/write workspace cache. (default: disabled)
+
   -h, --help                    Print help information.
 
   -v, --version                 Print version information.
@@ -53,6 +55,7 @@ Example Usage:
 (define default-multi-thread #t)
 (define default-type-inference #t)
 (define default-top-environment 'r6rs)
+(define default-cache-path #f)
 
 (define (make-default-options)
   (let ((ht (make-hashtable string-hash equal?)))
@@ -60,6 +63,7 @@ Example Usage:
     (hashtable-set! ht "multi-thread" default-multi-thread)
     (hashtable-set! ht "type-inference" default-type-inference)
     (hashtable-set! ht "top-environment" default-top-environment)
+    (hashtable-set! ht "cache-path" default-cache-path)
     ht))
 
 (define (log-path-proc option name arg seeds)
@@ -77,6 +81,10 @@ Example Usage:
 
 (define multi-thread-proc (boolean-option-proc "multi-thread"))
 (define type-inference-proc (boolean-option-proc "type-inference"))
+
+(define (cache-path-proc option name arg seeds)
+  (hashtable-set! seeds "cache-path" arg)
+  seeds)
 
 (define (top-environment-parse str)
   (cond
@@ -113,7 +121,9 @@ Example Usage:
     (option '(#\t "type-inference") #t #f
            type-inference-proc)
     (option '(#\e "top-environment") #t #f
-           top-environment-proc)))
+           top-environment-proc)
+    (option '(#\c "cache-path") #t #f
+           cache-path-proc)))
 
 (let* ([args 
         (args-fold
@@ -136,4 +146,6 @@ Example Usage:
       (make-transcoder (utf-8-codec)))
     (hashtable-ref args "multi-thread" default-multi-thread)
     (hashtable-ref args "type-inference" default-type-inference)
-    (hashtable-ref args "top-environment" default-top-environment)))
+    (hashtable-ref args "top-environment" default-top-environment)
+    #f
+    (hashtable-ref args "cache-path" default-cache-path)))

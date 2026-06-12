@@ -15,5 +15,8 @@
            ((chibi pathname) "^0.9.0")
            ("ufo-match" "^1.0.0-alpha.0")
            ((slib string-search) "^3.1.5")
-           ("chez-srfi" "^0.0.0-akku.209.552cd37"))
+           ("chez-srfi" "^0.0.0-akku.209.552cd37")
+           ("ufo-persistence"
+            (version "1.0.0-alpha.0")
+            (location (directory "/home/ufo/Documents/workspace/uv-environment/ufo-persistence"))))
 )
