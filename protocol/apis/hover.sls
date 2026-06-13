@@ -26,44 +26,46 @@
       [position (alist->position (assq-ref params 'position))]
       [line (position-line position)]
       [character (position-character position)]
-      [file-node (resolve-uri->file-node (workspace-file-node workspace) (text-document-uri text-document))]
-      [document (file-node-document file-node)])
-    (refresh-workspace-for workspace file-node)
-    (let* ([index-node-list (document-index-node-list document)]
-        [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
-        [import-file-node (if (null? target-index-node) '() (ancestor-recursion:index-node-import-file-nodes target-index-node))]
-        [prefix 
-          (if (index-node? target-index-node)  
-            (if (and (null? (index-node-children target-index-node)) (null? import-file-node))
-              (annotation-stripped (index-node-datum/annotations target-index-node)) 
-              '())
-            '())]
-        [type-string 
-          (if (and (workspace-type-inference? workspace) (null? import-file-node))
-            (let* ([types (type:interpret-result-list target-index-node)])
-              (fold-left 
-                (lambda (prev current)
-                  (string-append prev "\n\n" current))
-                "## Type Inference"
-                (dedupe (apply append (map type:interpret->strings types)))))
-            "")])
-      (if (null? import-file-node)
-        (make-alist 
-          'contents 
-          (list->vector 
-            (append 
-              `(
-                ,(if (index-node? target-index-node)
-                  (string-append 
-                    "# "
-                    (call-with-string-output-port 
-                      (lambda (p) (pretty-print prefix p))))
-                  "")
-                ,type-string)
-              (if (symbol? prefix)
-                (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
-                '()))))
-        '()))))
+      [file-node (resolve-uri->file-node (workspace-file-node workspace) (text-document-uri text-document))])
+    (if (null? file-node)
+      'null
+      (let* ([document (file-node-document file-node)])
+        (refresh-workspace-for workspace file-node)
+        (let* ([index-node-list (document-index-node-list document)]
+            [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
+            [import-file-node (if (null? target-index-node) '() (ancestor-recursion:index-node-import-file-nodes target-index-node))]
+            [prefix 
+              (if (index-node? target-index-node)  
+                (if (and (null? (index-node-children target-index-node)) (null? import-file-node))
+                  (annotation-stripped (index-node-datum/annotations target-index-node)) 
+                  '())
+                '())]
+            [type-string 
+              (if (and (workspace-type-inference? workspace) (null? import-file-node))
+                (let* ([types (type:interpret-result-list target-index-node)])
+                  (fold-left 
+                    (lambda (prev current)
+                      (string-append prev "\n\n" current))
+                    "## Type Inference"
+                    (dedupe (apply append (map type:interpret->strings types)))))
+                "")])
+          (if (null? import-file-node)
+            (make-alist 
+              'contents 
+              (list->vector 
+                (append 
+                  `(
+                    ,(if (index-node? target-index-node)
+                      (string-append 
+                        "# "
+                        (call-with-string-output-port 
+                          (lambda (p) (pretty-print prefix p))))
+                      "")
+                    ,type-string)
+                  (if (symbol? prefix)
+                    (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
+                    '()))))
+            '()))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
 (define (identifier-reference->hover reference) 

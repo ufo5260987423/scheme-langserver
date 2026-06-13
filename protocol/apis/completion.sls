@@ -26,11 +26,13 @@
 (define (completion workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [position (alist->position (assq-ref params 'position))]
-      [file-node (resolve-uri->file-node (workspace-file-node workspace) (text-document-uri text-document))]
-      [document (file-node-document file-node)]
-      [text (document-text document)]
-      [bias (document+position->bias document (position-line position) (position-character position))]
-      [fuzzy (refresh-workspace-for workspace file-node)]
+      [file-node (resolve-uri->file-node (workspace-file-node workspace) (text-document-uri text-document))])
+    (if (null? file-node)
+      '#()
+      (let* ([document (file-node-document file-node)]
+          [text (document-text document)]
+          [bias (document+position->bias document (position-line position) (position-character position))]
+          [fuzzy (refresh-workspace-for workspace file-node)]
       [index-node-list (document-index-node-list document)]
       [pre-target-index-node (pick-index-node-from index-node-list bias)]
       [target-index-node 
@@ -78,7 +80,7 @@
         [else 
           (map  
             (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
-            (sort-identifier-references whole-list))]))))
+            (sort-identifier-references whole-list))]))))))
 
 (define (private-generate-position-expression index-node)
   (let ([ancestor (index-node-parent index-node)])

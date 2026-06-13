@@ -77,4 +77,13 @@
     (find (lambda (s) (and (string? s) (string-contains? s "Type Inference"))) (vector->list contents))))
 (test-end)
 
+(test-begin "hover on unresolved uri returns null")
+(let* ([workspace (init-workspace (current-directory) 'akku 'r6rs #f #f)]
+       [params (make-alist
+                 'textDocument (make-alist 'uri "file:///nonexistent/ignored.sls")
+                 'position (make-alist 'line 0 'character 0))]
+       [result (hover workspace params)])
+  (test-equal "unresolved uri returns null" 'null result))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
