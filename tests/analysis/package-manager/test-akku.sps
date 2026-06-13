@@ -18,6 +18,9 @@
     (test-equal #t (checker (string-append (current-directory) "/scheme-langserver.sls")))
     (test-equal #t (checker (string-append (current-directory) "/util/path.sls")))
     (test-equal #t (checker (string-append (current-directory) "/.akku/lib/srfi/:13/strings.chezscheme.sls")))
+    ; .akku/list may URL-encode characters such as ":" as "%3a"; ensure the
+    ; filter decodes those entries so the real filesystem paths are accepted.
+    (test-equal #t (checker (string-append (current-directory) "/.akku/lib/srfi/:152/r7rs-shim.scm")))
     (test-equal #t (checker (string-append (current-directory) "/.akku/lib/")))
     (test-equal #t (checker (string-append (current-directory) "/.akku/lib"))))
 (test-end)
