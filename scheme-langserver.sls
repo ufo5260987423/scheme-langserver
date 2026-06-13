@@ -32,13 +32,6 @@
     (scheme-langserver util association)
     (scheme-langserver util path))
 
-(define (private:save-workspace-cache-if-any server-instance)
-  (let ([workspace (server-workspace server-instance)]
-      [cache-path (server-cache-path server-instance)])
-    (when (and workspace cache-path)
-      (guard (ex [else (do-log "failed to save workspace cache" server-instance)])
-        (save-workspace-cache-for! workspace cache-path 'akku (server-top-environment server-instance))))))
-
 (define (private:send-error-response server-instance id method)
   (try
     (send-message server-instance (fail-response id unknown-error-code method))
@@ -78,9 +71,7 @@
       [params (request-params request)]
       [workspace (server-workspace server-instance)])
     (if (equal? "exit" method)
-      (begin
-        (private:save-workspace-cache-if-any server-instance)
-        (exit (if (server-shutdown? server-instance) 0 1)))
+      (exit (if (server-shutdown? server-instance) 0 1))
       (if (and (not debug?) (server-shutdown? server-instance))
         (if (and id (not (null? id)))
           (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
@@ -182,13 +173,13 @@
 
     (if (null? (server-mutex server-instance))
       (begin 
-        (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #f (server-type-inference? server-instance) (server-cache-path server-instance)))
+        (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #f (server-type-inference? server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
         (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
           (begin 
-            (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #t (server-type-inference? server-instance) (server-cache-path server-instance)))
+            (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #t (server-type-inference? server-instance)))
             (server-work-done-progress?-set! server-instance workDoneProgress?)
             (success-response id (make-alist 'capabilities server-capabilities)))
           (fail-response id server-error-start "server has been initialized"))))))
@@ -202,8 +193,7 @@
             '() 
             #f
             #f
-            'r6rs
-            #f)]
+            'r6rs)]
         [(log-path) 
           (init-server 
             (standard-input-port) 
@@ -215,19 +205,16 @@
               (make-transcoder (utf-8-codec))) 
             #f
             #f
-            'r6rs
-            #f)]
+            'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference?) 
-          (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs #f)]
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment)
-          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment #f #f)]
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment #f)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug?)
-          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? #f)]
-        [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path)
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) #f)]
               [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) #f)]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment cache-path)]
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment)]
               [request-processor (lambda (r) (private:try-catch server-instance r debug?))]
               [interval-timer 
                 (if (and enable-multi-thread? threaded?) 
@@ -244,7 +231,6 @@
                   (when thread-pool
                     (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
                     (thread-pool-stop! thread-pool))
-                  (private:save-workspace-cache-if-any server-instance)
                   server-instance)]
               [private:safe-read-message
                 (lambda ()

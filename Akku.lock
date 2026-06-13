@@ -121,7 +121,4 @@
   (location
    (url "https://archive.akkuscm.org/archive/pkg/c/chez-srfi_0.0.0-akku.244.b424440_repack.tar.xz"))
   (content
-   (sha256 "f4968e3d74c30d98297aaff3753b11225de45f99795cc2e3f6233e93f46d7c41")))
- ((name "ufo-persistence")
-  (location
-   (directory "/home/ufo/Documents/workspace/uv-environment/ufo-persistence"))))
+   (sha256 "f4968e3d74c30d98297aaff3753b11225de45f99795cc2e3f6233e93f46d7c41"))))

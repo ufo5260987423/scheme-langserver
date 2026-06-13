@@ -11,7 +11,7 @@ Due to occasional GitHub access restrictions from China, this repository is also
 
 <video src="https://github.com/user-attachments/assets/893bba98-6709-4fac-a4d3-dc7b6aab46fb" controls="controls" width="500" height="300"></video>
 
-**VSCode is now supported!** See the [setup guide](./doc/startup.md).
+**VSCode is now supported!** See the [setup guide](./doc/build-and-startup.md).
 
 > **Note:** Auto-generated type information is available [here](https://ufo5260987423.github.io/scheme-langserver/doc/analysis/type-inference-result). It is mainly used for downstream development and debugging.
 
@@ -26,10 +26,10 @@ The root cause is that Scheme and other Lisp dialects present a formidable chall
 The server has been tested on [Chez Scheme](https://cisco.github.io/ChezScheme/) 9.4, 9.5, and 10.x.
 
 ## Compilation, Installation & Configuration
-See the [setup guide](./doc/startup.md).
+See the [setup guide](./doc/build-and-startup.md).
 
 ## Debugging
-For troubleshooting tips, see [debugging.md](./doc/debugging.md).
+For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Recent Status
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
@@ -131,26 +131,26 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 
 ### Core Analysis
 1. [Catching identifier bindings](./doc/analysis/identifier.md) — how the abstract interpreter resolves `define`, `lambda`, `let`, `define-record-type`, etc.
-2. [Macro auto-resolution](./doc/analysis/macro-auto-resolve.md) — generic `syntax-rules` expansion vs hand-written rules
-3. [Type system & inference](./doc/analysis/type.md) — complete type-inference pipeline and DSL
+2. [Macro auto-resolution](./doc/analysis/identifier.md) — generic `syntax-rules` expansion vs hand-written rules
+3. [Type system & inference](./doc/analysis/type/type.md) — complete type-inference pipeline and DSL
 4. [Workspace lifecycle](./doc/analysis/workspace.md) — initialization, incremental updates, and refresh batches
-5. [File dependency graph](./doc/analysis/file-linkage.md) — topological sorting and linkage matrix
+5. [File dependency graph](./doc/analysis/dependency/file-linkage.md) — topological sorting and linkage matrix
 
 ### Protocol & Concurrency
-6. [API request scheduling](./doc/protocol/analysis.md) — request queue, engine time-slicing, cancellation, and document-sync protection
-7. [Diagnostic publication](./doc/publish-diagnoses.md) — how diagnostics are generated, accumulated, and sent
+6. [API request scheduling](./doc/protocol/analysis/request-queue.md) — request queue, engine time-slicing, cancellation, and document-sync protection
+7. [Diagnostic publication](./doc/protocol/diagnostic.md) — how diagnostics are generated, accumulated, and sent
 
 ### Debugging & Development
-8. [Debugging guide](./doc/debugging.md) — enable logs, replay logs, and iterative printf debugging
+8. [Debugging guide](./doc/testing/debugging.md) — enable logs, replay logs, and iterative printf debugging
 9. [Development guide (中文)](./doc/development-guide.md) / [English version](./doc/development-guide-en.md)
 10. [AGENTS.md](./AGENTS.md) — build steps, testing conventions, coding style, and common traps for contributors
 
 ### Research & Experiments
 11. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme
-12. [Macro resolution notes](./doc/macro-resolution-notes.md) — debugging notes for macro identifier capture
-13. [Syntax candy DSL](./doc/analysis/syntax-candy.md) — pattern matcher for type-rule authoring
-14. [Record type inference analysis](./doc/record-type-inference-analysis.md) — `define-record-type` in the type system
-15. [Type inference benchmark](./doc/analysis/type-inference-benchmark.md) — performance measurement methodology
+12. [Macro resolution notes](./doc/analysis/identifier.md) — debugging notes for macro identifier capture
+13. [Syntax candy DSL](./doc/analysis/type/domain-specific-language/syntax-candy.md) — pattern matcher for type-rule authoring
+14. [Record type inference analysis](./doc/analysis/type/record-inference.md) — `define-record-type` in the type system
+15. [Type inference benchmark](./doc/analysis/type/benchmark.md) — performance measurement methodology
 16. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
 
 ## License

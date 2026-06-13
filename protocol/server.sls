@@ -20,7 +20,6 @@
     server-condition
     server-request-queue
     server-top-environment
-    server-cache-path
 
     server-work-done-progress?
     server-work-done-progress?-set!)
@@ -43,8 +42,7 @@
     (mutable shutdown?)
     (mutable condition)
     (mutable work-done-progress?)
-    (immutable top-environment)
-    (immutable cache-path))
+    (immutable top-environment))
   (protocol
     (lambda (new)
       (case-lambda
@@ -62,8 +60,7 @@
             #f
             (make-condition)
             #f
-            'r6rs
-            #f)]
+            'r6rs)]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment)
           (new 
             input-port 
@@ -78,24 +75,7 @@
             #f
             (make-condition)
             #f
-            top-environment
-            #f)]
-        [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment cache-path)
-          (new 
-            input-port 
-            output-port 
-            log-port 
-            thread-pool
-            (if thread-pool (make-mutex) '())
-            (if thread-pool (make-mutex) '())
-            request-queue
-            type-inference?
-            workspace
-            #f
-            (make-condition)
-            #f
-            top-environment
-            cache-path)]))))
+            top-environment)]))))
 
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))

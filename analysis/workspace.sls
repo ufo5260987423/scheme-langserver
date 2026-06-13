@@ -5,7 +5,6 @@
     init-library-node
     init-document
     init-references
-    make-workspace
 
     refresh-workspace
     refresh-workspace-for
@@ -18,7 +17,6 @@
     workspace-library-node-set!
     workspace-file-linkage
     workspace-facet
-    workspace-threaded?
     workspace-type-inference?
     workspace-top-environment
     workspace-undiagnosed-paths
@@ -26,9 +24,7 @@
 
     update-file-node-with-tail
 
-    attach-new-file
-
-    save-workspace-cache-for!)
+    attach-new-file)
   (import 
     (ufo-match)
     (ufo-threaded-function)
@@ -62,9 +58,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system library-node)
-
-    (scheme-langserver analysis workspace-cache))
+    (scheme-langserver virtual-file-system library-node))
 
 (define-record-type workspace
   (fields
@@ -102,100 +96,28 @@
     (workspace-undiagnosed-paths-set! workspace-instance (apply append batches))
     workspace-instance))
 
-(define (private:generate-facet identifier path)
-  (case identifier
-    [txt (generate-txt-file-filter)]
-    [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-    [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))
-
-(define (private:init-workspace-from-scratch path identifier top-environment threaded? type-inference? facet)
-  (let* ([root-file-node (init-virtual-file-system path '() facet top-environment)]
-      [root-library-node (init-library-node root-file-node top-environment)]
-      [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
-      [batches (get-init-reference-batches file-linkage)]
-      [workspace-instance (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment (apply append batches))])
-    (init-references workspace-instance batches)
-    workspace-instance))
-
-(define (private:clear-file-node-diagnoses file-node)
-  (when (not (file-node-folder? file-node))
-    (document-diagnoses-set! (file-node-document file-node) '()))
-  (for-each private:clear-file-node-diagnoses (file-node-children file-node)))
-
-(define (private:prepare-workspace-payload workspace)
-  ;; 1. Clear document diagnoses (runtime state, must not be persisted)
-  (private:clear-file-node-diagnoses (workspace-file-node workspace))
-  ;; 2. Clear workspace undiagnosed-paths
-  (workspace-undiagnosed-paths-set! workspace '())
-  ;; 3. Clear file-linkage path->id-map (equal-hashtable cannot be decoded)
-  (let ([linkage (workspace-file-linkage workspace)])
-    (when linkage
-      (file-linkage-path->id-map-set! linkage (make-eq-hashtable))))
-  ;; Return serializable alist payload
-  `((file-node . ,(workspace-file-node workspace))
-    (library-node . ,(workspace-library-node workspace))
-    (file-linkage . ,(workspace-file-linkage workspace))
-    (threaded? . ,(workspace-threaded? workspace))
-    (type-inference? . ,(workspace-type-inference? workspace))
-    (top-environment . ,(workspace-top-environment workspace))
-    (undiagnosed-paths . ,(workspace-undiagnosed-paths workspace))))
-
-(define (rebuild-workspace-from-payload payload facet threaded?)
-  (let ([file-node (cdr (assq 'file-node payload))]
-        [library-node (cdr (assq 'library-node payload))]
-        [file-linkage (cdr (assq 'file-linkage payload))]
-        [type-inference? (cdr (assq 'type-inference? payload))]
-        [top-environment (cdr (assq 'top-environment payload))]
-        [undiagnosed-paths (cdr (assq 'undiagnosed-paths payload))])
-    (make-workspace file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths)))
-
-(define (private:file-content-changed? path cached-text)
-  (or (not (file-exists? path))
-      (guard (e [else #t])
-        (let ([disk-text (call-with-input-file path get-string-all)])
-          (not (string=? cached-text disk-text))))))
-
-(define (private:cache-consistency-check workspace-instance)
-  (let loop ([node (workspace-file-node workspace-instance)])
-    (let ([doc (file-node-document node)])
-      (or (and (document? doc)
-               (private:file-content-changed? (file-node-path node) (document-text doc)))
-          (ormap loop (file-node-children node))))))
-
-(define (private:try-load-workspace-cache cache-path path identifier top-environment threaded? type-inference?)
-  (and cache-path
-       (workspace-cache-available? cache-path)
-       (guard (ex (else #f))
-         (let ([payload (load-workspace-cache cache-path identifier top-environment)])
-           (let ([workspace-instance
-                   (rebuild-workspace-from-payload
-                     payload
-                     (private:generate-facet identifier path)
-                     threaded?)])
-             ;; If any file on disk differs from the cached text, fall back to
-             ;; a full refresh.  This is conservative but correct; incremental
-             ;; refresh can be added later.
-             (if (private:cache-consistency-check workspace-instance)
-               (refresh-workspace workspace-instance)
-               workspace-instance))))))
-
-(define (save-workspace-cache-for! workspace cache-path identifier top-environment)
-  (save-workspace-cache! (private:prepare-workspace-payload workspace) cache-path identifier top-environment))
-
 (define init-workspace
   (case-lambda 
-    [(path) (init-workspace path 'akku 'r6rs #f #f #f)]
-    [(path threaded?) (init-workspace path 'akku 'r6rs threaded? #f #f)]
-    [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference? #f)]
-    [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference? #f)]
+    [(path) (init-workspace path 'akku 'r6rs #f #f)]
+    [(path threaded?) (init-workspace path 'akku 'r6rs threaded? #f)]
+    [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference?)]
+    [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference?)]
     [(path identifier top-environment threaded? type-inference?) 
-      (init-workspace path identifier top-environment threaded? type-inference? #f)]
-    [(path identifier top-environment threaded? type-inference? cache-path)
-      (init-workspace path identifier top-environment threaded? type-inference? (private:generate-facet identifier path) cache-path)]
-    [(path identifier top-environment threaded? type-inference? facet cache-path)
-      (init-workspace-cache-registry!)
-      (or (private:try-load-workspace-cache cache-path path identifier top-environment threaded? type-inference?)
-          (private:init-workspace-from-scratch path identifier top-environment threaded? type-inference? facet))]))
+      (let* ([facet 
+            (case identifier
+              [txt (generate-txt-file-filter)]
+              [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
+              [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))])])
+        (init-workspace path identifier top-environment threaded? type-inference? facet))]
+    [(path identifier top-environment threaded? type-inference? facet)
+    ; (pretty-print `(DEBUG: function: init-workspace))
+      (let* ([root-file-node (init-virtual-file-system path '() facet top-environment)]
+          [root-library-node (init-library-node root-file-node top-environment)]
+          [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
+          [batches (get-init-reference-batches file-linkage)]
+          [workspace-instance (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment (apply append batches))])
+        (init-references workspace-instance batches)
+        workspace-instance)]))
 
 ;; head -[linkage]->files
 ;; for single file

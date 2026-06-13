@@ -345,14 +345,14 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `analysis/identifier/rules/library-import.sls` | `alias` modifier does not add refs when used inside a `(library ...)` form (script-level `import-process` works fine) | Low — `alias` is rare in library headers |
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
-| `doc/analysis/file-linkage.md:148` | Matrix shrink on file deletion is now implemented via `shrink-file-linkage!` | Resolved |
+| `doc/analysis/dependency/file-linkage.md:148` | Matrix shrink on file deletion is now implemented via `shrink-file-linkage!` | Resolved |
 | `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. The type system treats `inner:pair?` and `inner:list?` as disjoint. `matrix-from`/`matrix-to` now work around this by using `cons` inside the loop and `reverse` at the return point, so the accumulator stays correctly typed as `inner:list?`. No change to `cons`'s rule itself was needed. | Resolved — workaround in place |
 | `analysis/type/domain-specific-language/interpreter.sls` | `private-with` used `candy:match-right` when `input` contained `**1`/`...`. This fragmented list-valued bindings (e.g. `map`'s higher-order params) into multiple flat pairs that overwrote each other during `fold-left` + `private-substitute`, causing type collapse (e.g. `(inner:list? something? ...)` → `inner:list?`). | **Fixed** (2025-05-11) — unconditional `candy:match-left` preserves bindings intact |
 | `analysis/abstract-interpreter.sls:270` | Global `eq-hashtable` `private:expander-doc-cache-ht` was accessed unsafely from `threaded-map`, causing bucket-list corruption (100% CPU hang or `nonrecoverable invalid memory reference`). Cache removed; `private:find-expander-doc-for-node` now computes directly. | **Fixed** (2025-05-26) |
 | `analysis/workspace.sls` | `bf98f11` added `clear-expander-doc-cache!` and `clear-references-for` inside `private-init-references`, which runs in parallel via `threaded-map`. Both mutate global/shared state without synchronization. Moved to serial pre-phase before `threaded-map` (under `workspace-mutex`). | **Fixed** (2025-05-26) |
 | `scheme-langserver.sls:235` | When the client closes the connection without sending `exit`, `read-message` returns `#f` on EOF. The main loop called `thread-pool-stop!`, but worker threads were blocked in `request-queue-pop`'s `condition-wait` and could never consume the `kill-thread` job. Deadlock caused the process to remain alive after the client disconnected. | **Fixed** (2025-05-26) — `(exit 0)` on EOF instead of waiting for `thread-pool-stop!` |
-| `protocol/request.sls:26` | `read-message` has no exception guard around `parse-content`. Malformed JSON (unclosed strings, invalid escapes, NaN/Infinity, non-object roots like `[]`/`42`/`true`/`null`) propagates as unhandled `json-error` or `assq` crashes, killing the server. | **High** — any malformed LSP message crashes the server |
-| `protocol/request.sls:54` | `read-content` does not validate `content-length` from `get-content-length`. Negative values, non-numeric strings, or malformed headers (e.g. `Content-Length: 10: extra`) cause `get-bytevector-n` to crash. | **High** — malformed HTTP-style header crashes the server |
+| `protocol/request.sls:26` | `read-message` now wraps `parse-content` in `guard`; malformed JSON and non-object roots return `'invalid` instead of crashing the server. | **Fixed** (2026-06-13) — `guard` catches parse errors |
+| `protocol/request.sls:54` | `get-content-length` now validates the header as a non-negative integer and caps it at 10 MiB; malformed or negative values fall back to 0. | **Fixed** (2026-06-13) — validation added |
 | `analysis/workspace.sls:150` | `threaded-map` calls `private-init-references` without exception guard. Sub-thread exceptions leave `optional-finished?` unset, causing `de-optional` to `condition-wait` forever while `workspace-mutex` is held, blocking all subsequent requests. | **Fixed** (2025-05-28) — `try`/`except` added in `threaded-map` lambda; errors written to `document-diagnoses` |
 | `protocol/analysis/request-queue.sls:59` | `expire` acquires `workspace-mutex` when `tickal-task-stop?` is true. Intent is correct (cancelled task may be updating workspace), but implementation is incomplete (does not wait for sub-threads to finish). Currently harmless because `with-mutex` is reentrant, but provides no actual protection either. | Low — retained for future completion |
 | `analysis/workspace.sls` | Attempted post-phase undefined-identifier diagnostic (`5545e4c`, reverted in `4a13a70`). `find-available-references-for` returns empty for local bindings (let/lambda/define params) as well as truly undefined symbols. Distinguishing the two requires reliable binding-position tracking across all binding forms (including quoted symbols and library-name components), which proved too fragile in the current AST-walker architecture. | **Withdrawn** — requires deeper binding-tracking before retry |
@@ -434,3 +434,52 @@ Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstr
 | `index-node` | datum/annotations, parent, children, excluded-references, import-in-this-node, export-to-other-node | AST node |
 | `file-linkage` | path->id-map, id->path-map, matrix | Dependency graph |
 | `identifier-reference` | identifier, document, index-node, initialization-index-node, library-identifier, type, parents, type-expressions, **usage-count** (mutable) | Symbol reference |
+
+
+---
+
+## 11. Workspace Cache Persistence — Attempted and Withdrawn
+
+We attempted to add workspace cache persistence using `ufo-persistence` so that
+`init-workspace` could skip file I/O, parsing, and VFS construction on restart.
+The implementation:
+
+- Registered Chez built-ins (`annotation`, `source`, `source-file-descriptor`) and
+  scheme-langserver record types with `ufo-persistence`.
+- Stripped Chez annotation objects to plain s-expressions before save and
+  reconstructed them from cached positions after load.
+- Avoided persisting `file-linkage` (dense matrix, equal-hashtable) and rebuilt
+  it from the loaded trees.
+- Worked around shared-record-reference limitations by serializing
+  `library-node-file-nodes` as paths and re-linking them after load.
+
+### Why it was removed
+
+Benchmarks showed **no meaningful speedup**:
+
+| Fixture | Cold startup | Cached startup | Speedup |
+|---------|--------------|----------------|---------|
+| All real fixtures (~40 files) | ~250 ms | ~248 ms | ~1.01x |
+| Synthetic 100-copy simple-lib (200 files) | ~1360 ms | ~1400 ms | ~0.97x |
+
+Because the cache still has to:
+
+1. Deserialize a large record graph from disk.
+2. Reconstruct `annotation` objects for every index-node.
+3. Rebuild `file-linkage` from scratch.
+4. Re-run `init-references` (the abstract interpreter / type inference) over all
+   files — the heaviest phase.
+
+The savings from skipping file reads and directory scans were outweighed by
+serialization/deserialization and annotation-reconstruction overhead. Achieving
+a real startup speedup would require persisting the identifier-reference network
+and `file-linkage` in full, which is a larger project and was not justified by
+the measured gains.
+
+### Lesson learned
+
+**Serialization alone does not speed up startup** when the dominant cost is the
+abstract interpreter and the cache cannot avoid the dominant phase. Before
+re-introducing persistence, profile to ensure the saved phase is actually a
+significant fraction of startup time, and design the cache to skip that phase
+entirely rather than merely replacing file I/O with deserialization.

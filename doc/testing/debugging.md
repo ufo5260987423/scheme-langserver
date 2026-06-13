@@ -4,7 +4,7 @@
 
 ### Magic Scheme
 As shown in this figure, you may find `Magic Scheme > Scheme-langserver: Log Path`, and please give it an available path, so that you may know what scheme-langserver did wrong.
-![Config Magic Scheme](figure/configMagicScheme.png "config Magic Scheme")
+![Config Magic Scheme](../figure/configMagicScheme.png "config Magic Scheme")
 
 ### Lunar Vim
 It's convenient to add `path-to-log-file` and re-write file `~/.local/share/lunarvim/site/pack/packer/start/nvim-lspconfig/lua/lspconfig/server_configurations/scheme_langserver.lua` as follows:
@@ -164,7 +164,7 @@ The most common way to use these scripts is **not** a one-shot replay. Instead, 
    ```bash
    rm -rf .akku/libobj/scheme-langserver
    ```
-   (See [AGENTS.md §3](../../../AGENTS.md) for a longer explanation.)
+   (See [AGENTS.md §3](../../AGENTS.md) for a longer explanation.)
 
 6. **Re-run the replay.**
    ```bash

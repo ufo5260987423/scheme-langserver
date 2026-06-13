@@ -21,7 +21,7 @@ The result is a two-phase pipeline:
 
 Both phases are expressed in a small **domain-specific language (DSL)** that lives inside the type subsystem.
 
-> For the list-pattern matcher used when applying lambda types and macro heads, see [`syntax-candy.md`](syntax-candy.md).
+> For the list-pattern matcher used when applying lambda types and macro heads, see [`syntax-candy.md`](domain-specific-language/syntax-candy.md).
 
 ---
 
