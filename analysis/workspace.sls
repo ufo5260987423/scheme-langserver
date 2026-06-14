@@ -145,11 +145,9 @@
                           (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
                             (document-diagnoses document))])
                       (document-diagnoses-set! document '())
-                      (if (null? index-node-list)
-                        (cons path syntax-diagnoses)
-                        (begin
-                          (clear-references-for (car index-node-list))
-                          (cons path syntax-diagnoses)))))
+                      (when (not (null? index-node-list))
+                        (clear-references-for (car index-node-list)))
+                      (cons path syntax-diagnoses)))
                   paths)])
               (threaded-map 
                 (lambda (pair) 
@@ -163,13 +161,13 @@
                         [(condition? c)
                           (append-new-diagnoses document 
                             `(0 0 1 ,(string-append "Analysis error: " 
-                                (with-output-to-string (lambda () (pretty-print c)))) 
+                                (with-output-to-string (lambda () (display-condition c)))) 
                                 "analysis" "analysis-error"))
                           '()]
                         [else 
                           (append-new-diagnoses document 
                             `(0 0 1 ,(string-append "Analysis error: " 
-                                (with-output-to-string (lambda () (pretty-print c)))) 
+                                (with-output-to-string (lambda () (write c)))) 
                                 "analysis" "analysis-error"))
                           '()]))))
                 path+syntax-pairs)))
@@ -183,11 +181,9 @@
                       (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
                         (document-diagnoses document))])
                   (document-diagnoses-set! document '())
-                  (if (null? index-node-list)
-                    (private-init-references workspace-instance path syntax-diagnoses)
-                    (begin
-                      (clear-references-for (car index-node-list))
-                      (private-init-references workspace-instance path syntax-diagnoses)))))
+                  (when (not (null? index-node-list))
+                    (clear-references-for (car index-node-list))
+                    (private-init-references workspace-instance path syntax-diagnoses))))
               paths)))))
     target-paths))
 
@@ -328,7 +324,7 @@
           (document-diagnoses-set! target-document '())
           (map 
             (lambda (item) (init-index-node '() item)) 
-            (source-file->annotations text (uri->path (document-uri target-document)) (consume-sps-auxiliary text) #t target-document)))])
+            (source-file->annotations text (uri->path (document-uri target-document)) (consume-sps-auxiliary text) #t target-document (workspace-top-environment workspace-instance))))])
 ;;For old dependency
     (map (lambda (document) (document-refreshable?-set! document #t))
       (map (lambda (path) (file-node-document (walk-file root-file-node path))) (dedupe (get-reference-path-to linkage (file-node-path target-file-node)))))
@@ -396,31 +392,29 @@
     [(path parent my-filter) (init-virtual-file-system path parent my-filter 'r6rs)]
     [(path parent my-filter top-environment)
       (if (my-filter path)
-      (if (and (not (file-directory? path)) (file-symbolic-link? path))
-        '()
-        (let* ([name (path->name path)] 
-            [folder? (file-directory? path)]
-            [document 
-              (if folder? 
-                '() 
-                (init-document path top-environment))]
-            [node (make-file-node path name parent folder? '() document)]
-            [children (if folder?
-                (map 
-                  (lambda (p) 
-                    (init-virtual-file-system 
-                      (string-append path 
-                        (if (string-suffix? (string (directory-separator)) path)
-                          ""
-                          (string (directory-separator)))
-                        p) 
-                      node 
-                      my-filter
-                      top-environment)) 
-                  (directory-list path))
-                '())])
-          (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
-          node))
+      (let* ([name (path->name path)] 
+          [folder? (file-directory? path)]
+          [document 
+            (if folder? 
+              '() 
+              (init-document path top-environment))]
+          [node (make-file-node path name parent folder? '() document)]
+          [children (if folder?
+              (map 
+                (lambda (p) 
+                  (init-virtual-file-system 
+                    (string-append path 
+                      (if (string-suffix? (string (directory-separator)) path)
+                        ""
+                        (string (directory-separator)))
+                      p) 
+                    node 
+                    my-filter
+                    top-environment)) 
+                (directory-list path))
+              '())])
+        (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
+        node)
       '())]))
 
 (define attach-new-file
@@ -467,7 +461,7 @@
       [(string? s) 
         (let ([d (make-document uri s (find-meta meta-lib top-environment))])
           (document-diagnoses-set! d '())
-          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d))) 
+          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d top-environment))) 
           d)]
       [(eof-object? s) 
         (make-document uri "" (find-meta meta-lib top-environment))]

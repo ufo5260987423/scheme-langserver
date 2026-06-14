@@ -10,24 +10,46 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build Linux glibc image
         run: |
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           docker build --build-arg VERSION="$VERSION" .
+
+      - name: Build Linux musl image
+        run: |
+          docker build -f Dockerfile.musl --build-arg VERSION="$VERSION" .
 
       - name: Compile executable on Linux glibc
         run: |
           mkdir -p build
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
           docker run \
+            -e VERSION="$VERSION" \
             -v ./build:/root/scheme-langserver/build/ \
             $(docker build -q --build-arg VERSION="$VERSION" .) \
             bash -c 'source .akku/bin/activate
                      compile-chez-program run.ss --static
                      test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
-                     mv run build/scheme-langserver-x86_64-linux-glibc || exit 1
+                     mv run "build/scheme-langserver-x86_64-linux-glibc" || exit 1
                      '
+
+      - name: Compile executable on Linux musl
+        run: |
+          mkdir -p build
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
+          docker run \
+            -e VERSION="$VERSION" \
+            -v ./build:/root/scheme-langserver/build/ \
+            $(docker build -f Dockerfile.musl -q --build-arg VERSION="$VERSION" .) \
+            ash -c 'source .akku/bin/activate
+                    compile-chez-program run.ss --static
+                    test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
+                    mv run "build/scheme-langserver-x86_64-linux-musl" || exit 1
+                    '
 
       - name: generate tag
         id: tag
@@ -36,8 +58,8 @@ jobs:
       - name: generate body
         id: body
         run: |
-          md5=$(md5sum build/scheme-langserver-x86_64-linux-glibc | awk '{print $1}')
-          sha256=$(sha256sum build/scheme-langserver-x86_64-linux-glibc | awk '{print $1}')
+          md5=$(md5sum build/scheme-langserver-*-x86_64-linux-* | awk '{print $1}')
+          sha256=$(sha256sum build/scheme-langserver-*-x86_64-linux-* | awk '{print $1}')
           echo -e "### build time\n" > ${{ github.workspace }}-body.txt
           echo -e "$(date -u +%Y-%m-%d-%H-%M-%S)\n" >> ${{ github.workspace }}-body.txt
           echo -e "### File Hashes\n" >> ${{ github.workspace }}-body.txt
@@ -50,6 +72,8 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/scheme-langserver-x86_64-linux-glibc
+          files: |
+            build/scheme-langserver-*-x86_64-linux-glibc
+            build/scheme-langserver-*-x86_64-linux-musl
           tag_name: ${{ steps.tag.outputs.tag_name }}
           body_path: ${{ github.workspace }}-body.txt

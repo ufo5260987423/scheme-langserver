@@ -242,6 +242,7 @@
                     current-references)])
 
               (append-references-into-ordered-references-for document current-internal-node current-references)
+              (append-references-into-ordered-references-for document current-internal-node renamed-references)
               (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
 
               (index-node-references-export-to-other-node-set! 
@@ -296,6 +297,7 @@
                     current-references)])
 
               (append-references-into-ordered-references-for document current-internal-node current-references)
+              (append-references-into-ordered-references-for document current-internal-node renamed-references)
               (append-references-into-ordered-references-for document grand-parent-index-node current-references)
               (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
 

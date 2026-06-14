@@ -182,8 +182,9 @@
 (define (identifier-compare? target1 target2)
   (let ([id1 (identifier-reference-identifier target1)]
       [id2 (identifier-reference-identifier target2)])
-    (or (eq? id1 id2)
-      (string<=? (symbol->string id1) (symbol->string id2)))))
+    (and (symbol? id1) (symbol? id2)
+      (or (eq? id1 id2)
+        (string<=? (symbol->string id1) (symbol->string id2))))))
 
 (define (append-references-into-ordered-references-for document index-node list)
   (if (null? index-node)

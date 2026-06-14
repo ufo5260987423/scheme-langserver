@@ -1,0 +1,5 @@
+(library (rename-main)
+  (export main)
+  (import (chezscheme))
+  (import (rename (rename-lib) (foo my-foo)))
+  (define (main) (my-foo)))
