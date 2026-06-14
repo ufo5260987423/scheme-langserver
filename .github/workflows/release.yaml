@@ -21,7 +21,7 @@ jobs:
 
       - name: Build Linux glibc image
         run: |
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.2")
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           docker build --build-arg VERSION="$VERSION" .
 
@@ -32,7 +32,7 @@ jobs:
       - name: Compile executable on Linux glibc
         run: |
           mkdir -p build
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.0")
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.2")
           docker run \
             -e VERSION="$VERSION" \
             -v ./build:/root/scheme-langserver/build/ \

@@ -32,42 +32,16 @@ See the [setup guide](./doc/build-and-startup.md).
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Recent Status
-Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.1 release fixes several crashes and diagnostics issues, and adds R7RS/S7 tokenizer compatibility. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
+Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.2 release restores bracket-mismatch diagnostics in the fault-tolerant tokenizer. The 2.1.1 release fixes several crashes and diagnostics issues, and adds R7RS/S7 tokenizer compatibility. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
 
 ## Release
-2.1.1 — Bug-fix release with R7RS/S7 tokenizer compatibility, identifier analysis fixes, and improved diagnostics.
+2.1.2 — Bug-fix release restoring bracket-mismatch diagnostics in the fault-tolerant tokenizer.
 
-### What's new in 2.1.1
-- **Bug fixes**:
-  - Fix `typed-lambda` / `lambda` dotted formals crash when encountering typed pair parameters like `(ht hash-table?)`.
-  - Fix `identifier-compare?` to guard `symbol->string` with `symbol?` checks.
-  - Fix `rename` / `alias` import unused-import false positives.
-  - Skip reference initialization for files with empty `index-node-list`.
+### What's new in 2.1.2
 - **Tokenizer**:
-  - R7RS compatibility: `#u8(...)` → `#vu8(...)`, `#\null` → `#\nul`, `#\escape` → `#\esc`, `#;` datum comments.
-  - S7 compatibility: `#<eof>`, `#<undefined>`, `#<fails:...>`, `#<predicate?>`, `#_id`, `#"..."` raw strings.
-- **Diagnostics**: Analysis errors now use `display-condition` for clearer compound-condition output.
-- **Docs**: Added `doc/top-environment.md` documenting the `top-environment` mechanism.
+  - Restore clear diagnostics for unmatched parentheses and brackets (e.g. `unclosed parenthesis`, `unexpected close bracket`) during fault-tolerant parsing, while keeping the R7RS/S7 compatibility fixes from 2.1.1.
 
-2.1.0 — Major release with expanded diagnostics, macro auto-resolution, performance optimizations, and Docker CI upgraded to Chez 10.4.1.
-
-### What's new in 2.1.0
-- **LSP protocol**: `workspace/symbol` search is now supported.
-- **Diagnostics**:
-  - Diagnostics now include standard LSP `source` and `code` fields.
-  - **Duplicate identifier detection** in binding forms (`lambda`, `case-lambda`, `let`, `letrec`, `let-values`, `do`, `define`, `with-syntax`).
-  - **Unused import detection** for `only`, `except`, `rename`, and `alias` modifiers.
-  - Tokenizer syntax errors are now surfaced as document diagnostics.
-  - Silent type-inference and type-rule failures are diagnosed.
-  - Empty diagnostic arrays are sent to clear stale client-side errors.
-- **Macro auto-resolution**: extended from `syntax-rules` to `syntax-case`, `let-syntax`, and `letrec-syntax`. Multi-layer macro cascade reference propagation is fixed.
-- **Type inference**: `define-record-type` now infers record types; `car`/`cdr` family macros (`caar`, `cadr`, `caddr`, `cadddr`, `caaar`, `cadar`, etc.) have dedicated type rules.
-- **Performance**: OPT-1~5 optimizations (expander-doc caching, hashtable reverse maps, tail-recursive accumulators, incremental all-pairs maintenance); MEM-1/3/6 memory optimizations for auto macro expansion; dedupe and reference hot-paths switched to `eq?` hashtables; matrix operations rewritten with `cons`+`reverse`.
-- **Robustness**: hardened LSP message parsing against EOF, invalid `Content-Length`, and malformed JSON; `shutdown`/`exit` lifecycle fully compliant with the LSP spec; `didChange` auto-cancellation removed to comply with the spec; request-queue concurrency hardened with cancel barriers and log-mutex.
-- **Infrastructure**: Docker build chain upgraded from Chez 9.6.4 to 10.4.1; `chez-exe` switched to the `ufo5260987423/chez-exe` fork for 10.x compatibility; test suite refactored to use AST search instead of hard-coded positions.
-
-### Previous releases
-See [doc/release-history.md](doc/release-history.md) for the full changelog.
+Older releases are documented in [doc/release-history.md](doc/release-history.md).
 
 ### Features
 1. Completion for top-level and local identifier bindings.

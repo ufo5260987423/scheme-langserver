@@ -45,7 +45,7 @@ Example Usage:
         (lambda (p)
           (let ([line (get-line p)])
             (if (eof-object? line) #f line)))))
-    "2.1.1"))
+    "2.1.2"))
 
 (define version (private:get-version))
 

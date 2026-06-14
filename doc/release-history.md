@@ -1,5 +1,12 @@
 # Release History
 
+## 2.1.2
+Bug-fix release restoring bracket-mismatch diagnostics in the fault-tolerant tokenizer.
+
+### What's new in 2.1.2
+- **Tokenizer**:
+  - Restore clear diagnostics for unmatched parentheses and brackets (e.g. `unclosed parenthesis`, `unexpected close bracket`) during fault-tolerant parsing, while keeping the R7RS/S7 compatibility fixes from 2.1.1.
+
 ## 2.1.1
 Bug-fix release with R7RS/S7 tokenizer compatibility, identifier analysis fixes, and improved diagnostics.
 
