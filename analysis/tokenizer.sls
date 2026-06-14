@@ -8,6 +8,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver util io)
+    (scheme-langserver analysis bad-brackets-scanner)
     (ufo-try))
 
 ;I mainly handle miss-matched () and [], and here's serveral options:
@@ -45,6 +46,38 @@
   (let* ([head (if (zero? position) "" (string-take source position))]
       [rest (string-take-right source (max 0 (- (string-length source) position length)))])
     (string-append head (make-string (max 0 length) #\space) rest)))
+
+; Helper: replace multiple positions with spaces, preserving string length
+(define (private:replace-positions-with-spaces source positions)
+  (let ([result (string-copy source)])
+    (for-each
+      (lambda (pos)
+        (when (and (>= pos 0) (< pos (string-length result)))
+          (string-set! result pos #\space)))
+      positions)
+    result))
+
+; Helper: generate a diagnose for a bad bracket position
+(define (private:bad-bracket-position->diagnose source pos)
+  (let ([ch (string-ref source pos)])
+    (cond
+      [(char=? ch #\()
+       `(,pos ,(+ pos 1) 1 "Syntax error: unclosed parenthesis" "syntax" "syntax-error")]
+      [(char=? ch #\[)
+       `(,pos ,(+ pos 1) 1 "Syntax error: unclosed bracket" "syntax" "syntax-error")]
+      [(char=? ch #\))
+       `(,pos ,(+ pos 1) 1 "Syntax error: unexpected close parenthesis" "syntax" "syntax-error")]
+      [(char=? ch #\])
+       `(,pos ,(+ pos 1) 1 "Syntax error: unexpected close bracket" "syntax" "syntax-error")]
+      [else
+       `(,pos ,(+ pos 1) 1 "Syntax error: bad bracket" "syntax" "syntax-error")])))
+
+; Helper: append a diagnose only once per (start . message) key
+(define (private:append-diagnose-once ht document diagnose)
+  (let ([key (cons (car diagnose) (list-ref diagnose 3))])
+    (when (or (not ht) (not (hashtable-contains? ht key)))
+      (when ht (hashtable-set! ht key #t))
+      (append-new-diagnoses document diagnose))))
 
 ; Helper: replace token starting at position up to (but not including) the next delimiter
 (define (private:replace-token source position)
@@ -608,8 +641,21 @@
       (source-file->annotations source path start-position tolerant? maybe-document 'r6rs))
     ([source path start-position tolerant? maybe-document top-environment]
       (if (file-exists? path)
-        (let ([port (open-string-input-port source)]
-            [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+        (let* ([preprocessed-source
+                 (if tolerant?
+                   (let* ([bad-positions (compute-bad-brackets source)]
+                          [cleaned-source (private:replace-positions-with-spaces source bad-positions)]
+                          [seen-ht (if maybe-document (make-hashtable equal-hash equal?) #f)])
+                     (when maybe-document
+                       (for-each
+                         (lambda (pos)
+                           (private:append-diagnose-once seen-ht maybe-document
+                             (private:bad-bracket-position->diagnose source pos)))
+                         bad-positions))
+                     cleaned-source)
+                   source)]
+               [port (open-string-input-port preprocessed-source)]
+               [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
           (set-port-position! port start-position)
           (filter annotation? 
             (let loop ([position start-position])
@@ -628,21 +674,21 @@
                               (source-file->annotations patched-source path start-position tolerant? maybe-document top-environment))]
                         [else
                           (when maybe-document
-                            (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
-                          (let ([after (private:tolerant-parse->patch source error-position)])
-                            (if (= (string-length after) (string-length source))
+                            (append-new-diagnoses maybe-document (append (private:condition->diagnose e preprocessed-source error-position) '("syntax" "syntax-error"))))
+                          (let ([after (private:tolerant-parse->patch preprocessed-source error-position)])
+                            (if (= (string-length after) (string-length preprocessed-source))
                               (source-file->annotations after path start-position #f maybe-document top-environment)
                               (error 'tokenizer-error (condition-message e) (condition-irritants e))))]))]
                   [(condition? e)
                     (let ([error-position (private:compute-error-position e port)])
                       (when maybe-document
-                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e source error-position) '("syntax" "syntax-error"))))
-                      (error 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
+                        (append-new-diagnoses maybe-document (append (private:condition->diagnose e preprocessed-source error-position) '("syntax" "syntax-error"))))
+                      (error 'tokenizer-error0 path `(,preprocessed-source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
                   [else 
                     (let ([error-position (max 0 (- (port-position port) 1))])
                       (when maybe-document
                         (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
-                      (warning 'tokenizer-error0 path `(,source ,path ,error-position ,tolerant?))
+                      (warning 'tokenizer-error0 path `(,preprocessed-source ,path ,error-position ,tolerant?))
                       '())])))))
           (begin
             (when maybe-document
