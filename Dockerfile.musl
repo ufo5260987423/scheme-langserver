@@ -74,7 +74,7 @@ RUN akku install
 
 
 
-# Put it all together in Debian
+# Put it all together in Alpine
 FROM alpine:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -94,7 +94,7 @@ COPY --from=build-chez /usr/local/lib/getlogin_stub.o /usr/local/lib/
 # add project
 COPY --from=akku-install /root/scheme-langserver/ /root/scheme-langserver/
 
-ARG VERSION=2.1.0
+ARG VERSION=2.1.2
 RUN echo "$VERSION" > /root/scheme-langserver/.version
 
 # Remove .so files compiled by akku's built-in Chez 9.5.2 to avoid
