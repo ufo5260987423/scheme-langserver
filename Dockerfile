@@ -2,7 +2,7 @@
 FROM debian:bullseye AS build-chez
 
 RUN apt-get update && apt-get install -y \
-        curl build-essential git uuid-dev make ncurses-dev zlib1g-dev liblz4-dev
+        curl build-essential git perl uuid-dev make ncurses-dev zlib1g-dev liblz4-dev
 
 WORKDIR /root/
 RUN curl -L https://github.com/cisco/ChezScheme/releases/download/v10.4.1/csv10.4.1.tar.gz | tar -zx

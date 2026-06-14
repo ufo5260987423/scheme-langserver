@@ -3,7 +3,7 @@ FROM alpine:latest AS build-chez
 
 # https://github.com/SWI-Prolog/swipl-devel/issues/235
 RUN apk update && apk add \
-        curl git alpine-sdk libuuid util-linux-dev make ncurses-dev zlib-dev lz4-dev
+        curl git perl alpine-sdk libuuid util-linux-dev make ncurses-dev zlib-dev lz4-dev
 
 WORKDIR /root/
 RUN curl -L https://github.com/cisco/ChezScheme/releases/download/v10.4.1/csv10.4.1.tar.gz | tar -zx
