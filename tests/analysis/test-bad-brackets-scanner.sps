@@ -104,6 +104,18 @@
   '(0 4 6 10)
   (sort-positions (compute-bad-brackets "(a b]\n(c d]")))
 
+(test-equal "datum-comment-does-not-consume-closing-paren"
+  '()
+  (sort-positions (compute-bad-brackets "(fxior #;flag-checking-disabled)")))
+
+(test-equal "datum-comment-does-not-consume-closing-bracket"
+  '()
+  (sort-positions (compute-bad-brackets "[a #;b]")))
+
+(test-equal "datum-comment-around-standalone-symbol"
+  '()
+  (sort-positions (compute-bad-brackets "(#;x)")))
+
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

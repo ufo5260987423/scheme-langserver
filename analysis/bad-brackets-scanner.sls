@@ -124,12 +124,13 @@
           [(char=? c #\")
            (read-char port) (skip-string port)]
           [else
-           (let loop ([c (read-char port)])
-             (cond
-               [(eof-object? c) 'done]
-               [(char-whitespace? c) 'done]
-               [(memv c '(#\( #\) #\[ #\] #\" #\; #\#)) 'done]
-               [else (loop (read-char port))]))]))))
+           (let loop ()
+             (let ([c (peek-char port)])
+               (cond
+                 [(eof-object? c) 'done]
+                 [(char-whitespace? c) 'done]
+                 [(memv c '(#\( #\) #\[ #\] #\" #\; #\#)) 'done]
+                 [else (read-char port) (loop)])))]))))
 
   (define (skip-bracketed port)
     (let loop ([depth 1])
