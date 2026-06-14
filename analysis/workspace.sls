@@ -145,8 +145,11 @@
                           (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
                             (document-diagnoses document))])
                       (document-diagnoses-set! document '())
-                      (clear-references-for (car index-node-list))
-                      (cons path syntax-diagnoses)))
+                      (if (null? index-node-list)
+                        (cons path syntax-diagnoses)
+                        (begin
+                          (clear-references-for (car index-node-list))
+                          (cons path syntax-diagnoses)))))
                   paths)])
               (threaded-map 
                 (lambda (pair) 
@@ -180,8 +183,11 @@
                       (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
                         (document-diagnoses document))])
                   (document-diagnoses-set! document '())
-                  (clear-references-for (car index-node-list))
-                  (private-init-references workspace-instance path syntax-diagnoses)))
+                  (if (null? index-node-list)
+                    (private-init-references workspace-instance path syntax-diagnoses)
+                    (begin
+                      (clear-references-for (car index-node-list))
+                      (private-init-references workspace-instance path syntax-diagnoses)))))
               paths)))))
     target-paths))
 
