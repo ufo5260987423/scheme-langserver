@@ -61,5 +61,5 @@ jobs:
         with:
           repo: ufo5260987423/scheme-langserver
           files: |
-            build/scheme-langserver-*-x86_64-linux-glibc
-            build/scheme-langserver-*-x86_64-linux-musl
+            build/scheme-langserver-x86_64-linux-glibc
+            build/scheme-langserver-x86_64-linux-musl

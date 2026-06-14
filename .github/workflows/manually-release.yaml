@@ -58,8 +58,8 @@ jobs:
       - name: generate body
         id: body
         run: |
-          md5=$(md5sum build/scheme-langserver-*-x86_64-linux-* | awk '{print $1}')
-          sha256=$(sha256sum build/scheme-langserver-*-x86_64-linux-* | awk '{print $1}')
+          md5=$(md5sum build/scheme-langserver-x86_64-linux-* | awk '{print $1}')
+          sha256=$(sha256sum build/scheme-langserver-x86_64-linux-* | awk '{print $1}')
           echo -e "### build time\n" > ${{ github.workspace }}-body.txt
           echo -e "$(date -u +%Y-%m-%d-%H-%M-%S)\n" >> ${{ github.workspace }}-body.txt
           echo -e "### File Hashes\n" >> ${{ github.workspace }}-body.txt
@@ -73,7 +73,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/scheme-langserver-*-x86_64-linux-glibc
-            build/scheme-langserver-*-x86_64-linux-musl
+            build/scheme-langserver-x86_64-linux-glibc
+            build/scheme-langserver-x86_64-linux-musl
           tag_name: ${{ steps.tag.outputs.tag_name }}
           body_path: ${{ github.workspace }}-body.txt
