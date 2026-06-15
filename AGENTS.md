@@ -439,7 +439,50 @@ Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstr
 
 ---
 
-## 11. Workspace Cache Persistence — Attempted and Withdrawn
+## 11. Workspace Cache Persistence
+
+### Current implementation (`kimi` branch)
+
+A FASL-based workspace cache is now implemented and benchmarked successfully:
+
+| Fixture | Cold startup | Cached startup | Speedup |
+|---------|--------------|----------------|---------|
+| simple-lib | ~31 ms | ~1.3 ms | ~24x |
+| two-libs | ~35 ms | ~1.4 ms | ~24x |
+| Synthetic 100-copy simple-lib (200 files) | ~2484 ms | ~49 ms | ~50x |
+| scheme-langserver itself (128 `.sls` files) | ~55,790 ms | ~1750 ms | ~32x |
+
+Key design points:
+
+- Uses Chez native `fasl-read` / `fasl-write` (binary ports, compressed).
+- Persists the full object graph: `file-node` tree, `library-node` tree,
+  `document` text + `index-node-list`, `identifier-reference` network,
+  `file-linkage` matrix.
+- Skips the heaviest phase: `init-references` (abstract interpreter / type
+  inference).
+- Manifest includes `format-version`, `langserver-version`, `chez-version`,
+  `machine-type`, `record-fingerprint`, facet, and runtime flags; any mismatch
+  falls back to cold start.
+- `file-linkage-path->id-map` is an `equal-hashtable`; Chez `fasl-write` only
+  supports `eq-hashtable`, so it is converted to/from an alist around save/load.
+- Procedure-valued fields that cannot be FASL-serialized are cleared before save:
+  - `index-node-expansion-generator` reset to `'()`.
+  - `identifier-reference-syntax-expander` reset to `#f`.
+- Runtime state (`document-diagnoses`, `workspace-undiagnosed-paths`) is cleared
+  before save.
+- Incremental refresh (Phase 3) is implemented: when only some files differ from
+  the cache, only added/deleted/changed files are processed; unchanged files keep
+  their cached analysis results. If the changed set is large or complex, the
+  implementation still falls back to correctness via `refresh-workspace` in edge
+  cases, but the normal path uses `refresh-workspace-for`.
+
+CLI usage:
+
+```bash
+./run --cache-path ~/.cache/scheme-langserver
+```
+
+### Historical: `ufo-persistence` attempt (removed)
 
 We attempted to add workspace cache persistence using `ufo-persistence` so that
 `init-workspace` could skip file I/O, parsing, and VFS construction on restart.

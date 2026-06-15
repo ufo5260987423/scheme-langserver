@@ -348,40 +348,55 @@ When `threaded?` is `#f`, `(workspace-mutex workspace)` is `'()`. Every call sit
 
 ---
 
-## 8. Workspace Cache Persistence — Attempted and Withdrawn
+## 8. Workspace Cache Persistence
 
-We once tried to add workspace cache persistence so that `init-workspace` could
-skip file I/O, parsing, and VFS construction on restart. The implementation
-registered scheme-langserver record types with `ufo-persistence`, stripped and
-reconstructed Chez `annotation` objects, and rebuilt `file-linkage` from the
-loaded trees.
+### Current implementation (`kimi` branch)
 
-### Why it was removed
+A FASL-based workspace cache is implemented and enabled via the `--cache-path`
+CLI option. It persists the full workspace object graph (`file-node` tree,
+`library-node` tree, documents, `identifier-reference` network, and
+`file-linkage`) so that `init-references` is skipped on restart when files are
+unchanged.
 
-Benchmarks showed **no meaningful speedup**:
+Benchmarks on a commodity machine:
 
 | Fixture | Cold startup | Cached startup | Speedup |
 |---------|--------------|----------------|---------|
-| All real fixtures (~40 files) | ~250 ms | ~248 ms | ~1.01x |
-| Synthetic 100-copy simple-lib (200 files) | ~1360 ms | ~1400 ms | ~0.97x |
+| simple-lib | ~31 ms | ~1.3 ms | ~24x |
+| two-libs | ~35 ms | ~1.4 ms | ~24x |
+| Synthetic 100-copy simple-lib (200 files) | ~2484 ms | ~49 ms | ~50x |
+| scheme-langserver itself (128 `.sls` files) | ~55,790 ms | ~1750 ms | ~32x |
+| scheme-langserver, one file changed | ~58,846 ms | ~1900 ms | ~31x |
 
-The cached load still had to:
+Key implementation details:
 
-1. Deserialize a large record graph from disk.
-2. Reconstruct `annotation` objects for every `index-node`.
-3. Rebuild `file-linkage` from scratch.
-4. Re-run `init-references` (the abstract interpreter / type inference) over all
-   files — the heaviest phase.
+- Uses Chez native `fasl-read` / `fasl-write` with binary ports.
+- A manifest records `format-version`, `langserver-version`, `chez-version`,
+  `machine-type`, `record-fingerprint`, facet, and runtime flags; any mismatch
+  triggers a cold start.
+- `file-linkage-path->id-map` is an `equal-hashtable`; because Chez `fasl-write`
+  only supports `eq-hashtable`, it is serialized as an alist and rebuilt on load.
+- Procedure-valued fields (`index-node-expansion-generator`,
+  `identifier-reference-syntax-expander`) are cleared before save and regenerated
+  on demand after load.
+- Runtime state (`document-diagnoses`, `workspace-undiagnosed-paths`) is cleared
+  before save.
+- Incremental refresh (Phase 3): when only some files differ from the cache,
+  added/deleted/changed files are processed with `attach-new-file`,
+  `private:delete-file-node`, and `update-file-node-with-tail` +
+  `refresh-workspace-for`; unchanged files keep their cached analysis.
 
-The savings from skipping file reads and directory scans were outweighed by
-deserialization and annotation-reconstruction overhead. A real startup speedup
-would require persisting the identifier-reference network and `file-linkage` in
-full, which is a larger project and was not justified by the measured gains.
+CLI usage:
 
-### Lesson learned
+```bash
+./run --cache-path ~/.cache/scheme-langserver
+```
 
-**Serialization alone does not speed up startup** when the dominant cost is the
-abstract interpreter and the cache cannot avoid the dominant phase. Before
-re-introducing persistence, profile to ensure the saved phase is actually a
-significant fraction of startup time, and design the cache to skip that phase
-entirely rather than merely replacing file I/O with deserialization.
+### Historical: `ufo-persistence` attempt (withdrawn)
+
+An earlier attempt used `ufo-persistence` to skip only file I/O, parsing, and VFS
+construction. It persisted annotations as plain s-expressions and rebuilt
+`file-linkage` from scratch, but still had to re-run `init-references`. The
+result was no meaningful speedup (~1.01x). The lesson learned: **serialization
+alone does not speed up startup** when the dominant cost is the abstract
+interpreter; the cache must skip the dominant phase entirely.

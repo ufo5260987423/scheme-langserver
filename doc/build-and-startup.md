@@ -4,6 +4,23 @@ if you're using x64-based linux operating system, you can directly download late
 
 ## Configuration for Editors
 
+### Workspace Cache
+
+scheme-langserver supports a Chez FASL workspace cache that skips the expensive
+`init-references` phase on restart. Enable it by adding `--cache-path <dir>` to
+the server command line:
+
+```bash
+./run --cache-path ~/.cache/scheme-langserver
+```
+
+The cache is invalidated automatically when the langserver version, Chez
+version, machine type, or record layout changes, and falls back to a cold start.
+When only a few files change, the server performs an incremental refresh.
+Typical speedups range from ~20x on small fixtures to ~30–50x on larger
+projects. See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
+[AGENTS.md](./AGENTS.md) §11 for details.
+
 ### [VScode](https://code.visualstudio.com/)+[Magic Scheme](https://github.com/ufo5260987423/magic-scheme)
 
 Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the help of [scheme-langserver](https://github.com/ufo5260987423/scheme-langserver), we're proud to say that Magic Scheme is **much better** than many counterparts, which includes even Racket extensions.
@@ -46,6 +63,8 @@ vim.api.nvim_create_autocmd('FileType', {
         '-m enable',
         --disable type inference, because it's on very early stage.
         '-t disable',
+        --optional: persist workspace analysis cache for faster restart
+        --'--cache-path', '~/.cache/scheme-langserver',
       },
       root_dir = vim.fs.root(args.buf, {'.gitignore','AKKU.manifest'}),
     })

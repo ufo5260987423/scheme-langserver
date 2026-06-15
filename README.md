@@ -28,6 +28,34 @@ The server has been tested on [Chez Scheme](https://cisco.github.io/ChezScheme/)
 ## Compilation, Installation & Configuration
 See the [setup guide](./doc/build-and-startup.md).
 
+## Workspace Cache
+
+scheme-langserver can persist the analyzed workspace state to a Chez FASL cache so
+that subsequent restarts skip the expensive `init-references` phase. Enable it
+with the `--cache-path` option:
+
+```bash
+./run --cache-path ~/.cache/scheme-langserver
+```
+
+The cache is keyed by a manifest that includes the langserver version, Chez
+version, machine type, and record-layout fingerprint; any mismatch falls back to
+a cold start. When only a few files have changed since the cache was saved, the
+server performs an incremental refresh and preserves the analysis results for
+unchanged files.
+
+Typical speedups:
+
+| Fixture | Cold startup | Cached startup | Speedup |
+|---------|--------------|----------------|---------|
+| simple-lib | ~31 ms | ~1.3 ms | ~24x |
+| Synthetic 200-file fixture | ~2484 ms | ~49 ms | ~50x |
+| scheme-langserver itself (128 `.sls` files) | ~55,790 ms | ~1750 ms | ~32x |
+| scheme-langserver, one file changed | ~58,846 ms | ~1900 ms | ~31x |
+
+See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
+[AGENTS.md](./AGENTS.md) §11 for implementation details.
+
 ## Debugging
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
