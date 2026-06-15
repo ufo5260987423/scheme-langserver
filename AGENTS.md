@@ -472,9 +472,8 @@ Key design points:
   before save.
 - Incremental refresh (Phase 3) is implemented: when only some files differ from
   the cache, only added/deleted/changed files are processed; unchanged files keep
-  their cached analysis results. If the changed set is large or complex, the
-  implementation still falls back to correctness via `refresh-workspace` in edge
-  cases, but the normal path uses `refresh-workspace-for`.
+  their cached analysis results. If cache loading fails for any reason (manifest
+  mismatch, corrupted file, etc.), the server falls back to a cold start.
 
 CLI usage:
 

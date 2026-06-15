@@ -38,11 +38,15 @@ with the `--cache-path` option:
 ./run --cache-path ~/.cache/scheme-langserver
 ```
 
-The cache is keyed by a manifest that includes the langserver version, Chez
-version, machine type, and record-layout fingerprint; any mismatch falls back to
-a cold start. When only a few files have changed since the cache was saved, the
-server performs an incremental refresh and preserves the analysis results for
-unchanged files.
+The cache file is written to `<cache-path>/workspace.fasl`. It is saved when the
+server receives a normal LSP `exit` or `shutdown` request; if the process
+crashes or is killed, the previously saved cache remains usable. The cache is
+keyed by a manifest that includes the langserver version, Chez version, machine
+type, and record-layout fingerprint; any mismatch falls back to a cold start.
+Because Chez FASL is platform-specific, **do not share the cache file across
+machines or Chez versions**. When only a few files have changed since the cache
+was saved, the server performs an incremental refresh and preserves the analysis
+results for unchanged files.
 
 Typical speedups:
 
@@ -68,8 +72,6 @@ Active development is focused on bug fixes, performance profiling, and expanding
 ### What's new in 2.1.2
 - **Tokenizer**:
   - Restore clear diagnostics for unmatched parentheses and brackets (e.g. `unclosed parenthesis`, `unexpected close bracket`) during fault-tolerant parsing, while keeping the R7RS/S7 compatibility fixes from 2.1.1.
-
-Older releases are documented in [doc/release-history.md](doc/release-history.md).
 
 ### Features
 1. Completion for top-level and local identifier bindings.

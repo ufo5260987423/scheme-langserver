@@ -14,12 +14,15 @@ the server command line:
 ./run --cache-path ~/.cache/scheme-langserver
 ```
 
-The cache is invalidated automatically when the langserver version, Chez
-version, machine type, or record layout changes, and falls back to a cold start.
-When only a few files change, the server performs an incremental refresh.
-Typical speedups range from ~20x on small fixtures to ~30–50x on larger
-projects. See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
-[AGENTS.md](./AGENTS.md) §11 for details.
+The cache file is written to `<cache-path>/workspace.fasl` and is saved when the
+server receives a normal LSP `exit` or `shutdown` request. The cache is
+invalidated automatically when the langserver version, Chez version, machine
+type, or record layout changes, and falls back to a cold start. Because Chez
+FASL is platform-specific, do not share the cache file across machines or Chez
+versions. When only a few files change, the server performs an incremental
+refresh. Typical speedups range from ~20x on small fixtures to ~30–50x on
+larger projects. See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8
+and [AGENTS.md](./AGENTS.md) §11 for details.
 
 ### [VScode](https://code.visualstudio.com/)+[Magic Scheme](https://github.com/ufo5260987423/magic-scheme)
 

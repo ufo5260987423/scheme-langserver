@@ -392,6 +392,36 @@ CLI usage:
 ./run --cache-path ~/.cache/scheme-langserver
 ```
 
+The cache file is `<cache-path>/workspace.fasl`. It is written when the server
+receives an LSP `exit` or `shutdown` request. If the process crashes, the
+previous cache file is still valid on the next start. Because FASL is tied to a
+specific Chez version and machine type, the cache must not be shared across
+machines.
+
+### Cache consistency on load
+
+When `init-workspace` is called with a `cache-path`, it first loads the FASL
+payload and then compares every cached `document-text` with the current disk
+contents. The comparison produces three sets:
+
+- **Changed files**: present in both cache and disk, but content differs.
+- **Deleted files**: present in cache but missing on disk.
+- **New files**: present on disk but missing in cache.
+
+If all three sets are empty, the cached workspace is returned unchanged. If any
+set is non-empty, the server applies an incremental refresh:
+
+1. Deleted files are removed from the VFS, `file-linkage`, and `library-node`
+   tree.
+2. New files are attached to the VFS via `attach-new-file`.
+3. Changed files are re-parsed with `update-file-node-with-tail`.
+4. `refresh-workspace-for` is invoked for changed and new files, re-analyzing
+   only the transitive closure of affected files.
+
+If the cache file is missing, corrupted, or its manifest does not match the
+running server, the load is aborted and `init-workspace` falls back to a cold
+start.
+
 ### Historical: `ufo-persistence` attempt (withdrawn)
 
 An earlier attempt used `ufo-persistence` to skip only file I/O, parsing, and VFS
