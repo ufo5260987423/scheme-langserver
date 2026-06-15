@@ -64,10 +64,15 @@ See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Recent Status
-Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.2 release restores bracket-mismatch diagnostics in the fault-tolerant tokenizer. The 2.1.1 release fixes several crashes and diagnostics issues, and adds R7RS/S7 tokenizer compatibility. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
+Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.3 release adds a Chez FASL workspace cache that skips the expensive `init-references` phase on restart. The 2.1.2 release restores bracket-mismatch diagnostics in the fault-tolerant tokenizer. The 2.1.1 release fixes several crashes and diagnostics issues, and adds R7RS/S7 tokenizer compatibility. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
 
 ## Release
-2.1.2 — Bug-fix release restoring bracket-mismatch diagnostics in the fault-tolerant tokenizer.
+2.1.3 — Feature release adding a Chez FASL workspace cache with incremental refresh.
+
+### What's new in 2.1.3
+- **Workspace cache**: New `--cache-path <dir>` CLI option persists the analyzed workspace state to a Chez FASL file. On restart, unchanged files skip the expensive `init-references` phase; changed/added/deleted files are refreshed incrementally. Typical speedups range from ~20x on small fixtures to ~30–50x on larger projects.
+
+Older releases are documented in [doc/release-history.md](doc/release-history.md).
 
 ### What's new in 2.1.2
 - **Tokenizer**:

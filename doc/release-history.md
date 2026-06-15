@@ -1,5 +1,17 @@
 # Release History
 
+## 2.1.3
+Feature release adding a Chez FASL workspace cache with incremental refresh.
+
+### What's new in 2.1.3
+- **Workspace cache**:
+  - New `--cache-path <dir>` CLI option persists the analyzed workspace state to a Chez FASL file (`<cache-path>/workspace.fasl`).
+  - On restart, unchanged files skip the expensive `init-references` phase; changed/added/deleted files are refreshed incrementally.
+  - Cache manifest includes langserver version, Chez version, machine type, and record-layout fingerprint; any mismatch falls back to a cold start.
+  - Non-serializable procedure fields (`index-node-expansion-generator`, `identifier-reference-syntax-expander`) are cleared before save and regenerated on demand.
+  - Typical speedups: ~20x on small fixtures, ~30–50x on larger projects.
+- **Docs**: Updated `README.md`, `AGENTS.md`, `doc/analysis/workspace.md`, and `doc/build-and-startup.md` with cache usage and implementation details.
+
 ## 2.1.2
 Bug-fix release restoring bracket-mismatch diagnostics in the fault-tolerant tokenizer.
 
