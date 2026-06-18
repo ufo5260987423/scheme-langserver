@@ -26,6 +26,14 @@
             (lambda (t)
               (extend-index-node-substitution-list identifier-index-node t))
             lambda-details))]
+      [(_ ((? symbol? identifier) . rest) tail)
+        (let* ([identifier-index-node (car (index-node-children (cadr (index-node-children index-node))))]
+            [tail-index-node (car (reverse (index-node-children index-node)))]
+            [lambda-details (construct-lambdas-with (list tail-index-node) '((inner:list? something? ...)))])
+          (for-each 
+            (lambda (t)
+              (extend-index-node-substitution-list identifier-index-node t))
+            lambda-details))]
       [(_ (? symbol? identifiers) tail) 
         (let* ([identifier-index-node (cadr (index-node-children index-node))]
             [tail-index-node (car (reverse (index-node-children index-node)))])

@@ -81,7 +81,7 @@
           (let ([reference (make-identifier-reference 
                   identifier 
                   document 
-                  omg-index-node
+                  (car (index-node-children omg-index-node))
                   index-node
                   '()
                   'procedure

@@ -24,6 +24,7 @@
   (let* ([target-path (string-append (current-directory) "/.akku/lib/srfi/%3a13")]
       [root-file-node (init-virtual-file-system target-path '() (generate-akku-acceptable-file-filter (string-append (current-directory) "/.akku/list")))]
       [target-file-node (walk-file root-file-node (string-append target-path "/srfi-13.scm"))])
+    (test-assert (not (null? target-file-node)))
     (test-equal #f (null? (document-index-node-list (file-node-document target-file-node)))))
 (test-end)
 

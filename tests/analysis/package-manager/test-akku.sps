@@ -18,9 +18,10 @@
     (test-equal #t (checker (string-append (current-directory) "/scheme-langserver.sls")))
     (test-equal #t (checker (string-append (current-directory) "/util/path.sls")))
     (test-equal #t (checker (string-append (current-directory) "/.akku/lib/srfi/:13/strings.chezscheme.sls")))
-    ; .akku/list may URL-encode characters such as ":" as "%3a"; ensure the
-    ; filter decodes those entries so the real filesystem paths are accepted.
-    (test-equal #t (checker (string-append (current-directory) "/.akku/lib/srfi/:152/r7rs-shim.scm")))
+    ; .akku/list contains included files under percent-encoded directories
+    ; (e.g. %3a152) because include/resolve uses encoded strings; ensure the
+    ; filter accepts the real filesystem paths as listed.
+    (test-equal #t (checker (string-append (current-directory) "/.akku/lib/srfi/%3a152/r7rs-shim.scm")))
     (test-equal #t (checker (string-append (current-directory) "/.akku/lib/")))
     (test-equal #t (checker (string-append (current-directory) "/.akku/lib"))))
 (test-end)

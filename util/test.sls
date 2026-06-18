@@ -32,11 +32,12 @@
       (let ([expr (annotation-stripped-expression node)])
         (and (list? expr) (not (null? expr))
              (eq? 'define (car expr))
-             (list? (cadr expr))
+             (or (list? (cadr expr))
+                 (pair? (cadr expr)))
              (eq? name (car (cadr expr))))))
     root-node))
 
-;; Matches both (define (name ...) ...) and (define name ...)
+;; Matches (define (name ...) ...), (define (name . rest) ...), and (define name ...)
 (define (find-define-by-name root-node name)
   (find-index-node-recursive
     (lambda (node)
@@ -44,20 +45,25 @@
         (and (list? expr) (not (null? expr))
              (eq? 'define (car expr))
              (or (and (list? (cadr expr)) (eq? name (car (cadr expr))))
+                 (and (pair? (cadr expr)) (eq? name (car (cadr expr))))
                  (and (symbol? (cadr expr)) (eq? name (cadr expr)))))))
     root-node))
 
 ;; Extract the name symbol-node from either
-;;   (define (name ...) ...) or (define name ...)
+;;   (define (name ...) ...), (define (name . rest) ...), or (define name ...)
 (define (define-node->name-node define-node)
   (let ([expr (annotation-stripped-expression define-node)])
     (if (and (list? expr) (not (null? expr)) (eq? 'define (car expr)))
         (let ([name-part (cadr expr)])
-          (if (list? name-part)
-              ;; (define (name ...) ...) -> name is first child of params list
-              (car (index-node-children (cadr (index-node-children define-node))))
-              ;; (define name ...) -> name is second child of define
-              (cadr (index-node-children define-node))))
+          (cond [(list? name-part)
+                 ;; (define (name ...) ...) -> name is first child of params list
+                 (car (index-node-children (cadr (index-node-children define-node))))]
+                [(pair? name-part)
+                 ;; (define (name . rest) ...) -> name is first child of params list
+                 (car (index-node-children (cadr (index-node-children define-node))))]
+                [else
+                 ;; (define name ...) -> name is second child of define
+                 (cadr (index-node-children define-node))]))
         #f)))
 
 (define (find-let-node root-node)

@@ -60,6 +60,18 @@
     (test-equal #t
       (contain?
         (map car (filter list? (type:interpret-result-list target-index-node))) check-base)))
+  (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/util/association.sls"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [make-alist-node (find-define-by-name root-index-node 'make-alist)]
+      [target-index-node (define-node->name-node make-alist-node)])
+    (construct-substitutions-for target-document)
+    (test-assert
+      (find (lambda (result) (and (list? result) (memq '<- result)))
+        (type:interpret-result-list target-index-node))))
 (test-end)
 
 (test-begin "debug for index-node.sls:debug:print-expressions")
