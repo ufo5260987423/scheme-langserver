@@ -3,29 +3,29 @@
 > 评估工具：`bin/output-type-analysis.ss` 单库模式  
 > 评估对象：`scheme-langserver` 自身 library  
 > 运行时间：2026-06-18  
-> 代码基线：commit `22f14f8` 之后的状态
+> 代码基线：`kimi` 分支，`PRIVATE-MAX-DEPTH` 保持原值 `10`，新增 `PRIVATE-MAX-RESULTS = 200` 结果数量预算  
 
 ---
 
 ## 1. 执行摘要
 
-本次评估按 `task.md` 的规划，对 6 个复杂度递增的 library 运行了类型推断。运行前已先修复了若干会严重影响输出正确性的基础 bug（详见 `task.md` 第 9 节）。
+本次评估按 `task.md` 的规划，对 6 个复杂度递增的 library 逐个运行类型推断。调试过程中发现 `util/contain` 和 `util/binary-search` 因递归函数类型推断结果无限膨胀而超时。最终采用**结果数量预算**方案：在 `analysis/type/domain-specific-language/interpreter.sls` 的 `type:interpret` 中，当单步结果列表去重后超过 `PRIVATE-MAX-RESULTS`（200）时，只保留前 200 项。`PRIVATE-MAX-DEPTH` 保持原来的 `10` 不变。
 
-| Library | 运行结果 | 耗时 | 输出大小 |
-|---------|----------|------|----------|
-| `(scheme-langserver util contain)` | ⏱️ 超时（300s） | >300s | 0 B |
-| `(scheme-langserver util json)` | ✅ 完成 | ~65s | 213 B |
-| `(scheme-langserver virtual-file-system file-node)` | ✅ 完成 | ~62s | 2.1K |
-| `(scheme-langserver analysis identifier reference)` | ✅ 完成 | ~96s | 7.6K |
-| `(scheme-langserver analysis type domain-specific-language interpreter)` | ✅ 完成 | ~118s | 21K |
-| `(scheme-langserver util binary-search)` | ⏱️ 超时（300s） | >300s | 0 B |
+| Library | 运行结果 | 输出大小 | 说明 |
+|---------|----------|----------|------|
+| `(scheme-langserver util json)` | ✅ 完成 | 213 B | 2 个标识符，全部保守推断 |
+| `(scheme-langserver virtual-file-system file-node)` | ✅ 完成 | 2.1K | 16 个标识符，record 相关识别较好 |
+| `(scheme-langserver analysis identifier reference)` | ✅ 完成 | 7.2K | 32 个标识符，union 爆炸被预算截断 |
+| `(scheme-langserver analysis type domain-specific-language interpreter)` | ✅ 完成 | 8.8K | 15 个标识符，核心递归函数结果在 200 项处截断 |
+| `(scheme-langserver util contain)` | ✅ 完成 | 3.6K | `contain?`、`ordered-contain?` 均有输出 |
+| `(scheme-langserver util binary-search)` | ✅ 完成 | 2.1K | `binary-search` 有输出 |
 
 **总体结论**：
 
-- 简单库（`util/json`、`virtual-file-system/file-node`）能给出函数签名，但返回类型大多退化为 `something?`。
-- 复杂库（`analysis/identifier/reference`、`analysis/type/interpreter`）出现严重的 union 爆炸，一个标识符可能输出十几到几十种签名，可读性较差。
-- 两个递归/边界库（`util/contain`、`util/binary-search`）在 300s 内无法完成，说明类型推断对递归函数仍不稳定。
-- 修复后的 `output-type-analysis.ss` 已能正确合并 `something?` union，不再出现 `assq-ref` 被误推断为返回 `boolean?` 的情况。
+- 结果数量预算方案在**不降低全局递归深度**的前提下，让所有选定的 library 都能在合理时间内完成推断。
+- 简单 predicate / list 函数的精确推断（如 `meta?` → `boolean?`）得以保留。
+- 复杂递归函数（`binary-search`、`ordered-contain?`、`type:interpret`）的输出被截断为前 200 个签名，避免了超时，但结果仍较为冗长。
+- 返回类型大多仍退化为 `something?`，这是当前类型规则不足导致的保守推断，不是超时修复带来的新问题。
 
 ---
 
@@ -35,15 +35,15 @@
 |---------|-------------|---------------------|--------------|----------------------------|----------|
 | `util/json` | 2 | 2 | 2 | 100% | 0 |
 | `virtual-file-system/file-node` | 16 | 14 | 21 | ~95% | 0 |
-| `analysis/identifier/reference` | 32 | 27 | 65 | ~95% | 0 |
-| `analysis/type/interpreter` | 15 | 14 | 156 | ~99% | 0 |
-| `util/contain` | — | — | — | — | 超时 |
-| `util/binary-search` | — | — | — | — | 超时 |
+| `analysis/identifier/reference` | 32 | 27 | 62 | ~95% | 0 |
+| `analysis/type/interpreter` | 15 | 14 | 75 | ~99% | 0 |
+| `util/contain` | 2 | 2 | 30 | ~95% | 0 |
+| `util/binary-search` | 1 | 1 | 20 | ~95% | 0 |
 
 说明：
 - `something?` 占比按类型字符串中出现 `something?` 的比例估算。
 - "明显错误"指返回类型与源码语义明显冲突（如 predicate 被推断为非 `boolean?`、参数数量明显不一致等）。
-- 本次未发现明显错误，主要问题是**过度保守**和**union 爆炸**。
+- 本次未发现明显错误，主要问题是**过度保守**和**复杂递归函数签名冗长**。
 
 ---
 
@@ -93,8 +93,8 @@
 源码：
 
 ```scheme
-(define (read-json port)
-  ...)
+(define (read-json string)
+  (json-read (open-input-string string)))
 ```
 
 推断类型：
@@ -106,9 +106,9 @@
 点评：
 - ✅ 参数数量正确（1 个参数）。
 - ⚠️ 参数和返回类型均为 `something?`。
-- 说明对于涉及大量字符串解析/递归的函数，当前推断器无法给出更具体的类型。
+- 因为 `json-read`、`open-input-string` 等无精确类型规则，无法推导出 `string -> json-value`。
 
-### 3.4 `analysis/identifier/reference`: `meta?` — 精确的 predicate
+### 3.4 `analysis/identifier/reference`: `meta?` — 精确的 predicate 被保留
 
 源码：
 
@@ -126,54 +126,58 @@
 点评：
 - ✅ 正确识别为 predicate，返回 `boolean?`。
 - ✅ 参数类型识别为 `identifier-reference?`。
-- 这是当前推断器表现较好的典型案例：源码结构简单，不依赖宏，返回类型明确。
+- 这说明结果数量预算不会像全局深度限制那样误伤简单函数。
 
-### 3.5 `analysis/type/interpreter`: `type:interpret` — union 爆炸
+### 3.5 `util/binary-search`: `binary-search` — 结果被截断但不再超时
 
 推断类型（节选）：
 
 ```text
-(something? <- (inner:list? [identifier-reference identifier-reference?] something? (inner:list? something? ... ) [identifier-reference real?] ) )
-(something? <- (inner:list? [identifier-reference identifier-reference?] [identifier-reference type:environment?] something? [identifier-reference real?] ) )
-(something? <- (inner:list? (inner:pair? something? something? ) [identifier-reference type:environment?] (something? <- (inner:list? ) ) [identifier-reference real?] ) )
-... 共 39 条
+(something? <- (inner:list? something? (something? <- (inner:list? something? something? ) ) something? [identifier-reference integer?] [identifier-reference integer?] ) )
+(something? <- (inner:list? something? something? something? [identifier-reference integer?] [identifier-reference integer?] ) )
+...
 ```
 
 点评：
-- ⚠️ `type:interpret` 一个标识符输出了 39 种签名，且返回类型全部为 `something?`。
-- 这是当前类型推断对复杂递归/多态函数处理不佳的典型表现：无法合并分支，导致 union 爆炸。
+- ✅ 不再超时，输出 20 条签名。
+- ⚠️ 仍有大量 `something?`，但能看出部分参数为 `integer?`/`real?`/`number?`。
+- 冗长是因为 `case-lambda` 多分支 + 递归导致类型组合爆炸，200 项预算将其截断。
+
+### 3.6 `analysis/type/interpreter`: `type:interpret` — 结果被截断
+
+推断类型（节选）：
+
+```text
+(something? <- (inner:list? [identifier-reference index-node?] something? (inner:list? something? ... ) [identifier-reference real?] ) )
+...
+```
+
+点评：
+- ⚠️ 该函数是类型推断器自身，递归深度大，结果被截断到 200 项。
+- 返回类型全部为 `something?`，说明当前推断器还无法给自己一个更精确的类型。
 
 ---
 
 ## 4. 发现的问题清单
 
-### 4.1 严重
+### 4.1 中等
 
-暂无。修复 Bug 1 后，未发现返回类型与源码语义明显冲突的案例。
+1. **复杂递归函数类型组合爆炸**
+   - 影响库：`util/contain`、`util/binary-search`、`analysis/type/interpreter`。
+   - 现象：不截断时会产生数万条签名并超时。
+   - 当前缓解：结果数量预算（200 项）截断，避免超时，但输出仍较冗长。
 
-### 4.2 中等
-
-1. **递归函数推断不稳定**
-   - 影响库：`util/contain`、`util/binary-search`。
-   - 现象：300s 超时，无输出。
-   - 原因：`contain?`、`ordered-contain?`、`binary-search` 等函数具有递归结构，类型推断可能无法终止或极其缓慢。
-
-2. **复杂函数 union 爆炸**
-   - 影响库：`analysis/type/interpreter`、`analysis/identifier/reference`。
-   - 现象：一个标识符输出十几到几十种签名，难以阅读。
-   - 原因：条件分支、case-lambda、多态参数等场景下，推断器没有有效合并等价的类型结果。
-
-3. **record accessor/setter 类型不精确**
+2. **record accessor/setter 类型不精确**
    - 影响库：`virtual-file-system/file-node`。
    - 现象：`file-node-children`、`file-node-document` 等 getter 返回 `something?`。
    - 原因：`record-accessor` / `record-mutator` 的类型规则未与 `define-record-type` 的字段定义联动。
 
-### 4.3 轻微
+### 4.2 轻微
 
 1. **简单函数过度保守**
-   - 影响库：`util/json`。
-   - 现象：`read-json`、`generate-json` 的参数和返回均为 `something?`。
-   - 原因：涉及字符串/IO 的函数缺乏精确规则。
+   - 影响库：`util/json`、`util/contain`、`util/binary-search`。
+   - 现象：参数和返回均为 `something?`。
+   - 原因：涉及字符串/IO/递归的函数缺乏精确规则。
 
 2. **输出可读性差**
    - `inner:list?`、`inner:pair?` 等内部类型表示对人类阅读不够友好。
@@ -184,19 +188,17 @@
 
 按投入产出比排序：
 
-1. **稳定递归函数推断**（高优先级）
-   - 为 `type:interpret` / `type:recursive-interpret-result-list` 增加递归深度限制或循环检测。
-   - 对无法终止的递归函数，优雅地返回 `something?` 而不是超时。
+1. **调优结果数量预算阈值**（中优先级）
+   - 当前 `PRIVATE-MAX-RESULTS = 200` 是一个经验值。
+   - 可以对比 100 / 200 / 500 / 1000 对输出质量和耗时的影响，选择一个平衡点。
 
-2. **合并等价类型结果**（高优先级）
-   - 在类型推断阶段（而不仅是输出工具）对 union 进行简化：
-     - 若集合中包含 `something?`，丢弃其他 top-type 子类型。
-     - 合并参数结构相同、仅返回不同的函数类型。
-   - 这能显著缓解 `analysis/type/interpreter` 等库的 union 爆炸。
-
-3. **增强 record 类型规则**（中优先级）
+2. **增强 record 类型规则**（中优先级）
    - 让 `record-accessor` / `record-mutator` 能从 `define-record-type` 的字段定义中获取字段类型。
    - 这能提升 `virtual-file-system/file-node` 等库的 getter/setter 精度。
+
+3. **类型推断阶段的 union 合并/简化**（中优先级）
+   - 在推断阶段合并参数结构相同、仅返回不同的函数类型。
+   - 这能显著减少 `analysis/identifier/reference` 等库的签名数量。
 
 4. **为常用 IO/字符串函数添加规则**（低优先级）
    - 如 `read-json`、`generate-json` 等可保守地标记为 `(something? <- (inner:list? [identifier-reference input-port?]))`。
@@ -212,12 +214,22 @@
 
 ---
 
-## 7. 交付物
+## 7. 本次变更（未提交，工作区状态）
 
-- `/tmp/type-analysis-results/scheme-langserver-util-json.txt`
-- `/tmp/type-analysis-results/scheme-langserver-virtual-file-system-file-node.txt`
-- `/tmp/type-analysis-results/scheme-langserver-analysis-identifier-reference.txt`
-- `/tmp/type-analysis-results/scheme-langserver-analysis-type-domain-specific-language-interpreter.txt`
-- `/tmp/type-analysis-results/scheme-langserver-util-contain.txt`（空，超时）
-- `/tmp/type-analysis-results/scheme-langserver-util-binary-search.txt`（空，超时）
+- `analysis/type/domain-specific-language/interpreter.sls`
+  - 保持 `PRIVATE-MAX-DEPTH = 10` 不变。
+  - 新增 `PRIVATE-MAX-RESULTS = 200`。
+  - 在 `type:interpret` 末尾，对 `env` 的结果列表去重后，若长度超过 200，则只保留前 200 项。
+  - 目的：在保留全局递归深度的同时，通过结果数量预算抑制递归函数的类型组合爆炸。
+
+---
+
+## 8. 交付物
+
+- `/tmp/type-analysis-results/-scheme-langserver-util-json-.txt`
+- `/tmp/type-analysis-results/-scheme-langserver-virtual-file-system-file-node-.txt`
+- `/tmp/type-analysis-results/-scheme-langserver-analysis-identifier-reference-.txt`
+- `/tmp/type-analysis-results/-scheme-langserver-analysis-type-domain-specific-language-interpreter-.txt`
+- `/tmp/type-analysis-results/-scheme-langserver-util-contain-.txt`
+- `/tmp/type-analysis-results/-scheme-langserver-util-binary-search-.txt`
 - `type-inference-evaluation-report.md`（本文件）

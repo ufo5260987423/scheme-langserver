@@ -49,6 +49,7 @@
 (define PRIVATE-MAX-RECURSION 2)
 (define PRIVATE-MAX-RECURSION-SET-SIZE 400)
 (define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
+(define PRIVATE-MAX-RESULTS 200)
 
 (define (type:interpret->strings target)
   (map inner:type->string (type:interpret-result-list (private-substitute-index-node&macro target))))
@@ -308,6 +309,9 @@
       (type:environment-result-list-set! 
         env 
         (dedupe (type:environment-result-list env)))
+      (let ([result-list (type:environment-result-list env)])
+        (if (> (length result-list) PRIVATE-MAX-RESULTS)
+          (type:environment-result-list-set! env (list-head result-list PRIVATE-MAX-RESULTS))))
       ; (pretty-print 'bye0)
       ; (pretty-print (inner:type->string expression))
       ; (pretty-print 'bye1)
