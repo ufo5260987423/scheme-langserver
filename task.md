@@ -150,9 +150,27 @@ scheme --script bin/output-type-analysis.ss \
 
 因此，**不会为 SRFI-13 添加显式类型签名**；`uri-is-path?` 返回 `something?` 视为当前架构下的已知限制，不在本次任务的可修复范围内。
 
-### 9.3 下一步
+### 9.3 Step 3 执行结果
 
-执行 **Step 3**：对第 2 节指定的 6 个 library 运行 `bin/output-type-analysis.ss`，生成 `/tmp/type-analysis-results/*.txt`，并撰写 `type-inference-evaluation-report.md`。在审查时应把宏依赖导致的 `something?` 与真正的推断错误区分开。
+已于 2026-06-18 完成 Step 3：
+
+- 成功生成 4 个 library 的推断输出：
+  - `util/json`
+  - `virtual-file-system/file-node`
+  - `analysis/identifier/reference`
+  - `analysis/type/domain-specific-language/interpreter`
+- 2 个 library 在 300s 超时：
+  - `util/contain`（递归函数）
+  - `util/binary-search`（已知边界案例）
+- 完整评估报告见 `type-inference-evaluation-report.md`。
+
+### 9.4 下一步
+
+根据 `type-inference-evaluation-report.md` 中的建议，优先处理：
+
+1. 递归函数推断稳定性（超时问题）。
+2. 类型推断阶段的 union 合并/简化，减少 union 爆炸。
+3. record accessor/setter 的字段类型精确化。在审查时应把宏依赖导致的 `something?` 与真正的推断错误区分开。
 
 
 ---
