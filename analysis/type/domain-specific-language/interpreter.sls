@@ -49,7 +49,7 @@
 (define PRIVATE-MAX-RECURSION 2)
 (define PRIVATE-MAX-RECURSION-SET-SIZE 400)
 (define PRIVATE-MAX-CARTESIAN-PRODUCT 50000)
-(define PRIVATE-MAX-RESULTS 200)
+(define PRIVATE-MAX-RESULTS 500)
 
 (define (type:interpret->strings target)
   (map inner:type->string (type:interpret-result-list (private-substitute-index-node&macro target))))

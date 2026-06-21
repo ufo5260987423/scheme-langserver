@@ -159,7 +159,8 @@ scheme --script bin/output-type-analysis.ss \
   - `util/contain`、`util/binary-search` 因递归函数类型推断结果无限膨胀而 300s 超时。
 - 调试后，在 `analysis/type/domain-specific-language/interpreter.sls` 中增加**结果数量预算**：
   - `PRIVATE-MAX-DEPTH` 保持原值 `10`；
-  - 新增 `PRIVATE-MAX-RESULTS = 200`，在 `type:interpret` 单步结果去重后超过 200 项时保留前 200 项；
+  - 新增 `PRIVATE-MAX-RESULTS`，在 `type:interpret` 单步结果去重后超过阈值时保留前若干项；
+  - 经对比 100/200/500/1000 四个阈值（见 `type-inference-evaluation-report.md` 第 6 节），最终选定 **`PRIVATE-MAX-RESULTS = 500`**；
   - 6 个 library 全部能在合理时间内完成；
   - `util/contain`、`util/binary-search` 不再超时；
   - 简单 predicate（如 `meta?` → `boolean?`）的精确推断得以保留。
@@ -169,9 +170,8 @@ scheme --script bin/output-type-analysis.ss \
 
 根据 `type-inference-evaluation-report.md` 中的建议，优先处理：
 
-1. **调优 `PRIVATE-MAX-RESULTS` 阈值**：当前 200 是经验值，可对比 100/200/500/1000 的输出质量和耗时，选择更优值。
-2. **record accessor/setter 的字段类型精确化**：让 `record-accessor` / `record-mutator` 能从 `define-record-type` 字段定义中获取类型。
-3. **类型推断阶段的 union 合并/简化**：减少复杂函数的签名数量。
+1. **record accessor/setter 的字段类型精确化**：让 `record-accessor` / `record-mutator` 能从 `define-record-type` 字段定义中获取类型。
+2. **类型推断阶段的 union 合并/简化**：减少复杂函数的签名数量。
 
 
 ---

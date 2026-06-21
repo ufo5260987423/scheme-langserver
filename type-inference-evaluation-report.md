@@ -3,7 +3,7 @@
 > 评估工具：`bin/output-type-analysis.ss` 单库模式  
 > 评估对象：`scheme-langserver` 自身 library  
 > 运行时间：2026-06-18  
-> 代码基线：`kimi` 分支，`PRIVATE-MAX-DEPTH` 保持原值 `10`，新增 `PRIVATE-MAX-RESULTS = 200` 结果数量预算  
+> 代码基线：`kimi` 分支，`PRIVATE-MAX-DEPTH` 保持原值 `10`，`PRIVATE-MAX-RESULTS = 500` 结果数量预算  
 
 ---
 
@@ -188,11 +188,7 @@
 
 按投入产出比排序：
 
-1. **调优结果数量预算阈值**（中优先级）
-   - 当前 `PRIVATE-MAX-RESULTS = 200` 是一个经验值。
-   - 可以对比 100 / 200 / 500 / 1000 对输出质量和耗时的影响，选择一个平衡点。
-
-2. **增强 record 类型规则**（中优先级）
+1. **增强 record 类型规则**（中优先级）
    - 让 `record-accessor` / `record-mutator` 能从 `define-record-type` 的字段定义中获取字段类型。
    - 这能提升 `virtual-file-system/file-node` 等库的 getter/setter 精度。
 
@@ -206,7 +202,29 @@
 
 ---
 
-## 6. 已知限制说明
+## 6. 阈值调优实验（2026-06-20 更新）
+
+为确定 `PRIVATE-MAX-RESULTS` 的最优值，对 100 / 200 / 500 / 1000 四个阈值进行了对比实验。实验脚本为 `bin/benchmark-max-results.sh`，对每个阈值运行 `bin/output-type-analysis.ss` 的 6 个目标 library，记录 wall-clock 时间和输出行数。
+
+### 6.1 实验结果
+
+| Library | 100 | 200 | 500 | 1000 |
+|---------|-----|-----|-----|------|
+| `(scheme-langserver util contain)` | 67.74 s / 24 行 | 70.81 s / 24 行 | 71.74 s / 24 行 | 70.58 s / 40 行 |
+| `(scheme-langserver util json)` | 49.65 s / 6 行 | 49.82 s / 6 行 | 52.36 s / 6 行 | **~35443 s / 6 行** |
+| `(scheme-langserver virtual-file-system file-node)` | 51.13 s / 39 行 | 49.57 s / 39 行 | 54.50 s / 39 行 | — |
+| `(scheme-langserver analysis identifier reference)` | 52.14 s / 92 行 | 51.46 s / 96 行 | 54.48 s / 99 行 | — |
+| `(scheme-langserver analysis type domain-specific-language interpreter)` | 50.11 s / 66 行 | 52.67 s / 88 行 | 54.98 s / 89 行 | — |
+| `(scheme-langserver util binary-search)` | 54.50 s / 19 行 | 59.89 s / 19 行 | 58.35 s / 19 行 | — |
+
+### 6.2 结论
+
+- **100、200、500 阈值均表现稳定**，所有 library 在约 50–75 秒内完成。
+- 500 阈值相较 200 阈值，在 `analysis/identifier/reference` 和 `analysis/type/interpreter` 上提供了略多的输出（+3 行 / +1 行），而耗时增加约 2–5 秒，可接受。
+- **1000 阈值不稳定**：`util/json` 出现极端异常，耗时约 35443 秒（近 10 小时）；`virtual-file-system/file-node` 在实验过程中也未能在合理时间内完成。因此 **不采用 1000**。
+- 综合考虑输出质量、稳定性和耗时，最终选定 **`PRIVATE-MAX-RESULTS = 500`**。
+
+## 7. 已知限制说明
 
 - `uri-is-path?` 在 `(scheme-langserver util path)` 中仍被推断为 `(something? <- (inner:list? something?))`，而不是 `boolean?`。
 - 原因是其依赖的 `string-prefix?` 在 `srfi-13.scm` 中通过 `let-string-start+end2` 等宏实现，而**当前类型推断子系统未将宏展开引入类型推断**。
@@ -214,17 +232,17 @@
 
 ---
 
-## 7. 本次变更（未提交，工作区状态）
+## 8. 本次变更
 
 - `analysis/type/domain-specific-language/interpreter.sls`
   - 保持 `PRIVATE-MAX-DEPTH = 10` 不变。
-  - 新增 `PRIVATE-MAX-RESULTS = 200`。
-  - 在 `type:interpret` 末尾，对 `env` 的结果列表去重后，若长度超过 200，则只保留前 200 项。
+  - 设置 `PRIVATE-MAX-RESULTS = 500`。
+  - 在 `type:interpret` 末尾，对 `env` 的结果列表去重后，若长度超过 500，则只保留前 500 项。
   - 目的：在保留全局递归深度的同时，通过结果数量预算抑制递归函数的类型组合爆炸。
 
 ---
 
-## 8. 交付物
+## 9. 交付物
 
 - `/tmp/type-analysis-results/-scheme-langserver-util-json-.txt`
 - `/tmp/type-analysis-results/-scheme-langserver-virtual-file-system-file-node-.txt`
