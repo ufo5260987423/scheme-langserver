@@ -8,8 +8,6 @@
 
   (scheme-langserver util dedupe)
   (scheme-langserver util io)
-  (only (srfi :13 strings) string-contains)
-
   (scheme-langserver analysis type domain-specific-language interpreter)
   (scheme-langserver analysis type domain-specific-language inner-type-checker)
   (scheme-langserver analysis workspace)
@@ -41,22 +39,6 @@
               #t))))
       identifier-list)))
 
-(define (private:function-type-string? s)
-  (and (string-contains s " <- ") #t))
-
-(define (private:replace-return-with-something s)
-  (let ([idx (string-contains s " <- ")])
-    (string-append "(something? <- " (substring s (+ idx 4) (string-length s)))))
-
-(define (private:merge-something-union strings)
-  (if (not (find (lambda (s) (equal? s "something? ")) strings))
-    strings
-    (let ([function-strings (filter private:function-type-string? strings)]
-        [non-function-strings (filter (lambda (s) (not (private:function-type-string? s))) strings)])
-      (append
-        (map private:replace-return-with-something function-strings)
-        (filter (lambda (s) (not (equal? s "something? "))) non-function-strings)))))
-
 (define (write-identifier-types! identifier-reference port)
   (write-string "identifier:\t" port)
   (write-string (symbol->string (identifier-reference-identifier identifier-reference)) port)
@@ -66,23 +48,20 @@
       (write-string "type:\t\t" port)
       (write-string s port)
       (write-string "\n" port))
-    (filter 
-      (lambda (i) (not (equal? i "something? ")))
-      (dedupe 
-        (private:merge-something-union
-          (apply append 
-            (map 
-              (lambda (ir)
-                (apply append 
-                  (map 
-                    type:interpret->strings 
-                    (if (or 
-                        (null? (identifier-reference-document ir)) 
-                        (not (null? (identifier-reference-type-expressions ir))))
-                      (identifier-reference-type-expressions ir)
-                      (type:interpret-result-list 
-                        (identifier-reference-index-node ir))))))
-              (recursive-top identifier-reference))))))))
+    (dedupe 
+      (apply append 
+        (map 
+          (lambda (ir)
+            (apply append 
+              (map 
+                type:interpret->strings 
+                (if (or 
+                    (null? (identifier-reference-document ir)) 
+                    (not (null? (identifier-reference-type-expressions ir))))
+                  (identifier-reference-type-expressions ir)
+                  (type:interpret-result-list 
+                    (identifier-reference-index-node ir))))))
+          (recursive-top identifier-reference))))))
 
 (define (step-library-identifiers current-library-node port)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])

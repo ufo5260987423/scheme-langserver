@@ -123,7 +123,7 @@ scheme --script bin/output-type-analysis.ss \
 | Bug 3 方案 A：Akku 文件过滤器 | `analysis/package-manager/akku.sls` | 移除错误的 `private:percent-decode`，使 percent-encoded 的 included `.scm` 文件（如 `%3a13/srfi-13.scm`）能正确进入 VFS。 |
 | Bug 2：rest/dotted 参数 | `analysis/identifier/rules/define.sls`<br>`analysis/type/substitutions/rules/define.sls` | `define-process` 与类型规则均支持 `(define (f x . rest) ...)` 形式的函数。 |
 | Bug 3：include 引用挂点 | `analysis/identifier/self-defined-rules/srfi/include-resolve.sls` | 被 include 文件的 references 现在挂到最近的 `(library ...)` / `(define-library ...)` 祖先节点，而不是 `SRFI-23-error->R6RS` 宏调用节点。 |
-| Bug 1：输出工具 union 合并 | `bin/output-type-analysis.ss` | 当结果中存在 `something?` 时，合并更具体的 top-type 子类型，避免 `assq-ref` 等被错误显示为返回 `boolean?`。 |
+| Bug 1：输出工具 union 合并 | `bin/output-type-analysis.ss` | 移除 `private:merge-something-union` 和 `"something? "` 过滤，保留推断层原始结果；`something?` 视为不精确而非错误签名。 |
 
 相关测试已全部通过：
 
@@ -280,6 +280,21 @@ count: 7
 - 风险最低，只影响 `output-type-analysis.ss` 这个调试/报告工具。
 - 不改变核心类型推断语义，不会引入回归。
 - 可以快速验证效果。
+
+### 2026-06-20 后续更新
+
+实际实施方案 A 时做了简化：直接**移除 `private:merge-something-union` 和 `"something? "` 过滤**，不再把具体类型 collapse 到 `something?`。
+
+原因：
+- `(something? <- ...)` 等签名只是不够精确，不算错误签名。
+- 保留原始推断结果后，`contain?` 等递归函数展现出了之前被压掉的 `(boolean? <- ...)` 精确重载。
+- `assq-ref` 会同时显示 `something?` 和 `(boolean? <- ...)`，作为 union 的直观表示。
+
+验证：
+- 6 个 library 的 `output-type-analysis.ss` 单库运行全部成功。
+- `tests/protocol/apis/test-hover.sps`、`tests/analysis/type/substitutions/rules/test-case-lambda.sps`、`tests/analysis/type/substitutions/rules/test-define.sps`、`tests/analysis/test-workspace.sps` 均通过。
+
+注意：`type:recursive-interpret-result-list` 对递归函数会导致超时，因此 `write-identifier-types!` 仍使用 `type:interpret-result-list`。
 
 ---
 
