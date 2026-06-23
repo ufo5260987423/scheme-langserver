@@ -63,13 +63,11 @@ See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
 ## Debugging
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
-## Recent Status
-Active development is focused on bug fixes, performance profiling, and expanding the type inference system. The 2.1.3 release extends type inference to rest/dotted parameters in `define`, `lambda`, and `case-lambda`, and fixes binding index-nodes for rest parameters and `do` loop variables. The 2.1.2 release restores bracket-mismatch diagnostics in the fault-tolerant tokenizer. The 2.1.1 release fixes several crashes and diagnostics issues, and adds R7RS/S7 tokenizer compatibility. The 2.1.0 release brings major improvements to diagnostics, macro auto-resolution, and LSP protocol robustness. Planned features include a dedicated [VSCode](https://code.visualstudio.com/) plugin and data-flow analysis.
-
 ## Release
-2.1.3 — Feature and bug-fix release improving rest/dotted parameter handling and type inference.
+2.1.4 — Feature and bug-fix release improving rest/dotted parameter handling and type inference.
+Active development is focused on bug fixes, performance profiling, and expanding the type inference system. 
 
-### What's new in 2.1.3
+### What's new in 2.1.4
 - **Type inference**:
   - Rest/dotted parameters in `define`, `lambda`, and `case-lambda` now produce function signatures containing `(inner:list? something? ...)`.
 - **Identifier analysis**:

@@ -1,15 +1,28 @@
 # Release History
 
-## 2.1.3
+## 2.1.4
 Feature and bug-fix release improving rest/dotted parameter handling and type inference.
 
-### What's new in 2.1.3
+### What's new in 2.1.4
 - **Type inference**:
   - Rest/dotted parameters in `define`, `lambda`, and `case-lambda` now produce function signatures containing `(inner:list? something? ...)`.
 - **Identifier analysis**:
   - Rest/dotted parameter bindings in `define`, `case-lambda`, and `do` loop variables now point to the correct per-symbol index-node.
 - **AST**:
   - Dotted-pair structure is now preserved in the index-node tree via synthetic annotations, preventing dot-position symbols from being dropped.
+
+## 2.1.3
+
+Feature release adding a Chez FASL workspace cache with incremental refresh.
+
+### What's new in 2.1.3
+- **Workspace cache**:
+  - New `--cache-path <dir>` CLI option persists the analyzed workspace state to a Chez FASL file (`<cache-path>/workspace.fasl`).
+  - On restart, unchanged files skip the expensive `init-references` phase; changed/added/deleted files are refreshed incrementally.
+  - Cache manifest includes langserver version, Chez version, machine type, and record-layout fingerprint; any mismatch falls back to a cold start.
+  - Non-serializable procedure fields (`index-node-expansion-generator`, `identifier-reference-syntax-expander`) are cleared before save and regenerated on demand.
+  - Typical speedups: ~20x on small fixtures, ~30–50x on larger projects.
+- **Docs**: Updated `README.md`, `AGENTS.md`, `doc/analysis/workspace.md`, and `doc/build-and-startup.md` with cache usage and implementation details.
 
 ## 2.1.2
 Bug-fix release restoring bracket-mismatch diagnostics in the fault-tolerant tokenizer.
