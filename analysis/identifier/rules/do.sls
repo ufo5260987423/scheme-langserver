@@ -31,20 +31,21 @@
       [expression (annotation-stripped ann)])
     (match expression
       [((? symbol? var) _ ...)
-        (let ([reference 
-            (make-identifier-reference
-              var
-              document
-              target-index-node
-              initialization-index-node
-              '()
-              'variable
-              '()
-              '())])
+        (let* ([var-index-node (car (index-node-children target-index-node))]
+            [reference 
+              (make-identifier-reference
+                var
+                document
+                var-index-node
+                initialization-index-node
+                '()
+                'variable
+                '()
+                '())])
           (index-node-references-export-to-other-node-set! 
-            target-index-node
+            var-index-node
             (append 
-              (index-node-references-export-to-other-node target-index-node)
+              (index-node-references-export-to-other-node var-index-node)
               `(,reference)))
           (index-node-references-import-in-this-node-set! 
             target-index-node
