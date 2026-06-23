@@ -238,10 +238,25 @@ For two-arm `if`, the union has two members; for one-arm `if`, only the `then` b
 
 ### 4.6 `define.sls` – Top-Level & Internal Definitions
 
-Two shapes:
+Three shapes:
 
 1. `(define (f p₁ p₂ …) body)` – like `lambda`, but the resulting function type is attached to the *identifier* node of `f`, not to the `define` node.
-2. `(define var init)` – bidirectional link between `var` and `init`.
+2. `(define (f p₁ p₂ … . rest) body)` – rest parameter is represented as `(inner:list? something? …)`.
+3. `(define var init)` – bidirectional link between `var` and `init`.
+
+#### Rest / dotted parameter support
+
+2026-06-18 修复：`define-process` 之前只匹配正规参数列表 `(f p₁ p₂ …)`，导致 `(define (make-alist . args) …)` 这类变长参数函数无法获得函数类型签名。
+
+修复后在 `analysis/type/substitutions/rules/define.sls` 中增加了匹配模式：
+
+```scheme
+[(_ ((? symbol? identifier) . rest) tail)
+  ...
+  (construct-lambdas-with (list tail-index-node) '((inner:list? something? ...)))]
+```
+
+`rest` 参数被保守地表示为 `(inner:list? something? …)`。这能让 `make-alist` 等函数被正确识别为函数，但返回类型仍依赖函数体推断。
 
 ### 4.7 `case-lambda.sls` – Overloaded Arity
 

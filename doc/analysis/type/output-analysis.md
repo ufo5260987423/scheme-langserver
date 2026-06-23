@@ -104,3 +104,71 @@ type:		<type-expression>
 1. **每次修改 `analysis/` 下的 `.sls` 源码后，若用此工具验证，建议先 `rm -rf .akku/libobj/scheme-langserver`，避免加载旧的 `.so` 缓存。**
 2. 类型推断依赖 `init-workspace` 的完整分析流程（VFS → library-node → file-linkage → abstract interpreter），首次运行需要编译缓存，耗时较长（数十秒到数分钟）。
 3. 批量模式在项目自身（~200 个 `.sls`）上运行可能需要数分钟，属正常现象。
+
+## 4. 历史与实现细节
+
+### 4.1 输出过滤策略的演变
+
+`output-type-analysis.ss` 对原始推断结果的处理经历过三次变化：
+
+**第一阶段（2026-06-18 之前）**：简单过滤 `"something? "`。
+
+```scheme
+(filter 
+  (lambda (i) (not (equal? i "something? ")))
+  ...)
+```
+
+这导致 `assq-ref` 被错误显示为返回 `boolean?`：因为 `assq-ref` 的真实返回 union 是 `{something?, boolean?}`，过滤掉 `something?` 后只剩下 `boolean?`。
+
+**第二阶段（2026-06-18，commit `1c9ebfe9`）**：引入 `private:merge-something-union`。
+
+只要结果中出现任意 `something?`，就把所有函数签名的返回值统一替换为 `something?`。这修复了 `assq-ref` 的 false positive，但也把 `contain?` 等真正返回 `boolean?` 的递归函数的精确签名压掉了。
+
+**第三阶段（2026-06-20，commit `7691c08`）**：移除合并与过滤。
+
+当前实现只保留 `dedupe`，直接输出推断层原始结果。`something?` 被视为"不够精确"而非"错误签名"。例如 `contain?` 会同时显示：
+
+```text
+type:		([identifier-reference boolean?] <- (inner:list? something? something? something? ) ) 
+type:		(something? <- (inner:list? something? something? something? ) ) 
+```
+
+### 4.2 为什么使用 `type:interpret-result-list`
+
+`output-type-analysis.ss` 原本可以调用 `type:recursive-interpret-result-list`（表达式级广度优先展开），但实验表明：
+
+- 对非递归函数，输出没有明显改善，有时甚至退化（如 `type:solved?` 的 `boolean?` 重载被替换为 `something?`）。
+- 对递归函数（`util/contain`、`util/binary-search`），会因未解决表达式集合爆炸而超时。
+
+因此当前仍使用 `type:interpret-result-list`，配合 `PRIVATE-MAX-RESULTS = 500` 的结果数量预算，在合理时间内完成推断。
+
+### 4.3 常见审查标准
+
+对输出结果通常按以下维度判断：
+
+| 维度 | 合理（✅） | 部分合理（⚠️） | 不合理（❌） | 无输出（➖） |
+|------|------------|----------------|-------------|-------------|
+| 是否有类型输出 | 有具体类型 | 有但含 `something?` | 有但明显错误 | 完全无输出 |
+| 过程参数数量 | 与源码一致 | 部分一致 | 明显不一致 | — |
+| 返回类型 | 与源码一致 | 过于保守 | 明显错误 | — |
+| record 相关 | predicate/constructor/accessor 类型清晰 | 只有 `something?` | signature 明显错误 | — |
+
+**明显错误的例子**：
+- 已知返回 `boolean?` 的 predicate 被推断为 `number?`。
+- 接受 2 个参数的函数被推断为 `(something? <- (inner:list? something?))`（1 个参数）。
+
+### 4.4 用于评估的 6 个 library
+
+为系统评估类型推断质量，常选取以下 6 个复杂度递增的 library：
+
+| Library | 选择理由 |
+|---------|----------|
+| `(scheme-langserver util contain)` | 纯函数、递归 predicate |
+| `(scheme-langserver util json)` | 字符串/列表操作、少量分支 |
+| `(scheme-langserver virtual-file-system file-node)` | `define-record-type`、getter/setter |
+| `(scheme-langserver analysis identifier reference)` | records、多字段、导出过程 |
+| `(scheme-langserver analysis type domain-specific-language interpreter)` | 类型系统自身，自举测试 |
+| `(scheme-langserver util binary-search)` | 已知表现差的递归/索引算术案例 |
+
+完整评估结果见 [`benchmark.md`](benchmark.md) 和 [`evaluation-report.md`](evaluation-report.md) 。

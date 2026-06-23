@@ -172,3 +172,31 @@ scheme --script bin/benchmark-type-inference.ss
 ```
 
 Then diff the new `benchmark-type-inference.json` against the previous one to verify improvement.
+
+---
+
+## Correctness Evaluation
+
+Performance is only one side of the story. A separate correctness evaluation runs `bin/output-type-analysis.ss` against six representative libraries of increasing complexity:
+
+- `(scheme-langserver util contain)`
+- `(scheme-langserver util json)`
+- `(scheme-langserver virtual-file-system file-node)`
+- `(scheme-langserver analysis identifier reference)`
+- `(scheme-langserver analysis type domain-specific-language interpreter)`
+- `(scheme-langserver util binary-search)`
+
+The evaluation records:
+- whether each library completes without timeout,
+- the number of exported identifiers that receive type output,
+- how many signatures are produced,
+- how conservative the output is (`something?` ratio),
+- any obviously wrong signatures.
+
+Key outcomes:
+- `PRIVATE-MAX-RESULTS = 500` was chosen after comparing thresholds 100 / 200 / 500 / 1000. Higher values can make simple libraries such as `util/json` pathologically slow (≈10 hours at 1000), so 500 is the current sweet spot.
+- Simple predicates such as `meta?` correctly infer `boolean?`.
+- Recursive/index-arithmetic functions (`binary-search`, `ordered-contain?`) remain overly conservative; their signatures are mostly `something?`.
+- Record accessors (`file-node-children`, etc.) return `something?` because field types are not currently propagated from `define-record-type`.
+
+See [`evaluation-report.md`](evaluation-report.md) for the full per-library analysis, sample signatures, and the threshold-tuning data.
