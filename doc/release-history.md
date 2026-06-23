@@ -1,5 +1,16 @@
 # Release History
 
+## 2.1.3
+Feature and bug-fix release improving rest/dotted parameter handling and type inference.
+
+### What's new in 2.1.3
+- **Type inference**:
+  - Rest/dotted parameters in `define`, `lambda`, and `case-lambda` now produce function signatures containing `(inner:list? something? ...)`.
+- **Identifier analysis**:
+  - Rest/dotted parameter bindings in `define`, `case-lambda`, and `do` loop variables now point to the correct per-symbol index-node.
+- **AST**:
+  - Dotted-pair structure is now preserved in the index-node tree via synthetic annotations, preventing dot-position symbols from being dropped.
+
 ## 2.1.2
 Bug-fix release restoring bracket-mismatch diagnostics in the fault-tolerant tokenizer.
 
