@@ -1,0 +1,13 @@
+(library (rest-param-type lib)
+  (export define-rest lambda-rest case-lambda-rest)
+  (import (chezscheme))
+
+(define (define-rest x . args) (length args))
+
+(define lambda-rest (lambda (y . args) (length args)))
+
+(define case-lambda-rest
+  (case-lambda
+    [((z . args) (length args))]
+    [(w w)]))
+)

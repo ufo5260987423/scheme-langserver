@@ -24,5 +24,37 @@
           (for-each 
             (lambda (t) (extend-index-node-substitution-list index-node t))
             (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)))]
+      [(_ (? symbol? identifier) fuzzy **1 ) 
+        (let* ([return-index-node (car (reverse children))]
+            [formals-index-node (cadr children)]
+            [parameter-types (private:collect-param-types formals-index-node)]
+            [lambda-details (construct-lambdas-with `(,return-index-node) (list parameter-types))])
+          (for-each 
+            (lambda (t) (extend-index-node-substitution-list index-node t))
+            lambda-details))]
+      [(_ (identifier . rest) fuzzy **1 ) 
+        (let* ([return-index-node (car (reverse children))]
+            [formals-index-node (cadr children)]
+            [parameter-types (private:collect-param-types formals-index-node)]
+            [lambda-details (construct-lambdas-with `(,return-index-node) (list parameter-types))])
+          (for-each 
+            (lambda (t) (extend-index-node-substitution-list index-node t))
+            lambda-details))]
       [else '()])))
+
+; Collect parameter types for a dotted formal list. The last parameter (the rest
+; parameter) is represented as (inner:list? something? ...).
+(define (private:collect-param-types formals-node)
+  (let ([expression (annotation-stripped (index-node-datum/annotations formals-node))]
+      [children (index-node-children formals-node)])
+    (cond
+      [(symbol? expression) `((inner:list? something? ...))]
+      [(null? children) '()]
+      [(null? (cdr children)) `((inner:list? something? ...))]
+      [else
+        (let ([car-node (car children)]
+            [cdr-node (cadr children)])
+          (if (symbol? (annotation-stripped (index-node-datum/annotations cdr-node)))
+            `(,car-node (inner:list? something? ...))
+            (cons car-node (private:collect-param-types cdr-node))))])))
 )

@@ -150,27 +150,77 @@
     '()
     index-node-list))
 
+(define (private:annotation-pair->expression datum/annotation)
+  (cond
+    [(pair? datum/annotation)
+      (cons (private:annotation-pair->expression (car datum/annotation))
+        (private:annotation-pair->expression (cdr datum/annotation)))]
+    [(annotation? datum/annotation)
+      (annotation-stripped datum/annotation)]
+    [else datum/annotation]))
+
+(define (private:pair->synthetic-annotation pair)
+  (let ([car-source (if (annotation? (car pair)) (annotation-source (car pair)) #f)]
+       [cdr-source (if (annotation? (cdr pair)) (annotation-source (cdr pair)) #f)])
+    (make-annotation pair
+      (make-source-object 
+        (cond [car-source (source-object-sfd car-source)]
+              [cdr-source (source-object-sfd cdr-source)]
+              [else (error 'private:pair->synthetic-annotation "cannot determine source file descriptor")])
+        (cond [car-source (source-object-bfp car-source)]
+              [cdr-source (source-object-bfp cdr-source)]
+              [else 0])
+        (cond [cdr-source (source-object-efp cdr-source)]
+              [car-source (source-object-efp car-source)]
+              [else 0]))
+      pair)))
+
 (define (init-index-node parent datum/annotation)
-  (let* ([source (annotation-source datum/annotation)]
-        [node (make-index-node parent (source-object-bfp source) (source-object-efp source) datum/annotation '() '() '() '())]
-        [annotation-list (annotation-expression datum/annotation)])
-    (index-node-children-set! 
-      node 
-      (cond 
-        [(list? annotation-list) 
-          (map 
-            (lambda (e) (init-index-node node e))
-            (filter annotation? annotation-list))]
-        [(pair? annotation-list)
-          (map 
-            (lambda (e) (init-index-node node e))
-            (filter annotation? `(,(car annotation-list) ,(cdr annotation-list))))]
-        [(vector? annotation-list)
-          (map 
-            (lambda (e) (init-index-node node e))
-            (filter annotation? (vector->list annotation-list)))]
-        [else '()]))
-    node))
+  (if (pair? datum/annotation)
+    ; Chez represents improper lists (e.g. dotted formal parameters) as nested
+    ; annotation pairs. Synthesize a node whose children are the car and cdr so
+    ; the dotted structure is preserved in the AST.
+    (let* ([car-ann (car datum/annotation)]
+        [cdr-ann (cdr datum/annotation)]
+        [car-source (annotation-source car-ann)]
+        [end-source (if (annotation? cdr-ann) (annotation-source cdr-ann) car-source)]
+        [start (source-object-bfp car-source)]
+        [end (source-object-efp end-source)]
+        [synthetic-expression (private:annotation-pair->expression datum/annotation)]
+        [synthetic-ann (make-annotation datum/annotation 
+                        (make-source-object (source-object-sfd car-source) start end)
+                        synthetic-expression)]
+        [node (make-index-node parent start end synthetic-ann '() '() '() '())])
+      (index-node-children-set! 
+        node 
+        `(,(init-index-node node car-ann)
+          ,(init-index-node node cdr-ann)))
+      node)
+    (let* ([source (annotation-source datum/annotation)]
+          [node (make-index-node parent (source-object-bfp source) (source-object-efp source) datum/annotation '() '() '() '())]
+          [annotation-list (annotation-expression datum/annotation)])
+      (index-node-children-set! 
+        node 
+        (cond 
+          [(list? annotation-list) 
+            (map 
+              (lambda (e) (init-index-node node e))
+              (filter annotation? annotation-list))]
+          [(pair? annotation-list)
+            ; For improper lists, Chez returns nested pairs where internal nodes
+            ; are plain pairs and only the leaves are annotations. Wrap plain
+            ; pair nodes in a synthetic annotation so the dotted structure is
+            ; preserved as children of this node.
+            (map 
+              (lambda (e) 
+                (init-index-node node (if (annotation? e) e (private:pair->synthetic-annotation e))))
+              `(,(car annotation-list) ,(cdr annotation-list)))]
+          [(vector? annotation-list)
+            (map 
+              (lambda (e) (init-index-node node e))
+              (filter annotation? (vector->list annotation-list)))]
+          [else '()]))
+      node)))
 
 (define (is-leaf? index-node)
   (null? (index-node-children index-node)))

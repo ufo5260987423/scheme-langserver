@@ -21,7 +21,12 @@
       [(_ (dummy0 ...) dummy1 ... ) 
         (let loop ([rest (cdr (index-node-children index-node))])
           (if (not (null? rest))
-            (let* ([identifier-index-node-grand-parent (car rest)]
+            (let* ([clause-wrapper-node (car rest)]
+                ; Chez wraps each case-lambda clause in a singleton list node, so unwrap it.
+                [identifier-index-node-grand-parent 
+                  (if (= 1 (length (index-node-children clause-wrapper-node)))
+                    (car (index-node-children clause-wrapper-node))
+                    clause-wrapper-node)]
                 [grand-parent-expression (annotation-stripped (index-node-datum/annotations identifier-index-node-grand-parent))])
               (match grand-parent-expression 
                 ; Because case-lambda has many clauses, and some maybe don't contain any parameters

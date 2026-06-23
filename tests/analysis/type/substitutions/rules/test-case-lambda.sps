@@ -43,8 +43,10 @@
       [target-index-node (find-index-node-recursive
                            (lambda (n) (eq? 'string-a (annotation-stripped-expression n)))
                            root-index-node)]
-      [check-base (construct-type-expression-with-meta 'string?)])
+      [check-base (construct-type-expression-with-meta 'string? )])
     (construct-substitutions-for target-document)
+    ; (debug:recursive-print-expression&variable (car (document-index-node-list target-document)))
+    ; (debug:print-expression target-index-node)
     (test-equal #t
       (contain?
         (type:interpret-result-list target-index-node)
@@ -62,6 +64,27 @@
     (construct-substitutions-for target-document)
     (test-assert "binary-search case-lambda has substitutions"
       (> (length (index-node-substitution-list case-lambda-node)) 0)))
+(test-end)
+
+(test-begin "case-lambda dotted clause rest param type")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/rest-param-type")]
+      [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append fixture "/lib.scm.txt"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [args-node (find-index-node-recursive
+                   (lambda (n)
+                     (let ([expr (annotation-stripped-expression n)])
+                       (and (symbol? expr) (eq? expr 'args))))
+                   root-index-node)])
+    (construct-substitutions-for target-document)
+    (test-assert "args in dotted case-lambda clause has list type"
+      (find (lambda (result)
+              (and (list? result)
+                (eq? 'inner:list? (car result))
+                (eq? 'something? (cadr result))))
+        (type:interpret-result-list args-node))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

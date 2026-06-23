@@ -109,4 +109,27 @@
         check-base)))
 (test-end)
 
+(test-begin "lambda rest parameter type inference")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/rest-param-type")]
+      [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append fixture "/lib.scm.txt"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [lambda-rest-node (find-define-by-name root-index-node 'lambda-rest)]
+      [target-index-node (caddr (index-node-children lambda-rest-node))])
+    (construct-substitutions-for target-document)
+    (test-assert
+      (find (lambda (result)
+              (and (list? result)
+                (memq '<- result)
+                (let ([params (cdr (memq '<- result))])
+                  (find (lambda (param-list)
+                          (and (list? param-list)
+                            (find (lambda (param) (and (list? param) (eq? 'inner:list? (car param)))) param-list)))
+                    params))))
+        (type:interpret-result-list target-index-node))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

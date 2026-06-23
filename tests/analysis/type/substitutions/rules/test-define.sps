@@ -74,6 +74,29 @@
         (type:interpret-result-list target-index-node))))
 (test-end)
 
+(test-begin "define rest parameter type inference")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/rest-param-type")]
+      [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+      [root-file-node (workspace-file-node workspace)]
+      [root-library-node (workspace-library-node workspace)]
+      [target-file-node (walk-file root-file-node (string-append fixture "/lib.scm.txt"))]
+      [target-document (file-node-document target-file-node)]
+      [root-index-node (car (document-index-node-list target-document))]
+      [define-rest-node (find-define-by-name root-index-node 'define-rest)]
+      [target-index-node (define-node->name-node define-rest-node)])
+    (construct-substitutions-for target-document)
+    (test-assert
+      (find (lambda (result)
+              (and (list? result)
+                (memq '<- result)
+                (let ([params (cdr (memq '<- result))])
+                  (find (lambda (param-list)
+                          (and (list? param-list)
+                            (find (lambda (param) (and (list? param) (eq? 'inner:list? (car param)))) param-list)))
+                    params))))
+        (type:interpret-result-list target-index-node))))
+(test-end)
+
 (test-begin "debug for index-node.sls:debug:print-expressions")
   (let* ([workspace (init-workspace (string-append (current-directory) "/virtual-file-system/") '() #f #f)]
       [root-file-node (workspace-file-node workspace)]
