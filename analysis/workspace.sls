@@ -562,12 +562,12 @@
       [('for _ ...)
         '()]
       [(library-identifier **1)
-        (let ([parent (index-node-parent index-node)])
-          (if (index-node? parent)
-            (let ([refs (index-node-references-import-in-this-node parent)])
-              (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
-                (private:append-unused-import-diagnose document index-node (library-identifier->string expression) seen)
-                '()))
+        ; Plain imports now also attach their references to the library-identifier
+        ; node itself (see library-import.sls), so checking this node tells us
+        ; whether any binding introduced by this specific import was used.
+        (let ([refs (index-node-references-import-in-this-node index-node)])
+          (if (and (not (null? refs)) (not (find (lambda (r) (eq-hashtable-contains? used-ht r)) refs)))
+            (private:append-unused-import-diagnose document index-node (library-identifier->string expression) seen)
             '()))]
       [else '()])))
 

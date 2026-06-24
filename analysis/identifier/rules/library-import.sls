@@ -344,10 +344,11 @@
           (if (not (meta-library? actual-library-identifier 'r6rs))
             (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library:" (library-identifier->string library-identifier)) "import" "library-not-found")))
           (index-node-import-file-nodes-set! index-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
-        (append-references-into-ordered-references-for 
-          document 
-          grand-parent-index-node 
-          (filter identifier-reference? (import-references document root-library-node actual-library-identifier)))]
+        (let ([refs (filter identifier-reference? (import-references document root-library-node actual-library-identifier))])
+          ; Attach refs to the library-identifier node itself so that the unused-import
+          ; checker can tell whether any binding from this specific import was used.
+          (append-references-into-ordered-references-for document index-node refs)
+          (append-references-into-ordered-references-for document grand-parent-index-node refs))]
       [else '()])))
 
 (define (import-references document root-library-node library-identifier)

@@ -8,7 +8,7 @@
     check-duplicate-syntax-bindings)
   (import 
     (chezscheme)
-    (only (srfi :13) string-trim)
+    (only (srfi :13) string-trim-both)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver virtual-file-system document)
@@ -19,7 +19,7 @@
     (car* (car pair))
     pair))
 (define (library-identifier->string l)
-  (string-trim (with-output-to-string (lambda () (pretty-print l)))))
+  (string-trim-both (with-output-to-string (lambda () (pretty-print l)))))
 
 (define (check-duplicate-bindings document binding-nodes)
   (check-duplicate-identifiers document

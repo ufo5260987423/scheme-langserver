@@ -1,0 +1,5 @@
+(library (unused-import-test lib)
+  (export unused-function)
+  (import (rnrs))
+  (define (unused-function x)
+    x))

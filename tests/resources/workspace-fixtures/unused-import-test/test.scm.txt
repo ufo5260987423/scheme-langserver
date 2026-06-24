@@ -1,5 +1,6 @@
 (library (test)
   (export f)
-  (import (chezscheme))
+  (import (rnrs))
+  (import (unused-import-test lib))
   (define (f)
     1))

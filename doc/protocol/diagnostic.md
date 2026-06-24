@@ -171,14 +171,25 @@ not match a function's signature.
 **Goal:** Mark variables and imports that are declared but never referenced.
 
 **Implementation status:**
-- ✅ **Unused import** is implemented.  `abstract-interpreter.sls` increments
-  `identifier-reference-usage-count` when a leaf symbol is resolved.  After
-  `step`, `analysis/workspace.sls:private:check-unused-imports` walks each
-  `import` clause and emits `"Unused import: ..."` for imported identifiers
-  whose `usage-count` is still 0.  It supports plain, `only`, `except`, `rename`,
-  and `alias` imports.
+- ✅ **Unused import** is implemented for all import forms.  `abstract-interpreter.sls`
+  increments `identifier-reference-usage-count` when a leaf symbol is resolved.
+  After `step`, `analysis/workspace.sls:private:check-unused-imports` walks each
+  `import` clause and emits `"Unused import: ..."` for imported identifiers whose
+  `usage-count` is still 0.
+  - `only`, `except`, `rename`, `alias` — checked per identifier.
+  - **plain imports** — checked per library: if no binding from the imported
+    library was referenced, the whole import is flagged.  Implemented by attaching
+    the imported references to the library-identifier node itself in
+    `analysis/identifier/rules/library-import.sls` and reading them back in
+    `private:check-import-clause`.
 - ❌ **Unused variable** is not yet implemented.  Local bindings and top-level
   variables with zero references are not flagged.
+
+**Bug fixed along the way:**
+- `library-identifier->string` in `analysis/identifier/util.sls` used
+  `string-trim` (SRFI-13 trims only the left side in this implementation), so
+  unused-import and library-not-found messages ended with a trailing newline.
+  Switched to `string-trim-both`.
 
 **Remaining implementation sketch (unused variable):**
 1. After analysis, walk `document-ordered-reference-list` and emit diagnostics
@@ -191,6 +202,11 @@ not match a function's signature.
 - Top-level bindings exported from a library are "used" by the export, not by
   local references.
 - Mutually recursive definitions may need special handling.
+- Plain imports of libraries that provide standard bindings (e.g. `(rnrs)`,
+  `(chezscheme)`) are considered "used" whenever the file uses any of those
+  standard bindings, because the resolver sees the binding as coming from every
+  import that exports it.  This is consistent with the current reference-counting
+  model but may produce fewer warnings than a purely semantic analysis would.
 
 **Estimated effort:** 1–2 weeks (down from 2–3 weeks because the reference
 infrastructure and `usage-count` already exist).
