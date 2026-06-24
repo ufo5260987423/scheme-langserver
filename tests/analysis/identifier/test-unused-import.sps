@@ -7,9 +7,12 @@
 (import 
   (chezscheme)
   (srfi :64 testing) 
+  (scheme-langserver protocol apis document-diagnostic)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver analysis workspace))
+  (scheme-langserver analysis workspace)
+  (scheme-langserver util association)
+  (scheme-langserver util path))
 
 (define (diagnose-message diagnose)
   (if (>= (length diagnose) 4)
@@ -31,6 +34,11 @@
     (lambda (d) (string=? (diagnose-message d) message))
     diagnoses))
 
+(define (find-published-diagnostic diagnostics message)
+  (find
+    (lambda (d) (string=? message (assq-ref d 'message)))
+    (vector->list diagnostics)))
+
 (define (run-unused-import-test fixture-name file-name expected-message)
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/" fixture-name)]
       [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
@@ -47,7 +55,19 @@
       (when (not (eq? diag #f))
         (test-equal "severity is Warning" 2 (list-ref diag 2))
         (test-equal "source is import" "import" (diagnose-source diag))
-        (test-equal "code is unused-import" "unused-import" (diagnose-code diag))))))
+        (test-equal "code is unused-import" "unused-import" (diagnose-code diag))))
+    ; Verify the LSP-published shape too (source, code, tags).
+    (workspace-undiagnosed-paths-set! workspace (list (uri->path (document-uri document))))
+    (let* ([published (unpublish-diagnostics->list workspace)]
+        [lsp-diagnostics (if (null? published) (vector) (assq-ref (car published) 'diagnostics))]
+        [lsp-diag (find-published-diagnostic lsp-diagnostics expected-message)])
+      (test-equal (string-append "published contains " expected-message)
+        #t
+        (not (eq? lsp-diag #f)))
+      (when (not (eq? lsp-diag #f))
+        (test-equal "lsp source is import" "import" (assq-ref lsp-diag 'source))
+        (test-equal "lsp code is unused-import" "unused-import" (assq-ref lsp-diag 'code))
+        (test-equal "lsp tags is Unnecessary" (vector 1) (assq-ref lsp-diag 'tags))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Unused import detection

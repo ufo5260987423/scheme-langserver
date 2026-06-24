@@ -89,4 +89,38 @@
     (test-equal "undiagnosed-paths still cleared" '() (workspace-undiagnosed-paths workspace))))
 (test-end)
 
+;; ------------------------------------------------------------------
+;; 5. published diagnostics preserve source/code and tag unused-import
+;; ------------------------------------------------------------------
+(test-begin "published-diagnostic-source-code-and-tags")
+(let* ([workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+    [document (get-hello-document workspace)]
+    [target-path (uri->path (document-uri document))])
+  (document-diagnoses-set! document '((0 10 2 "Unused import: foo" "import" "unused-import")))
+  (workspace-undiagnosed-paths-set! workspace (list target-path))
+  
+  (let* ([result (unpublish-diagnostics->list workspace)]
+      [diag (vector-ref (assq-ref (car result) 'diagnostics) 0)])
+    (test-equal "source is import" "import" (assq-ref diag 'source))
+    (test-equal "code is unused-import" "unused-import" (assq-ref diag 'code))
+    (test-equal "tags is Unnecessary" (vector 1) (assq-ref diag 'tags))))
+(test-end)
+
+;; ------------------------------------------------------------------
+;; 6. non-unused-import diagnostics keep source/code but no tags
+;; ------------------------------------------------------------------
+(test-begin "published-diagnostic-source-code-without-tags")
+(let* ([workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+    [document (get-hello-document workspace)]
+    [target-path (uri->path (document-uri document))])
+  (document-diagnoses-set! document '((0 10 1 "Duplicate identifier: x" "identifier" "duplicate-identifier")))
+  (workspace-undiagnosed-paths-set! workspace (list target-path))
+  
+  (let* ([result (unpublish-diagnostics->list workspace)]
+      [diag (vector-ref (assq-ref (car result) 'diagnostics) 0)])
+    (test-equal "source is identifier" "identifier" (assq-ref diag 'source))
+    (test-equal "code is duplicate-identifier" "duplicate-identifier" (assq-ref diag 'code))
+    (test-equal "tags is absent" #f (assq-ref diag 'tags))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

@@ -7,9 +7,12 @@
 (import 
   (chezscheme)
   (srfi :64 testing) 
+  (scheme-langserver protocol apis document-diagnostic)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver analysis workspace))
+  (scheme-langserver analysis workspace)
+  (scheme-langserver util association)
+  (scheme-langserver util path))
 
 (define (diagnose-message diagnose)
   (if (>= (length diagnose) 4)
@@ -31,6 +34,11 @@
     (lambda (d) (string=? (diagnose-message d) message))
     diagnoses))
 
+(define (find-published-diagnostic diagnostics message)
+  (find
+    (lambda (d) (string=? message (assq-ref d 'message)))
+    (vector->list diagnostics)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Duplicate identifier detection
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,7 +59,19 @@
       (when (not (eq? dup #f))
         (test-equal "severity is Error" 1 (list-ref dup 2))
         (test-equal "source is identifier" "identifier" (diagnose-source dup))
-        (test-equal "code is duplicate-identifier" "duplicate-identifier" (diagnose-code dup))))))
+        (test-equal "code is duplicate-identifier" "duplicate-identifier" (diagnose-code dup))))
+    ; Verify the LSP-published shape too (source, code, no tags for errors).
+    (workspace-undiagnosed-paths-set! workspace (list (uri->path (document-uri document))))
+    (let* ([published (unpublish-diagnostics->list workspace)]
+        [lsp-diagnostics (if (null? published) (vector) (assq-ref (car published) 'diagnostics))]
+        [lsp-diag (find-published-diagnostic lsp-diagnostics expected-message)])
+      (test-equal (string-append "published contains " expected-message)
+        #t
+        (not (eq? lsp-diag #f)))
+      (when (not (eq? lsp-diag #f))
+        (test-equal "lsp source is identifier" "identifier" (assq-ref lsp-diag 'source))
+        (test-equal "lsp code is duplicate-identifier" "duplicate-identifier" (assq-ref lsp-diag 'code))
+        (test-equal "lsp tags is absent" #f (assq-ref lsp-diag 'tags))))))
 
 (test-begin "duplicate identifier in define")
   (run-duplicate-test "duplicate-test" "Duplicate identifier: x")

@@ -73,8 +73,11 @@
       [severity (caddr diagnose)]
       [message (cadddr diagnose)]
       [source (if (>= (length diagnose) 5) (list-ref diagnose 4) "scheme-langserver")]
-      [code (if (>= (length diagnose) 6) (list-ref diagnose 5) #f)])
-    (if code
+      [code (if (>= (length diagnose) 6) (list-ref diagnose 5) #f)]
+      [tags (if (and code (string=? code "unused-import")) (vector 1) #f)])
+    ; LSP DiagnosticTag: 1 = Unnecessary, 2 = Deprecated.
+    ; Currently only unused-import is tagged as Unnecessary.
+    (append 
       (make-alist 
         'range 
         (range->alist 
@@ -83,15 +86,7 @@
             (apply make-position (document+bias->position-list document e)))) 
         'severity severity 
         'message message
-        'source source
-        'code code)
-      (make-alist 
-        'range 
-        (range->alist 
-          (make-range 
-            (apply make-position (document+bias->position-list document s))
-            (apply make-position (document+bias->position-list document e)))) 
-        'severity severity 
-        'message message
-        'source source))))
+        'source source)
+      (if code (make-alist 'code code) '())
+      (if tags (make-alist 'tags tags) '()))))
 )
