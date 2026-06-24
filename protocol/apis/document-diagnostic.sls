@@ -16,17 +16,9 @@
     (scheme-langserver util path) 
     (scheme-langserver util dedupe)
 
-    (only (srfi :13 strings) string-contains)
-
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
-
-(define (private:diagnosable-path? path)
-  ; Akku-installed dependencies live under .akku/lib.  They are analysed so
-  ; that user code can resolve imports, but their own diagnostics are not
-  ; actionable for the user and should not be published.
-  (not (string-contains path "/.akku/lib/")))
 
 (define (unpublish-diagnostics->list workspace)
   ; Snapshot and clear immediately so that even if the traversal
@@ -36,17 +28,15 @@
     (workspace-undiagnosed-paths-set! workspace '())
     (fold-right
       (lambda (s acc)
-        (if (not (private:diagnosable-path? s))
-          acc
-          (let ([file-node (walk-file (workspace-file-node workspace) s)])
-            (if (null? file-node)
-              acc
-              (let ([document (file-node-document file-node)])
-                (cons
-                  (make-alist
-                    'uri (document-uri document)
-                    'diagnostics (private:document->diagnostic-vec document))
-                  acc))))))
+        (let ([file-node (walk-file (workspace-file-node workspace) s)])
+          (if (null? file-node)
+            acc
+            (let ([document (file-node-document file-node)])
+              (cons
+                (make-alist
+                  'uri (document-uri document)
+                  'diagnostics (private:document->diagnostic-vec document))
+                acc)))))
       '()
       paths)))
 
@@ -54,7 +44,7 @@
 (define (diagnostic workspace params)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [file-node (resolve-uri->file-node (workspace-file-node workspace) (text-document-uri text-document))])
-    (if (or (null? file-node) (not (private:diagnosable-path? (file-node-path file-node))))
+    (if (null? file-node)
       '()
       (let* ([document (file-node-document file-node)]
         [diagnoses (document-diagnoses document)])

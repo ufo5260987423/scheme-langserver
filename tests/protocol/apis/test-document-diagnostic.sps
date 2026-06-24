@@ -89,18 +89,4 @@
     (test-equal "undiagnosed-paths still cleared" '() (workspace-undiagnosed-paths workspace))))
 (test-end)
 
-;; ------------------------------------------------------------------
-;; 5. unpublish-diagnostics->list filters out .akku/lib dependency paths
-;; ------------------------------------------------------------------
-(test-begin "unpublish-diagnostics-akku-lib-filtered")
-(let* ([workspace (init-workspace fixture 'txt 'r6rs #f #f)])
-  ; Add an Akku dependency path.  These files are analysed so user imports
-  ; resolve, but their own diagnostics should not be published.
-  (workspace-undiagnosed-paths-set! workspace '("/workspace/.akku/lib/some-dep.sls"))
-  
-  (let ([result (unpublish-diagnostics->list workspace)])
-    (test-equal ".akku/lib path is filtered out" '() result)
-    (test-equal "undiagnosed-paths still cleared" '() (workspace-undiagnosed-paths workspace))))
-(test-end)
-
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
