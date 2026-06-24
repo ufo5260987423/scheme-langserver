@@ -1,44 +1,53 @@
 # Diagnostic Improvement Plan
 
-> Status: P0 in progress  
-> Created: 2025-05-13
+> Status: **P0 done**; unused import done; precise undefined identifier and type-mismatch remain  
+> Created: 2025-05-13  
+> Updated: 2026-06-24
 
 ---
 
 ## 1. Current State
 
-The diagnose subsystem uses a minimal 4-tuple internally:
+The diagnose subsystem stores raw diagnostics as lists with the following
+shape (backward-compatible forms are still accepted):
 
 ```scheme
-(range-start range-end severity message)
+(start-bias end-bias severity message [source] [code])
 ```
 
-- `range-start/end` — byte offsets into the document text.
+- `start-bias/end-bias` — character offsets into the document text.
 - `severity` — LSP severity integer (`1`=Error, `2`=Warning, `3`=Information, `4`=Hint).
 - `message` — human-readable string.
+- `source` — optional subsystem tag (e.g. `"syntax"`, `"identifier"`, `"import"`, `"load"`, `"type"`).
+  When omitted, `private:make-diagnostic` falls back to `"scheme-langserver"`.
+- `code` — optional diagnostic code (e.g. `"syntax-error"`, `"library-not-found"`).
 
-LSP conversion (`protocol/apis/document-diagnostic.sls`) maps this to a
-`Diagnostic` alist with only `range`, `severity`, and `message`.  The following
-LSP fields are **not emitted**:
+LSP conversion (`protocol/apis/document-diagnostic.sls`) emits a `Diagnostic`
+object with `range`, `severity`, `message`, `source`, and (when present) `code`.
+The following LSP fields are still **not emitted**:
 
 | LSP field | Current support | Impact when missing |
 |-----------|----------------|---------------------|
-| `source` | ❌ | Client cannot distinguish tokenizer / type / identifier diagnostics. |
-| `code` | ❌ | No classification; blocks filtering, Code Actions, and quick-fix menus. |
+| `source` | ✅ | Diagnostics are tagged by subsystem. |
+| `code` | ✅ | Most common diagnostics have a stable code. |
 | `tags` | ❌ | Cannot mark `Unnecessary` or `Deprecated`. |
 | `relatedInformation` | ❌ | Cannot show "defined here" / "imported here" cross-references. |
 
 ### 1.1 Sources of diagnostics today
 
-| Source | File | Severity | Message example |
-|--------|------|----------|-----------------|
-| Tokenizer / Parser | `analysis/tokenizer.sls` | `1` (Error) | `"Syntax error: ..."` |
-| Abstract interpreter | `analysis/abstract-interpreter.sls` | `2` (Warning) | `"Scheme-langserver Warning: Fail to catch identifiers"` |
-| Library import (r6rs) | `analysis/identifier/rules/library-import.sls` | `2` (Warning) | `"Fail to find library:..."` |
-| Library import (r7rs) | `analysis/identifier/rules/r7rs/define-library-import.sls` | `2` (Warning) | `"Fail to find library:..."` |
-| File load | `analysis/identifier/rules/load.sls` | `2` (Warning) | `"Fail to find file:..."` |
-| Type inference | `analysis/workspace.sls` | `2` (Warning) | `"Type inference warning: ..."` |
-| Type rules | `analysis/type/substitutions/generator.sls` | `2` (Warning) | `"Type rule warning: ..."` |
+| Source | File | Severity | `source` | `code` | Message example |
+|--------|------|----------|----------|--------|-----------------|
+| Tokenizer / Parser | `analysis/tokenizer.sls` | `1` (Error) | `"syntax"` | `"syntax-error"` | `"Syntax error: ..."` |
+| File not found | `analysis/tokenizer.sls` | `1` (Error) | `"syntax"` | `"file-not-found"` | `"File not found: ..."` |
+| Duplicate identifier | `analysis/identifier/reference.sls` | `1` (Error) | `"identifier"` | `"duplicate-identifier"` | `"Duplicate identifier: x"` |
+| Abstract interpreter | `analysis/abstract-interpreter.sls` | `2` (Warning) | `"identifier"` | `"identifier-resolution-failure"` | `"Scheme-langserver Warning: Fail to catch identifiers"` |
+| Library import (r6rs) | `analysis/identifier/rules/library-import.sls` | `2` (Warning) | `"import"` | `"library-not-found"` | `"Fail to find library:..."` |
+| Library import (r7rs) | `analysis/identifier/rules/r7rs/define-library-import.sls` | `2` (Warning) | `"import"` | `"library-not-found"` | `"Fail to find library:..."` |
+| File load | `analysis/identifier/rules/load.sls` | `2` (Warning) | `"load"` | `"load-file-not-found"` | `"Fail to find file:..."` |
+| Unused import | `analysis/workspace.sls` | `2` (Warning) | `"import"` | `"unused-import"` | `"Unused import: car"` |
+| Type inference | `analysis/workspace.sls` | `2` (Warning) | `"type"` | `"type-inference-warning"` | `"Type inference warning: ..."` |
+| Type rules | `analysis/type/substitutions/generator.sls` | `2` (Warning) | `"type"` | `"type-rule-warning"` | `"Type rule warning: ..."` |
+| Analysis error | `analysis/workspace.sls` | `1` (Error) | `"analysis"` | `"analysis-error"` | `"Analysis error: ..."` |
 
 ### 1.2 Known gaps
 
@@ -48,32 +57,33 @@ LSP fields are **not emitted**:
 2. **No type-mismatch diagnostics.**  The type system (`type:->?`, `type:=?`)
    exists but is only used for hover tooltips.  It is not wired into
    `publishDiagnostics`.
-3. **No unused-variable / unused-import diagnostics.**  The reference-tracking
-   infrastructure exists (`document-ordered-reference-list`) but reference-count
-   statistics are not collected.
+3. **No unused-variable diagnostic.**  `unused-import` is implemented via
+   `identifier-reference-usage-count`, but local variables that are declared
+   and never referenced are not yet flagged.
 
 ---
 
 ## 2. Roadmap
 
-### P0 — Enrich diagnostic metadata (`source` + `code`)
+### P0 — Enrich diagnostic metadata (`source` + `code`) ✅ Done
 
 **Goal:** Make diagnostics professional and filterable.
 
-**Changes:**
-1. Extend the internal diagnose format to accept optional `source` and `code`:
-   ```scheme
-   ;; Backward-compatible forms
-   (range-start range-end severity message)               ; source="scheme-langserver", code=#f
-   (range-start range-end severity message source)        ; code=#f
-   (range-start range-end severity message source code)   ; full
-   ```
-2. Update `private:make-diagnostic` in `protocol/apis/document-diagnostic.sls`
-   to emit `source` and, when present, `code`.
-3. Update every `append-new-diagnoses` call site to supply a `source`.
-4. Assign `code` values to the most common diagnostics.
+**Implementation status:**
+- The internal diagnose format accepts the optional 5th `source` and 6th `code`
+  fields:
+  ```scheme
+  ;; Backward-compatible forms
+  (start-bias end-bias severity message)               ; source="scheme-langserver", code=#f
+  (start-bias end-bias severity message source)        ; code=#f
+  (start-bias end-bias severity message source code)   ; full
+  ```
+- `private:make-diagnostic` in `protocol/apis/document-diagnostic.sls` emits
+  `source` and, when present, `code`.
+- All `append-new-diagnoses` call sites now supply a `source`, and most common
+  diagnostics also have a `code`.
 
-**Proposed `source` values:**
+**`source` values in use:**
 
 | Subsystem | `source` string |
 |-----------|-----------------|
@@ -82,20 +92,22 @@ LSP fields are **not emitted**:
 | library / import resolution | `"import"` |
 | file load | `"load"` |
 | type inference / type rules | `"type"` |
+| analysis error (threaded exception fallback) | `"analysis"` |
 
-**Proposed `code` values:**
+**`code` values in use:**
 
 | Diagnostic | `code` |
 |------------|--------|
 | Syntax error (tokenizer) | `"syntax-error"` |
 | File not found (tokenizer) | `"file-not-found"` |
+| Duplicate identifier | `"duplicate-identifier"` |
 | Library not found | `"library-not-found"` |
 | File not found (load) | `"load-file-not-found"` |
 | Identifier resolution failure | `"identifier-resolution-failure"` |
+| Unused import | `"unused-import"` |
 | Type inference warning | `"type-inference-warning"` |
 | Type rule warning | `"type-rule-warning"` |
-
-**Estimated effort:** 1–2 days.
+| Analysis error | `"analysis-error"` |
 
 ---
 
@@ -154,27 +166,34 @@ not match a function's signature.
 
 ---
 
-### P3 — Unused variable / unused import diagnostics
+### P3 — Unused variable / unused import diagnostics 🔄 Partially done
 
 **Goal:** Mark variables and imports that are declared but never referenced.
 
-**Implementation sketch:**
-1. Extend `abstract-interpreter.sls` `step` to count references:
-   - Each time `find-available-references-for` returns a non-empty list for a
-     symbol usage, increment a reference counter on the resolved
-     `identifier-reference`.
-2. After analysis, walk `document-ordered-reference-list` and emit diagnostics
+**Implementation status:**
+- ✅ **Unused import** is implemented.  `abstract-interpreter.sls` increments
+  `identifier-reference-usage-count` when a leaf symbol is resolved.  After
+  `step`, `analysis/workspace.sls:private:check-unused-imports` walks each
+  `import` clause and emits `"Unused import: ..."` for imported identifiers
+  whose `usage-count` is still 0.  It supports plain, `only`, `except`, `rename`,
+  and `alias` imports.
+- ❌ **Unused variable** is not yet implemented.  Local bindings and top-level
+  variables with zero references are not flagged.
+
+**Remaining implementation sketch (unused variable):**
+1. After analysis, walk `document-ordered-reference-list` and emit diagnostics
    for items with zero references:
-   - `variable` type → `"Unused variable: foo"` (tag `Unnecessary`)
-   - `library-import` type → `"Unused import: (foo bar)"` (tag `Unnecessary`)
+   - `variable` type → `"Unused variable: foo"`
+2. Skip exported top-level bindings and built-in bindings.
+3. Consider adding `Unnecessary` tag once `tags` support is introduced.
 
 **Caveats:**
 - Top-level bindings exported from a library are "used" by the export, not by
   local references.
 - Mutually recursive definitions may need special handling.
-- Requires extending the `identifier-reference` record or adding a side table.
 
-**Estimated effort:** 2–3 weeks.
+**Estimated effort:** 1–2 weeks (down from 2–3 weeks because the reference
+infrastructure and `usage-count` already exist).
 
 ---
 
@@ -196,13 +215,14 @@ pointing to the `import` clause that requested it.
 
 ## 3. Priority Summary
 
-| Priority | Item | Effort | User value |
-|----------|------|--------|------------|
-| **P0** | `source` + `code` metadata | 1–2 days | High (professionalism) |
-| **P1** | Precise undefined identifier | 2–3 days | **Very high** (most-requested feature) |
-| **P2** | Type-mismatch warnings | 1–2 weeks | High (core differentiator) |
-| **P3** | Unused variable / import | 2–3 weeks | Medium (code quality) |
-| **P4** | `relatedInformation` | 1 week | Medium (UX polish) |
+| Priority | Item | Status | Effort | User value |
+|----------|------|--------|--------|------------|
+| **P0** | `source` + `code` metadata | ✅ Done | — | High (professionalism) |
+| **P1** | Precise undefined identifier | ❌ Not started | 2–3 days | **Very high** (most-requested feature) |
+| **P2** | Type-mismatch warnings | ❌ Not started | 1–2 weeks | High (core differentiator) |
+| **P3** | Unused import | ✅ Done | — | Medium (code quality) |
+| **P3** | Unused variable | ❌ Not started | 1–2 weeks | Medium (code quality) |
+| **P4** | `relatedInformation` | ❌ Not started | 1 week | Medium (UX polish) |
 
 ---
 
