@@ -355,7 +355,7 @@ For each target path (after `init-references` has already cleared stale diagnost
    - If resolution fails, appends a warning:
      ```scheme
      (append-new-diagnoses current-document
-       `(start end 2 "Scheme-langserver Warnning: Fail to catch identifiers"))
+       `(start end 2 "Scheme-langserver Warning: Fail to catch identifiers"))
      ```
 
 2. **Process excluded references** (`process-library-identifier-excluded-references`):
