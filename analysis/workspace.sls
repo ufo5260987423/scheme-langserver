@@ -471,7 +471,6 @@
     ; (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)
     (process-library-identifier-excluded-references document)
-    (private:check-duplicate-imports document)
     (private:check-unused-imports document)
     (private:check-unused-local-variables document)
     ; (pretty-print 'test1)
@@ -492,13 +491,17 @@
 
 (define (private:collect-import-usages document)
   (let ([used-ht (make-eq-hashtable)]
-      [import-clauses '()])
+      [import-clauses '()]
+      [duplicate-seen (make-hashtable equal-hash equal?)])
     (let loop ([nodes (document-index-node-list document)] [in-import? #f])
       (for-each
         (lambda (node)
           (let ([expression (annotation-stripped (index-node-datum/annotations node))])
             (cond
               [(and (pair? expression) (eq? 'import (car expression)))
+                (for-each 
+                  (lambda (child) (private:check-duplicate-import-clause document child duplicate-seen))
+                  (cdr (index-node-children node)))
                 (set! import-clauses 
                   (append (cdr (index-node-children node)) import-clauses))
                 (loop (index-node-children node) #t)]
@@ -581,21 +584,8 @@
           "import" "unused-import")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Duplicate import detection
+;; Duplicate import detection (merged into collect-import-usages)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (private:check-duplicate-imports document)
-  (let ([seen (make-hashtable equal-hash equal?)])
-    (let loop ([nodes (document-index-node-list document)])
-      (for-each
-        (lambda (node)
-          (let ([expression (annotation-stripped (index-node-datum/annotations node))])
-            (if (and (pair? expression) (eq? 'import (car expression)))
-              (for-each 
-                (lambda (child) (private:check-duplicate-import-clause document child seen)) 
-                (cdr (index-node-children node))))
-            (loop (index-node-children node))))
-        nodes))))
 
 (define (private:check-duplicate-import-clause document index-node seen)
   (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
