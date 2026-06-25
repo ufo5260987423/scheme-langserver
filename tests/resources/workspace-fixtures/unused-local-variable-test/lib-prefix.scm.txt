@@ -1,0 +1,5 @@
+(library (unused-local-variable-test lib-prefix)
+  (export x)
+  (import (prefix (rnrs) r6rs:))
+  (r6rs:define x 1)
+  (r6rs:define y 2))

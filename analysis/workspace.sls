@@ -669,13 +669,16 @@
         [else (void)]))
     result))
 
+; Only parameters (lambda/case-lambda/define parameter-list formals) are
+; reported.  Top-level define names and let-bound variables are intentionally
+; skipped to avoid forward-reference and import-rename false positives.
 (define (private:check-unused-local-variables document)
   (let* ([exported-ht (private:collect-exported-identifiers document)]
       [seen (make-eq-hashtable)])
     (for-each
       (lambda (ref)
         (when (and (not (eq-hashtable-contains? seen ref))
-                (memq (identifier-reference-type ref) '(variable parameter procedure continuation syntax-parameter))
+                (eq? (identifier-reference-type ref) 'parameter)
                 (zero? (identifier-reference-usage-count ref)))
           (let ([id (identifier-reference-identifier ref)])
             (when (and (symbol? id) (not (eq-hashtable-contains? exported-ht id)))

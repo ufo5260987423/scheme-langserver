@@ -1,0 +1,5 @@
+(library (unused-local-variable-test lib-rename)
+  (export x)
+  (import (rename (rnrs) (define def)))
+  (def x 1)
+  (def y 2))

@@ -73,15 +73,18 @@
 (test-begin "unused local variables in library")
 (run-unused-local-test "lib.scm.txt"
   (list
-    "Unused local variable: unused-var"
-    "Unused local variable: unused-proc"
     "Unused local variable: p"
-    "Unused local variable: q"
+    "Unused local variable: q")
+  (list
     "Unused local variable: a"
     "Unused local variable: b"
     "Unused local variable: c"
     "Unused local variable: d"
     "Unused local variable: e"
+    "Unused local variable: unused-var"
+    "Unused local variable: unused-proc"
+    "Unused local variable: used-proc"
+    "Unused local variable: x"
     "Unused local variable: let-unused"
     "Unused local variable: let*-unused"
     "Unused local variable: letrec-unused"
@@ -89,16 +92,29 @@
     "Unused local variable: do-unused"
     "Unused local variable: lambda-unused"
     "Unused local variable: case-lambda-unused"
-    "Unused local variable: with-syntax-unused")
-  (list
-    "Unused local variable: used-proc"
-    "Unused local variable: x"))
+    "Unused local variable: with-syntax-unused"))
 (test-end)
 
 (test-begin "unused local variables in script")
 (run-unused-local-test "script.scm.txt"
-  (list "Unused local variable: unused-top-level-var")
-  (list "Unused local variable: used-top-level-proc"))
+  '()
+  (list "Unused local variable: unused-top-level-var"
+        "Unused local variable: used-top-level-proc"))
+(test-end)
+
+(test-begin "unused local variables with renamed define")
+(run-unused-local-test "lib-rename.scm.txt"
+  '()
+  (list "Unused local variable: x"
+        "Unused local variable: y"
+        "Unused local variable: def"))
+(test-end)
+
+(test-begin "unused local variables with prefixed define")
+(run-unused-local-test "lib-prefix.scm.txt"
+  '()
+  (list "Unused local variable: x"
+        "Unused local variable: y"))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
