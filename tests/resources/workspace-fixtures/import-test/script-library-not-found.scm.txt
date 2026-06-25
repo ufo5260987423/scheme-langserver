@@ -1,0 +1,5 @@
+#!/usr/bin/env scheme-script
+;; -*- mode: scheme; coding: utf-8 -*- !#
+(import (fixtures import-test nonexistent))
+
+(display "hello")

@@ -209,4 +209,18 @@
       (find-diagnose diagnoses "Identifier not exported: baz")))
 (test-end)
 
+(test-begin "library not found diagnostic")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/import-test")]
+      [diagnoses (get-script-diagnoses fixture "script-library-not-found.scm.txt")]
+      [expected-message "Fail to find library: (fixtures import-test nonexistent)"]
+      [diag (find-diagnose diagnoses expected-message)])
+    (test-equal "contains library-not-found message"
+      #t
+      (not (eq? diag #f)))
+    (when (not (eq? diag #f))
+      (test-equal "severity is Warning" 2 (list-ref diag 2))
+      (test-equal "source is import" "import" (diagnose-source diag))
+      (test-equal "code is library-not-found" "library-not-found" (diagnose-code diag))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

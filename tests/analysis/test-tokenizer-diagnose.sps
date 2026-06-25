@@ -20,6 +20,12 @@
     (with-output-to-file path (lambda () (display content)))
     path))
 
+(define (diagnose-source diagnose)
+  (if (>= (length diagnose) 5) (list-ref diagnose 4) #f))
+
+(define (diagnose-code diagnose)
+  (if (>= (length diagnose) 6) (list-ref diagnose 5) #f))
+
 (test-begin "tokenizer-diagnose")
 
 (test-equal "source-file->annotations without document does not add diagnose"
@@ -32,18 +38,24 @@
       (delete-file tmp)
       '())))
 
-(test-equal "source-file->annotations with document adds diagnose for unmatched paren"
-  2
+(test-begin "source-file->annotations with document adds diagnose for unmatched paren")
   (guard (e [else 
               (pretty-print `(EXCEPTION ,(condition-message e) ,(condition-irritants e)))
-              -1])
+              #f])
     (let* ([tmp (make-test-file "(define (foo) 1)")]
            [d (make-document (path->uri tmp) "(define (foo" '())])
       (document-diagnoses-set! d '())
       (source-file->annotations "(define (foo" tmp (consume-sps-auxiliary "(define (foo") #t d 'r6rs)
-      (let ([result (length (document-diagnoses d))])
-        (delete-file tmp)
-        result))))
+      (let ([diagnoses (document-diagnoses d)])
+        (test-equal "has two diagnoses" 2 (length diagnoses))
+        (for-each
+          (lambda (diag)
+            (test-equal "severity is Error" 1 (list-ref diag 2))
+            (test-equal "source is syntax" "syntax" (diagnose-source diag))
+            (test-equal "code is syntax-error" "syntax-error" (diagnose-code diag)))
+          diagnoses)
+        (delete-file tmp))))
+(test-end)
 
 (test-equal "diagnose message starts with Syntax error:"
   #t

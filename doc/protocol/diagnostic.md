@@ -40,7 +40,7 @@ The following LSP fields are still **not emitted**:
 | Tokenizer / Parser | `analysis/tokenizer.sls` | `1` (Error) | `"syntax"` | `"syntax-error"` | `"Syntax error: ..."` |
 | File not found | `analysis/tokenizer.sls` | `1` (Error) | `"syntax"` | `"file-not-found"` | `"File not found: ..."` |
 | Duplicate identifier | `analysis/identifier/reference.sls` | `1` (Error) | `"identifier"` | `"duplicate-identifier"` | `"Duplicate identifier: x"` |
-| Abstract interpreter | `analysis/abstract-interpreter.sls` | `2` (Warning) | `"identifier"` | `"identifier-resolution-failure"` | `"Scheme-langserver Warning: Fail to catch identifiers"` |
+| Abstract interpreter | `analysis/abstract-interpreter.sls` | `2` (Warning) | `"identifier"` | `"identifier-resolution-failure"` | `"Scheme-langserver Warning: fail to catch identifiers"` |
 | Library import (r6rs) | `analysis/identifier/rules/library-import.sls` | `2` (Warning) | `"import"` | `"library-not-found"` | `"Fail to find library:..."` |
 | Library import (r7rs) | `analysis/identifier/rules/r7rs/define-library-import.sls` | `2` (Warning) | `"import"` | `"library-not-found"` | `"Fail to find library:..."` |
 | File load | `analysis/identifier/rules/load.sls` | `2` (Warning) | `"load"` | `"load-file-not-found"` | `"Fail to find file:..."` |
@@ -165,7 +165,7 @@ converted to LSP `Diagnostic` objects in `protocol/apis/document-diagnostic.sls`
 
 ### P1 — Precise undefined-identifier diagnostic
 
-**Goal:** Replace the blanket `"Fail to catch identifiers"` with
+**Goal:** Replace the blanket `"fail to catch identifiers"` with
 `"Undefined identifier: foo"` at the exact symbol location.
 
 **Implementation sketch:**
@@ -310,7 +310,7 @@ If a full phase is too large, these can be done in minutes:
    ```
 
 2. **Fix severity inconsistencies:**
-   - `"Fail to catch identifiers"` is currently Warning (`2`).  If it becomes
+   - `"fail to catch identifiers"` is currently Warning (`2`).  If it becomes
      an undefined-identifier diagnostic, it should be Error (`1`).
 
 3. **Add tests for `load.sls`:**  The file has a `;;todo more test` comment but
@@ -410,7 +410,7 @@ For each target path (after `init-references` has already cleared stale diagnost
    - If resolution fails, appends a warning:
      ```scheme
      (append-new-diagnoses current-document
-       `(start end 2 "Scheme-langserver Warning: Fail to catch identifiers"))
+       `(start end 2 "Scheme-langserver Warning: fail to catch identifiers"))
      ```
 
 2. **Process excluded references** (`process-library-identifier-excluded-references`):

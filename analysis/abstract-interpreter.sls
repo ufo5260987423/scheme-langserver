@@ -131,7 +131,7 @@
               (map (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
               (except c 
                 [else 
-                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: Fail to catch identifiers" "identifier" "identifier-resolution-failure"))]))
+                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: fail to catch identifiers" "identifier" "identifier-resolution-failure"))]))
             (fold-left
               (lambda (l child-index-node)
                 (step root-file-node root-library-node file-linkage current-document child-index-node expanded+callee-list memory))
@@ -145,7 +145,7 @@
                 target-rules)
               (except c 
                 [else 
-                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: Fail to catch identifiers" "identifier" "identifier-resolution-failure"))])))]
+                  (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: fail to catch identifiers" "identifier" "identifier-resolution-failure"))])))]
         [else 
           (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))])
             (if (symbol? expression)
