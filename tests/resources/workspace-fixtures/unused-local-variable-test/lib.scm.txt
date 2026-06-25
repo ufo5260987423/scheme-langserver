@@ -1,0 +1,34 @@
+(library (unused-local-variable-test lib)
+  (export used-proc)
+  (import (rnrs))
+
+  (define unused-var 1)
+  (define (unused-proc) 2)
+
+  (define (used-proc x) x)
+
+  (define (lambda-unused)
+    (lambda (p) 3))
+
+  (define (case-lambda-unused)
+    (case-lambda
+      [(q) 4]))
+
+  (define (let-unused)
+    (let ([a 1]) 5))
+
+  (define (let*-unused)
+    (let* ([b 1]) 6))
+
+  (define (letrec-unused)
+    (letrec ([c 1]) 7))
+
+  (define (let-values-unused)
+    (let-values ([(d) 1]) 8))
+
+  (define (do-unused)
+    (do ((e 0 0)) (#t 'done)))
+
+  (define (with-syntax-unused)
+    (with-syntax ([f 1]) 9))
+)

@@ -1,6 +1,6 @@
 # Diagnostic Improvement Plan
 
-> Status: **P0 done**; unused import done; precise undefined identifier and type-mismatch remain  
+> Status: **P0 done**; unused import, unused local variable, duplicate import, and identifier-not-exported done; precise undefined identifier and type-mismatch remain  
 > Created: 2025-05-13  
 > Updated: 2026-06-24
 
@@ -30,7 +30,7 @@ The following LSP fields are still **not emitted**:
 |-----------|----------------|---------------------|
 | `source` | ✅ | Diagnostics are tagged by subsystem. |
 | `code` | ✅ | Most common diagnostics have a stable code. |
-| `tags` | ❌ | Cannot mark `Unnecessary` or `Deprecated`. |
+| `tags` | ✅ | `Unnecessary` is emitted for `unused-import` and `unused-local-variable`. `Deprecated` is not used yet. |
 | `relatedInformation` | ❌ | Cannot show "defined here" / "imported here" cross-references. |
 
 ### 1.1 Sources of diagnostics today
@@ -45,6 +45,9 @@ The following LSP fields are still **not emitted**:
 | Library import (r7rs) | `analysis/identifier/rules/r7rs/define-library-import.sls` | `2` (Warning) | `"import"` | `"library-not-found"` | `"Fail to find library:..."` |
 | File load | `analysis/identifier/rules/load.sls` | `2` (Warning) | `"load"` | `"load-file-not-found"` | `"Fail to find file:..."` |
 | Unused import | `analysis/workspace.sls` | `2` (Warning) | `"import"` | `"unused-import"` | `"Unused import: car"` |
+| Unused local variable | `analysis/workspace.sls` | `2` (Warning) | `"identifier"` | `"unused-local-variable"` | `"Unused local variable: x"` |
+| Duplicate import | `analysis/workspace.sls` | `2` (Warning) | `"import"` | `"duplicate-import"` | `"Duplicate import: (rnrs)"` |
+| Identifier not exported | `analysis/identifier/rules/library-import.sls` | `2` (Warning) | `"import"` | `"identifier-not-exported"` | `"Identifier not exported: foo"` |
 | Type inference | `analysis/workspace.sls` | `2` (Warning) | `"type"` | `"type-inference-warning"` | `"Type inference warning: ..."` |
 | Type rules | `analysis/type/substitutions/generator.sls` | `2` (Warning) | `"type"` | `"type-rule-warning"` | `"Type rule warning: ..."` |
 | Analysis error | `analysis/workspace.sls` | `1` (Error) | `"analysis"` | `"analysis-error"` | `"Analysis error: ..."` |
@@ -57,9 +60,10 @@ The following LSP fields are still **not emitted**:
 2. **No type-mismatch diagnostics.**  The type system (`type:->?`, `type:=?`)
    exists but is only used for hover tooltips.  It is not wired into
    `publishDiagnostics`.
-3. **No unused-variable diagnostic.**  `unused-import` is implemented via
-   `identifier-reference-usage-count`, but local variables that are declared
-   and never referenced are not yet flagged.
+3. **No unused-variable diagnostic.**  ✅ Implemented as `unused-local-variable`
+   (`analysis/workspace.sls`). Local bindings (parameters, `let`/`let*`/`letrec`/
+   `let-values`/`do`/`with-syntax` bindings, and top-level `define`s in scripts)
+   with zero `usage-count` are flagged, unless they are exported.
 
 ---
 
@@ -105,9 +109,57 @@ The following LSP fields are still **not emitted**:
 | File not found (load) | `"load-file-not-found"` |
 | Identifier resolution failure | `"identifier-resolution-failure"` |
 | Unused import | `"unused-import"` |
+| Unused local variable | `"unused-local-variable"` |
+| Duplicate import | `"duplicate-import"` |
+| Identifier not exported | `"identifier-not-exported"` |
 | Type inference warning | `"type-inference-warning"` |
 | Type rule warning | `"type-rule-warning"` |
 | Analysis error | `"analysis-error"` |
+
+---
+
+### Diagnostic code reference
+
+The following codes are published to LSP clients.  They are generated in
+`analysis/workspace.sls` and `analysis/identifier/rules/library-import.sls`, then
+converted to LSP `Diagnostic` objects in `protocol/apis/document-diagnostic.sls`.
+
+| `code` | Severity | Source | Example message | LSP `tags` |
+|--------|----------|--------|-----------------|------------|
+| `"duplicate-identifier"` | `1` Error | `"identifier"` | `"Duplicate identifier: x"` | — |
+| `"library-not-found"` | `2` Warning | `"import"` | `"Fail to find library: (rnrs base)"` | — |
+| `"unused-import"` | `2` Warning | `"import"` | `"Unused import: car"` | `#(1)` (Unnecessary) |
+| `"unused-local-variable"` | `2` Warning | `"identifier"` | `"Unused local variable: x"` | `#(1)` (Unnecessary) |
+| `"duplicate-import"` | `2` Warning | `"import"` | `"Duplicate import: (rnrs)"` | — |
+| `"identifier-not-exported"` | `2` Warning | `"import"` | `"Identifier not exported: foo"` | — |
+| `"syntax-error"` | `1` Error | `"syntax"` | `"Syntax error: ..."` | — |
+
+#### Example: unused import
+
+```scheme
+(import (only (rnrs) car cdr))
+(display cdr)
+;; Diagnostic on `car`:
+;; (start end 2 "Unused import: car" "import" "unused-import")
+;; LSP tags: #(1) => Unnecessary
+```
+
+#### Example: duplicate import
+
+```scheme
+(import (rnrs))
+(import (rnrs))
+;; Diagnostic on the second `(rnrs)`:
+;; (start end 2 "Duplicate import: (rnrs)" "import" "duplicate-import")
+```
+
+#### Example: identifier not exported
+
+```scheme
+(import (only (fixtures import-test lib) foo not-exported))
+;; Diagnostic on `not-exported`:
+;; (start end 2 "Identifier not exported: not-exported" "import" "identifier-not-exported")
+```
 
 ---
 
@@ -182,8 +234,9 @@ not match a function's signature.
     the imported references to the library-identifier node itself in
     `analysis/identifier/rules/library-import.sls` and reading them back in
     `private:check-import-clause`.
-- ❌ **Unused variable** is not yet implemented.  Local bindings and top-level
-  variables with zero references are not flagged.
+- ✅ **Unused local variable** is implemented.  Local bindings and top-level
+  script definitions with zero references are flagged with code
+  `"unused-local-variable"` and tagged as `Unnecessary`.
 
 **Bug fixed along the way:**
 - `library-identifier->string` in `analysis/identifier/util.sls` used
@@ -237,7 +290,9 @@ pointing to the `import` clause that requested it.
 | **P1** | Precise undefined identifier | ❌ Not started | 2–3 days | **Very high** (most-requested feature) |
 | **P2** | Type-mismatch warnings | ❌ Not started | 1–2 weeks | High (core differentiator) |
 | **P3** | Unused import | ✅ Done | — | Medium (code quality) |
-| **P3** | Unused variable | ❌ Not started | 1–2 weeks | Medium (code quality) |
+| **P3** | Unused local variable | ✅ Done | — | Medium (code quality) |
+| **P3** | Duplicate import | ✅ Done | — | Medium (code quality) |
+| **P3** | Identifier not exported | ✅ Done | — | Medium (code quality) |
 | **P4** | `relatedInformation` | ❌ Not started | 1 week | Medium (UX polish) |
 
 ---
@@ -382,7 +437,7 @@ For each target path (after `init-references` has already cleared stale diagnost
    - Supports plain imports, `only`, `except`, `rename`, and `alias`.
    - If unused, appends:
      ```scheme
-     `(start end 2 "Unused import: car" "identifier" "unused-import")
+     `(start end 2 "Unused import: car" "import" "unused-import")
      ```
    - Severity **2** (Warning).
    - Built-in bindings (`library-identifier` is `'()` or built-in libraries such as `(rnrs)`) are skipped.
@@ -400,15 +455,19 @@ For each target path (after `init-references` has already cleared stale diagnost
 
 #### 3.1.2 Shape of a single diagnose
 
-A raw diagnose is a 4-element list:
+A raw diagnose is stored as a list with 4 to 6 elements:
 
 ```scheme
-(range-start range-end severity message)
+(range-start range-end severity message [source] [code])
 ```
 
 - `range-start`, `range-end` — byte offsets into the document text.
 - `severity` — LSP severity integer (1=Error, 2=Warning, 3=Information, 4=Hint).
 - `message` — human-readable string.
+- `source` — optional subsystem tag (e.g. `"import"`, `"identifier"`).
+  When omitted, `private:make-diagnostic` falls back to `"scheme-langserver"`.
+- `code` — optional stable diagnostic code (e.g. `"unused-import"`).
+  When present, it is published to the client as the LSP `code` field.
 
 ---
 

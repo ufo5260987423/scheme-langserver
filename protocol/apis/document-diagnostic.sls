@@ -74,9 +74,9 @@
       [message (cadddr diagnose)]
       [source (if (>= (length diagnose) 5) (list-ref diagnose 4) "scheme-langserver")]
       [code (if (>= (length diagnose) 6) (list-ref diagnose 5) #f)]
-      [tags (if (and code (string=? code "unused-import")) (vector 1) #f)])
+      [tags (if (and code (or (string=? code "unused-import") (string=? code "unused-local-variable"))) (vector 1) #f)])
     ; LSP DiagnosticTag: 1 = Unnecessary, 2 = Deprecated.
-    ; Currently only unused-import is tagged as Unnecessary.
+    ; Unused imports and unused local variables are tagged as Unnecessary.
     (append 
       (make-alist 
         'range 

@@ -1,0 +1,6 @@
+(import (rnrs))
+
+(define unused-top-level-var 1)
+(define (used-top-level-proc z) z)
+
+(used-top-level-proc 1)

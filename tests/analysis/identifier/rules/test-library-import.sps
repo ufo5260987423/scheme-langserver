@@ -134,4 +134,79 @@
    (test-equal #t (has-identifier? refs 'baz)))
 (test-end)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; identifier-not-exported diagnostics
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (diagnose-message diagnose)
+  (if (>= (length diagnose) 4)
+    (list-ref diagnose 3)
+    ""))
+
+(define (diagnose-source diagnose)
+  (if (>= (length diagnose) 5)
+    (list-ref diagnose 4)
+    #f))
+
+(define (diagnose-code diagnose)
+  (if (>= (length diagnose) 6)
+    (list-ref diagnose 5)
+    #f))
+
+(define (find-diagnose diagnoses message)
+  (find 
+    (lambda (d) (string=? (diagnose-message d) message))
+    diagnoses))
+
+(define (get-script-diagnoses fixture filename)
+  (let* ([workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+     [root-file-node (workspace-file-node workspace)]
+     [script-path (string-append fixture "/" filename)]
+     [script-node (walk-file root-file-node script-path)]
+     [doc (file-node-document script-node)])
+    (document-diagnoses doc)))
+
+(define (run-identifier-not-exported-test filename expected-identifier)
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/import-test")]
+      [expected-message (string-append "Identifier not exported: " (symbol->string expected-identifier))]
+      [diagnoses (get-script-diagnoses fixture filename)]
+      [diag (find-diagnose diagnoses expected-message)])
+    (test-equal (string-append "contains " expected-message)
+      #t
+      (not (eq? diag #f)))
+    (when (not (eq? diag #f))
+      (test-equal "severity is Warning" 2 (list-ref diag 2))
+      (test-equal "source is import" "import" (diagnose-source diag))
+      (test-equal "code is identifier-not-exported" "identifier-not-exported" (diagnose-code diag)))))
+
+(test-begin "identifier not exported in only clause")
+  (run-identifier-not-exported-test "script-only-not-exported.scm.txt" 'not-exported)
+(test-end)
+
+(test-begin "identifier not exported in except clause")
+  (run-identifier-not-exported-test "script-except-not-exported.scm.txt" 'not-exported)
+(test-end)
+
+(test-begin "identifier not exported in rename clause")
+  (run-identifier-not-exported-test "script-rename-not-exported.scm.txt" 'not-exported)
+(test-end)
+
+(test-begin "identifier not exported in alias clause")
+  (run-identifier-not-exported-test "script-alias-not-exported.scm.txt" 'not-exported)
+(test-end)
+
+(test-begin "no false positive for exported identifiers")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/import-test")]
+      [diagnoses (get-script-diagnoses fixture "script-only.scm.txt")])
+    (test-equal "no identifier-not-exported for foo" 
+      #f
+      (find-diagnose diagnoses "Identifier not exported: foo"))
+    (test-equal "no identifier-not-exported for bar"
+      #f
+      (find-diagnose diagnoses "Identifier not exported: bar"))
+    (test-equal "no identifier-not-exported for baz"
+      #f
+      (find-diagnose diagnoses "Identifier not exported: baz")))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

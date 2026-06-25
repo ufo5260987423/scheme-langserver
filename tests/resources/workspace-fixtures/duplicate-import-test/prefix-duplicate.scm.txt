@@ -1,0 +1,6 @@
+#!/usr/bin/env scheme-script
+;; -*- mode: scheme; coding: utf-8 -*- !#
+(import (prefix (rnrs) r:))
+(import (rnrs))
+
+(display "hello")

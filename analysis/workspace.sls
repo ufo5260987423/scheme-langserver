@@ -471,7 +471,9 @@
     ; (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)
     (process-library-identifier-excluded-references document)
+    (private:check-duplicate-imports document)
     (private:check-unused-imports document)
+    (private:check-unused-local-variables document)
     ; (pretty-print 'test1)
     (if (workspace-type-inference? workspace-instance)
       (try 
@@ -488,14 +490,17 @@
     (document-diagnoses-set! document (append syntax-diagnoses (document-diagnoses document)))
     (document-refreshable?-set! document #f)))
 
-(define (private:mark-used-imports document)
-  (let ([used-ht (make-eq-hashtable)])
+(define (private:collect-import-usages document)
+  (let ([used-ht (make-eq-hashtable)]
+      [import-clauses '()])
     (let loop ([nodes (document-index-node-list document)] [in-import? #f])
       (for-each
         (lambda (node)
           (let ([expression (annotation-stripped (index-node-datum/annotations node))])
             (cond
               [(and (pair? expression) (eq? 'import (car expression)))
+                (set! import-clauses 
+                  (append (cdr (index-node-children node)) import-clauses))
                 (loop (index-node-children node) #t)]
               [in-import?
                 (loop (index-node-children node) #t)]
@@ -508,19 +513,14 @@
                     (find-available-references-for document node expression)))
                 (loop (index-node-children node) #f)])))
         nodes))
-    used-ht))
+    (values used-ht (reverse import-clauses))))
 
 (define (private:check-unused-imports document)
-  (let* ([used-ht (private:mark-used-imports document)]
-      [seen (make-eq-hashtable)])
-    (let loop ([nodes (document-index-node-list document)])
-      (for-each
-        (lambda (node)
-          (let ([expression (annotation-stripped (index-node-datum/annotations node))])
-            (if (and (pair? expression) (eq? 'import (car expression)))
-              (for-each (lambda (child) (private:check-import-clause document child used-ht seen)) (cdr (index-node-children node))))
-            (loop (index-node-children node))))
-        nodes))))
+  (let-values ([(used-ht import-clauses) (private:collect-import-usages document)])
+    (let ([seen (make-eq-hashtable)])
+      (for-each 
+        (lambda (clause-node) (private:check-import-clause document clause-node used-ht seen))
+        import-clauses))))
 
 (define (private:check-import-clause document index-node used-ht seen)
   (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
@@ -579,6 +579,124 @@
         `(,(index-node-start index-node) ,(index-node-end index-node) 2
           ,(string-append "Unused import: " (if (symbol? identifier) (symbol->string identifier) identifier))
           "import" "unused-import")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Duplicate import detection
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (private:check-duplicate-imports document)
+  (let ([seen (make-hashtable equal-hash equal?)])
+    (let loop ([nodes (document-index-node-list document)])
+      (for-each
+        (lambda (node)
+          (let ([expression (annotation-stripped (index-node-datum/annotations node))])
+            (if (and (pair? expression) (eq? 'import (car expression)))
+              (for-each 
+                (lambda (child) (private:check-duplicate-import-clause document child seen)) 
+                (cdr (index-node-children node))))
+            (loop (index-node-children node))))
+        nodes))))
+
+(define (private:check-duplicate-import-clause document index-node seen)
+  (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+      [library-identifier (resolve-import-library-identifier expression)])
+    (when (and (pair? library-identifier) (not (null? library-identifier)))
+      (if (hashtable-contains? seen library-identifier)
+        (private:append-duplicate-import-diagnose document index-node library-identifier)
+        (hashtable-set! seen library-identifier #t)))))
+
+(define (private:append-duplicate-import-diagnose document index-node library-identifier)
+  (append-new-diagnoses document
+    `(,(index-node-start index-node) ,(index-node-end index-node) 2
+      ,(string-append "Duplicate import: " (library-identifier->string library-identifier))
+      "import" "duplicate-import")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Unused local variable detection
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Collect symbols that are explicitly exported from the document's
+; top-level (library ...) / (define-library ...) form.  Local bindings
+; whose identifiers appear here must not be reported as unused.
+(define (private:collect-exported-identifiers document)
+  (let ([exported (make-eq-hashtable)])
+    (for-each
+      (lambda (top-node)
+        (let ([expr (annotation-stripped (index-node-datum/annotations top-node))])
+          (when (and (pair? expr) (or (eq? 'library (car expr)) (eq? 'define-library (car expr))))
+            (for-each
+              (lambda (body-node)
+                (let ([body-expr (annotation-stripped (index-node-datum/annotations body-node))])
+                  (when (and (pair? body-expr) (eq? 'export (car body-expr)))
+                    (for-each
+                      (lambda (export-item-node)
+                        (private:collect-export-item-identifiers exported export-item-node))
+                      (cdr (index-node-children body-node))))))
+              (cddr (index-node-children top-node))))))
+      (document-index-node-list document))
+    exported))
+
+(define (private:collect-export-item-identifiers exported export-item-node)
+  (let ([export-expr (annotation-stripped (index-node-datum/annotations export-item-node))])
+    (cond
+      [(symbol? export-expr)
+        (eq-hashtable-set! exported export-expr #t)]
+      [(and (pair? export-expr) (eq? 'rename (car export-expr)))
+        (for-each
+          (lambda (pair-node)
+            (let ([pair-expr (annotation-stripped (index-node-datum/annotations pair-node))])
+              (when (and (pair? pair-expr) (symbol? (car pair-expr)))
+                (eq-hashtable-set! exported (car pair-expr) #t))))
+          (cdr (index-node-children export-item-node)))]
+      [else (void)])))
+
+(define (private:collect-local-binding-references document)
+  ; Local bindings may live either in document-ordered-reference-list (e.g.
+  ; with-syntax syntax-parameters) or in index-node-references-export-to-other-node
+  ; of the identifier leaf node (e.g. define/lambda/let).  Collect from both
+  ; places and dedupe by the binding's index-node to avoid duplicate diagnostics.
+  (let ([result '()] [seen (make-eq-hashtable)])
+    (define (add! ref)
+      (let ([index-node (identifier-reference-index-node ref)])
+        (when (and (eq? (identifier-reference-document ref) document)
+                (null? (identifier-reference-library-identifier ref))
+                (index-node? index-node)
+                (not (eq-hashtable-contains? seen index-node)))
+          (eq-hashtable-set! seen index-node #t)
+          (set! result (cons ref result)))))
+    (for-each add! (document-ordered-reference-list document))
+    (let walk ([node (document-index-node-list document)])
+      (cond
+        [(null? node) (void)]
+        [(pair? node)
+          (walk (car node))
+          (walk (cdr node))]
+        [(index-node? node)
+          (for-each add! (index-node-references-import-in-this-node node))
+          (for-each add! (index-node-references-export-to-other-node node))
+          (for-each add! (index-node-excluded-references node))
+          (walk (index-node-children node))]
+        [else (void)]))
+    result))
+
+(define (private:check-unused-local-variables document)
+  (let* ([exported-ht (private:collect-exported-identifiers document)]
+      [seen (make-eq-hashtable)])
+    (for-each
+      (lambda (ref)
+        (when (and (not (eq-hashtable-contains? seen ref))
+                (memq (identifier-reference-type ref) '(variable parameter procedure continuation syntax-parameter))
+                (zero? (identifier-reference-usage-count ref)))
+          (let ([id (identifier-reference-identifier ref)])
+            (when (and (symbol? id) (not (eq-hashtable-contains? exported-ht id)))
+              (eq-hashtable-set! seen ref #t)
+              (let ([index-node (identifier-reference-index-node ref)])
+                (when (index-node? index-node)
+                  (append-new-diagnoses document
+                    `(,(index-node-start index-node) ,(index-node-end index-node) 2
+                      ,(string-append "Unused local variable: " (symbol->string id))
+                      "identifier" "unused-local-variable"))))))))
+      (private:collect-local-binding-references document))))
 
 (define (update-file-node-with-tail workspace-instance target-file-node text)
   (let* ([root-file-node (workspace-file-node workspace-instance)]

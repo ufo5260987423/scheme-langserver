@@ -5,7 +5,8 @@
     import-process
     import-references
     import-from-external-index-node
-    process-library-identifier-excluded-references)
+    process-library-identifier-excluded-references
+    resolve-import-library-identifier)
   (import 
     (chezscheme) 
     (ufo-match)
@@ -82,6 +83,12 @@
     (lambda (item) (not (null? item)))
     list-instance))
 
+(define (private:append-identifier-not-exported-diagnose document index-node identifier)
+  (append-new-diagnoses document
+    `(,(index-node-start index-node) ,(index-node-end index-node) 2
+      ,(string-append "Identifier not exported: " (symbol->string identifier))
+      "import" "identifier-not-exported")))
+
 ; Recursively extract the base library identifier from a nested import spec.
 ; E.g. (rename (except (rnrs) find filter) (assoc r6rs:assoc)) -> (rnrs)
 (define (resolve-import-library-identifier expression)
@@ -130,6 +137,11 @@
                     (lambda (reference) 
                       (eq? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
+              (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
+                             (meta-library? actual-library-identifier 'r6rs))
+                         (null? current-references))
+                (private:append-identifier-not-exported-diagnose document current-index-node current-identifier))
+
 
               (append-references-into-ordered-references-for document current-index-node current-references)
 
@@ -173,6 +185,11 @@
                     (lambda (reference) 
                       (eq? current-identifier (identifier-reference-identifier reference)))
                     imported-references)])
+              (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
+                             (meta-library? actual-library-identifier 'r6rs))
+                         (null? current-references))
+                (private:append-identifier-not-exported-diagnose document current-index-node current-identifier))
+
 
               (append-references-into-ordered-references-for document current-index-node current-references)
               (loop 
@@ -240,6 +257,11 @@
                         `(,reference)
                         (identifier-reference-type-expressions reference))) 
                     current-references)])
+              (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
+                             (meta-library? actual-library-identifier 'r6rs))
+                         (null? current-references))
+                (private:append-identifier-not-exported-diagnose document current-external-node current-external-name))
+
 
               (append-references-into-ordered-references-for document current-internal-node current-references)
               (append-references-into-ordered-references-for document current-internal-node renamed-references)
@@ -295,6 +317,11 @@
                         `(,reference)
                         (identifier-reference-type-expressions reference)))
                     current-references)])
+              (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
+                             (meta-library? actual-library-identifier 'r6rs))
+                         (null? current-references))
+                (private:append-identifier-not-exported-diagnose document current-external-node current-external-name))
+
 
               (append-references-into-ordered-references-for document current-internal-node current-references)
               (append-references-into-ordered-references-for document current-internal-node renamed-references)
@@ -321,6 +348,7 @@
             (eq? 'expand import-level)
             ; (equal? '(meta 1) import-level)
             )
+
           (match-clause initialization-index-node root-file-node root-library-node document (cadr (index-node-children index-node))))]
       [('for (library-identifier **1) import-level) 
         (if (null? (walk-library actual-library-identifier root-library-node))

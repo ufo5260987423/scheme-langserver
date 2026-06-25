@@ -1,0 +1,5 @@
+#!/usr/bin/env scheme-script
+;; -*- mode: scheme; coding: utf-8 -*- !#
+(import (except (fixtures import-test lib) not-exported))
+
+(display foo)
