@@ -14,8 +14,7 @@
 
   (scheme-langserver util test)
 
-  (scheme-langserver analysis identifier expanders pattern)
-  (scheme-langserver analysis workspace))
+  (scheme-langserver analysis identifier expanders pattern))
 
 (test-begin "context:ellipsed?")
   (test-equal #t (context:ellipsed? (gather-context (make-pattern '(try body0 body1 ... (except condition clause0 clause1 ...)))) 'body1))
