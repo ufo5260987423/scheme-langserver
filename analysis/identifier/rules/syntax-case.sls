@@ -16,7 +16,7 @@
 ; reference-identifier-type include 
 ; syntax-parameter 
 ;https://www.zenlife.tk/scheme-hygiene-macro.md
-(define (syntax-case-process root-file-node root-librar-node document index-node)
+(define (syntax-case-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)])
     (match expression
