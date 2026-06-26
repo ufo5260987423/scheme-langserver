@@ -8,7 +8,6 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier rules define)
   (scheme-langserver analysis identifier reference)
-  (scheme-langserver analysis package-manager akku)
 
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system file-node)

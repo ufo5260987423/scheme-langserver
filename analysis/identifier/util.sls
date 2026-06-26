@@ -11,7 +11,6 @@
     (only (srfi :13) string-trim-both)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node))
 
 (define (car* pair)

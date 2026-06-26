@@ -8,28 +8,12 @@
   ; (rnrs (6))
   (chezscheme)
   (srfi :64 testing)
-  (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system index-node)
-  (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system library-node)
-
-  (scheme-langserver analysis workspace)
 
   (scheme-langserver util contain)
-  (scheme-langserver util dedupe)
-  (scheme-langserver util text)
 
-  (scheme-langserver analysis package-manager akku)
-  (scheme-langserver analysis workspace)
-  (scheme-langserver analysis tokenizer)
-  (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier meta)
-  (scheme-langserver analysis type domain-specific-language interpreter)
-  (scheme-langserver analysis type domain-specific-language inner-type-checker)
-  (scheme-langserver analysis type substitutions util)
-  (scheme-langserver analysis type substitutions generator)
-
-  (scheme-langserver protocol alist-access-object))
+  (scheme-langserver analysis type domain-specific-language interpreter))
 
 (test-begin "type:interpret")
   (test-equal

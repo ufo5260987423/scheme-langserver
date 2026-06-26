@@ -4,15 +4,8 @@
     (chezscheme) 
 
     (ufo-try)
-    (scheme-langserver util path)
-    (scheme-langserver util contain)
 
     (scheme-langserver analysis util)
-
-    (scheme-langserver analysis dependency file-linkage)
-
-    (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis identifier primitive-variable)
 
     (scheme-langserver analysis identifier expanders syntax-rules)
     (scheme-langserver analysis identifier expanders syntax-case)
@@ -53,7 +46,6 @@
 
     (scheme-langserver analysis identifier rules syntax-case)
     (scheme-langserver analysis identifier rules syntax-rules)
-    (scheme-langserver analysis identifier rules self-defined-syntax)
     (scheme-langserver analysis identifier rules with-syntax)
     (scheme-langserver analysis identifier rules identifier-syntax)
 
@@ -68,9 +60,7 @@
     (scheme-langserver analysis identifier self-defined-rules router)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system library-node))
+    (scheme-langserver virtual-file-system document))
 
 ;TODO: in case of self-defined macro's partially evaluation leading endless recursions, add a recursion avoid mechanism. 
 (define step 

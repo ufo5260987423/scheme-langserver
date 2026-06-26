@@ -11,8 +11,7 @@
     (scheme-langserver util path)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver analysis identifier reference))
+    (scheme-langserver virtual-file-system document))
 
 ;; ---- Signature extraction for fast clause filtering ----
 

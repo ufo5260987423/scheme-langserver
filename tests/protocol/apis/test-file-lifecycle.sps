@@ -11,7 +11,6 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system index-node)
   (scheme-langserver protocol apis file-change-notification)
   (scheme-langserver protocol apis document-sync)
   (scheme-langserver protocol apis completion)

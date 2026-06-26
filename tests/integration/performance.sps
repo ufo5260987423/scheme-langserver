@@ -4,7 +4,7 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (chezscheme)  (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
+(import (chezscheme)  (scheme-langserver))
 
 (time
   (let* ( [shutdown-json "{\n    \"id\": \"2\",\n    \"method\": \"shutdown\",\n    \"jsonrpc\": \"2.0\"\n}"]

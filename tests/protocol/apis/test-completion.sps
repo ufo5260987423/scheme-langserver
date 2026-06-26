@@ -9,9 +9,7 @@
   (chezscheme)
   (srfi :64 testing)
   (scheme-langserver analysis workspace)
-  (scheme-langserver virtual-file-system file-node)
   (scheme-langserver protocol apis completion)
-  (scheme-langserver util path)
   (scheme-langserver util association))
 
 (test-begin "completion on unresolved uri returns empty vector")

@@ -4,10 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver analysis identifier reference)
-
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document))
+    (scheme-langserver virtual-file-system index-node))
 
 (define (if-process document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]

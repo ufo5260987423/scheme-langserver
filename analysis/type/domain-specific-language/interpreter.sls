@@ -30,7 +30,6 @@
     (scheme-langserver util dedupe)
     (ufo-try)
 
-    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver analysis type domain-specific-language inner-type-checker)

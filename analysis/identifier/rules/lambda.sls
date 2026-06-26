@@ -8,10 +8,7 @@
 
     (scheme-langserver analysis identifier reference)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; parameter 

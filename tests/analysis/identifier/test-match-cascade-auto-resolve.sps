@@ -7,13 +7,10 @@
 (import 
   (chezscheme)
   (srfi :64 testing)
-  (scheme-langserver util path)
   (scheme-langserver util test)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system library-node)
-  (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier expanders expansion-wrap)
   (scheme-langserver analysis tokenizer)
   (scheme-langserver analysis abstract-interpreter)

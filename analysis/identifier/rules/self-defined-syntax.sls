@@ -3,25 +3,16 @@
     self-defined-syntax-process)
   (import 
     (chezscheme) 
-    (ufo-match)
 
-    (ufo-try)
     (scheme-langserver util path)
-    (scheme-langserver util dedupe)
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis tokenizer)
 
-    (scheme-langserver analysis identifier util)
-    (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier macro-expander)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system document))
 
 (define (self-defined-syntax-process top-identifier-reference callee-index-node callee-document old-expanded+callee-list stepper)
   (let ([template+callees (generate-pair:template+callee top-identifier-reference callee-index-node callee-document)]

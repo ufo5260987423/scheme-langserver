@@ -5,12 +5,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver analysis identifier reference)
-    (ufo-try)
-
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system index-node))
 
 (define (library-import-process-r7rs index-node)
   (apply append 

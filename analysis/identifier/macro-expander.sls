@@ -11,20 +11,14 @@
 
     (ufo-try)
     (scheme-langserver util path)
-    (scheme-langserver util dedupe)
-    (scheme-langserver util contain)
-    (scheme-langserver util cartesian-product)
 
     (scheme-langserver analysis tokenizer)
 
-    (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system document))
 
 (define (expand:step-by-step-identifier-reference identifier-reference callee-index-node callee-document)
   (map 

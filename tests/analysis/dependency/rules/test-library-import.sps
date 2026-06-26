@@ -9,13 +9,10 @@
   (srfi :64 testing) 
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system index-node)
 
   (scheme-langserver analysis dependency rules library-import)
   (scheme-langserver analysis dependency rules library-import-r7rs)
-  (scheme-langserver analysis package-manager akku)
-  (scheme-langserver analysis workspace)
-  (scheme-langserver analysis dependency file-linkage))
+  (scheme-langserver analysis workspace))
 
 (test-begin "library-import-process")
   (let* ([root-file-node (init-virtual-file-system "./util/io.sls" '() (lambda (fuzzy) #t))]

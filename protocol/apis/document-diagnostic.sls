@@ -6,17 +6,11 @@
     (chezscheme) 
 
     (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type substitutions util)
-    (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver util association)
-    (scheme-langserver util path) 
-    (scheme-langserver util dedupe)
 
-    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 

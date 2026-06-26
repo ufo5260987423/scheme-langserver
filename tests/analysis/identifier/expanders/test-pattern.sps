@@ -12,9 +12,6 @@
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
 
-  (scheme-langserver protocol alist-access-object)
-
-  (scheme-langserver util text)
   (scheme-langserver util test)
 
   (scheme-langserver analysis identifier expanders pattern)

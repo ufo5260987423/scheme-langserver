@@ -10,17 +10,13 @@
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system library-node)
 
   (scheme-langserver analysis abstract-interpreter)
 
-  (scheme-langserver analysis package-manager akku)
   (scheme-langserver analysis workspace)
-  (scheme-langserver analysis tokenizer)
 
   (scheme-langserver analysis identifier reference)
-  (scheme-langserver analysis identifier meta)
-  (scheme-langserver analysis identifier rules library-import))
+  (scheme-langserver analysis identifier meta))
 
 (test-begin "library-import-process")
   (let* ( [workspace (init-workspace (string-append (current-directory) "/util") #f #f)]

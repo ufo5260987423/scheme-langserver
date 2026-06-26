@@ -10,7 +10,6 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier meta)
   (scheme-langserver analysis type domain-specific-language interpreter)
-  (scheme-langserver analysis type domain-specific-language inner-type-checker)
   (scheme-langserver analysis type domain-specific-language syntax-candy))
 
 ;; ---------------------------------------------------------------------------

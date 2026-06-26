@@ -7,17 +7,13 @@
 (import 
   (chezscheme) 
   (srfi :64 testing) 
-  (scheme-langserver) 
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
   (scheme-langserver virtual-file-system library-node)
-  (scheme-langserver virtual-file-system index-node)
 
   (scheme-langserver util dedupe)
 
-  (scheme-langserver analysis type substitutions rules trivial)
   (scheme-langserver analysis type domain-specific-language interpreter)
-  (scheme-langserver analysis type domain-specific-language inner-type-checker)
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier rules library-import))

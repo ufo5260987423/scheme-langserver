@@ -8,7 +8,6 @@
     (import 
       (chezscheme)
       (only (chibi pathname) path-strip-directory)
-      (scheme-langserver util environment) 
       (only (srfi :13 strings) string-index string-prefix? string-suffix? string-drop-right string-contains string-join)
       (srfi :14))
 

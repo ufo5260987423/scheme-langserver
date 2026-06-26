@@ -4,10 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver analysis identifier reference)
-
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
     (scheme-langserver analysis type substitutions rules let))
 
 (define (letrec-process document index-node)

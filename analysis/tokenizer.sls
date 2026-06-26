@@ -5,7 +5,6 @@
   (import 
     (chezscheme) 
     (only (srfi :13) string-take string-take-right)
-    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver util io)
     (scheme-langserver analysis bad-brackets-scanner)

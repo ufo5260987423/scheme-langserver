@@ -4,13 +4,9 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules fluid-let)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; procedure parameter variable syntax-variable let-loop

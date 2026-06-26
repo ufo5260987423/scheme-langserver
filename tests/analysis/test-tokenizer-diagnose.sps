@@ -8,7 +8,6 @@
     (chezscheme)
     (srfi :64 testing)
     (only (srfi :13 strings) string-prefix?)
-    (scheme-langserver util io)
     (scheme-langserver util path)
     (scheme-langserver analysis tokenizer)
     (scheme-langserver virtual-file-system document)

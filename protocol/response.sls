@@ -17,9 +17,7 @@
     (chezscheme) 
     (scheme-langserver util json)
     (scheme-langserver util association)
-    (scheme-langserver util io)
-    (scheme-langserver protocol server)
-    (scheme-langserver protocol alist-access-object))
+    (scheme-langserver protocol server))
 
 (define-record-type response
   (fields 

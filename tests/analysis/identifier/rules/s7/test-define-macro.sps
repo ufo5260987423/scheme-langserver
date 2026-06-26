@@ -8,10 +8,6 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier rules s7 define-macro)
-  (scheme-langserver analysis package-manager akku)
-
-  (scheme-langserver util text)
-  (scheme-langserver protocol alist-access-object)
 
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system file-node)

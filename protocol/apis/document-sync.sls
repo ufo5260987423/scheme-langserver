@@ -8,7 +8,6 @@
     (chezscheme) 
 
     (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -17,7 +16,6 @@
     (scheme-langserver util text) 
     (scheme-langserver util io)
 
-    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
 

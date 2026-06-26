@@ -13,8 +13,6 @@
 
     (scheme-langserver util association)
     (scheme-langserver util cartesian-product)
-    (scheme-langserver util path) 
-    (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)

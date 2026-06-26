@@ -18,7 +18,6 @@
   (import 
     (chezscheme)
     (ufo-coroutines)
-    (ufo-try)
     (scheme-langserver util contain)
     (scheme-langserver util dedupe)
     (scheme-langserver util sub-list)

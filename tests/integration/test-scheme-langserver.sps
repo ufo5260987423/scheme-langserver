@@ -4,7 +4,7 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (srfi :64 testing) (scheme-langserver) (scheme-langserver util io) (ufo-thread-pool))
+(import (rnrs (6)) (srfi :64 testing) (scheme-langserver))
 
 (test-begin "init-stop test")
   (let* ( [shutdown-json "{\n    \"id\": \"2\",\n    \"method\": \"shutdown\",\n    \"jsonrpc\": \"2.0\"\n}"]

@@ -10,11 +10,8 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
-    (scheme-langserver analysis type substitutions util)
-    (scheme-langserver analysis type substitutions rules record)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document))
+    (scheme-langserver virtual-file-system index-node))
 
 (define private-char? (construct-type-expression-with-meta 'char?))
 (define private-string? (construct-type-expression-with-meta 'string?))

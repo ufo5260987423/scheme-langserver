@@ -25,7 +25,6 @@
     shrink-file-linkage!)
   (import 
     (chezscheme)
-    (scheme-langserver analysis util)
 
     (scheme-langserver analysis dependency rules library-import)
     (scheme-langserver analysis dependency rules library-import-r7rs)
@@ -35,7 +34,6 @@
     (scheme-langserver util contain)
     (scheme-langserver util matrix)
 
-    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system file-node))

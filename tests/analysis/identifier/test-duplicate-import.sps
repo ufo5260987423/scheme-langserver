@@ -9,8 +9,7 @@
   (srfi :64 testing) 
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver analysis workspace)
-  (scheme-langserver analysis package-manager txt-filter))
+  (scheme-langserver analysis workspace))
 
 (define (diagnose-message diagnose)
   (if (>= (length diagnose) 4)

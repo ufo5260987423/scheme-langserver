@@ -6,11 +6,7 @@
 
 (import (rnrs (6)) (srfi :64 testing) 
   (chezscheme)
-  (scheme-langserver virtual-file-system file-node)
-  (scheme-langserver virtual-file-system index-node)
-  (scheme-langserver virtual-file-system library-node)
 
-  (scheme-langserver analysis package-manager akku)
   (scheme-langserver analysis tokenizer))
 
 (test-begin "read ss")

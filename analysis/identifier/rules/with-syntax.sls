@@ -4,17 +4,10 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver util contain)
-
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
-    (scheme-langserver analysis identifier rules syntax-case)
-    (scheme-langserver analysis identifier rules let-syntax)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; syntax-parameter 

@@ -10,11 +10,8 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier rules case-lambda)
-  (scheme-langserver analysis package-manager akku)
 
-  (scheme-langserver util text)
   (scheme-langserver util test)
-  (scheme-langserver protocol alist-access-object)
 
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system file-node)

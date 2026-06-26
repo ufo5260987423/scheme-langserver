@@ -3,20 +3,12 @@
   (import 
     (chezscheme) 
 
-    (scheme-langserver analysis type domain-specific-language interpreter)
-    (scheme-langserver analysis type substitutions rules trivial)
-
     (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
 
     (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver util association)
-    (scheme-langserver util cartesian-product)
-    (scheme-langserver util path) 
-    (scheme-langserver util io)
 
-    (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 

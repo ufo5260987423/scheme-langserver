@@ -4,7 +4,7 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (scheme-langserver))
+(import (rnrs (6)))
 
 (display (hello "World"))
 (newline)

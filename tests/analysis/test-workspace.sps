@@ -13,12 +13,10 @@
   (scheme-langserver virtual-file-system library-node)
 
   (scheme-langserver analysis package-manager akku)
-  (scheme-langserver analysis package-manager txt-filter)
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis tokenizer)
 
   (scheme-langserver analysis identifier reference)
-  (scheme-langserver analysis identifier rules library-import)
   (scheme-langserver analysis util)
 
   (only (srfi :13 strings) string-contains))

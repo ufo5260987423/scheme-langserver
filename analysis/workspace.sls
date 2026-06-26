@@ -38,7 +38,6 @@
     (ufo-try)
     (scheme-langserver util io)
     (scheme-langserver util dedupe)
-    (scheme-langserver util contain)
     (scheme-langserver util sub-list)
 
     (scheme-langserver analysis identifier meta)

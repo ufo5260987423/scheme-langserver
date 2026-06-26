@@ -9,11 +9,6 @@
   (srfi :64 testing) 
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
-  (scheme-langserver analysis identifier rules let)
-  (scheme-langserver analysis identifier rules library-import)
-  (scheme-langserver analysis package-manager akku)
-
-  (scheme-langserver protocol alist-access-object)
 
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system file-node)

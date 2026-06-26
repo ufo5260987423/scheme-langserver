@@ -11,21 +11,14 @@
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system library-node)
 
   (scheme-langserver util contain)
-  (scheme-langserver util text)
   (scheme-langserver util test)
 
-  (scheme-langserver analysis package-manager akku)
   (scheme-langserver analysis workspace)
-  (scheme-langserver analysis tokenizer)
-  (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier meta)
   (scheme-langserver analysis type substitutions generator)
-  (scheme-langserver analysis type domain-specific-language interpreter)
-
-  (scheme-langserver protocol alist-access-object))
+  (scheme-langserver analysis type domain-specific-language interpreter))
 
 (test-begin "construct-substitutions-for")
   (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]

@@ -10,7 +10,6 @@
   (only (srfi :13 strings) string-prefix?)
 
   (scheme-langserver analysis workspace)
-  (scheme-langserver analysis workspace-cache)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
   (scheme-langserver util contain))

@@ -8,9 +8,7 @@
   (chezscheme)
   (srfi :64 testing) 
   (scheme-langserver virtual-file-system file-node)
-  (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
-  (scheme-langserver virtual-file-system library-node)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 

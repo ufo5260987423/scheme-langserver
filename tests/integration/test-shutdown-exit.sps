@@ -4,7 +4,7 @@
 ;; SPDX-License-Identifier: MIT
 #!r6rs
 
-(import (rnrs (6)) (chezscheme) (srfi :64 testing) (srfi :13 strings) (scheme-langserver) (scheme-langserver util io))
+(import (rnrs (6)) (chezscheme) (srfi :64 testing) (srfi :13 strings) (scheme-langserver))
 
 (define (make-lsp-request id method params)
   (let ([json (if params

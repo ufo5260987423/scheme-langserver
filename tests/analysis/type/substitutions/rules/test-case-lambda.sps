@@ -17,9 +17,7 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier meta)
   (scheme-langserver analysis type substitutions generator)
-  (scheme-langserver analysis type domain-specific-language interpreter)
-  (scheme-langserver analysis type domain-specific-language inner-type-checker)
-  (scheme-langserver analysis type substitutions util))
+  (scheme-langserver analysis type domain-specific-language interpreter))
 
 (test-begin "case-lambda substitution generation")
   (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]

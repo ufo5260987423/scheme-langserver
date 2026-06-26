@@ -10,10 +10,7 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system index-node))
 
 (define (generate-naive-let-process-with type)
   (lambda (root-file-node root-library-node document index-node)

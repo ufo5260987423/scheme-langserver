@@ -6,11 +6,7 @@
   (import 
     (chezscheme)
 
-    (ufo-try)
-    (scheme-langserver util cartesian-product)
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis type domain-specific-language inner-type-checker)
-    (scheme-langserver virtual-file-system index-node))
+    (scheme-langserver util cartesian-product))
 
 (define (do-nothing . fuzzy) '())
 

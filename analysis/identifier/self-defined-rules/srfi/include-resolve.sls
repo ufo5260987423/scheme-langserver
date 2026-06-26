@@ -6,12 +6,10 @@
 
     (scheme-langserver util path)
 
-    (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
 
     (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 

@@ -5,16 +5,13 @@
     (chezscheme)
     (ufo-try)
 
-
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier meta)
     
     (scheme-langserver analysis type substitutions rules if)
     (scheme-langserver analysis type substitutions rules cond)
-    (scheme-langserver analysis type substitutions rules case)
     (scheme-langserver analysis type substitutions rules do)
     (scheme-langserver analysis type substitutions rules let)
     (scheme-langserver analysis type substitutions rules let*)

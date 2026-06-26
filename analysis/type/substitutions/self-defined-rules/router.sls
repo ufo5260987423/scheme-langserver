@@ -4,8 +4,6 @@
     (rnrs)
     (scheme-langserver analysis identifier reference)
 
-    (scheme-langserver analysis type substitutions rules application)
-
     (scheme-langserver analysis type substitutions self-defined-rules ufo-match match)
     (scheme-langserver analysis type substitutions self-defined-rules ufo-try try))
 

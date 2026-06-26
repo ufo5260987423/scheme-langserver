@@ -9,10 +9,7 @@
     (scheme-langserver analysis util)
     (scheme-langserver analysis identifier reference)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system library-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node))
+    (scheme-langserver virtual-file-system index-node))
 
 ; For syntax-rules: value-node is the syntax-rules index-node itself.
 ; For syntax-case: value-node may be (lambda (x) (syntax-case x ...)) or

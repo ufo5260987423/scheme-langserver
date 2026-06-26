@@ -8,23 +8,13 @@
     (chezscheme) 
 
     (scheme-langserver analysis workspace)
-    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
-
-    (scheme-langserver protocol alist-access-object)
 
     (scheme-langserver util association)
     (scheme-langserver util path) 
-    (ufo-try) 
-    (scheme-langserver util text) 
     (scheme-langserver util io)
 
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system file-node)
-
-    (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis package-manager txt-filter))
+    (scheme-langserver virtual-file-system file-node))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didCreateFiles
 (define (did-create workspace params)

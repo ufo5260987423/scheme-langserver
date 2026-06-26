@@ -8,12 +8,8 @@
   (rnrs (6))
   (srfi :64 testing)
   (scheme-langserver analysis workspace)
-  (scheme-langserver virtual-file-system file-node)
-  (scheme-langserver virtual-file-system document)
   (scheme-langserver protocol apis workspace-symbol)
-  (scheme-langserver util path)
-  (scheme-langserver util association)
-  (scheme-langserver util test))
+  (scheme-langserver util association))
 
 (define (private-string-contains? str sub)
   (let ([str-len (string-length str)]

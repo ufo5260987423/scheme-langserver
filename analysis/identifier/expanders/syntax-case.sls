@@ -5,11 +5,8 @@
     (chezscheme)
     (ufo-match)
 
-    (scheme-langserver analysis identifier expanders pattern)
     (scheme-langserver analysis identifier expanders syntax-rules)
-    (scheme-langserver virtual-file-system index-node)
-    (scheme-langserver virtual-file-system document)
-    (scheme-langserver analysis identifier reference))
+    (scheme-langserver virtual-file-system index-node))
 
 ; syntax-case templates are wrapped in (syntax ...) or (quasisyntax ...).
 ; Unwrap layers so make-pattern sees the bare template datum.

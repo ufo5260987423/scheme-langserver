@@ -3,7 +3,6 @@
   (import 
     (chezscheme) 
 
-    (ufo-match)
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis dependency file-linkage)
@@ -13,7 +12,6 @@
     (scheme-langserver util association)
     (scheme-langserver util path) 
     (scheme-langserver util dedupe) 
-    (scheme-langserver util io)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)

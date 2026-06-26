@@ -16,8 +16,6 @@
     (scheme-langserver protocol analysis request-queue)
 
     (scheme-langserver protocol apis references)
-    (scheme-langserver protocol apis formatting)
-    (scheme-langserver protocol apis document-highlight)
     (scheme-langserver protocol apis completion)
     (scheme-langserver protocol apis hover)
     (scheme-langserver protocol apis definition)
