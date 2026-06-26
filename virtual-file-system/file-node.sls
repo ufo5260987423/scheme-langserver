@@ -22,7 +22,8 @@
     (only (srfi :13 strings) string-prefix? string-suffix?))
 
 ;;todo: add file change notify
-(define-record-type file-node 
+(define-record-type file-node
+  (nongenerative scheme-langserver-file-node)
   (fields
   ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize
     (immutable path)

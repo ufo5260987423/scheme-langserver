@@ -55,6 +55,7 @@
     (scheme-langserver util contain))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
+  (nongenerative scheme-langserver-identifier-reference)
   (fields
     (immutable identifier)
     (immutable document)

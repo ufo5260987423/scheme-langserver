@@ -1,0 +1,14 @@
+# Project-level configuration for the scheme-langserver MCP bridge.
+# The scheme-langserver project itself cannot cold-start reliably with
+# multi-thread enable within the bridge's 30-second timeout, so we use
+# single-thread mode plus a persisted workspace cache.
+
+langserver_path = "/home/ufo/Documents/workspace/scheme-langserver/run-mcp-cache.sh"
+multi_thread = "disable"
+type_inference = "disable"
+top_environment = "R6RS"
+cache_path = "/home/ufo/Documents/workspace/scheme-langserver/.scheme-langserver-cache"
+
+# Loading the full scheme-langserver workspace (128 .sls files, ~39MB FASL)
+# into memory requires more than the default 1024MB virtual address limit.
+max_memory_mb = 4096

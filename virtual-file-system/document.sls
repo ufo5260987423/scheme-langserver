@@ -25,7 +25,8 @@
     (chezscheme)
     (scheme-langserver util text))
 
-(define-record-type document 
+(define-record-type document
+  (nongenerative scheme-langserver-document)
   (fields 
     (immutable uri)
     (mutable text)

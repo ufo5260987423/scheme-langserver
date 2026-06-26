@@ -34,7 +34,12 @@
   (let ([workspace (server-workspace server-instance)]
       [cache-path (server-cache-path server-instance)])
     (when (and workspace cache-path)
-      (guard (ex [else (do-log "failed to save workspace cache" server-instance)])
+      (guard (ex [else
+              (do-log "failed to save workspace cache" server-instance)
+              (do-log (format "cache save exception: ~a ~a"
+                        (if (condition? ex) (condition-message ex) ex)
+                        (if (condition? ex) (condition-irritants ex) ""))
+                      server-instance)])
         (save-workspace-cache-for! 
           workspace 
           cache-path 

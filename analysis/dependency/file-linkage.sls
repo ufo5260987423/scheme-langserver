@@ -39,6 +39,7 @@
     (scheme-langserver virtual-file-system file-node))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type file-linkage
+  (nongenerative scheme-langserver-file-linkage)
   (fields
     (mutable path->id-map)
     (mutable id->path-map)

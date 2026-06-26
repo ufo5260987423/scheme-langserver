@@ -35,6 +35,8 @@ out/
 # Log file
 *.log
 
+# Workspace cache
+.scheme-langserver-cache/
 
 benchmark-type-inference.json
 debug-trace/

@@ -67,6 +67,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type index-node
+  (nongenerative scheme-langserver-index-node)
   (fields
     (mutable parent)
     (immutable start)

@@ -14,7 +14,8 @@
     walk-library)
   (import (rnrs))
 
-(define-record-type library-node 
+(define-record-type library-node
+  (nongenerative scheme-langserver-library-node)
   (fields
     (immutable name)
     (immutable parent)
