@@ -33,7 +33,9 @@
           [ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
         (match expression
-          [('fields _ **1) (process-fields-list initialization-index-node document target-parent-index-node index-node name '())]
+          [('fields _ **1) 
+            (process-fields-list initialization-index-node document target-parent-index-node index-node name '())
+            (loop (cdr body))]
           [('parent (? symbol? parent-name)) 
             (let loop ([references (find-available-references-for document index-node parent-name)])
               (if (not (null? references))
@@ -58,8 +60,9 @@
                         (lambda (index-node-tmp)
                           (process-fields-list initialization-index-node document target-parent-index-node index-node-tmp name binding-index-node))
                         (cddr grand-parent-children-index-node))])
-                  (loop (cdr references)))))]
-          [else '()])))))
+                  (loop (cdr references)))))
+            (loop (cdr body))]
+          [else (loop (cdr body))])))))
 
 (define (process-fields-list initialization-index-node document target-parent-index-node index-node record-name binding-index-node)
   (let loop ([children (cdr (index-node-children index-node))])
