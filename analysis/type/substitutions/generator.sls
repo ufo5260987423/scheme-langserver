@@ -86,7 +86,10 @@
                   target-rules)
                 (except c
                   [(condition? c) 
-                    (append-new-diagnoses current-document `(0 0 2 ,(string-append "Type rule warning: " (condition-message c)) "type" "type-rule-warning"))
+                    (append-new-diagnoses current-document 
+                      `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 
+                        ,(string-append "Type rule warning: " (condition-message c)) 
+                        "type" "type-rule-warning"))
                     '()]
                   [else (raise c)]))
               ;this must be grounded, generally you shouldn't test this.
@@ -97,7 +100,10 @@
                 children)
               (except c 
                 [(condition? c) 
-                  (append-new-diagnoses current-document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c)) "type" "type-inference-warning"))
+                  (append-new-diagnoses current-document 
+                    `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 
+                      ,(string-append "Type inference warning: " (condition-message c)) 
+                      "type" "type-inference-warning"))
                   '()]
                 [else (raise c)])))])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
