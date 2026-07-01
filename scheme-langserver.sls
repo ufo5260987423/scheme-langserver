@@ -33,7 +33,7 @@
 (define (private:save-workspace-cache-if-any server-instance)
   (let ([workspace (server-workspace server-instance)]
       [cache-path (server-cache-path server-instance)])
-    (when (and workspace cache-path)
+    (when (and workspace (not (null? workspace)) cache-path)
       (guard (ex [else
               (do-log "failed to save workspace cache" server-instance)
               (do-log (format "cache save exception: ~a ~a"

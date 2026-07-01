@@ -344,7 +344,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 
 | Location | Issue | Impact |
 |----------|-------|--------|
-| `scheme-langserver` (general) | Cold initialization exceeds common LSP client timeouts (~38 s single-thread, ~48 s with type-inference). With a valid workspace cache this drops to ~5 s, but the first run on a fresh machine / after cache invalidation can time out clients such as the MCP Bridge (30 s). | **High** — first-time user experience |
+| `scheme-langserver` (general) | Cold initialization exceeds common LSP client timeouts (~38 s single-thread, ~48 s with type-inference). With a valid workspace cache this drops to ~2 s (after recent mtime-based consistency-check optimization), but the first run on a fresh machine / after cache invalidation can time out clients such as the MCP Bridge (30 s). | **High** — first-time user experience |
 | `scheme-langserver` (multi-thread) | Earlier versions appeared to hang on `--multi-thread enable` cold start; current tests (multi-thread with and without type-inference, production-log parallel replay, and the `exception-macro` fixture) complete without hanging. The observed "hang" was likely the same slow cold start being killed by a client timeout. Keep an eye on `threaded-map` + `workspace-mutex` + `make-engine`/`expire` if it resurfaces. | **Needs verification** — not currently reproducible |
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `analysis/identifier/rules/library-import.sls` | `alias` modifier does not add refs when used inside a `(library ...)` form (script-level `import-process` works fine) | Low — `alias` is rare in library headers |

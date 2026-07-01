@@ -21,6 +21,8 @@
     workspace-top-environment
     workspace-undiagnosed-paths
     workspace-undiagnosed-paths-set!
+    workspace-path->mtime-cache
+    workspace-path->mtime-cache-set!
 
     update-file-node-with-tail
 
@@ -77,14 +79,17 @@
     (immutable type-inference?)
     (immutable top-environment)
 
-    (mutable undiagnosed-paths))
+    (mutable undiagnosed-paths)
+    (mutable path->mtime-cache))
   (protocol 
     (lambda (new)
       (case-lambda 
         [(file-node library-node file-linkage facet threaded? type-inference? top-environment)
-          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment '())]
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment '() (make-hashtable string-hash equal?))]
         [(file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths)
-          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment undiagnosed-paths)]))))
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment undiagnosed-paths (make-hashtable string-hash equal?))]
+        [(file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)]))))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -188,6 +193,24 @@
       alist)
     ht))
 
+(define (private:collect-file-mtimes root-file-node)
+  (let ([result '()])
+    (let loop ([node root-file-node])
+      (if (file-node-folder? node)
+        (for-each loop (file-node-children node))
+        (guard (e [else #f])
+          (let* ([path (file-node-path node)]
+                 [mtime (file-modification-time path)])
+            (set! result (cons (cons path (cons (time-second mtime) (time-nanosecond mtime))) result))))))
+    result))
+
+(define (private:mtime-matches? cached-mtime disk-mtime)
+  (and cached-mtime
+       (let ([cached-second (if (pair? cached-mtime) (car cached-mtime) (time-second cached-mtime))]
+             [cached-nsec (if (pair? cached-mtime) (cdr cached-mtime) (time-nanosecond cached-mtime))])
+         (and (= cached-second (time-second disk-mtime))
+              (= cached-nsec (time-nanosecond disk-mtime))))))
+
 (define (private:prepare-workspace-payload workspace)
   ;; 1. Clear document diagnoses (runtime state, must not be persisted)
   (private:clear-file-node-diagnoses (workspace-file-node workspace))
@@ -198,13 +221,15 @@
   ;; 4. Convert file-linkage path->id-map (equal-hashtable, not FASL-serializable)
   ;;    to an alist and store it separately in the payload.
   (let* ([linkage (workspace-file-linkage workspace)]
-      [path->id-alist (private:path->id-map->alist (file-linkage-path->id-map linkage))])
+      [path->id-alist (private:path->id-map->alist (file-linkage-path->id-map linkage))]
+      [path->mtime-alist (private:collect-file-mtimes (workspace-file-node workspace))])
     (file-linkage-path->id-map-set! linkage (make-eq-hashtable))
     ;; Return serializable alist payload
     `((file-node . ,(workspace-file-node workspace))
       (library-node . ,(workspace-library-node workspace))
       (file-linkage . ,linkage)
       (path->id-alist . ,path->id-alist)
+      (path->mtime-alist . ,path->mtime-alist)
       (threaded? . ,(workspace-threaded? workspace))
       (type-inference? . ,(workspace-type-inference? workspace))
       (top-environment . ,(workspace-top-environment workspace))
@@ -215,17 +240,30 @@
       [library-node (cdr (assq 'library-node payload))]
       [file-linkage (cdr (assq 'file-linkage payload))]
       [path->id-alist (cdr (assq 'path->id-alist payload))]
+      [path->mtime-alist (cdr (assq 'path->mtime-alist payload))]
       [type-inference? (cdr (assq 'type-inference? payload))]
       [top-environment (cdr (assq 'top-environment payload))]
       [undiagnosed-paths (cdr (assq 'undiagnosed-paths payload))])
     (file-linkage-path->id-map-set! file-linkage (private:alist->path->id-map path->id-alist))
-    (make-workspace file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths)))
+    (let* ([path->mtime-cache (make-hashtable string-hash equal?)]
+           [workspace-instance (make-workspace file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)])
+      (for-each
+        (lambda (pair)
+          (when (pair? pair)
+            (hashtable-set! path->mtime-cache (car pair) (cdr pair))))
+        (if (list? path->mtime-alist) path->mtime-alist '()))
+      workspace-instance)))
 
-(define (private:file-content-changed? path cached-text)
-  (or (not (file-exists? path))
-      (guard (e [else #t])
-        (let ([disk-text (read-string path)])
-          (not (string=? cached-text disk-text))))))
+(define (private:file-content-changed? path cached-text cached-mtime)
+  ;; Fast path: if we have a cached mtime and it matches the disk, the file
+  ;; has not changed.  Avoid the expensive read-string + string=? fallback.
+  (if (guard (e [else #f])
+        (private:mtime-matches? cached-mtime (file-modification-time path)))
+    #f
+    (or (not (file-exists? path))
+        (guard (e [else #t])
+          (let ([disk-text (read-string path)])
+            (not (string=? cached-text disk-text)))))))
 
 (define (private:collect-cached-file-paths workspace-instance)
   (let ([paths '()])
@@ -236,12 +274,13 @@
     paths))
 
 (define (private:collect-disk-file-paths root-path facet)
-  (let ([paths '()])
+  (let ([paths '()]
+        [sep (string (directory-separator))])
     (let collect ([dir root-path])
       (for-each
         (lambda (name)
           (unless (or (equal? name ".") (equal? name ".."))
-            (let ([path (string-append dir (string (directory-separator)) name)])
+            (let ([path (string-append dir sep name)])
               (if (file-directory? path)
                 (collect path)
                 (when (facet path)
@@ -285,6 +324,14 @@
             (lambda (child) (not (eq? child file-node)))
             (file-node-children parent)))))))
 
+(define (private:build-path->file-node-ht root-file-node)
+  (let ([ht (make-hashtable string-hash equal?)])
+    (let walk ([node root-file-node])
+      (if (file-node-folder? node)
+        (for-each walk (file-node-children node))
+        (hashtable-set! ht (file-node-path node) node)))
+    ht))
+
 (define (private:cache-consistency-check workspace-instance)
   ;; Returns three values: (changed-paths deleted-paths new-paths)
   (let* ([facet (workspace-facet workspace-instance)]
@@ -293,6 +340,8 @@
          [disk-paths (private:collect-disk-file-paths root-path facet)]
          [cached-ht (make-hashtable string-hash equal?)]
          [disk-ht (make-hashtable string-hash equal?)]
+         [path->mtime-cache (workspace-path->mtime-cache workspace-instance)]
+         [path->file-node-ht (private:build-path->file-node-ht (workspace-file-node workspace-instance))]
          [changed '()]
          [deleted '()]
          [new '()])
@@ -302,9 +351,13 @@
     (for-each
       (lambda (cached-path)
         (if (hashtable-ref disk-ht cached-path #f)
-          (let ([file-node (walk-file (workspace-file-node workspace-instance) cached-path)])
+          (let ([file-node (hashtable-ref path->file-node-ht cached-path #f)]
+                [cached-mtime (hashtable-ref path->mtime-cache cached-path #f)])
             (when (and (file-node? file-node)
-                       (private:file-content-changed? cached-path (document-text (file-node-document file-node))))
+                       (private:file-content-changed?
+                         cached-path
+                         (document-text (file-node-document file-node))
+                         cached-mtime))
               (set! changed (cons cached-path changed))))
           (set! deleted (cons cached-path deleted))))
       cached-paths)

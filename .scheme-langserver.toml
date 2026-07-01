@@ -11,4 +11,6 @@ cache_path = "/home/ufo/Documents/workspace/scheme-langserver/.scheme-langserver
 
 # Loading the full scheme-langserver workspace (128 .sls files, ~39MB FASL)
 # into memory requires more than the default 1024MB virtual address limit.
-max_memory_mb = 4096
+# Saving the cache also needs substantial virtual address space, so keep a
+# generous margin.
+max_memory_mb = 8192
