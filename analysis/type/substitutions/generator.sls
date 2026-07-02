@@ -75,9 +75,7 @@
                 (cond 
                   [(symbol? head-expression)
                     (establish-available-rules-from 
-                      (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
-                      current-document
-                      expanded+callee-list)]
+                      (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression))]
                   [else '()])])
             (if (symbol? head-expression)
               (try 
@@ -125,7 +123,7 @@
   (merge private-rule-compare? origin 
     `((,(cdr target-rule) . ,(car target-rule)))))
 
-(define (establish-available-rules-from identifier-list current-document expanded+callee-list)
+(define (establish-available-rules-from identifier-list)
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]

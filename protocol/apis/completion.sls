@@ -67,7 +67,7 @@
             (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
             (sort-identifier-references whole-list))]
         [(and type-inference? (not (is-first-child? target-index-node))) 
-          (let ([t (sort-with-type-inferences document target-index-node whole-list)])
+          (let ([t (sort-with-type-inferences target-index-node whole-list)])
             (append 
               (map  
                 (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "0-"))
@@ -97,7 +97,7 @@
               c)) 
             ,head))))))
 
-(define (sort-with-type-inferences target-document position-index-node target-identifier-reference-list)
+(define (sort-with-type-inferences position-index-node target-identifier-reference-list)
   (let* ([position-expression (private-generate-position-expression position-index-node)]
       [position-types (type:interpret-result-list position-expression)]
       [target-identifiers-with-types 

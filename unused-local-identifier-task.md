@@ -161,11 +161,27 @@
 - [ ] **T2** - 评估 `ufo-match` 生成的 `match-clause` 参数
   - 是否应在诊断器中跳过宏生成代码？
   - 或修改 `ufo-match` 模板？
-- [ ] **T3** - `analysis/type/substitutions/rules/*.sls` 统一接口 `document` 参数
-  - 批量加 `_` 前缀或注释？
-  - 还是让诊断器对 `*-process` 函数做白名单？
-- [ ] **T4** - `analysis/identifier/rules/*.sls` 统一接口 `root-file-node` / `root-library-node` 参数
-  - 同上。
+- [x] **T3** - `analysis/type/substitutions/rules/*.sls` 统一接口 `document` 参数
+  - **决定**：保持现状，不清理。
+  - **原因**：这些 `*-process` 函数被 `generator.sls` / `abstract-interpreter.sls` 统一调用，必须保持相同签名。删除个别未用参数会破坏调用一致性。
+- [x] **T1.7** - 清理 `protocol/apis/completion.sls`：`sort-with-type-inferences` 的 `target-document`
+  - **决定**：删除。
+  - **原因**：函数内部完全未使用 `target-document`。
+  - **已修改文件**：
+    - `protocol/apis/completion.sls`：删除 `target-document` 参数，同步调用点
+  - **验证**：`test-completion.sps` 通过。
+- [x] **T1.8** - 清理 `analysis/type/substitutions/generator.sls`：`establish-available-rules-from` 的 `current-document`、`expanded+callee-list`
+  - **决定**：删除。
+  - **原因**：函数内部只使用 `identifier-list`，`current-document` 和 `expanded+callee-list` 是早期接口残留。
+  - **已修改文件**：
+    - `analysis/type/substitutions/generator.sls`：删除两个参数，同步调用点
+  - **验证**：`test-generator.sps`、`test-abstract-interpreter.sps`、`test-workspace.sps` 均通过。
+- [x] **T4** - `analysis/identifier/rules/*.sls` 统一接口 `root-file-node` / `root-library-node` 参数
+  - **决定**：保持现状，不清理。
+  - **原因**：与 T3 相同。这些 `*-process` 函数被 `abstract-interpreter.sls` 的 `step` 统一回调调用，签名必须一致。
+- [ ] **T5** - 其余低频调用函数中的未使用参数
+  - `analysis/identifier/reference.sls` 的 `library-identifier?` 中的 `document`：独立工具函数，可安全删除。
+  - 其他逐个评估。
 - [ ] **T5** - 其余低频调用函数中的未使用参数
   - 逐个评估是否安全删除。
 
