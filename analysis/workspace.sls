@@ -110,7 +110,7 @@
     [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
     [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))
 
-(define (private:init-workspace-from-scratch path identifier top-environment threaded? type-inference? facet)
+(define (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet)
   (let* ([root-file-node (init-virtual-file-system path '() facet top-environment)]
       [root-library-node (init-library-node root-file-node top-environment)]
       [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
@@ -440,7 +440,7 @@
     [(path identifier top-environment threaded? type-inference? facet cache-path)
       (init-workspace-cache-registry!)
       (or (private:try-load-workspace-cache cache-path path identifier top-environment threaded? type-inference?)
-          (private:init-workspace-from-scratch path identifier top-environment threaded? type-inference? facet))]))
+          (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet))]))
 
 ;; head -[linkage]->files
 ;; for single file

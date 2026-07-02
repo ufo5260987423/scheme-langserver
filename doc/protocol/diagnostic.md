@@ -351,7 +351,6 @@ When the server starts in multi-threaded mode (`thread-pool` is non-`#f`),
   (lambda ()
     (request-queue-push request-queue
       (make-request '() "private:publish-diagnostics" '())
-      request-processor
       (server-workspace server-instance)))
   ...)
 ```

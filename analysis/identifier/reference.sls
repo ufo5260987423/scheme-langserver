@@ -133,12 +133,12 @@
                           (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
                     imported-reference)))
               (for-each 
-                (lambda (item) (private-export-transform item document target-index-node-list mapper-vector))
+                (lambda (item) (private-export-transform item target-index-node-list mapper-vector))
                 exported-reference))
             '()))))))
 
 ;only for export identifier-references
-(define (private-export-transform identifier-reference location-document target-index-node-list mapper-vector)
+(define (private-export-transform identifier-reference target-index-node-list mapper-vector)
   (let ([document (identifier-reference-document identifier-reference)]
       [initialization-index-node (identifier-reference-initialization-index-node identifier-reference)]
       [index-node (identifier-reference-index-node identifier-reference)])

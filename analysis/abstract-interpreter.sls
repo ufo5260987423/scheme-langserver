@@ -84,19 +84,19 @@
       (document-ordered-reference-list current-document)]
     [(root-file-node root-library-node file-linkage current-document current-index-node expanded+callee-list memory)
       (cond 
-        [(quote? current-index-node current-document) 
+        [(quote? current-index-node) 
           (index-node-excluded-references-set! current-index-node (private:find-available-references-for expanded+callee-list current-document current-index-node))]
-        [(quasiquote? current-index-node current-document) 
+        [(quasiquote? current-index-node) 
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
             (index-node-excluded-references-set! current-index-node available-identifiers)
             (map 
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasiquoted expanded+callee-list memory))
               (index-node-children current-index-node)))]
-        [(syntax? current-index-node current-document) 
+        [(syntax? current-index-node) 
           (index-node-excluded-references-set! current-index-node 
             (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
-        [(quasisyntax? current-index-node current-document)
+        [(quasisyntax? current-index-node)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
             (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
             (map 
@@ -148,8 +148,8 @@
               '()))])]
       [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list memory)
         (if (case quasi-quoted-syntaxed
-            ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
-            ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))])
+            ['quasiquoted  (or (unquote? current-index-node) (unquote-splicing? current-index-node))]
+            ['quasisyntaxed (or (unsyntax? current-index-node) (unsyntax-splicing? current-index-node))])
           (begin
             ;; (debug:print-expression current-index-node)
             ;; (pretty-print (null? (index-node-children current-index-node)))

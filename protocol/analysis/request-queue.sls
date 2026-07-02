@@ -93,7 +93,7 @@
       queue
       (remq task (request-queue-tickal-task-list queue)))))
 
-(define (request-queue-push queue request potential-request-processor workspace)
+(define (request-queue-push queue request workspace)
   (with-mutex (request-queue-mutex queue)
     (case (request-method request)
       ["private:publish-diagnostics"

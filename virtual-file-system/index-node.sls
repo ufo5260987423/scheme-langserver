@@ -99,31 +99,31 @@
       (index-node-substitution-list index-node)
       target-substitutions)))
 
-(define (unquote-splicing? index-node document)
-  (private index-node document 'unquote-splicing))
+(define (unquote-splicing? index-node)
+  (private index-node 'unquote-splicing))
 
-(define (unquote? index-node document)
-  (private index-node document 'unquote))
+(define (unquote? index-node)
+  (private index-node 'unquote))
 
-(define (quote? index-node document)
-  (private index-node document 'quote))
+(define (quote? index-node)
+  (private index-node 'quote))
 
-(define (quasiquote? index-node document)
-  (private index-node document 'quasiquote))
+(define (quasiquote? index-node)
+  (private index-node 'quasiquote))
 
-(define (syntax? index-node document)
-  (private index-node document 'syntax))
+(define (syntax? index-node)
+  (private index-node 'syntax))
 
-(define (quasisyntax? index-node document)
-  (private index-node document 'quasisyntax))
+(define (quasisyntax? index-node)
+  (private index-node 'quasisyntax))
 
-(define (unsyntax? index-node document)
-  (private index-node document 'unsyntax))
+(define (unsyntax? index-node)
+  (private index-node 'unsyntax))
 
-(define (unsyntax-splicing? index-node document)
-  (private index-node document 'unsyntax-splicing))
+(define (unsyntax-splicing? index-node)
+  (private index-node 'unsyntax-splicing))
 
-(define (private index-node document target)
+(define (private index-node target)
   (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
     (if (pair? expression)
         (equal? target (car expression))

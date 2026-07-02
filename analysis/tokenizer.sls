@@ -384,7 +384,7 @@
       [(private:message-matches? msg "invalid sharp-sign prefix #~c")
         (cond
           [(and (pair? irritants) (eqv? #\u (car irritants)))
-            (private:r7rs-fix-u8 source position irritants)]
+            (private:r7rs-fix-u8 source position)]
           [(and (pair? irritants) (eqv? #\< (car irritants)))
             (private:s7-fix-bracket-symbol source position)]
           [(and (pair? irritants) (eqv? #\" (car irritants)))
@@ -398,7 +398,7 @@
         (private:r7rs-fix-char source position irritants)]
       [else #f])))
 
-(define (private:r7rs-fix-u8 source position irritants)
+(define (private:r7rs-fix-u8 source position)
   (let ([src-len (string-length source)])
     (define (check-at pos)
       (and (>= pos 0)

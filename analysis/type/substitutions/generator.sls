@@ -41,14 +41,14 @@
         [(null? (index-node-children current-index-node))
           (trivial-process current-document current-index-node)]
 
-        [(quote? current-index-node current-document) 
+        [(quote? current-index-node) 
           (extend-index-node-substitution-list 
             current-index-node 
             (car (index-node-children current-index-node)))
           (trivial-process current-document (car (index-node-children current-index-node)))]
         ;#'(1 2 3) is a syntax not a list
-        [(syntax? current-index-node current-document) '()]
-        [(quasiquote? current-index-node current-document) 
+        [(syntax? current-index-node) '()]
+        [(quasiquote? current-index-node) 
           (extend-index-node-substitution-list 
             current-index-node 
             (car (index-node-children current-index-node)))
@@ -57,7 +57,7 @@
               (lambda (current)
                 (step current-document current available-identifiers 'quasiquoted expanded+callee-list))
               (index-node-children current-index-node)))]
-        [(quasisyntax? current-index-node current-document)
+        [(quasisyntax? current-index-node)
           (extend-index-node-substitution-list 
             current-index-node 
             (car (index-node-children current-index-node)))
@@ -108,8 +108,8 @@
                 [else (raise c)])))])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
         (if (case quasi-quoted-syntaxed
-            ['quasiquoted  (or (unquote? current-index-node current-document) (unquote-splicing? current-index-node current-document))]
-            ['quasisyntaxed (or (unsyntax? current-index-node current-document) (unsyntax-splicing? current-index-node current-document))]
+            ['quasiquoted  (or (unquote? current-index-node) (unquote-splicing? current-index-node))]
+            ['quasisyntaxed (or (unsyntax? current-index-node) (unsyntax-splicing? current-index-node))]
             [else #f])
           (for-each
             (lambda (current) (step current-document current expanded+callee-list))

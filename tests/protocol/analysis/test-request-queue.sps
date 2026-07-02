@@ -32,7 +32,7 @@
     [calls '()]
     [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
     [req (make-request 1 "textDocument/hover" '())])
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
   (test-equal "not empty after push" #f (request-queue-empty? queue))
   
   (let ([thunk (request-queue-pop queue processor)])
@@ -51,8 +51,8 @@
     [processor (lambda (r) 'ok)]
     [req1 (make-request '() "private:publish-diagnostics" '())]
     [req2 (make-request '() "private:publish-diagnostics" '())])
-  (request-queue-push queue req1 processor workspace)
-  (request-queue-push queue req2 processor workspace)
+  (request-queue-push queue req1 workspace)
+  (request-queue-push queue req2 workspace)
   
   (let ([thunk (request-queue-pop queue processor)])
     (thunk))
@@ -68,8 +68,8 @@
     [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
     [req (make-request 42 "textDocument/completion" '())]
     [cancel (make-request '() "$/cancelRequest" (list (cons 'id 42)))])
-  (request-queue-push queue req processor workspace)
-  (request-queue-push queue cancel processor workspace)
+  (request-queue-push queue req workspace)
+  (request-queue-push queue cancel workspace)
   
   (let ([thunk (request-queue-pop queue processor)])
     (thunk))
@@ -89,8 +89,8 @@
     [processor (lambda (r) (set! calls (cons (request-method r) calls)))]
     [notif (make-request '() "private:publish-diagnostics" '())]
     [bad-cancel (make-request '() "$/cancelRequest" '())])
-  (request-queue-push queue notif processor workspace)
-  (request-queue-push queue bad-cancel processor workspace)
+  (request-queue-push queue notif workspace)
+  (request-queue-push queue bad-cancel workspace)
   
   (test-equal "notification still in queue" #f (request-queue-empty? queue))
   (let ([thunk (request-queue-pop queue processor)])
@@ -110,9 +110,9 @@
     [hover (make-request 10 "textDocument/hover" '())]
     [pub (make-request '() "private:publish-diagnostics" '())]
     [change (make-request '() "textDocument/didChange" '())])
-  (request-queue-push queue hover processor workspace)
-  (request-queue-push queue pub processor workspace)
-  (request-queue-push queue change processor workspace)
+  (request-queue-push queue hover workspace)
+  (request-queue-push queue pub workspace)
+  (request-queue-push queue change workspace)
   
   ; Pop order is FIFO: hover, pub, change.
   ; Per LSP spec, servers should not cancel requests on didChange.
@@ -141,9 +141,9 @@
     [req1 (make-request 1 "textDocument/hover" '())]
     [req2 (make-request 2 "textDocument/completion" '())]
     [req3 (make-request 3 "textDocument/definition" '())])
-  (request-queue-push queue req1 processor workspace)
-  (request-queue-push queue req2 processor workspace)
-  (request-queue-push queue req3 processor workspace)
+  (request-queue-push queue req1 workspace)
+  (request-queue-push queue req2 workspace)
+  (request-queue-push queue req3 workspace)
 
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
@@ -169,9 +169,9 @@
     [req-a (make-request 7 "textDocument/hover" '())]
     [req-b (make-request 8 "textDocument/completion" '())]
     [cancel (make-request '() "$/cancelRequest" (list (cons 'id 7)))])
-  (request-queue-push queue req-a processor workspace)
-  (request-queue-push queue req-b processor workspace)
-  (request-queue-push queue cancel processor workspace)
+  (request-queue-push queue req-a workspace)
+  (request-queue-push queue req-b workspace)
+  (request-queue-push queue cancel workspace)
 
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
@@ -192,8 +192,8 @@
     [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
     [code-action (make-request 20 "textDocument/codeAction" '())]
     [change (make-request '() "textDocument/didChange" '())])
-  (request-queue-push queue code-action processor workspace)
-  (request-queue-push queue change processor workspace)
+  (request-queue-push queue code-action workspace)
+  (request-queue-push queue change workspace)
 
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
@@ -216,9 +216,9 @@
     [open-req (make-request '() "textDocument/didOpen" '())]
     [change (make-request '() "textDocument/didChange" '())]
     [close-req (make-request '() "textDocument/didClose" '())])
-  (request-queue-push queue open-req processor workspace)
-  (request-queue-push queue change processor workspace)
-  (request-queue-push queue close-req processor workspace)
+  (request-queue-push queue open-req workspace)
+  (request-queue-push queue change workspace)
+  (request-queue-push queue close-req workspace)
 
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
@@ -244,9 +244,9 @@
     [pub1 (make-request '() "private:publish-diagnostics" '())]
     [hover (make-request 30 "textDocument/hover" '())]
     [pub2 (make-request '() "private:publish-diagnostics" '())])
-  (request-queue-push queue pub1 processor workspace)
-  (request-queue-push queue hover processor workspace)
-  (request-queue-push queue pub2 processor workspace)
+  (request-queue-push queue pub1 workspace)
+  (request-queue-push queue hover workspace)
+  (request-queue-push queue pub2 workspace)
 
   (let ([th1 (request-queue-pop queue processor)])
     (th1))
@@ -268,14 +268,14 @@
     [processor (lambda (r) (set! calls (append calls (list (request-method r)))))]
     [req (make-request 100 "textDocument/hover" '())]
     [cancel (make-request '() "$/cancelRequest" (list (cons 'id 100)))])
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
   ; Execute the request to completion.
   (let ([th (request-queue-pop queue processor)])
     (th))
   ; At this point the task should have been removed from tickal-task-list
   ; by the complete callback.  A subsequent cancel for the same id should
   ; find nothing and therefore not invoke the processor.
-  (request-queue-push queue cancel processor workspace)
+  (request-queue-push queue cancel workspace)
 
   (test-equal "queue empty after completion + cancel" #t (request-queue-empty? queue))
   (test-equal "only original request ran" 1 (length calls))
@@ -292,14 +292,14 @@
     [req (make-request 200 "textDocument/completion" '())]
     [cancel1 (make-request '() "$/cancelRequest" (list (cons 'id 200)))]
     [cancel2 (make-request '() "$/cancelRequest" (list (cons 'id 200)))])
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
   ; First cancel sets stop?=#t.
-  (request-queue-push queue cancel1 processor workspace)
+  (request-queue-push queue cancel1 workspace)
   ; Pop the now-stopped task: job lambda sees stop?=#t and removes it.
   (let ([th (request-queue-pop queue processor)])
     (th))
   ; Second cancel should find nothing because the task was removed above.
-  (request-queue-push queue cancel2 processor workspace)
+  (request-queue-push queue cancel2 workspace)
 
   (test-equal "queue empty" #t (request-queue-empty? queue))
   ; cancelRequest is a notification and does not invoke the processor.
@@ -316,14 +316,14 @@
     [req-a (make-request 300 "textDocument/definition" '())]
     [cancel (make-request '() "$/cancelRequest" (list (cons 'id 300)))]
     [req-b (make-request 301 "textDocument/hover" '())])
-  (request-queue-push queue req-a processor workspace)
+  (request-queue-push queue req-a workspace)
   ; Finish req-a normally.
   (let ([th (request-queue-pop queue processor)])
     (th))
   ; Cancel the already-finished id: should be a no-op.
-  (request-queue-push queue cancel processor workspace)
+  (request-queue-push queue cancel workspace)
   ; Push another unrelated request to prove the queue is still healthy.
-  (request-queue-push queue req-b processor workspace)
+  (request-queue-push queue req-b workspace)
   (let ([th (request-queue-pop queue processor)])
     (th))
 
@@ -346,7 +346,7 @@
                        'done
                        (loop (+ i 1)))))]
     [req (make-request 400 "textDocument/hover" '())])
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
   (let ([th (request-queue-pop queue processor)])
     (th))
   ; The loop ran 500000 iterations.  Chez engine expires every ~100000
@@ -367,7 +367,7 @@
                        'done
                        (loop (+ i 1)))))]
     [req (make-request '() "textDocument/didChange" '())])
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
   (let ([th (request-queue-pop queue processor)])
     (th))
   ; didChange's expire callback unconditionally calls remains, so it
@@ -400,7 +400,7 @@
         (th))
       (set! consumer-done #t)))
 
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
 
   ; Wait until the engine has actually started running (counter >= 100000).
   (let loop ([i 0])
@@ -412,7 +412,7 @@
       [else (error 'test "engine did not start in time")]))
 
   ; Now cancel while the engine is inside the long loop.
-  (request-queue-push queue cancel processor workspace)
+  (request-queue-push queue cancel workspace)
 
   ; Wait for the consumer thread to finish (engine terminated or completed).
   (let loop ([i 0])
@@ -448,7 +448,7 @@
   (sleep (make-time 'time-duration 10000000 0))
 
   ; Producer pushes a request; this should signal the condition.
-  (request-queue-push queue req processor workspace)
+  (request-queue-push queue req workspace)
 
   ; Wait for the consumer to be woken and process the request.
   (let loop ([i 0])

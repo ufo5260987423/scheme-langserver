@@ -242,7 +242,7 @@
                   (init-interval-timer 
                     (make-time 'time-duration 0 1)
                     (lambda () 
-                      (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance)))
+                      (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) (server-workspace server-instance)))
                     (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
                   #f)]
@@ -250,7 +250,7 @@
                 (lambda ()
                   (server-shutdown?-set! server-instance #t)
                   (when thread-pool
-                    (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) request-processor (server-workspace server-instance))
+                    (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) (server-workspace server-instance))
                     (thread-pool-stop! thread-pool))
                   (private:save-workspace-cache-if-any server-instance)
                   server-instance)]
@@ -284,7 +284,7 @@
 
                 [thread-pool
                   (when debug? (sleep (make-time 'time-duration 1000000 0)))
-                  (request-queue-push request-queue request-message request-processor (server-workspace server-instance))
+                  (request-queue-push request-queue request-message (server-workspace server-instance))
                   (loop (private:safe-read-message))]
                 [else
                   (request-processor request-message)
