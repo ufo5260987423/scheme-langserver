@@ -18,7 +18,9 @@
   (if (null? index-node)
     #f
     (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
-      (if (and (pair? expression) (or (eq? 'library (car expression)) (eq? 'define-library (car expression))))
+      (if (and (not (index-node-shared-reference index-node))
+               (pair? expression)
+               (or (eq? 'library (car expression)) (eq? 'define-library (car expression))))
         index-node
         (private:library-ancestor (index-node-parent index-node))))))
 

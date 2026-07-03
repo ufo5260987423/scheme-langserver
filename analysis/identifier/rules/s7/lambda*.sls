@@ -83,10 +83,12 @@
 (define (parameter*-process initialization-index-node index-node lambda-node exclude document )
   (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
-      [identifier (cond
-                    [(symbol? expression) expression]
-                    [(pair? expression) (car expression)]
-                    [else #f])])
+      [identifier (if (index-node-shared-reference index-node)
+                    #f
+                    (cond
+                      [(symbol? expression) expression]
+                      [(pair? expression) (car expression)]
+                      [else #f]))])
     (if identifier
       (let ([reference 
             (make-identifier-reference

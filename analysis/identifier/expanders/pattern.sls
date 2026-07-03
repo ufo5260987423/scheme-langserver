@@ -376,7 +376,7 @@
               [(null? rest-patterns) '()]
               [(null? rest-index-nodes)
                (apply append
-                 (map (lambda (p) (pattern+index-node->pair-list p (make-index-node '() '() '() '() '() '() '() '()))) rest-patterns))]
+                 (map (lambda (p) (pattern+index-node->pair-list p (make-index-node '() '() '() #f '() '() '() '()))) rest-patterns))]
               [(and (eq? 'pair-form (pattern-type pattern)) (null? (cdr rest-patterns)))
                (if (null? (cdr rest-index-nodes))
                  `((,(car rest-patterns) . ,(car rest-index-nodes)))

@@ -1,0 +1,4 @@
+(library (fixtures cyclic-literal lib)
+  (export sleep-times)
+  (import (rnrs))
+  (define sleep-times '(1 2 3 . #0=(4 . #0#))))

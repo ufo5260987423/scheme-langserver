@@ -88,7 +88,7 @@
           `((file-node . ,(make-file-node "" "" '() #f '() '()))
             (library-node . ,(make-library-node '() '() '() '()))
             (document . ,(make-document "" "" '()))
-            (index-node . ,(make-index-node '() 0 0 '() '() '() '() '()))
+            (index-node . ,(make-index-node '() 0 0 '() #f '() '() '() '()))
             (identifier-reference . ,(make-identifier-reference 'foo '() '() '() '() '() '() '()))
             (file-linkage . ,(make-file-linkage (make-eq-hashtable) (make-eq-hashtable) '#(0))))])
     (let ([content

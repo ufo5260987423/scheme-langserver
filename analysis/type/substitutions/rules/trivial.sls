@@ -30,11 +30,15 @@
 (define trivial-process 
   (case-lambda 
     [(document index-node) 
-      (let* ([ann (index-node-datum/annotations index-node)]
-          [expression (annotation-stripped ann)])
-        (if (null? (index-node-children index-node))
-          (trivial-process document index-node expression #f #f)
-          '()))]
+      (let ([target (index-node-shared-reference index-node)])
+        (cond
+          [target
+            (extend-index-node-substitution-list index-node target)]
+          [(null? (index-node-children index-node))
+            (let* ([ann (index-node-datum/annotations index-node)]
+                [expression (annotation-stripped ann)])
+              (trivial-process document index-node expression #f #f))]
+          [else '()]))]
     [(document index-node expression allow-unquote? quoted?)
       (cond
         ;These clauses won't be affected by quote
@@ -74,7 +78,7 @@
                 (map
                   (lambda (current-expression)
                     (if (and (private-unquote-splicing? index-node document current-expression) allow-unquote? quoted?)
-                      (let* ([v (make-index-node index-node '() '() '() '() '() '() '())])
+                      (let* ([v (make-index-node index-node '() '() '() #f '() '() '() '())])
                         (trivial-process document v current-expression #f #t)
                         v)))
                   ; (if is-list? '(inner:list?) '(inner:vector?))

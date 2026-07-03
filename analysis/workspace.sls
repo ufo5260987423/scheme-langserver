@@ -550,7 +550,7 @@
         (lambda (node)
           (let ([expression (annotation-stripped (index-node-datum/annotations node))])
             (cond
-              [(and (pair? expression) (eq? 'import (car expression)))
+              [(and (not (index-node-shared-reference node)) (pair? expression) (eq? 'import (car expression)))
                 (for-each 
                   (lambda (child) (private:check-duplicate-import-clause document child duplicate-seen))
                   (cdr (index-node-children node)))

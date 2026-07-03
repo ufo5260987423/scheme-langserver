@@ -21,6 +21,7 @@
     index-node-start
     index-node-end
     index-node-datum/annotations
+    index-node-shared-reference
     index-node-uuid
 
     index-node-children
@@ -73,6 +74,7 @@
     (immutable start)
     (immutable end)
     (immutable datum/annotations)
+    (immutable shared-reference)
     (immutable uuid)
 
     (mutable children)
@@ -84,13 +86,13 @@
     (mutable expansion-generator))
   (protocol
     (lambda (new)
-      (lambda (parent start end datum/annotations children references-export-to-other-node references-import-in-this-node excluded-references)
-        (new parent start end datum/annotations (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
+      (lambda (parent start end datum/annotations shared-reference children references-export-to-other-node references-import-in-this-node excluded-references)
+        (new parent start end datum/annotations shared-reference (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
 
 (define make-virtual-index-node
   (case-lambda 
     [() (make-virtual-index-node '())]
-    [(parent) (make-index-node parent '() '() '() '() '() '() '())]))
+    [(parent) (make-index-node parent '() '() '() #f '() '() '() '())]))
 
 (define (extend-index-node-substitution-list index-node . target-substitutions)
   (index-node-substitution-list-set!
@@ -124,10 +126,12 @@
   (private index-node 'unsyntax-splicing))
 
 (define (private index-node target)
-  (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
-    (if (pair? expression)
-        (equal? target (car expression))
-        #f)))
+  (if (index-node-shared-reference index-node)
+    #f
+    (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
+      (if (pair? expression)
+          (equal? target (car expression))
+          #f))))
 
 (define (debug:print-expression index-node)
   (pretty-print (annotation-stripped (index-node-datum/annotations index-node))))
@@ -177,51 +181,91 @@
       pair)))
 
 (define (init-index-node parent datum/annotation)
-  (if (pair? datum/annotation)
-    ; Chez represents improper lists (e.g. dotted formal parameters) as nested
-    ; annotation pairs. Synthesize a node whose children are the car and cdr so
-    ; the dotted structure is preserved in the AST.
-    (let* ([car-ann (car datum/annotation)]
-        [cdr-ann (cdr datum/annotation)]
-        [car-source (annotation-source car-ann)]
-        [end-source (if (annotation? cdr-ann) (annotation-source cdr-ann) car-source)]
-        [start (source-object-bfp car-source)]
-        [end (source-object-efp end-source)]
-        [synthetic-expression (private:annotation-pair->expression datum/annotation)]
-        [synthetic-ann (make-annotation datum/annotation 
-                        (make-source-object (source-object-sfd car-source) start end)
-                        synthetic-expression)]
-        [node (make-index-node parent start end synthetic-ann '() '() '() '())])
-      (index-node-children-set! 
-        node 
-        `(,(init-index-node node car-ann)
-          ,(init-index-node node cdr-ann)))
-      node)
-    (let* ([source (annotation-source datum/annotation)]
-          [node (make-index-node parent (source-object-bfp source) (source-object-efp source) datum/annotation '() '() '() '())]
-          [annotation-list (annotation-expression datum/annotation)])
-      (index-node-children-set! 
-        node 
-        (cond 
-          [(list? annotation-list) 
+  (let ([compound->node (make-eq-hashtable)])
+    (private:init-index-node parent datum/annotation compound->node)))
+
+(define (private:ensure-annotation datum)
+  (if (annotation? datum) datum (private:pair->synthetic-annotation datum)))
+
+(define (private:init-index-node parent datum/annotation compound->node)
+  (let ([expression (if (annotation? datum/annotation)
+                        (annotation-expression datum/annotation)
+                        datum/annotation)])
+    (cond
+      [(and (or (pair? expression) (vector? expression))
+            (hashtable-ref compound->node expression #f))
+       => (lambda (target)
+            (let ([source (annotation-source datum/annotation)])
+              (make-index-node parent
+                (source-object-bfp source)
+                (source-object-efp source)
+                datum/annotation
+                target
+                '() '() '() '())))]
+      [(list? expression)
+        (let* ([source (annotation-source datum/annotation)]
+            [node (make-index-node parent
+                    (source-object-bfp source)
+                    (source-object-efp source)
+                    datum/annotation
+                    #f
+                    '() '() '() '())])
+          (hashtable-set! compound->node expression node)
+          (index-node-children-set! 
+            node 
             (map 
-              (lambda (e) (init-index-node node e))
-              (filter annotation? annotation-list))]
-          [(pair? annotation-list)
-            ; For improper lists, Chez returns nested pairs where internal nodes
-            ; are plain pairs and only the leaves are annotations. Wrap plain
-            ; pair nodes in a synthetic annotation so the dotted structure is
-            ; preserved as children of this node.
+              (lambda (e) (private:init-index-node node e compound->node))
+              (filter annotation? expression)))
+          node)]
+      [(pair? expression)
+        (let* ([synthetic-ann (if (annotation? datum/annotation)
+                                  datum/annotation
+                                  (let* ([car-ann (car datum/annotation)]
+                                      [cdr-ann (cdr datum/annotation)]
+                                      [car-source (annotation-source car-ann)]
+                                      [end-source (if (annotation? cdr-ann) (annotation-source cdr-ann) car-source)]
+                                      [start (source-object-bfp car-source)]
+                                      [end (source-object-efp end-source)]
+                                      [synthetic-expression (private:annotation-pair->expression datum/annotation)])
+                                    (make-annotation datum/annotation
+                                      (make-source-object (source-object-sfd car-source) start end)
+                                      synthetic-expression)))]
+            [source (annotation-source synthetic-ann)]
+            [node (make-index-node parent
+                    (source-object-bfp source)
+                    (source-object-efp source)
+                    synthetic-ann
+                    #f
+                    '() '() '() '())])
+          (hashtable-set! compound->node expression node)
+          (index-node-children-set! 
+            node 
+            `(,(private:init-index-node node (private:ensure-annotation (car expression)) compound->node)
+              ,(private:init-index-node node (private:ensure-annotation (cdr expression)) compound->node)))
+          node)]
+      [(vector? expression)
+        (let* ([source (annotation-source datum/annotation)]
+            [node (make-index-node parent
+                    (source-object-bfp source)
+                    (source-object-efp source)
+                    datum/annotation
+                    #f
+                    '() '() '() '())])
+          (hashtable-set! compound->node expression node)
+          (index-node-children-set! 
+            node 
             (map 
-              (lambda (e) 
-                (init-index-node node (if (annotation? e) e (private:pair->synthetic-annotation e))))
-              `(,(car annotation-list) ,(cdr annotation-list)))]
-          [(vector? annotation-list)
-            (map 
-              (lambda (e) (init-index-node node e))
-              (filter annotation? (vector->list annotation-list)))]
-          [else '()]))
-      node)))
+              (lambda (e) (private:init-index-node node e compound->node))
+              (filter annotation? (vector->list expression))))
+          node)]
+      [else
+        (let ([source (annotation-source datum/annotation)])
+          (make-index-node parent
+            (source-object-bfp source)
+            (source-object-efp source)
+            datum/annotation
+            #f
+            '() '() '() '()))])))
 
 (define (is-leaf? index-node)
   (null? (index-node-children index-node)))
