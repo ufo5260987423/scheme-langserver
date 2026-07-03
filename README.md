@@ -64,8 +64,17 @@ See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Release
-2.1.4 — Feature and bug-fix release improving rest/dotted parameter handling and type inference.
+2.1.5 — Bug-fix release fixing infinite recursion and memory growth caused by cyclic/shared Scheme literals.
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system. 
+
+### What's new in 2.1.5
+- **AST**:
+  - `init-index-node` now detects cyclic and shared reader graph notation (`#n=` / `#n#`) via an internal `compound->node` hashtable.
+  - Reference occurrences become leaf index-nodes with a new `shared-reference` field pointing to the defining node, keeping the AST acyclic.
+- **Bug fixes**:
+  - Fixes the memory leak/hang when analyzing files like swish `src/swish/db.ss`, which contains `#0=(101 . #0#)`.
+- **Type inference**:
+  - Reference nodes generate a type constraint equating their type with the referenced definition node.
 
 ### What's new in 2.1.4
 - **Type inference**:

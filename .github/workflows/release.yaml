@@ -21,7 +21,7 @@ jobs:
 
       - name: Build Linux glibc image
         run: |
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.2")
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "2.1.5")
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           docker build --build-arg VERSION="$VERSION" .
 
