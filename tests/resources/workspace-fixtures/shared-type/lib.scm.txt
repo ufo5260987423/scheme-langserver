@@ -1,0 +1,4 @@
+(library (fixtures shared-type lib)
+  (export c)
+  (import (rnrs))
+  (define c (list #0=(a) #0#)))

@@ -1,0 +1,4 @@
+(library (fixtures cyclic-literal nested-shared)
+  (export n)
+  (import (rnrs))
+  (define n '(#0=(#1=(x) #1#) #0#)))

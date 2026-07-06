@@ -213,9 +213,11 @@
           (hashtable-set! compound->node expression node)
           (index-node-children-set! 
             node 
-            (map 
-              (lambda (e) (private:init-index-node node e compound->node))
-              (filter annotation? expression)))
+            (let loop ([expressions (filter annotation? expression)] [children '()])
+              (if (null? expressions)
+                (reverse children)
+                (loop (cdr expressions)
+                  (cons (private:init-index-node node (car expressions) compound->node) children)))))
           node)]
       [(pair? expression)
         (let* ([synthetic-ann (if (annotation? datum/annotation)
@@ -254,9 +256,11 @@
           (hashtable-set! compound->node expression node)
           (index-node-children-set! 
             node 
-            (map 
-              (lambda (e) (private:init-index-node node e compound->node))
-              (filter annotation? (vector->list expression))))
+            (let loop ([expressions (filter annotation? (vector->list expression))] [children '()])
+              (if (null? expressions)
+                (reverse children)
+                (loop (cdr expressions)
+                  (cons (private:init-index-node node (car expressions) compound->node) children)))))
           node)]
       [else
         (let ([source (annotation-source datum/annotation)])

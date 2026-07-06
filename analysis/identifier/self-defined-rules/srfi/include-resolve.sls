@@ -32,6 +32,20 @@
         (or (private:library-ancestor (index-node-parent index-node))
           (index-node-parent index-node))])
     (match expression
+      [(_ (? string? file-name))
+        (let ([suffix file-name])
+          (for-each 
+            (lambda (target-file-node)
+              (let ([target-document (file-node-document target-file-node)])
+                (if (document-refreshable? target-document) 
+                  (begin 
+                    (document-ordered-reference-list-set! document (find-meta '(chezscheme)))
+                    (step-without-document target-document)))
+                (append-references-into-ordered-references-for 
+                  document 
+                  target-parent-index-node 
+                  (document-ordered-reference-list target-document))))
+            (search-end-with root-file-node suffix)))]
       [(_ ((? string? lib-path) **1) (? string? file-name))
         (let ([suffix (fold-left (lambda (l r) (string-append r "/" l)) file-name (reverse lib-path))])
           (for-each 

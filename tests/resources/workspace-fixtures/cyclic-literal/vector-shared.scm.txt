@@ -1,0 +1,4 @@
+(library (fixtures cyclic-literal vector-shared)
+  (export v)
+  (import (rnrs))
+  (define v '#(#0=(a) #0#)))

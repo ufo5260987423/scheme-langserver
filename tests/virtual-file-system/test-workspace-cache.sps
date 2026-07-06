@@ -12,6 +12,7 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
+  (scheme-langserver virtual-file-system index-node)
   (scheme-langserver util contain))
 
 (define (private:copy-directory from to)
@@ -32,6 +33,14 @@
                     [(eof-object? c) (close-port out)]
                     [else (write-char c out) (loop (read-char in))]))))))))
     (directory-list from)))
+
+(define (private:collect-shared-pairs root)
+  (let ([pairs '()])
+    (let loop ([node root])
+      (when (index-node-shared-reference node)
+        (set! pairs (cons (cons (index-node-shared-reference node) node) pairs)))
+      (for-each loop (index-node-children node)))
+    pairs))
 
 (define (private:delete-directory path)
   (for-each
@@ -131,6 +140,46 @@
 
   (when (file-directory? tmp-root)
     (private:delete-directory tmp-root)))
+
+(test-begin "cache-round-trip-preserves-cyclic-literal-shared-reference")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/cyclic-literal")]
+      [tmp-root (string-append (current-directory) "/tests/resources/workspace-fixtures/.tmp-cache-cyclic")]
+      [work-dir (string-append tmp-root "/cyclic-literal")]
+      [cache-dir (string-append tmp-root "/cache")]
+      [cache-file (string-append cache-dir "/workspace.fasl")]
+      [lib-path (string-append work-dir "/lib.scm.txt")])
+
+    (when (file-directory? tmp-root)
+      (private:delete-directory tmp-root))
+    (mkdir tmp-root)
+    (private:copy-directory fixture work-dir)
+    (mkdir cache-dir)
+
+    ;; Cold start and save cache.
+    (let ([workspace (init-workspace work-dir 'txt 'r6rs #f #f cache-dir)])
+      (test-assert "cyclic workspace cold ok" (workspace? workspace))
+      (let* ([doc (file-node-document (walk-file (workspace-file-node workspace) lib-path))]
+          [root (car (document-index-node-list doc))]
+          [cold-pairs (private:collect-shared-pairs root)])
+        (test-equal "cold start finds shared-reference pair" 1 (length cold-pairs))
+        (test-assert "cold reference points to definition"
+          (eq? (index-node-shared-reference (cdar cold-pairs)) (caar cold-pairs))))
+      (save-workspace-cache-for! workspace cache-dir 'txt 'r6rs #f #f)
+      (test-assert "cyclic cache-file-exists" (file-exists? cache-file)))
+
+    ;; Load from cache and verify shared-reference preserved.
+    (let ([workspace (init-workspace work-dir 'txt 'r6rs #f #f cache-dir)])
+      (test-assert "cyclic workspace load ok" (workspace? workspace))
+      (let* ([doc (file-node-document (walk-file (workspace-file-node workspace) lib-path))]
+          [root (car (document-index-node-list doc))]
+          [loaded-pairs (private:collect-shared-pairs root)])
+        (test-equal "load finds shared-reference pair" 1 (length loaded-pairs))
+        (test-assert "loaded reference points to loaded definition"
+          (eq? (index-node-shared-reference (cdar loaded-pairs)) (caar loaded-pairs)))))
+
+    (when (file-directory? tmp-root)
+      (private:delete-directory tmp-root)))
+(test-end)
 
 (test-end)
 

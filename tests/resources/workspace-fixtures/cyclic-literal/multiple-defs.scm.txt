@@ -1,0 +1,4 @@
+(library (fixtures cyclic-literal multiple-defs)
+  (export m)
+  (import (rnrs))
+  (define m '(#0=(a) #1=(b) #0# #1#)))

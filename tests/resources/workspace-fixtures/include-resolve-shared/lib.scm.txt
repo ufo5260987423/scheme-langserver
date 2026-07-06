@@ -1,0 +1,5 @@
+(library (fixtures include-resolve-shared lib)
+  (export x)
+  (import (rnrs))
+  (define x 1)
+  (include "numbers.scm"))
