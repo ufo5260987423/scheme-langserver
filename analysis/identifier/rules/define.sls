@@ -16,7 +16,7 @@
       [expression (annotation-stripped ann)])
     (match expression
       [(_ ((? symbol? identifier) dummy0 ... ) dummy1 ... ) 
-        (let* ([omg-index-node (cadr (index-node-children index-node))]
+        (let* ([omg-index-node (dereference-index-node (cadr (index-node-children index-node)))]
             [param-pairs (filter (lambda (p) (not (eq? identifier (car p)))) (collect-parameter-pairs omg-index-node))])
           (check-duplicate-identifiers document param-pairs)
           (let* ([key-index-nodes (index-node-children omg-index-node)]
@@ -72,7 +72,7 @@
                     [else '()])))
               dummies)))]
       [(_ ((? symbol? identifier) . dummy0) dummy1 ... )
-        (let* ([omg-index-node (cadr (index-node-children index-node))]
+        (let* ([omg-index-node (dereference-index-node (cadr (index-node-children index-node)))]
             [param-pairs (filter (lambda (p) (not (eq? identifier (car p)))) (collect-parameter-pairs omg-index-node))])
           (check-duplicate-identifiers document param-pairs)
           (let ([reference (make-identifier-reference 
@@ -94,22 +94,16 @@
                 [rest-node (cadr (index-node-children omg-index-node))])
               (cond 
                 [(pair? rest) 
-                  (let ([reference (make-identifier-reference 
-                      (car rest)
-                      document 
-                      (car (index-node-children rest-node))
-                      index-node
-                      '()
-                      'parameter
-                      '()
-                      '())])
-                    (index-node-references-export-to-other-node-set! 
-                      (identifier-reference-index-node reference)
-                      (append 
-                        (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                        `(,reference)))
-                    (append-references-into-ordered-references-for document index-node `(,reference)))
-                  (loop (cdr rest) (cadr (index-node-children rest-node)))]
+                  (if (index-node-shared-reference rest-node)
+                    '()
+                    (let ([reference (make-identifier-reference (car rest) document (car (index-node-children rest-node)) index-node '() 'parameter '() '())])
+                      (index-node-references-export-to-other-node-set! 
+                        (identifier-reference-index-node reference)
+                        (append 
+                          (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+                          `(,reference)))
+                      (append-references-into-ordered-references-for document index-node `(,reference))
+                      (loop (cdr rest) (cadr (index-node-children rest-node)))))]
                 [(not (null? rest)) 
                   (let ([reference (make-identifier-reference 
                       rest

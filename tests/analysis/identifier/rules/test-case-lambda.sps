@@ -10,6 +10,7 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier rules case-lambda)
+  (scheme-langserver analysis tokenizer)
 
   (scheme-langserver util test)
 
@@ -34,4 +35,29 @@
           (equal? 'n (identifier-reference-identifier reference)))
         (index-node-references-import-in-this-node target-index-node)))))
 (test-end)
+
+(test-begin "case-lambda-process handles shared formals")
+  (let* ([src "(begin '#1=(x y) (case-lambda (#1# (+ x y))))\n"]
+      [path "/tmp/test-case-lambda-shared-formals.ss"]
+      [_ (let ([p (open-file-output-port path (file-options replace) 'block (native-transcoder))])
+           (display src p)
+           (close-port p))]
+      [document (make-document (string-append "file://" path) src '())]
+      [root-index-node (init-index-node '() (car (source-file->annotations path)))]
+      [case-lambda-node (caddr (index-node-children root-index-node))]
+      [clause-node (cadr (index-node-children case-lambda-node))])
+    (case-lambda-process '() '() document case-lambda-node)
+    (test-assert "parameter x is bound"
+      (find 
+        (lambda (reference) 
+          (equal? 'x (identifier-reference-identifier reference)))
+        (index-node-references-import-in-this-node clause-node)))
+    (test-assert "parameter y is bound"
+      (find 
+        (lambda (reference) 
+          (equal? 'y (identifier-reference-identifier reference)))
+        (index-node-references-import-in-this-node clause-node)))
+    (test-equal "no diagnoses" '() (document-diagnoses document)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

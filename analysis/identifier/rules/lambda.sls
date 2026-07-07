@@ -6,6 +6,7 @@
     (chezscheme) 
     (ufo-match)
 
+    (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node))
@@ -17,9 +18,10 @@
       [expression (annotation-stripped ann)])
     (match expression
       [(_ (identifier **1) fuzzy ... ) 
-        (let* ([param-pairs (collect-parameter-pairs (cadr (index-node-children index-node)))])
+        (let* ([formals-index-node (dereference-index-node (cadr (index-node-children index-node)))]
+            [param-pairs (collect-parameter-pairs formals-index-node)])
           (check-duplicate-identifiers document param-pairs)
-          (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
+          (let loop ([rest (index-node-children formals-index-node)])
             (if (not (null? rest))
               (let* ([identifier-index-node (car rest)]
                   [identifier-index-node-parent (index-node-parent identifier-index-node)])
@@ -28,7 +30,7 @@
       [(_ (? symbol? identifier) fuzzy ... ) 
         (parameter-process index-node (cadr (index-node-children index-node)) index-node '() document)]
       [(_ (identifier . rest) fuzzy ... ) 
-        (let* ([formals-index-node (cadr (index-node-children index-node))]
+        (let* ([formals-index-node (dereference-index-node (cadr (index-node-children index-node)))]
             [param-pairs (collect-parameter-pairs formals-index-node)]
             [formals-children (index-node-children formals-index-node)])
           (check-duplicate-identifiers document param-pairs)

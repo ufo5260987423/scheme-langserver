@@ -8,6 +8,7 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier rules define)
   (scheme-langserver analysis identifier reference)
+  (scheme-langserver analysis tokenizer)
 
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system file-node)
@@ -30,4 +31,22 @@
                   (identifier-reference-index-node reference)))))
           (index-node-references-import-in-this-node index-node))))))
 (test-end)
+
+(test-begin "define-process handles cyclic improper rest formals")
+  (let* ([src "(define (f . #1=(x . #1#)) 1)\n"]
+      [path "/tmp/test-define-cyclic-formals.ss"]
+      [_ (let ([p (open-file-output-port path (file-options replace) 'block (native-transcoder))])
+           (display src p)
+           (close-port p))]
+      [document (make-document (string-append "file://" path) src '())]
+      [root (init-index-node '() (car (source-file->annotations path)))])
+    (define-process '() '() document root)
+    (test-assert "parameter x is bound"
+      (find 
+        (lambda (reference) 
+          (equal? 'x (identifier-reference-identifier reference)))
+        (index-node-references-import-in-this-node root)))
+    (test-equal "no diagnoses" '() (document-diagnoses document)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

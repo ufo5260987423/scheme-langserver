@@ -4,7 +4,7 @@
     (chezscheme) 
     (ufo-match)
 
-    (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier rules lambda)
 
     (scheme-langserver virtual-file-system index-node))
@@ -29,7 +29,7 @@
                 ; Because case-lambda has many clauses, and some maybe don't contain any parameters
                 [(() body ...) (loop (cdr rest))]
                 [((param-identifier **1) body ...)
-                  (let* ([identifier-index-node-parent (car (index-node-children identifier-index-node-grand-parent))]
+                  (let* ([identifier-index-node-parent (dereference-index-node (car (index-node-children identifier-index-node-grand-parent)))]
                       [param-pairs (collect-parameter-pairs identifier-index-node-parent)])
                     (check-duplicate-identifiers document param-pairs)
                     (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children identifier-index-node-parent)])
@@ -39,7 +39,7 @@
                           (append exclude (parameter-process index-node (car param-identifier-index-node-list) identifier-index-node-grand-parent exclude document)) 
                           (cdr param-identifier-index-node-list)))))]
                 [((identifier . rest) fuzzy ... ) 
-                  (let* ([omg-index-node (car (index-node-children identifier-index-node-grand-parent))]
+                  (let* ([omg-index-node (dereference-index-node (car (index-node-children identifier-index-node-grand-parent)))]
                       [param-pairs (collect-parameter-pairs omg-index-node)])
                     (check-duplicate-identifiers document param-pairs)
                     (let param-loop ([exclude '()] [param-identifier-index-node-list (index-node-children omg-index-node)])
