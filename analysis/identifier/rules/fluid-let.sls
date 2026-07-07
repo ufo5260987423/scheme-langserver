@@ -7,6 +7,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -19,13 +20,14 @@
       [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+            (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                   [identifier-index-node (car (index-node-children identifier-parent-index-node))]
                 [extended-exclude-list 
                   (append exclude-list (fluid-let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
-              (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
+              (index-node-excluded-references-set! (dereference-index-node (index-node-parent identifier-parent-index-node)) extended-exclude-list)
               extended-exclude-list))
           '()
-          (index-node-children (cadr (index-node-children index-node))))]
+          (index-node-children (dereference-index-node (cadr (index-node-children index-node)))))]
       [else '()])))
 
 (define (fluid-let-parameter-process initialization-index-node index-node let-node exclude document type)

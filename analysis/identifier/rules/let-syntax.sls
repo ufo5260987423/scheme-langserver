@@ -8,6 +8,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -20,15 +21,16 @@
       [(_ (fuzzy0 **1) fuzzy1 ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+            (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                   [identifier-index-node (car (index-node-children identifier-parent-index-node))]
                 [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document 'syntax-variable)]
                 [extended-exclude-list (append exclude-list target-identifier-reference)])
-              (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list))
+              (if (not (null? target-identifier-reference)) (index-node-excluded-references-set! (dereference-index-node (index-node-parent identifier-parent-index-node)) extended-exclude-list))
               extended-exclude-list))
           '()
           (filter 
             (lambda (i) (not (null? (index-node-children i)))) 
-            (index-node-children (cadr (index-node-children index-node)))))]
+            (index-node-children (dereference-index-node (cadr (index-node-children index-node))))))]
       [else '()])))
 
 ; Mirror of define-syntax:attach-generator for let-syntax bindings.
@@ -56,6 +58,6 @@
                       (index-node-references-export-to-other-node name-index-node)))))))
           (filter 
             (lambda (i) (not (null? (index-node-children i)))) 
-            (index-node-children (cadr children))))]
+            (index-node-children (dereference-index-node (cadr children)))))]
       [else '()])))
 ) ; end library

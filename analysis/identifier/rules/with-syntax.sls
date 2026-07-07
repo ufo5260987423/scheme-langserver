@@ -18,12 +18,17 @@
       [expression (annotation-stripped ann)])
     (match expression
       [(_ (((? symbol? syntax-parameter) _ ...) **1) body ...) 
-        (let* ([syntax-parameter-_s (cadr children)]
-            [syntax-parameters (map car (map index-node-children (index-node-children syntax-parameter-_s)))])
+        (let* ([syntax-parameter-_s (dereference-index-node (cadr children))]
+            [syntax-parameters 
+              (map (lambda (p)
+                     (let ([p (dereference-index-node p)])
+                       (car (index-node-children p))))
+                   (index-node-children syntax-parameter-_s))])
           (check-duplicate-syntax-bindings document syntax-parameters)
           (map 
             (lambda (current-syntax-parameter-index-node)
-              (let* ([expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]
+              (let* ([current-syntax-parameter-index-node (dereference-index-node current-syntax-parameter-index-node)]
+                     [expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]
                   [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-parameter '() '())])
                 (append-references-into-ordered-references-for document index-node `(, identifier-reference))
                 (index-node-excluded-references-set! syntax-parameter-_s 

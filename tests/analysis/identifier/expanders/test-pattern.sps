@@ -56,11 +56,14 @@
                                  (lambda (i)
                                    (not (null? (index-node-children i))))
                                  (index-node-children
-                                   (cadr (index-node-children index-node))))])
+                                   (dereference-index-node
+                                     (cadr (index-node-children index-node)))))])
             (check-duplicate-bindings document binding-nodes)
             (fold-left
               (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-index-node (car (index-node-children
+                (let* ([identifier-parent-index-node
+                          (dereference-index-node identifier-parent-index-node)]
+                       [identifier-index-node (car (index-node-children
                           identifier-parent-index-node))]
                     [target-identifier-reference (let-parameter-process index-node
                         identifier-index-node
@@ -69,7 +72,8 @@
                         exclude-list
                         target-identifier-reference)])
                   (index-node-excluded-references-set!
-                    (cadr (index-node-children index-node))
+                    (dereference-index-node
+                      (cadr (index-node-children index-node)))
                     extended-exclude-list)
                   extended-exclude-list))
               '()
@@ -81,11 +85,14 @@
                                (lambda (i)
                                  (not (null? (index-node-children i))))
                                (index-node-children
-                                 (cadr (index-node-children index-node))))])
+                                 (dereference-index-node
+                                   (cadr (index-node-children index-node)))))])
           (check-duplicate-bindings document binding-nodes)
           (fold-left
             (lambda (exclude-list identifier-parent-index-node)
-              (let* ([identifier-index-node (car (index-node-children
+              (let* ([identifier-parent-index-node
+                        (dereference-index-node identifier-parent-index-node)]
+                     [identifier-index-node (car (index-node-children
                         identifier-parent-index-node))]
                   [target-identifier-reference (let-parameter-process index-node
                       identifier-index-node
@@ -94,7 +101,8 @@
                       exclude-list
                       target-identifier-reference)])
                 (index-node-excluded-references-set!
-                  (cadr (index-node-children index-node))
+                  (dereference-index-node
+                    (cadr (index-node-children index-node)))
                   extended-exclude-list)
                 extended-exclude-list))
             '()
@@ -106,11 +114,14 @@
            (filter
              (lambda (i) (not (null? (index-node-children i))))
              (index-node-children
-               (cadr (index-node-children index-node))))))
+               (dereference-index-node
+                 (cadr (index-node-children index-node)))))))
         (check-duplicate-bindings document binding-nodes)
         (fold-left
           (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children
+            (let* ([identifier-parent-index-node
+                      (dereference-index-node identifier-parent-index-node)]
+                   [identifier-index-node (car (index-node-children
                        identifier-parent-index-node))]
                 [target-identifier-reference (let-parameter-process index-node
                     identifier-index-node
@@ -119,7 +130,8 @@
                     exclude-list
                     target-identifier-reference)])
               (index-node-excluded-references-set!
-                (cadr (index-node-children index-node))
+                (dereference-index-node
+                  (cadr (index-node-children index-node)))
                 extended-exclude-list)
               extended-exclude-list))
           '()
@@ -216,11 +228,14 @@
                                  (lambda (i)
                                    (not (null? (index-node-children i))))
                                  (index-node-children
-                                   (cadr (index-node-children index-node))))])
+                                   (dereference-index-node
+                                     (cadr (index-node-children index-node)))))])
             (check-duplicate-bindings document binding-nodes)
             (fold-left
               (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-index-node (car (index-node-children
+                (let* ([identifier-parent-index-node
+                          (dereference-index-node identifier-parent-index-node)]
+                       [identifier-index-node (car (index-node-children
                           identifier-parent-index-node))]
                     [target-identifier-reference (let-parameter-process index-node
                         identifier-index-node
@@ -229,7 +244,8 @@
                         exclude-list
                         target-identifier-reference)])
                   (index-node-excluded-references-set!
-                    (cadr (index-node-children index-node))
+                    (dereference-index-node
+                      (cadr (index-node-children index-node)))
                     extended-exclude-list)
                   extended-exclude-list))
               '()
@@ -240,11 +256,14 @@
                                  (lambda (i)
                                    (not (null? (index-node-children i))))
                                  (index-node-children
-                                   (cadr (index-node-children index-node))))])
+                                   (dereference-index-node
+                                     (cadr (index-node-children index-node)))))])
             (check-duplicate-bindings document binding-nodes)
             (fold-left
               (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-index-node (car (index-node-children
+                (let* ([identifier-parent-index-node
+                          (dereference-index-node identifier-parent-index-node)]
+                       [identifier-index-node (car (index-node-children
                           identifier-parent-index-node))]
                     [target-identifier-reference (let-parameter-process index-node
                         identifier-index-node
@@ -253,7 +272,8 @@
                         exclude-list
                         target-identifier-reference)])
                   (index-node-excluded-references-set!
-                    (cadr (index-node-children index-node))
+                    (dereference-index-node
+                      (cadr (index-node-children index-node)))
                     extended-exclude-list)
                   extended-exclude-list))
               '()

@@ -17,14 +17,15 @@
     (match expression
       [(_ ((var init+update ... ) **1) fuzzy ... ) 
         (let* ([children (index-node-children index-node)]
-          [var-index-node (cadr children)]
+          [var-index-node (dereference-index-node (cadr children))]
           [var-nodes (index-node-children var-index-node)])
           (check-duplicate-bindings document var-nodes)
           (map (lambda (i) (private-process document i index-node var-index-node)) var-nodes))]
       [else '()])))
 
 (define (private-process document target-index-node initialization-index-node exclude-index-node)
-  (let* ([ann (index-node-datum/annotations target-index-node)]
+  (let* ([target-index-node (dereference-index-node target-index-node)]
+      [ann (index-node-datum/annotations target-index-node)]
       [expression (annotation-stripped ann)])
     (match expression
       [((? symbol? var) _ ...)

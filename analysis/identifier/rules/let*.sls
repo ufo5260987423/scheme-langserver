@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -17,13 +18,14 @@
       [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
         (fold-left 
           (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+            (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                   [identifier-index-node (car (index-node-children identifier-parent-index-node))]
                 [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
               (index-node-excluded-references-set! identifier-parent-index-node extended-exclude-list)
               extended-exclude-list))
           '()
           (filter 
             (lambda (i) (not (null? (index-node-children i)))) 
-            (reverse (index-node-children (cadr (index-node-children index-node))))))]
+            (reverse (index-node-children (dereference-index-node (cadr (index-node-children index-node)))))))]
       [else '()])))
 )

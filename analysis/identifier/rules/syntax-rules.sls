@@ -5,6 +5,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier rules syntax-case)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -22,7 +23,8 @@
             [rest (cddr children)])
           (map 
             (lambda (clause-index-node)
-              (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
+              (let ([clause-index-node (dereference-index-node clause-index-node)])
+                (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals)))
             rest))]
       [else '()])))
 )

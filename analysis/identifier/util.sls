@@ -67,7 +67,8 @@
 (define (check-duplicate-bindings document binding-nodes)
   (check-duplicate-identifiers document
     (map (lambda (b)
-           (let ([ident-node (car (index-node-children b))])
+           (let* ([b (dereference-index-node b)]
+                  [ident-node (car (index-node-children b))])
              (cons (annotation-stripped (index-node-datum/annotations ident-node)) ident-node)))
          binding-nodes)))
 
@@ -76,7 +77,8 @@
     (apply append
       (map 
         (lambda (b)
-          (let ([formals-node (car (index-node-children b))])
+          (let* ([b (dereference-index-node b)]
+                 [formals-node (dereference-index-node (car (index-node-children b)))])
             (map (lambda (ident-node) (cons (annotation-stripped (index-node-datum/annotations ident-node)) ident-node))
               (index-node-children formals-node))))
           binding-nodes))))
@@ -84,6 +86,7 @@
 (define (check-duplicate-syntax-bindings document syntax-parameter-index-nodes)
   (check-duplicate-identifiers document
     (map (lambda (ident-node)
-           (cons (annotation-stripped (index-node-datum/annotations ident-node)) ident-node))
+           (let ([ident-node (dereference-index-node ident-node)])
+             (cons (annotation-stripped (index-node-datum/annotations ident-node)) ident-node)))
          syntax-parameter-index-nodes)))
 )

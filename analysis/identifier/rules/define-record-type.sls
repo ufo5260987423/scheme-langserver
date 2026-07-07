@@ -6,6 +6,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -29,7 +30,7 @@
 (define (process-define-record-type-tail initialization-index-node document target-parent-index-node index-node-list name)
   (let loop ([body index-node-list])
     (if (not (null? body))
-      (let* ([index-node (car body)]
+      (let* ([index-node (dereference-index-node (car body))]
           [ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
         (match expression
@@ -40,7 +41,7 @@
             (let loop ([references (find-available-references-for document index-node parent-name)])
               (if (not (null? references))
                 (let* ([current-reference (car references)]
-                    [binding-index-node (cadr (index-node-children index-node))]
+                    [binding-index-node (cadr (index-node-children (dereference-index-node index-node)))]
                     [current-index-node (identifier-reference-index-node current-reference)]
                     [parent-index-node (index-node-parent current-index-node)]
                     [parent-children-index-node (index-node-children parent-index-node)]
@@ -65,9 +66,9 @@
           [else (loop (cdr body))])))))
 
 (define (process-fields-list initialization-index-node document target-parent-index-node index-node record-name binding-index-node)
-  (let loop ([children (cdr (index-node-children index-node))])
+  (let loop ([children (cdr (index-node-children (dereference-index-node index-node)))])
     (if (not (null? children))
-      (let* ([current-index-node (car children)]
+      (let* ([current-index-node (dereference-index-node (car children))]
           [ann (index-node-datum/annotations current-index-node)]
           [expression (annotation-stripped ann)]
           [record-name-string (string-append (symbol->string record-name) "-")])

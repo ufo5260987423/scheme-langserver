@@ -322,8 +322,9 @@ Two helpers live in `analysis/identifier/util.sls` (extracted from `reference.sl
 
 - `check-duplicate-identifiers document pairs` — takes a list of `(symbol . index-node)` pairs, detects duplicates with an `eq-hashtable`, and appends a `"Duplicate identifier: ..."` diagnosis (severity 1 / Error).
 - `collect-parameter-pairs index-node` — recursively extracts parameter symbols and their index-nodes from lambda/define parameter lists; handles flat lists, nested lists, and improper-list rest args. Returns a list of `(symbol . index-node)` cons cells.
+- `dereference-index-node index-node` — returns the canonical definition node when `index-node-shared-reference` is set, otherwise the node itself.
 
-Used in `lambda.sls`, `case-lambda.sls`, `let.sls`, `letrec.sls`, `let-values.sls`, `do.sls`, `define.sls`, and `with-syntax.sls`.
+Used in `lambda.sls`, `case-lambda.sls`, `let.sls`, `let*.sls`, `letrec.sls`, `let-values.sls`, `do.sls`, `define.sls`, `define-syntax.sls`, `with-syntax.sls`, `define-record-type.sls`, `fluid-let.sls`, `let-syntax.sls`, `letrec-syntax.sls`, `syntax-case.sls`, `syntax-rules.sls`, `s7/lambda*.sls`, and `s7/define*.sls`.
 
 ### `usage-count` tracking
 The `identifier-reference` record has a mutable `usage-count` field (default 0).
@@ -350,12 +351,11 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `analysis/identifier/rules/library-import.sls` | `alias` modifier does not add refs when used inside a `(library ...)` form (script-level `import-process` works fine) | Low — `alias` is rare in library headers |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
 | `protocol/analysis/request-queue.sls:59` | `expire` acquires `workspace-mutex` when `tickal-task-stop?` is true. Intent is correct (cancelled task may be updating workspace), but implementation is incomplete (does not wait for sub-threads to finish). Currently harmless because `with-mutex` is reentrant, but provides no actual protection either. | Low — retained for future completion |
-| `analysis/workspace.sls` | Attempted post-phase undefined-identifier diagnostic (`5545e4c`, reverted in `4a13a70`). `find-available-references-for` returns empty for local bindings (let/lambda/define params) as well as truly undefined symbols. Distinguishing the two requires reliable binding-position tracking across all binding forms (including quoted symbols and library-name components), which proved too fragile in the current AST-walker architecture. | Withdrawn — requires deeper binding-tracking before retry |
-
 ### Resolved / fixed issues
 
 | Location | Issue | Resolution |
 |----------|-------|------------|
+| `virtual-file-system/index-node.sls` + identifier rules | Cyclic and repeatedly-shared compound literals (e.g. `#1=((x 1) . #1#)`, `(#1=(x) #1#)`) caused identifier rules to crash with `~s is not a pair` or infinite-loop on raw S-expression recursion. `init-index-node` now builds an acyclic AST using a `shared-reference` field; binding-form rules (`let`, `let*`, `letrec`, `let-values`, `do`, `with-syntax`, `syntax-case`, `syntax-rules`, `define-syntax`, `define-record-type`, `fluid-let`, `let-syntax`, `letrec-syntax`, `s7/lambda*`, `s7/define*`) dereference shared nodes before accessing children, and `syntax-case`'s `get-all-symbols` now detects cycles. | **Fixed** (2026-07-02) — added `dereference-index-node` helper in `analysis/identifier/util.sls` and regression tests in `tests/analysis/identifier/rules/test-shared-reference-binding-forms.sps` |
 | `analysis/identifier/rules/define-record-type.sls` | `process-define-record-type-tail` only handled the first clause of a `define-record-type` body and then stopped, so `(fields ...)` after `(nongenerative ...)` was ignored and setter/getter references were never created. | **Fixed** (2026-06-26) — continue the loop after `fields`, `parent`, and unmatched clauses |
 | `analysis/identifier/rules/syntax-case.sls` | Parameter name typo: `root-librar-node` | **Fixed** (2026-06-26) — renamed to `root-library-node` |
 | `analysis/workspace.sls` | `init-references` called `clear-references-for` on the `car` of `document-index-node-list`. Comment-only or otherwise empty files (common in S7 projects without `.akku/list`) produce an empty list, causing `car` of `()` and a `-32001` initialize failure. | **Fixed** (2026-06-13) — skip `clear-references-for` when `index-node-list` is empty in both threaded and single-threaded paths |
@@ -368,6 +368,12 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `analysis/type/domain-specific-language/interpreter.sls` | `private-with` used `candy:match-right` when `input` contained `**1`/`...`. This fragmented list-valued bindings (e.g. `map`'s higher-order params) into multiple flat pairs that overwrote each other during `fold-left` + `private-substitute`, causing type collapse. | **Fixed** (2025-05-11) — unconditional `candy:match-left` preserves bindings intact |
 | `doc/analysis/dependency/file-linkage.md:148` | Matrix shrink on file deletion | **Resolved** — implemented via `shrink-file-linkage!` |
 | `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. `matrix-from`/`matrix-to` work around this with `cons` + `reverse`. | **Resolved** — workaround in place, no change to `cons` rule needed |
+
+### Withdrawn / retracted issues
+
+| Location | Issue | Status |
+|----------|-------|--------|
+| `analysis/workspace.sls` | Attempted post-phase undefined-identifier diagnostic (`5545e4c`, reverted in `4a13a70`). `find-available-references-for` returns empty for local bindings (let/lambda/define params) as well as truly undefined symbols. Distinguishing the two requires reliable binding-position tracking across all binding forms (including quoted symbols and library-name components), which proved too fragile in the current AST-walker architecture. | Withdrawn — requires deeper binding-tracking before retry |
 
 ---
 

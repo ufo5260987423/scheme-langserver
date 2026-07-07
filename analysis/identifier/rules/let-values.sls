@@ -16,17 +16,19 @@
       [expression (annotation-stripped ann)])
     (match expression
       [(_ ((((? symbol? identifier) **1) no-use ... ) **1 ) fuzzy ... ) 
-        (let ([binding-nodes (index-node-children (cadr (index-node-children index-node)))])
+        (let ([binding-nodes (index-node-children (dereference-index-node (cadr (index-node-children index-node))))])
           (check-duplicate-values-bindings document binding-nodes)
           (fold-left 
             (lambda (exclude-list identifier-parent-index-node)
-              (fold-left 
-                (lambda (exclude-list identifier-index-node)
-                  (let ([extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'continuation))])
-                    (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
-                    extended-exclude-list))
-                exclude-list
-                (index-node-children (car (index-node-children identifier-parent-index-node)))))
+              (let ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)])
+                (fold-left 
+                  (lambda (exclude-list identifier-index-node)
+                    (let ([identifier-index-node (dereference-index-node identifier-index-node)]
+                          [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'continuation))])
+                      (index-node-excluded-references-set! (dereference-index-node (index-node-parent identifier-parent-index-node)) extended-exclude-list)
+                      extended-exclude-list))
+                  exclude-list
+                  (index-node-children (dereference-index-node (car (index-node-children identifier-parent-index-node)))))))
             '()
             binding-nodes))]
       [else '()])))

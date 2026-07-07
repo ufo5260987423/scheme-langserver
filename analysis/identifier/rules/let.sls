@@ -20,14 +20,15 @@
         [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
           (let ([binding-nodes (filter 
                     (lambda (i) (not (null? (index-node-children i)))) 
-                    (index-node-children (cadr (index-node-children index-node))))])
+                    (index-node-children (dereference-index-node (cadr (index-node-children index-node)))))])
             (check-duplicate-bindings document binding-nodes)
             (fold-left 
               (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                       [identifier-index-node (car (index-node-children identifier-parent-index-node))]
                     [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
                     [extended-exclude-list (append exclude-list target-identifier-reference)])
-                  (index-node-excluded-references-set! (cadr (index-node-children index-node)) extended-exclude-list)
+                  (index-node-excluded-references-set! (dereference-index-node (cadr (index-node-children index-node))) extended-exclude-list)
                   extended-exclude-list))
               '()
               binding-nodes))]
@@ -42,13 +43,14 @@
       [(_ (? symbol? loop-identifier) (fuzzy0 **1) fuzzy ... ) 
         (let ([binding-nodes (filter 
                   (lambda (i) (not (null? (index-node-children i))))
-                  (index-node-children (caddr (index-node-children index-node))))])
+                  (index-node-children (dereference-index-node (caddr (index-node-children index-node)))))])
           (check-duplicate-bindings document binding-nodes)
           (fold-left 
             (lambda (exclude-list identifier-parent-index-node)
-              (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
+              (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                     [identifier-index-node (car (index-node-children identifier-parent-index-node))]
                   [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
-                (index-node-excluded-references-set! (caddr (index-node-children index-node)) extended-exclude-list)
+                (index-node-excluded-references-set! (dereference-index-node (caddr (index-node-children index-node))) extended-exclude-list)
                 extended-exclude-list))
             (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
             binding-nodes))]
