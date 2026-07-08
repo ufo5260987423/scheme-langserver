@@ -37,7 +37,7 @@
 
 ```bash
 source .akku/bin/activate
-compile-chez-program run.ss --static
+compile-chez-program --full-chez run.ss --static
 ```
 
 产物通过 host volume 挂载写入 `build/` 目录，并统一重命名为：

@@ -5,7 +5,7 @@ git describe --tags --always --dirty > .version 2>/dev/null || echo "2.1.5" > .v
 
 # akku install
 # bash .akku/env
-compile-chez-program run.ss --static
+compile-chez-program --full-chez run.ss --static
 
 find .akku/libobj/srfi -name "*so" > srfi.so.txt
 # echo './run.so' >> srfi.so.txt

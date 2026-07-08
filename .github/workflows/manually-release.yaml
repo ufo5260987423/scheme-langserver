@@ -32,7 +32,7 @@ jobs:
             -v ./build:/root/scheme-langserver/build/ \
             $(docker build -q --build-arg VERSION="$VERSION" .) \
             bash -c 'source .akku/bin/activate
-                     compile-chez-program run.ss --static
+                     compile-chez-program --full-chez run.ss --static
                      test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
                      mv run "build/scheme-langserver-x86_64-linux-glibc" || exit 1
                      '
@@ -46,7 +46,7 @@ jobs:
             -v ./build:/root/scheme-langserver/build/ \
             $(docker build -f Dockerfile.musl -q --build-arg VERSION="$VERSION" .) \
             ash -c 'source .akku/bin/activate
-                    compile-chez-program run.ss --static
+                    compile-chez-program --full-chez run.ss --static
                     test -f run || { echo "compile-chez-program failed: run not found"; exit 1; }
                     mv run "build/scheme-langserver-x86_64-linux-musl" || exit 1
                     '

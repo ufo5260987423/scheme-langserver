@@ -42,7 +42,9 @@ This sets `CHEZSCHEMELIBDIRS` so Chez can find libraries under `.akku/lib/` and
 ```bash
 bash build.sh
 ```
-This produces a static binary via `compile-chez-program run.ss --static`.
+This produces a static binary via `compile-chez-program --full-chez run.ss --static`.
+`--full-chez` links against the full Chez runtime so that `fasl-write` works and
+workspace cache can be saved from the compiled binary.
 
 > **Note:** `--static` requires prerequisite tooling (e.g. musl libc toolchain). It is used in CI/release builds. For local development and testing, use the non-static build below.
 
@@ -50,9 +52,9 @@ This produces a static binary via `compile-chez-program run.ss --static`.
 For local testing (faster, no extra dependencies):
 ```bash
 source .akku/bin/activate
-compile-chez-program run.ss
+compile-chez-program --full-chez run.ss
 ```
-This produces a dynamically linked `run` binary that is sufficient for local development, MCP integration testing, and log replay debugging. The resulting binary is much faster to build because it skips the static linking step.
+This produces a dynamically linked `run` binary that is sufficient for local development, MCP integration testing, and log replay debugging. The resulting binary is much faster to build because it skips the static linking step. `--full-chez` is needed for workspace cache saving; the default petite runtime drops the `$write-fasl-bytevectors` primitive required by `fasl-write`.
 
 ### Running the server
 ```bash

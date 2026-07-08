@@ -171,12 +171,12 @@ git clone https://github.com/ufo5260987423/scheme-langserver
 cd scheme-langserver
 akku install
 bash .akku/env
-compile-chez-program run.ss
+compile-chez-program --full-chez run.ss
 ```
 
 If you want a static runnable file, you may add `--static` to latest line, as
 ```bash
-compile-chez-program run.ss --static
+compile-chez-program --full-chez run.ss --static
 ```
 
 ### Build & Compile for For WSL(Windows Subsystem for Linux)

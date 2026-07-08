@@ -86,12 +86,13 @@ lsp_diagnostics / lsp_definition / lsp_references / lsp_document_symbol
 
 #### 根因（三个叠加问题）
 
-1. **编译后的 `./run` 二进制无法执行 `fasl-write`**
-   `compile-chez-program` 编译的产物丢失了 Chez 内部变量 `$write-fasl-bytevectors` 的绑定，直接调用 `fasl-write` 会报错：
+1. **编译后的 `./run` 二进制无法执行 `fasl-write`**（已修复）
+   `compile-chez-program` 默认链接 `petite-chez.a`，会丢失 Chez 内部变量 `$write-fasl-bytevectors` 的绑定，直接调用 `fasl-write` 会报错：
    ```text
    variable $write-fasl-bytevectors is not bound
    ```
-   因此 MCP 场景下**必须**使用 `scheme --script run.ss`（即 `run-mcp-cache.sh`）。
+   解决方案是在编译 release 二进制时加上 `--full-chez`，让它链接完整的 `full-chez.a`。`build.sh`、`Dockerfile` 和 `Dockerfile.musl` 已同步更新。
+   因此 MCP 场景可以继续使用 `scheme --script run.ss`（即 `run-mcp-cache.sh`），也可以使用编译后的 `./run`。
 
 2. **bridge 的 graceful shutdown 时间太短**
    bridge 原实现在发送 `exit` 通知后仅等待 3 秒就 `SIGKILL` 子进程。scheme-langserver 自身项目的 cache 写入约需 40 秒，3 秒远远不够。
@@ -125,7 +126,7 @@ export SCHEME_LANGSERVER_TIMEOUT=120
 export SCHEME_LANGSERVER_COMPLETION_TIMEOUT=120
 ```
 
-### 4.3 项目配置必须使用解释执行脚本
+### 4.3 项目配置建议使用解释执行脚本
 
 `.scheme-langserver.toml` 当前指定：
 
@@ -133,9 +134,12 @@ export SCHEME_LANGSERVER_COMPLETION_TIMEOUT=120
 langserver_path = "/home/ufo/Documents/workspace/scheme-langserver/run-mcp-cache.sh"
 ```
 
-该脚本最终调用 `scheme --script run.ss`。虽然比编译后的 `./run` 慢，但**只有这种方式能正确执行 `fasl-write` 并保存 workspace cache**。
+该脚本最终调用 `scheme --script run.ss`。这是为了兼容开发环境：
 
-对本项目做 MCP 开发时，**不要**把 `langserver_path` 改成 `./run`。
+- 本地开发时通常不会每次都重新编译 `./run`；
+- `scheme --script run.ss` 启动速度虽然比编译后的二进制稍慢，但代码改动后立即生效。
+
+如果使用 release 构建的 `./run`（由 `build.sh` 生成，已使用 `--full-chez`），同样可以正确执行 `fasl-write` 并保存 workspace cache。MCP 场景下两种启动方式都有效。
 
 ---
 
@@ -159,9 +163,20 @@ langserver_path = "/home/ufo/Documents/workspace/scheme-langserver/run-mcp-cache
 
 此修复已提交。
 
-#### 5.2 保持 MCP 使用解释执行脚本
+#### 5.2 编译产物现已支持 `fasl-write`
 
-`compile-chez-program` 编译的二进制无法执行 `fasl-write`，因此 MCP 配置继续使用 `run-mcp-cache.sh`（内部为 `scheme --script run.ss`）。未来若要修复编译产物，需研究如何保留 `$write-fasl-bytevectors` 等 Chez 内部绑定。
+`build.sh`、`Dockerfile` 和 `Dockerfile.musl` 中的编译命令已改为：
+
+```bash
+compile-chez-program --full-chez run.ss --static
+```
+
+`--full-chez` 会让 `compile-chez-program` 链接 `full-chez.a` 而不是 `petite-chez.a`，完整运行时包含 `$write-fasl-bytevectors`，因此编译后的 `./run` 也能正常保存 workspace cache。
+
+注意事项：
+- `--full-chez` 编译的二进制体积比 petite 版本稍大；
+- 静态链接时需要 `libuuid`、`libncurses`、`libtinfo` 等静态库，Dockerfile 已安装对应 `-dev`/`-static` 包；
+- 开发环境仍可继续使用 `scheme --script run.ss`，无需每次编译。
 
 #### 5.3 修复 MCP bridge 的 graceful shutdown 等待时间（已完成）
 
