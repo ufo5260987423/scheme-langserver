@@ -1,5 +1,16 @@
 # Release History
 
+## 2.1.6
+Bug-fix release completing shared/cyclic literal handling in binding forms and enabling workspace cache saves from compiled binaries.
+
+### What's new in 2.1.6
+- **Identifier analysis**:
+  - All remaining binding-form rules (`let`, `let*`, `letrec`, `let-values`, `do`, `fluid-let`, `let-syntax`, `letrec-syntax`, `with-syntax`, `syntax-case`, `syntax-rules`, `define-syntax`, `define-record-type`, `s7/lambda*`, `s7/define*`) now dereference shared index-nodes before accessing children, preventing crashes or infinite loops on cyclic parameter/binding lists.
+  - New regression test `tests/analysis/identifier/rules/test-shared-reference-binding-forms.sps` covers these edge cases.
+- **Build**:
+  - Release and development builds now use `compile-chez-program --full-chez`, so the compiled `./run` binary retains the `$write-fasl-bytevectors` primitive and can save the workspace FASL cache.
+  - `Dockerfile`, `Dockerfile.musl`, and CI workflows updated to install the static libraries (`libuuid`, `libncurses`, `libtinfo`) required for linking against `full-chez.a`.
+
 ## 2.1.5
 Bug-fix release fixing infinite recursion and memory growth caused by cyclic/shared Scheme literals.
 
