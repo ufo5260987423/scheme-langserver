@@ -18,20 +18,21 @@
         [expression (annotation-stripped ann)])
       (match expression
         [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
-          (let ([binding-nodes (filter 
-                    (lambda (i) (not (null? (index-node-children i)))) 
-                    (index-node-children (dereference-index-node (cadr (index-node-children index-node)))))])
-            (check-duplicate-bindings document binding-nodes)
-            (fold-left 
-              (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                       [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
-                    [extended-exclude-list (append exclude-list target-identifier-reference)])
-                  (index-node-excluded-references-set! (dereference-index-node (cadr (index-node-children index-node))) extended-exclude-list)
-                  extended-exclude-list))
-              '()
-              binding-nodes))]
+          (let ([bindings-list-node (dereference-index-node (cadr (index-node-children index-node)))])
+            (let ([binding-nodes (filter 
+                      (lambda (i) (not (null? (index-node-children i)))) 
+                      (index-node-children bindings-list-node))])
+              (check-duplicate-bindings document binding-nodes)
+              (fold-left 
+                (lambda (exclude-list identifier-parent-index-node)
+                  (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                         [identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                      [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
+                      [extended-exclude-list (append exclude-list target-identifier-reference)])
+                    (index-node-excluded-references-set! bindings-list-node extended-exclude-list)
+                    extended-exclude-list))
+                '()
+                binding-nodes)))]
         [else '()]))))
 
 ; reference-identifier-type include 
@@ -41,19 +42,20 @@
       [expression (annotation-stripped ann)])
     (match expression
       [(_ (? symbol? loop-identifier) (fuzzy0 **1) fuzzy ... ) 
-        (let ([binding-nodes (filter 
-                  (lambda (i) (not (null? (index-node-children i))))
-                  (index-node-children (dereference-index-node (caddr (index-node-children index-node)))))])
-          (check-duplicate-bindings document binding-nodes)
-          (fold-left 
-            (lambda (exclude-list identifier-parent-index-node)
-              (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                     [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                  [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
-                (index-node-excluded-references-set! (dereference-index-node (caddr (index-node-children index-node))) extended-exclude-list)
-                extended-exclude-list))
-            (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
-            binding-nodes))]
+        (let ([bindings-list-node (dereference-index-node (caddr (index-node-children index-node)))])
+          (let ([binding-nodes (filter 
+                    (lambda (i) (not (null? (index-node-children i))))
+                    (index-node-children bindings-list-node))])
+            (check-duplicate-bindings document binding-nodes)
+            (fold-left 
+              (lambda (exclude-list identifier-parent-index-node)
+                (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
+                       [identifier-index-node (car (index-node-children identifier-parent-index-node))]
+                    [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
+                  (index-node-excluded-references-set! bindings-list-node extended-exclude-list)
+                  extended-exclude-list))
+              (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
+              binding-nodes)))]
       [(_ (? symbol? loop-identifier) fuzzy **1 ) 
         (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)]
       [else ((generate-naive-let-process-with 'variable) root-file-node root-library-node document index-node)])))

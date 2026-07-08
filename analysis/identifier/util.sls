@@ -38,8 +38,10 @@
               "identifier" "duplicate-identifier")))
         (loop (cdr rest) (if (symbol? sym) (cons sym seen) seen))))))
 
-(define (dereference-index-node index-node)
-  (or (index-node-shared-reference index-node) index-node))
+(define-syntax dereference-index-node
+  (syntax-rules ()
+    [(_ index-node)
+     (or (index-node-shared-reference index-node) index-node)]))
 
 (define (collect-parameter-pairs param-list-node)
   (let ([param-list-node (dereference-index-node param-list-node)])
