@@ -168,7 +168,7 @@
               [body-expression (annotation-stripped (index-node-datum/annotations body-index-node))])
             (private:template-variable+expanded template-index-node body-index-node body-expression expanded-index-node template+callees callee-document #f))
           '())]
-      [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
+      [('lambda ((? symbol? parameter)) :_ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
             (eq? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
@@ -199,7 +199,7 @@
           (let* ([template (eval `(syntax-case ',callee-expression ,keywords ,@(map private:get-specific-template clauses)))])
             (private:template-variable+callee template callee-index-nodes callee-expression keywords))
           '())]
-      [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
+      [('lambda ((? symbol? parameter)) :_ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
             (eq? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)
@@ -342,7 +342,7 @@
         (if (root-meta-check callee-document first-child 'syntax-rules)
           (syntax->datum (eval `(syntax-case ',callee-expression ,keywords ,@(map private:rule-clause->case-clause clauses))))
           '())]
-      [('lambda ((? symbol? parameter)) _ ... ('syntax-case like-parameter (keywords ...) clauses **1))
+      [('lambda ((? symbol? parameter)) :_ ... ('syntax-case like-parameter (keywords ...) clauses **1))
         (if (and 
             (eq? parameter like-parameter)
             (root-meta-check callee-document first-child 'lambda)

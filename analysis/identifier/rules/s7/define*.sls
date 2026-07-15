@@ -73,7 +73,7 @@
                         (append 
                           (index-node-excluded-references omg-index-node)
                           `(,dummy-reference))))]
-                  [((? symbol? dummy-identifier) _)
+                  [((? symbol? dummy-identifier) :_)
                     (let ([dummy-reference 
                             (make-identifier-reference
                               (car dummy-expression)

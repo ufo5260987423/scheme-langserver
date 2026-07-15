@@ -12,7 +12,7 @@
     (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
       (match expression
-        [('define-library _ **1 ) (map match-import (index-node-children index-node))]
+        [('define-library :_ **1 ) (map match-import (index-node-children index-node))]
         [else (list (match-import index-node))]))))
 
 (define (match-import index-node)
@@ -30,10 +30,10 @@
     (let* ([ann (index-node-datum/annotations index-node)]
         [expression (annotation-stripped ann)])
       (match expression 
-        [('only (identifier **1) _ ...) identifier]
-        [('except (identifier **1) _ ...) identifier]
-        [('prefix (identifier **1) _ ...) identifier]
-        [('rename (identifier **1) _ ...) identifier]
+        [('only (identifier **1) :_ ...) identifier]
+        [('except (identifier **1) :_ ...) identifier]
+        [('prefix (identifier **1) :_ ...) identifier]
+        [('rename (identifier **1) :_ ...) identifier]
         [(identifier **1) identifier]
         [else '()]))))
 )

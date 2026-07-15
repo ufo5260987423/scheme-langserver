@@ -11,7 +11,7 @@
       [expression (annotation-stripped ann)]
       [children (index-node-children index-node)])
     (match expression
-      [(_ ((var init update ...) **1) (test result ...) _ ... ) 
+      [(_ ((var init update ...) **1) (test result ...) :_ ... ) 
         (let* ([children (index-node-children index-node)]
             [var-index-node (cadr children)])
           (for-each private-process (index-node-children var-index-node)))]

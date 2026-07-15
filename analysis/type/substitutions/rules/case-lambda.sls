@@ -24,13 +24,13 @@
   (let ([children (index-node-children clause-wrapper-node)]
       [expression (annotation-stripped (index-node-datum/annotations clause-wrapper-node))])
     (match expression
-      [(((? symbol? parameter) ...) _ **1) 
+      [(((? symbol? parameter) ...) :_ **1) 
         (for-each 
           (lambda (t) (extend-index-node-substitution-list root-index-node t))
           (construct-lambdas-with 
             `(,(car (reverse children)))
             (construct-parameter-index-nodes-products-with (index-node-children (car children)))))]
-      [((identifier . rest) _ **1) 
+      [((identifier . rest) :_ **1) 
         (let* ([inner-clause-node (car children)]
             [inner-children (index-node-children inner-clause-node)]
             [return-index-node (car (reverse inner-children))]

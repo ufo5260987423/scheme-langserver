@@ -614,7 +614,7 @@
               (loop (cdr nodes) (cdr internal-names)))))]
       [('prefix (library-identifier **1) (? symbol? prefix-id))
         '()]
-      [('for _ ...)
+      [('for :_ ...)
         '()]
       [(library-identifier **1)
         ; Plain imports now also attach their references to the library-identifier

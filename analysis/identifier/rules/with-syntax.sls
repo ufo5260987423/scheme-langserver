@@ -17,7 +17,7 @@
       [children (index-node-children index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [(_ (((? symbol? syntax-parameter) _ ...) **1) body ...) 
+      [(_ (((? symbol? syntax-parameter) :_ ...) **1) body ...) 
         (let* ([syntax-parameter-_s (dereference-index-node (cadr children))]
             [syntax-parameters 
               (map (lambda (p)

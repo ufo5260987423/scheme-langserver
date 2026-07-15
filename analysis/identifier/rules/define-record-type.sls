@@ -34,7 +34,7 @@
           [ann (index-node-datum/annotations index-node)]
           [expression (annotation-stripped ann)])
         (match expression
-          [('fields _ **1) 
+          [('fields :_ **1) 
             (process-fields-list initialization-index-node document target-parent-index-node index-node name '())
             (loop (cdr body))]
           [('parent (? symbol? parent-name)) 
@@ -51,7 +51,7 @@
                     [grand-parent-index-node (index-node-parent parent-index-node)]
                     [grand-parent-children-index-node (index-node-children grand-parent-index-node)])
                   (match parent-expression 
-                    [('define-record-type name-list ('fields _ **1) dummy1 ...)
+                    [('define-record-type name-list ('fields :_ **1) dummy1 ...)
                       (map 
                         (lambda (index-node-tmp)
                           (process-fields-list initialization-index-node document target-parent-index-node index-node-tmp name binding-index-node))
