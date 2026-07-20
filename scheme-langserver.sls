@@ -233,12 +233,12 @@
           (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? #f)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path)
           ;The thread-pool size just limits how many threads to process requests;
-          (let* ([thread-pool (if (and enable-multi-thread? threaded?) (init-thread-pool 2 #t) #f)]
-              [request-queue (if (and enable-multi-thread? threaded?) (make-request-queue) #f)]
+          (let* ([thread-pool (if (and enable-multi-thread? (threaded?)) (init-thread-pool 2 #t) #f)]
+              [request-queue (if (and enable-multi-thread? (threaded?)) (make-request-queue) #f)]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment cache-path)]
               [request-processor (lambda (r) (private:try-catch server-instance r debug?))]
               [interval-timer 
-                (if (and enable-multi-thread? threaded?) 
+                (if (and enable-multi-thread? (threaded?)) 
                   (init-interval-timer 
                     (make-time 'time-duration 0 1)
                     (lambda () 
