@@ -58,12 +58,8 @@
           (begin 
             (put-bytevector port header)
             (put-bytevector port body )
-            ; (write-string header port)
-            ; (write-string body port)
             (flush-output-port port))
           (with-mutex (server-mutex server-instance)
-            ; (write-string header port)
-            ; (write-string body port)
             (put-bytevector port header)
             (put-bytevector port body )
             (flush-output-port port))))]))

@@ -28,9 +28,9 @@
    (document-ordered-reference-list-set! document (sort-identifier-references (find-meta '(chezscheme))))
    (step root-file-node root-library-node file-linkage document)
    (test-equal 
-    'write-lines
+    'read-to-CRNL
     (find 
-      (lambda (identifier) (equal? identifier 'write-lines))
+      (lambda (identifier) (equal? identifier 'read-to-CRNL))
       (map identifier-reference-identifier 
         (index-node-references-import-in-this-node (car (document-index-node-list document)))))))
 (test-end)
