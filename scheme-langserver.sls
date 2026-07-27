@@ -43,7 +43,6 @@
         (save-workspace-cache-for! 
           workspace 
           cache-path 
-          'akku 
           (server-top-environment server-instance)
           (server-type-inference? server-instance)
           (not (null? (server-mutex server-instance))))))))
@@ -125,7 +124,7 @@
                     (server-workspace-set! server-instance 
                       (init-workspace 
                         new-path 
-                        'akku 
+                        (server-file-filter server-instance)
                         (server-top-environment server-instance)
                         (not (null? (server-mutex server-instance)))
                         (server-type-inference? server-instance)
@@ -192,13 +191,13 @@
 
     (if (null? (server-mutex server-instance))
       (begin 
-        (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #f (server-type-inference? server-instance) (server-cache-path server-instance)))
+        (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #f (server-type-inference? server-instance) (server-cache-path server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
         (success-response id (make-alist 'capabilities server-capabilities)))
       (with-mutex (server-mutex server-instance) 
         (if (null? (server-workspace server-instance))
           (begin 
-            (server-workspace-set! server-instance (init-workspace root-path 'akku (server-top-environment server-instance) #t (server-type-inference? server-instance) (server-cache-path server-instance)))
+            (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #t (server-type-inference? server-instance) (server-cache-path server-instance)))
             (server-work-done-progress?-set! server-instance workDoneProgress?)
             (success-response id (make-alist 'capabilities server-capabilities)))
           (fail-response id server-error-start "server has been initialized"))))))
@@ -232,10 +231,12 @@
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug?)
           (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? #f)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path)
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path 'akku)]
+        [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter)
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? (threaded?)) (init-thread-pool 2 #t) #f)]
               [request-queue (if (and enable-multi-thread? (threaded?)) (make-request-queue) #f)]
-              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment cache-path)]
+              [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment cache-path file-filter)]
               [request-processor (lambda (r) (private:try-catch server-instance r debug?))]
               [interval-timer 
                 (if (and enable-multi-thread? (threaded?)) 

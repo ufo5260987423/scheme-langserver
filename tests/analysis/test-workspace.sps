@@ -371,6 +371,30 @@
 (test-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 18. Custom file-filter support
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-begin "init-workspace custom file-filter extension list")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/mixed-extensions")]
+     [workspace (init-workspace fixture '(".sls" ".scm.txt") 'r6rs #f #f)]
+     [root (workspace-file-node workspace)])
+   (test-equal '(".sls" ".scm.txt") (workspace-file-filter workspace))
+   (test-equal #t (file-node? (walk-file root (string-append fixture "/lib.sls"))))
+   (test-equal #t (file-node? (walk-file root (string-append fixture "/extra.scm.txt"))))
+   (test-equal '() (walk-file root (string-append fixture "/helper.scm"))))
+(test-end)
+
+(test-begin "init-workspace scheme file-filter preset")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/mixed-extensions")]
+     [workspace (init-workspace fixture 'scheme 'r6rs #f #f)]
+     [root (workspace-file-node workspace)])
+   (test-equal 'scheme (workspace-file-filter workspace))
+   (test-equal #t (file-node? (walk-file root (string-append fixture "/lib.sls"))))
+   (test-equal #t (file-node? (walk-file root (string-append fixture "/helper.scm"))))
+   (test-equal '() (walk-file root (string-append fixture "/extra.scm.txt"))))
+(test-end)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Exit
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

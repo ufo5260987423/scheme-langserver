@@ -52,8 +52,20 @@ The protocol creates the mutex automatically when `threaded?` is true. The three
 `init-workspace` is the main entry point used by the LSP server when a folder is opened. It accepts several optional parameters and resolves defaults left-to-right:
 
 ```
-path → identifier → top-environment → threaded? → type-inference? → facet
+path → file-filter → top-environment → threaded? → type-inference? → cache-path
 ```
+
+`file-filter` controls which files are included in the virtual file system. It can be:
+- `'akku` — use Akku's `.akku/list` (default).
+- `'txt` — include only `.scm.txt` files.
+- a list of extension strings — e.g. `'(".sls" ".scm" ".scm.txt")`.
+- a predicate procedure — custom filter accepting a path and returning a boolean.
+
+The CLI maps these as follows:
+- `-p akku` / `-p txt` selects the corresponding symbol preset.
+- `-f <ext>` builds an extension list; repeated `-f` options are merged, and
+  leading dots may be omitted.
+- `-p` and `-f` are mutually exclusive.
 
 Typical call from the server:
 ```scheme

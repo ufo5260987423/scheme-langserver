@@ -132,24 +132,24 @@
 ;; Manifest
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (private:make-manifest facet top-environment type-inference? threaded?)
+(define (private:make-manifest file-filter top-environment type-inference? threaded?)
   `(cache-manifest
     (format-version 2)
     (langserver-version ,(private:get-langserver-version))
     (chez-version ,(private:get-chez-version))
     (machine-type ,(private:get-machine-type))
-    (facet ,facet)
+    (file-filter ,file-filter)
     (top-environment ,top-environment)
     (type-inference? ,type-inference?)
     (threaded? ,threaded?)
     (created-at ,(private:format-current-date))
     (record-fingerprint ,(private:record-fingerprint))))
 
-(define (private:manifest-matches? manifest facet top-environment type-inference? threaded?)
+(define (private:manifest-matches? manifest file-filter top-environment type-inference? threaded?)
   (and (pair? manifest)
        (eq? 'cache-manifest (car manifest))
        (equal? '(format-version 2) (assq 'format-version (cdr manifest)))
-       (equal? `(facet ,facet) (assq 'facet (cdr manifest)))
+       (equal? `(file-filter ,file-filter) (assq 'file-filter (cdr manifest)))
        (equal? `(top-environment ,top-environment) (assq 'top-environment (cdr manifest)))
        (equal? `(type-inference? ,type-inference?) (assq 'type-inference? (cdr manifest)))
        (equal? `(threaded? ,threaded?) (assq 'threaded? (cdr manifest)))
@@ -209,7 +209,7 @@
        (file-directory? cache-path)
        (file-exists? (private:cache-file-path cache-path))))
 
-(define (load-workspace-cache cache-path facet top-environment type-inference? threaded?)
+(define (load-workspace-cache cache-path file-filter top-environment type-inference? threaded?)
   (unless (workspace-cache-available? cache-path)
     (raise 'workspace-cache-missing))
   (let ([wrapper (private:load-fasl (private:cache-file-path cache-path))])
@@ -217,14 +217,14 @@
       (raise 'workspace-cache-corrupted))
     (let ([manifest (private:wrapper-manifest wrapper)]
           [payload (private:wrapper-payload wrapper)])
-      (unless (private:manifest-matches? manifest facet top-environment type-inference? threaded?)
+      (unless (private:manifest-matches? manifest file-filter top-environment type-inference? threaded?)
         (raise 'workspace-cache-manifest-mismatch))
       payload)))
 
-(define (save-workspace-cache! payload cache-path facet top-environment type-inference? threaded?)
+(define (save-workspace-cache! payload cache-path file-filter top-environment type-inference? threaded?)
   (unless (file-directory? cache-path)
     (mkdir cache-path))
-  (let ([manifest (private:make-manifest facet top-environment type-inference? threaded?)])
+  (let ([manifest (private:make-manifest file-filter top-environment type-inference? threaded?)])
     (private:save-fasl (private:cache-file-path cache-path)
                        (private:make-wrapper manifest payload))))
 

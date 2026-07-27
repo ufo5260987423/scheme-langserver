@@ -24,6 +24,25 @@ refresh. Typical speedups range from ~20x on small fixtures to ~30–50x on
 larger projects. See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8
 and [AGENTS.md](./AGENTS.md) §11 for details.
 
+### File Filter
+
+By default scheme-langserver relies on Akku's `.akku/list` to decide which files
+belong to the workspace. If your project does not use Akku, or if you use
+non-standard extensions, use one of the following mutually exclusive options:
+
+```bash
+# Package-manager preset
+./run -p akku                    # Akku-managed files (default)
+./run -p txt                     # .scm.txt only
+
+# Exact extension list (can be repeated; leading dots are optional)
+./run -f ".sls,.scm,.ss,.sld"
+./run -f scm.txt -f scm -f sls
+```
+
+The resolved filter is stored in the workspace-cache manifest, so changing it
+invalidates any previously saved cache.
+
 ### [VScode](https://code.visualstudio.com/)+[Magic Scheme](https://github.com/ufo5260987423/magic-scheme)
 
 Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the help of [scheme-langserver](https://github.com/ufo5260987423/scheme-langserver), we're proud to say that Magic Scheme is **much better** than many counterparts, which includes even Racket extensions.

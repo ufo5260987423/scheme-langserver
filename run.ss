@@ -17,6 +17,11 @@ Options:
 
   -c, --cache-path              Directory to read/write workspace FASL cache. (default: disabled)
 
+  -p, --package-manager         Package manager preset: akku (default) or txt.
+  -f, --file-filter             File extension filter. Can be given multiple times,
+                                e.g. -f scm.txt -f scm -f sls.
+                                Extensions may be given with or without a leading dot.
+
   -h, --help                    Print help information.
 
   -v, --version                 Print version information.
@@ -56,6 +61,40 @@ Example Usage:
 (define default-type-inference #t)
 (define default-top-environment 'r6rs)
 (define default-cache-path #f)
+(define default-package-manager 'akku)
+
+;; Normalizes accumulated file-filter extension strings into a list.
+;; The result is sorted so that equivalent option orderings produce the
+;; same cache manifest.
+(define (private:normalize-file-filter accumulated)
+  (let ([deduped
+          (let ([seen (make-hashtable string-hash equal?)] [result '()])
+            (for-each
+              (lambda (item)
+                (when (string? item)
+                  (unless (hashtable-ref seen item #f)
+                    (hashtable-set! seen item #t)
+                    (set! result (cons item result)))))
+              accumulated)
+            (reverse result))])
+    (if (null? deduped) '() (list-sort string<? deduped))))
+
+;; Resolves the final file-filter configuration from package-manager and
+;; file-filter options. They are mutually exclusive.
+(define (private:resolve-file-filter package-manager extensions)
+  (cond
+    [(and package-manager (not (null? extensions)))
+     (display "Error: --package-manager and --file-filter cannot be used together.\n")
+     (display-help)
+     (exit 1)]
+    [(not (null? extensions)) extensions]
+    [package-manager package-manager]
+    [else 'akku]))
+
+(define (private:ensure-leading-dot str)
+  (if (and (> (string-length str) 0) (char=? (string-ref str 0) #\.))
+    str
+    (string-append "." str)))
 
 (define (make-default-options)
   (let ((ht (make-hashtable string-hash equal?)))
@@ -64,6 +103,8 @@ Example Usage:
     (hashtable-set! ht "type-inference" default-type-inference)
     (hashtable-set! ht "top-environment" default-top-environment)
     (hashtable-set! ht "cache-path" default-cache-path)
+    (hashtable-set! ht "file-filter" '())
+    (hashtable-set! ht "package-manager" #f)
     ht))
 
 (define (log-path-proc option name arg seeds)
@@ -84,6 +125,38 @@ Example Usage:
 
 (define (cache-path-proc option name arg seeds)
   (hashtable-set! seeds "cache-path" arg)
+  seeds)
+
+(define (package-manager-parse str)
+  (cond
+    [(string-ci=? str "akku") 'akku]
+    [(string-ci=? str "txt") 'txt]
+    [else #f]))
+
+(define (package-manager-proc option name arg seeds)
+  (let ([val (package-manager-parse arg)])
+    (if val
+      (begin
+        (hashtable-set! seeds "package-manager" val)
+        seeds)
+      (begin
+        (display "Invalid value for --package-manager. Valid values: akku, txt\n")
+        (exit 1)))))
+
+(define (private:split-string str char)
+  (let loop ([i 0] [start 0] [result '()])
+    (if (= i (string-length str))
+      (reverse (cons (substring str start i) result))
+      (if (char=? (string-ref str i) char)
+        (loop (+ i 1) (+ i 1) (cons (substring str start i) result))
+        (loop (+ i 1) start result)))))
+
+(define (file-filter-parse str)
+  (map private:ensure-leading-dot (private:split-string str #\,)))
+
+(define (file-filter-proc option name arg seeds)
+  (hashtable-set! seeds "file-filter"
+    (append (hashtable-ref seeds "file-filter" '()) (file-filter-parse arg)))
   seeds)
 
 (define (top-environment-parse str)
@@ -123,7 +196,11 @@ Example Usage:
     (option '(#\e "top-environment") #t #f
            top-environment-proc)
     (option '(#\c "cache-path") #t #f
-           cache-path-proc)))
+           cache-path-proc)
+    (option '(#\p "package-manager") #t #f
+           package-manager-proc)
+    (option '(#\f "file-filter") #t #f
+           file-filter-proc)))
 
 (let* ([args 
         (args-fold
@@ -148,4 +225,7 @@ Example Usage:
     (hashtable-ref args "type-inference" default-type-inference)
     (hashtable-ref args "top-environment" default-top-environment)
     #f
-    (hashtable-ref args "cache-path" default-cache-path)))
+    (hashtable-ref args "cache-path" default-cache-path)
+    (private:resolve-file-filter
+      (hashtable-ref args "package-manager" #f)
+      (private:normalize-file-filter (hashtable-ref args "file-filter" '())))))

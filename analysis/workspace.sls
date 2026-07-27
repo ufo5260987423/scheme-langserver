@@ -17,6 +17,7 @@
     workspace-library-node-set!
     workspace-file-linkage
     workspace-facet
+    workspace-file-filter
     workspace-type-inference?
     workspace-top-environment
     workspace-undiagnosed-paths
@@ -57,6 +58,7 @@
 
     (scheme-langserver analysis package-manager akku)
     (scheme-langserver analysis package-manager txt-filter)
+    (scheme-langserver analysis package-manager file-filter)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -74,6 +76,7 @@
     (immutable mutex)
 
     (immutable facet)
+    (immutable file-filter)
     ;only for identifer catching and type inference
     (immutable threaded?)
     (immutable type-inference?)
@@ -85,11 +88,13 @@
     (lambda (new)
       (case-lambda 
         [(file-node library-node file-linkage facet threaded? type-inference? top-environment)
-          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment '() (make-hashtable string-hash equal?))]
-        [(file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths)
-          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment undiagnosed-paths (make-hashtable string-hash equal?))]
-        [(file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)
-          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)]))))
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet 'akku threaded? type-inference? top-environment '() (make-hashtable string-hash equal?))]
+        [(file-node library-node file-linkage facet file-filter threaded? type-inference? top-environment)
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet file-filter threaded? type-inference? top-environment '() (make-hashtable string-hash equal?))]
+        [(file-node library-node file-linkage facet file-filter threaded? type-inference? top-environment undiagnosed-paths)
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet file-filter threaded? type-inference? top-environment undiagnosed-paths (make-hashtable string-hash equal?))]
+        [(file-node library-node file-linkage facet file-filter threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)
+          (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet file-filter threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)]))))
 
 (define (refresh-workspace workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
@@ -104,18 +109,15 @@
     (workspace-undiagnosed-paths-set! workspace-instance (apply append batches))
     workspace-instance))
 
-(define (private:generate-facet identifier path)
-  (case identifier
-    [txt (generate-txt-file-filter)]
-    [akku (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]
-    [else (generate-akku-acceptable-file-filter (string-append path "/.akku/list"))]))
+(define (private:generate-facet file-filter path)
+  (file-filter->predicate file-filter path))
 
-(define (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet)
+(define (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet file-filter)
   (let* ([root-file-node (init-virtual-file-system path '() facet top-environment)]
       [root-library-node (init-library-node root-file-node top-environment)]
       [file-linkage (init-file-linkage root-file-node root-library-node top-environment)]
       [batches (get-init-reference-batches file-linkage)]
-      [workspace-instance (make-workspace root-file-node root-library-node file-linkage facet threaded? type-inference? top-environment (apply append batches))])
+      [workspace-instance (make-workspace root-file-node root-library-node file-linkage facet file-filter threaded? type-inference? top-environment (apply append batches))])
     (init-references workspace-instance batches)
     workspace-instance))
 
@@ -233,9 +235,10 @@
       (threaded? . ,(workspace-threaded? workspace))
       (type-inference? . ,(workspace-type-inference? workspace))
       (top-environment . ,(workspace-top-environment workspace))
+      (file-filter . ,(workspace-file-filter workspace))
       (undiagnosed-paths . ,(workspace-undiagnosed-paths workspace)))))
 
-(define (rebuild-workspace-from-payload payload facet threaded?)
+(define (rebuild-workspace-from-payload payload file-filter path threaded?)
   (let ([file-node (cdr (assq 'file-node payload))]
       [library-node (cdr (assq 'library-node payload))]
       [file-linkage (cdr (assq 'file-linkage payload))]
@@ -245,8 +248,9 @@
       [top-environment (cdr (assq 'top-environment payload))]
       [undiagnosed-paths (cdr (assq 'undiagnosed-paths payload))])
     (file-linkage-path->id-map-set! file-linkage (private:alist->path->id-map path->id-alist))
-    (let* ([path->mtime-cache (make-hashtable string-hash equal?)]
-           [workspace-instance (make-workspace file-node library-node file-linkage facet threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)])
+    (let* ([facet (file-filter->predicate file-filter path)]
+           [path->mtime-cache (make-hashtable string-hash equal?)]
+           [workspace-instance (make-workspace file-node library-node file-linkage facet file-filter threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)])
       (for-each
         (lambda (pair)
           (when (pair? pair)
@@ -397,15 +401,17 @@
             file-node?
             (map (lambda (path) (walk-file root-file-node path)) changed-paths)))))))
 
-(define (private:try-load-workspace-cache cache-path path identifier top-environment threaded? type-inference?)
+(define (private:try-load-workspace-cache cache-path path file-filter top-environment threaded? type-inference?)
   (and cache-path
+       (file-filter-config-serializable? file-filter)
        (workspace-cache-available? cache-path)
        (guard (ex (else #f))
-         (let ([payload (load-workspace-cache cache-path identifier top-environment type-inference? threaded?)])
+         (let ([payload (load-workspace-cache cache-path file-filter top-environment type-inference? threaded?)])
            (let ([workspace-instance
                    (rebuild-workspace-from-payload
                      payload
-                     (private:generate-facet identifier path)
+                     file-filter
+                     path
                      threaded?)])
              (let-values ([(changed deleted new) (private:cache-consistency-check workspace-instance)])
                (cond
@@ -419,8 +425,9 @@
                    (private:apply-cache-incremental-refresh! workspace-instance changed new)
                    workspace-instance])))))))
 
-(define (save-workspace-cache-for! workspace cache-path identifier top-environment type-inference? threaded?)
-  (save-workspace-cache! (private:prepare-workspace-payload workspace) cache-path identifier top-environment type-inference? threaded?))
+(define (save-workspace-cache-for! workspace cache-path top-environment type-inference? threaded?)
+  (when (file-filter-config-serializable? (workspace-file-filter workspace))
+    (save-workspace-cache! (private:prepare-workspace-payload workspace) cache-path (workspace-file-filter workspace) top-environment type-inference? threaded?)))
 
 (define init-workspace
   (case-lambda 
@@ -435,12 +442,14 @@
     ;; - string or #f => cache-path (new behavior), facet is generated from identifier
     [(path identifier top-environment threaded? type-inference? sixth)
       (if (procedure? sixth)
-        (init-workspace path identifier top-environment threaded? type-inference? sixth #f)
-        (init-workspace path identifier top-environment threaded? type-inference? (private:generate-facet identifier path) sixth))]
+        (init-workspace path identifier top-environment threaded? type-inference? sixth identifier #f)
+        (init-workspace path identifier top-environment threaded? type-inference? (private:generate-facet identifier path) identifier sixth))]
     [(path identifier top-environment threaded? type-inference? facet cache-path)
+      (init-workspace path identifier top-environment threaded? type-inference? facet identifier cache-path)]
+    [(path identifier top-environment threaded? type-inference? facet file-filter cache-path)
       (init-workspace-cache-registry!)
-      (or (private:try-load-workspace-cache cache-path path identifier top-environment threaded? type-inference?)
-          (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet))]))
+      (or (private:try-load-workspace-cache cache-path path file-filter top-environment threaded? type-inference?)
+          (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet file-filter))]))
 
 ;; head -[linkage]->files
 ;; for single file

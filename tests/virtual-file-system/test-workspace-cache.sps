@@ -72,7 +72,7 @@
     (let ([workspace (init-workspace work-dir 'txt 'r6rs #f #f cache-dir)])
       (test-assert "workspace? cold" (workspace? workspace))
       ;; Mimic server shutdown by saving cache explicitly.
-      (save-workspace-cache-for! workspace cache-dir 'txt 'r6rs #f #f)
+      (save-workspace-cache-for! workspace cache-dir 'r6rs #f #f)
       (test-assert "cache-file-exists" (file-exists? cache-file))
       (let ([child-paths (map file-node-path (file-node-children (workspace-file-node workspace)))])
         (test-assert "main-in-children cold" (contain? child-paths main-path))
@@ -164,7 +164,7 @@
         (test-equal "cold start finds shared-reference pair" 1 (length cold-pairs))
         (test-assert "cold reference points to definition"
           (eq? (index-node-shared-reference (cdar cold-pairs)) (caar cold-pairs))))
-      (save-workspace-cache-for! workspace cache-dir 'txt 'r6rs #f #f)
+      (save-workspace-cache-for! workspace cache-dir 'r6rs #f #f)
       (test-assert "cyclic cache-file-exists" (file-exists? cache-file)))
 
     ;; Load from cache and verify shared-reference preserved.

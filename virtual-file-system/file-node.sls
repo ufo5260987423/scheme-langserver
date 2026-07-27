@@ -16,7 +16,8 @@
     resolve-uri->file-node
     folder-or-scheme-file?
     search-end-with 
-    scheme-file?)
+    scheme-file?
+    scheme-file?/extensions)
   (import (chezscheme)
     (scheme-langserver util path)
     (only (srfi :13 strings) string-prefix? string-suffix?))
@@ -62,12 +63,14 @@
 (define (folder-or-scheme-file? path)
   (or (file-directory? path) (scheme-file? path)))
 
-(define (scheme-file? path)
+(define (scheme-file?/extensions path extensions)
   (and 
     (not (file-directory? path))
     (not 
-      (equal? #f (find (lambda (suffix) (string-suffix? suffix path))
-      '( ".sps" ".sls" ".scm" ".ss"))))))
+      (equal? #f (find (lambda (suffix) (string-suffix? suffix path)) extensions)))))
+
+(define (scheme-file? path)
+  (scheme-file?/extensions path '(".sps" ".sls" ".scm" ".ss" ".sld")))
 
 (define (search-end-with node suffix)
   (cond 

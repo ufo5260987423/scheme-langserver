@@ -60,6 +60,33 @@ Typical speedups:
 See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
 [AGENTS.md](./AGENTS.md) §11 for implementation details.
 
+## File Filter
+
+By default scheme-langserver uses the Akku package manager's file list to decide
+which files belong to the workspace. For projects without Akku, or for
+non-standard file extensions, choose one of the following mutually exclusive
+options:
+
+* `--package-manager` (or `-p`) selects a preset:
+
+  ```bash
+  ./run -p akku                  # Akku-managed files (default)
+  ./run -p txt                   # Only .scm.txt files
+  ```
+
+* `--file-filter` (or `-f`) gives an exact extension list. It can be repeated
+  and the extensions are merged automatically; leading dots are optional:
+
+  ```bash
+  ./run -f ".sls,.scm,.ss,.sld,.scm.txt"
+  ./run -f scm.txt -f scm -f sls
+  ./run -f sls -f scm -f sps -f ss -f sld
+  ```
+
+`-p` and `-f` cannot be used together. The resolved filter is persisted in the
+workspace-cache manifest, so changing the filter invalidates any previously saved
+cache.
+
 ## Debugging
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 

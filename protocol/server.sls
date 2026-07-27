@@ -21,6 +21,7 @@
     server-request-queue
     server-top-environment
     server-cache-path
+    server-file-filter
 
     server-work-done-progress?
     server-work-done-progress?-set!)
@@ -44,7 +45,8 @@
     (mutable condition)
     (mutable work-done-progress?)
     (immutable top-environment)
-    (immutable cache-path))
+    (immutable cache-path)
+    (immutable file-filter))
   (protocol
     (lambda (new)
       (case-lambda
@@ -63,7 +65,8 @@
             (make-condition)
             #f
             'r6rs
-            #f)]
+            #f
+            'akku)]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment)
           (new 
             input-port 
@@ -79,7 +82,8 @@
             (make-condition)
             #f
             top-environment
-            #f)]
+            #f
+            'akku)]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment cache-path)
           (new 
             input-port 
@@ -95,7 +99,25 @@
             (make-condition)
             #f
             top-environment
-            cache-path)]))))
+            cache-path
+            'akku)]
+        [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment cache-path file-filter)
+          (new
+            input-port
+            output-port
+            log-port
+            thread-pool
+            (if thread-pool (make-mutex) '())
+            (if thread-pool (make-mutex) '())
+            request-queue
+            type-inference?
+            workspace
+            #f
+            (make-condition)
+            #f
+            top-environment
+            cache-path
+            file-filter)]))))
 
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))
