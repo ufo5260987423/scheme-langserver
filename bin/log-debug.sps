@@ -18,21 +18,55 @@
       (number->string (bytevector-length (string->utf8 target)))
       "\r\n\r\n" target)))
 
+(define (join-lines lines)
+  (if (null? lines)
+    ""
+    (let loop ([lines (reverse lines)] [result ""])
+      (if (null? (cdr lines))
+        (string-append result (car lines))
+        (loop (cdr lines) (string-append result (car lines) "\n"))))))
+
 (test-begin "log-debug")
   (let loop ([lines (read-lines "~/ready-for-analyse.log")]
     [result '()]
-    [read? #f])
+    [state 'idle]
+    [body-lines '()])
   (if (not (null? lines))
     (let ([current-line (car lines)])
-      (cond 
-        [read?  (loop (cdr lines) (process result current-line) #f)]
-        [(equal? current-line "read-message")
-          (loop (cddr lines) result #t)]
-        [else (loop (cdr lines) result #f)]))
-    (let* ( [input-port (open-bytevector-input-port (string->utf8 (apply string-append result)))]
-      [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
-      [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
-      [server-instance (init-server input-port output-port log-port #f #t 'r6rs)])
+      (case state
+        [(idle)
+          (cond
+            [(equal? current-line "read-message") (loop (cdr lines) result 'read-timestamp '())]
+            [(equal? current-line "send-message") (loop (cdr lines) result 'skip-timestamp '())]
+            [else (loop (cdr lines) result 'idle '())])]
+        [(read-timestamp)
+          (loop (cdr lines) result 'read-body '())]
+        [(read-body)
+          (cond
+            [(or (equal? current-line "read-message") (equal? current-line "send-message"))
+              (let ([new-result (if (null? body-lines)
+                                  result
+                                  (process result (join-lines body-lines)))])
+                (cond
+                  [(equal? current-line "read-message") (loop (cdr lines) new-result 'read-timestamp '())]
+                  [else (loop (cdr lines) new-result 'skip-timestamp '())]))]
+            [else (loop (cdr lines) result 'read-body (cons current-line body-lines))])]
+        [(skip-timestamp)
+          (loop (cdr lines) result 'skip-body '())]
+        [(skip-body)
+          (cond
+            [(or (equal? current-line "read-message") (equal? current-line "send-message"))
+              (cond
+                [(equal? current-line "read-message") (loop (cdr lines) result 'read-timestamp '())]
+                [else (loop (cdr lines) result 'skip-timestamp '())])]
+            [else (loop (cdr lines) result 'skip-body '())])]))
+    (let* ([final-result (if (null? body-lines)
+                            result
+                            (process result (join-lines body-lines)))]
+        [input-port (open-bytevector-input-port (string->utf8 (apply string-append final-result)))]
+        [log-port (open-file-output-port "~/scheme-langserver.log" (file-options replace) 'block (make-transcoder (utf-8-codec)))]
+        [output-port (open-file-output-port "~/scheme-langserver.out" (file-options replace) 'none)]
+        [server-instance (init-server input-port output-port log-port #f #t 'r6rs)])
       (test-equal #t (server-shutdown? server-instance)))))
 (test-end)
 
