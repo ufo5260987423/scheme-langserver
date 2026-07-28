@@ -94,7 +94,7 @@ Avoid relink by keeping a **global identifier-reference registry** that is loade
   - `library-node` tree
   - `file-linkage` matrix + maps
 - **Identifier-reference registry**: a hashtable from `(document-uri symbol library-identifier)` to `identifier-reference`
-- Workspace configuration (`facet`, `top-environment`, `type-inference?`, `threaded?`)
+- Workspace configuration (`file-filter`, `top-environment`, `type-inference?`, `threaded?`)
 
 The registry is the key new component.  It is populated during analysis and kept up to date as references are created.  Because it contains only `identifier-reference` records (not the whole `index-node` graph), it is much smaller than the full workspace object graph.
 
@@ -165,7 +165,7 @@ Because the registry is already loaded in step 2, resolving cross-document refer
   (chez-version ...)
   (machine-type ...)
   (record-fingerprint ...)
-  (facet akku)
+  (file-filter akku)
   (top-environment r6rs)
   (type-inference? #f)
   (threaded? #f)

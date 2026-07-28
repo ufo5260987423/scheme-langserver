@@ -142,7 +142,7 @@ tests/resources/workspace-fixtures/simple-lib/
 └── consumer.scm.txt     # another library that imports lib
 ```
 
-Use `.scm.txt` extension so `generate-txt-file-filter` accepts them.
+Use `.scm.txt` extension so the `'txt` file-filter preset accepts them.
 Initialize in tests with:
 
 ```scheme
@@ -482,7 +482,7 @@ Key design points:
 - Skips the heaviest phase: `init-references` (abstract interpreter / type
   inference).
 - Manifest includes `format-version`, `langserver-version`, `chez-version`,
-  `machine-type`, `record-fingerprint`, facet, and runtime flags; any mismatch
+  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
   falls back to cold start.
 - `file-linkage-path->id-map` is an `equal-hashtable`; Chez `fasl-write` only
   supports `eq-hashtable`, so it is converted to/from an alist around save/load.

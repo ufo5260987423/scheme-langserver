@@ -34,7 +34,8 @@ All operations on a workspace fall into one of three categories:
     (mutable library-node)       ; root of the library tree
     (mutable file-linkage)       ; dependency graph instance
     (immutable mutex)            ; Chez Scheme mutex or '()
-    (immutable facet)            ; file-filter predicate
+    (immutable facet)            ; file-filter predicate (derived from file-filter)
+    (immutable file-filter)      ; file-filter configuration: symbol, extension list, or predicate
     (immutable threaded?)        ; enable parallel analysis?
     (immutable type-inference?)  ; enable type inference?
     (immutable top-environment)  ; 'r6rs | 'r7rs | 's7 | 'goldfish
@@ -94,7 +95,7 @@ init-references
 
 ### 3.2 `init-virtual-file-system`
 
-Recursively walks the directory tree starting at `path`. For every path accepted by the `facet` filter it creates a `file-node`. If the path is a regular file it also creates a `document` via `init-document`.
+Recursively walks the directory tree starting at `path`. For every path accepted by the file-filter (the `facet` predicate) it creates a `file-node`. If the path is a regular file it also creates a `document` via `init-document`.
 
 The resulting tree is later navigated with `walk-file` (from `virtual-file-system/file-node`).
 
@@ -384,7 +385,7 @@ Key implementation details:
 
 - Uses Chez native `fasl-read` / `fasl-write` with binary ports.
 - A manifest records `format-version`, `langserver-version`, `chez-version`,
-  `machine-type`, `record-fingerprint`, facet, and runtime flags; any mismatch
+  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
   triggers a cold start.
 - `file-linkage-path->id-map` is an `equal-hashtable`; because Chez `fasl-write`
   only supports `eq-hashtable`, it is serialized as an alist and rebuilt on load.
