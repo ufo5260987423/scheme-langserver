@@ -14,7 +14,7 @@
 (test-end)
 
 (test-begin "read sps")
-  (test-equal 6 (length (source-file->annotations "./bin/log-debug.sps")))
+  (test-equal 7 (length (source-file->annotations "./bin/log-debug.sps")))
 (test-end)
 
 (test-begin "read scm")
