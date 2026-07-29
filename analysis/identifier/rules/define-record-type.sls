@@ -226,10 +226,10 @@
                 get-index-node
                 (sort-identifier-references
                   (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (index-node-references-import-in-this-node-set!
+              (append-references-into-ordered-references-for 
+                document
                 target-parent-index-node
-                (sort-identifier-references
-                  (append (index-node-references-import-in-this-node target-parent-index-node) `(,get-identifier-reference)))))]
+                `(,get-identifier-reference)))]
           [else '()])
         (loop (cdr children))))))
 
