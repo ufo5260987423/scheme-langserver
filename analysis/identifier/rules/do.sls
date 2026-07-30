@@ -28,7 +28,7 @@
       [ann (index-node-datum/annotations target-index-node)]
       [expression (annotation-stripped ann)])
     (match expression
-      [((? symbol? var) _ ...)
+      [((? symbol? var) :_ ...)
         (let* ([var-index-node (car (index-node-children target-index-node))]
             [reference 
               (make-identifier-reference

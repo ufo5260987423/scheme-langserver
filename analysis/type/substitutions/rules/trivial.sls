@@ -11,7 +11,33 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier meta)
 
-    (scheme-langserver virtual-file-system index-node))
+    (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document))
+(define (private:resolve-pointer-reference document pointer-reference)
+  (let ([identifier (identifier-reference-identifier pointer-reference)])
+    (let ([candidates
+           (append
+             (document-ordered-reference-list document)
+             (apply append
+               (map
+                 (lambda (node)
+                   (let ([expression (annotation-stripped (index-node-datum/annotations node))])
+                     (if (and (pair? expression) (eq? 'library (car expression)))
+                       (index-node-references-import-in-this-node node)
+                       '())))
+                 (document-index-node-list document))))])
+      (let ([matches
+             (filter
+               (lambda (r)
+                 (and (eq? identifier (identifier-reference-identifier r))
+                      (not (eq? 'pointer (identifier-reference-type r)))
+                      (or (not (null? (identifier-reference-type-expressions r)))
+                          (not (null? (identifier-reference-index-node r))))))
+               candidates)])
+        (if (null? matches)
+          '()
+          (car matches))))))
+
 
 (define private-char? (construct-type-expression-with-meta 'char?))
 (define private-string? (construct-type-expression-with-meta 'string?))
@@ -88,6 +114,17 @@
         [else '()])]))
 
 (define (private-process document identifier-reference index-node)
+  ; Resolve 'pointer placeholders created by export-process for libraries that
+  ; use include/resolve (e.g. SRFIs). The real definition is stored in the
+  ; library index-node's references-import-in-this-node after include/resolve
+  ; has run. Cache the result in identifier-reference-parents.
+  (when (and (eq? 'pointer (identifier-reference-type identifier-reference))
+             (null? (identifier-reference-parents identifier-reference)))
+    (let ([resolved (private:resolve-pointer-reference
+                      (identifier-reference-document identifier-reference)
+                      identifier-reference)])
+      (unless (null? resolved)
+        (identifier-reference-parents-set! identifier-reference `(,resolved)))))
   (if (null? (identifier-reference-parents identifier-reference))
     (let* ([target-document (identifier-reference-document identifier-reference)]
         [target-index-node (identifier-reference-index-node identifier-reference)]
@@ -97,7 +134,7 @@
         [(and (contain? '(constructor getter setter ) type) (not (null? target-index-node)))
           (extend-index-node-substitution-list index-node identifier-reference)]
         [(and (equal? 'predicator type) (not (null? target-index-node)))
-          (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))]
+          (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? anything?)))]
         ;it's in r6rs library or imported from another file
         [(null? target-index-node)
           (if (null? type-expressions)
@@ -105,7 +142,7 @@
             ;; stopped setting them), fall back to type-specific defaults so that
             ;; imported identifiers still get useful hover information.
             (if (equal? 'predicator type)
-              (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))
+              (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? anything?)))
               '())
             (for-each 
               (lambda (t) (extend-index-node-substitution-list index-node t))
@@ -153,9 +190,10 @@
         ;import
         [else 
           (if (null? type-expressions)
-            (extend-index-node-substitution-list
-              index-node
-              (identifier-reference-index-node identifier-reference))
+            (map 
+              (lambda (ancestor)
+                (extend-index-node-substitution-list index-node (identifier-reference-index-node ancestor)))
+              (root-ancestor identifier-reference))
             (for-each 
               (lambda (t) (extend-index-node-substitution-list index-node t))
               type-expressions))]))

@@ -1,0 +1,8 @@
+(import (rnrs (6)))
+
+(define-record-type tree-node
+  (fields
+    (immutable expression)
+    (immutable children)))
+
+tree-node

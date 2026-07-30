@@ -34,7 +34,8 @@ All operations on a workspace fall into one of three categories:
     (mutable library-node)       ; root of the library tree
     (mutable file-linkage)       ; dependency graph instance
     (immutable mutex)            ; Chez Scheme mutex or '()
-    (immutable facet)            ; file-filter predicate
+    (immutable facet)            ; file-filter predicate (derived from file-filter)
+    (immutable file-filter)      ; file-filter configuration: symbol, extension list, or predicate
     (immutable threaded?)        ; enable parallel analysis?
     (immutable type-inference?)  ; enable type inference?
     (immutable top-environment)  ; 'r6rs | 'r7rs | 's7 | 'goldfish
@@ -52,8 +53,20 @@ The protocol creates the mutex automatically when `threaded?` is true. The three
 `init-workspace` is the main entry point used by the LSP server when a folder is opened. It accepts several optional parameters and resolves defaults left-to-right:
 
 ```
-path → identifier → top-environment → threaded? → type-inference? → facet
+path → file-filter → top-environment → threaded? → type-inference? → cache-path
 ```
+
+`file-filter` controls which files are included in the virtual file system. It can be:
+- `'akku` — use Akku's `.akku/list` (default).
+- `'txt` — include only `.scm.txt` files.
+- a list of extension strings — e.g. `'(".sls" ".scm" ".scm.txt")`.
+- a predicate procedure — custom filter accepting a path and returning a boolean.
+
+The CLI maps these as follows:
+- `-p akku` / `-p txt` selects the corresponding symbol preset.
+- `-f <ext>` builds an extension list; repeated `-f` options are merged, and
+  leading dots may be omitted.
+- `-p` and `-f` are mutually exclusive.
 
 Typical call from the server:
 ```scheme
@@ -82,7 +95,7 @@ init-references
 
 ### 3.2 `init-virtual-file-system`
 
-Recursively walks the directory tree starting at `path`. For every path accepted by the `facet` filter it creates a `file-node`. If the path is a regular file it also creates a `document` via `init-document`.
+Recursively walks the directory tree starting at `path`. For every path accepted by the file-filter (the `facet` predicate) it creates a `file-node`. If the path is a regular file it also creates a `document` via `init-document`.
 
 The resulting tree is later navigated with `walk-file` (from `virtual-file-system/file-node`).
 
@@ -372,7 +385,7 @@ Key implementation details:
 
 - Uses Chez native `fasl-read` / `fasl-write` with binary ports.
 - A manifest records `format-version`, `langserver-version`, `chez-version`,
-  `machine-type`, `record-fingerprint`, facet, and runtime flags; any mismatch
+  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
   triggers a cold start.
 - `file-linkage-path->id-map` is an `equal-hashtable`; because Chez `fasl-write`
   only supports `eq-hashtable`, it is serialized as an alist and rebuilt on load.

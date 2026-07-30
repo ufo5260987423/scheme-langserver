@@ -1,0 +1,4 @@
+(library (fixtures mixed-extensions extra)
+  (export extra-value)
+  (import (rnrs))
+  (define extra-value 99))

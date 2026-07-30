@@ -18,6 +18,9 @@
 (define (has-identifier? refs id)
   (not (null? (filter (lambda (r) (eq? id (identifier-reference-identifier r))) refs))))
 
+(define (has-diagnosis? document code)
+  (not (null? (filter (lambda (d) (string=? code (list-ref d 5))) (document-diagnoses document)))))
+
 (test-begin "define-record-type-process")
 (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/define-record-type")]
     [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
@@ -40,5 +43,15 @@
     (test-equal "define-record-type creates point-x-set! setter"
       #t
       (has-identifier? parent-refs 'point-x-set!))))
+
+(let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/define-record-type")]
+    [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+    [root-file-node (workspace-file-node workspace)]
+    [target-file-node (walk-file root-file-node (string-append fixture "/script.scm.txt"))]
+    [document (file-node-document target-file-node)])
+  (test-equal "define-record-type in script does not produce identifier-resolution-failure"
+    #f
+    (has-diagnosis? document "identifier-resolution-failure")))
 (test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

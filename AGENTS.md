@@ -142,7 +142,7 @@ tests/resources/workspace-fixtures/simple-lib/
 └── consumer.scm.txt     # another library that imports lib
 ```
 
-Use `.scm.txt` extension so `generate-txt-file-filter` accepts them.
+Use `.scm.txt` extension so the `'txt` file-filter preset accepts them.
 Initialize in tests with:
 
 ```scheme
@@ -155,10 +155,11 @@ Initialize in tests with:
 
 `init-workspace` arguments:
 1. `path` — absolute path to fixture directory
-2. `'txt` — use `generate-txt-file-filter`
+2. `file-filter` — file filter configuration: `'akku`, `'txt`, a list of extensions such as `'(".sls" ".scm" ".scm.txt")`, or a custom predicate procedure
 3. `'r6rs` — top environment (also `'r7rs`, `'s7`)
 4. `#f` — threaded? (use `#f` in tests)
 5. `#f` — type-inference? (use `#f` unless testing type inference)
+6. (optional) `cache-path` — directory for the workspace FASL cache
 
 Helper for locating children:
 ```scheme
@@ -370,6 +371,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 | `analysis/type/domain-specific-language/interpreter.sls` | `private-with` used `candy:match-right` when `input` contained `**1`/`...`. This fragmented list-valued bindings (e.g. `map`'s higher-order params) into multiple flat pairs that overwrote each other during `fold-left` + `private-substitute`, causing type collapse. | **Fixed** (2025-05-11) — unconditional `candy:match-left` preserves bindings intact |
 | `doc/analysis/dependency/file-linkage.md:148` | Matrix shrink on file deletion | **Resolved** — implemented via `shrink-file-linkage!` |
 | `analysis/type/substitutions/rnrs-meta-rules.sls:182` | `cons` type rule returns `inner:pair?`, not `inner:list?`. `matrix-from`/`matrix-to` work around this with `cons` + `reverse`. | **Resolved** — workaround in place, no change to `cons` rule needed |
+| `analysis/package-manager/file-filter.sls` + `run.ss` | `init-workspace` only accepted `'akku` or `'txt` filters; README claimed `.sld` support but `scheme-file?` did not include it. | **Fixed** (2026-07-08) — new `file-filter` module supports `'akku`, `'txt`, custom extension lists, and predicate procedures; CLI split into `--package-manager/-p` (preset) and `--file-filter/-f` (extension list); `.sld` included in the standard Scheme extension set |
 
 ### Withdrawn / retracted issues
 
@@ -480,7 +482,7 @@ Key design points:
 - Skips the heaviest phase: `init-references` (abstract interpreter / type
   inference).
 - Manifest includes `format-version`, `langserver-version`, `chez-version`,
-  `machine-type`, `record-fingerprint`, facet, and runtime flags; any mismatch
+  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
   falls back to cold start.
 - `file-linkage-path->id-map` is an `equal-hashtable`; Chez `fasl-write` only
   supports `eq-hashtable`, so it is converted to/from an alist around save/load.

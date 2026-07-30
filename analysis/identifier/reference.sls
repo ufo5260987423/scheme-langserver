@@ -236,26 +236,26 @@
                 (not (eq? bigest-sibling index-node))
                 (contain? sibling index-node eq?)
                 (match (annotation-stripped (index-node-datum/annotations grandparent))
-                  [('library _ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
-                  [('define-library _ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
+                  [('library :_ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
+                  [('define-library :_ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
                   [else #f])))))])
     (if (null? parent)
       #f
       (match (annotation-stripped (index-node-datum/annotations parent))
-        [('library identifier _ ...) 
+        [('library identifier :_ ...) 
           (and 
             (eq? (cadr (index-node-children parent)) index-node)
             (not (check?)))]
-        [('define-library identifier _ ...) 
+        [('define-library identifier :_ ...) 
           (and 
             (eq? (cadr (index-node-children parent)) index-node)
             (not (check?)))]
         [('import identifier **1) (check?)]
-        [('only identifier _ ...) (check?)]
-        [('rename identifier _ ...) (check?)]
-        [('prefix identifier _ ...) (check?)]
-        [('except identifier _ ...) (check?)]
-        [('alias identifier _ ...) (check?)]
+        [('only identifier :_ ...) (check?)]
+        [('rename identifier :_ ...) (check?)]
+        [('prefix identifier :_ ...) (check?)]
+        [('except identifier :_ ...) (check?)]
+        [('alias identifier :_ ...) (check?)]
         [else #f]))))
 
 (define (private:list->eq-set lst)

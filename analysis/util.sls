@@ -23,17 +23,17 @@
                             ['r6rs
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
-                                    [('library (name **1) _ ... ) name]
+                                    [('library (name **1) :_ ... ) name]
                                     [else '()]))]
                             ['r7rs
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
-                                    [('define-library (name **1) _ ... ) name]
+                                    [('define-library (name **1) :_ ... ) name]
                                     [else '()]))]
                             ['s7
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
-                                    [('define-library (name **1) _ ... ) name]
+                                    [('define-library (name **1) :_ ... ) name]
                                     [else '()]))])])
                 (if (null? document)
                     '()
@@ -44,7 +44,7 @@
     (if (null? index-node)
         '()
         (match (annotation-stripped (index-node-datum/annotations index-node))
-            [('library (name **1) _ ... ) name]
-            [('define-library (name **1) _ ... ) name]
+            [('library (name **1) :_ ... ) name]
+            [('define-library (name **1) :_ ... ) name]
             [else (get-nearest-ancestor-library-identifier (index-node-parent index-node))])))
 )

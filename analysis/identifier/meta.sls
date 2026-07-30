@@ -215,7 +215,8 @@ scheme-time scheme-write scheme-r5rs s7))
         [(equal? meta-identifier '<-) '<-]
         [(equal? meta-identifier '...) '...]
         [(equal? meta-identifier '**1) '**1]
-        [(equal? meta-identifier 'something?) 'something?]
+        [(equal? meta-identifier 'unknown?) 'unknown?]
+        [(equal? meta-identifier 'anything?) 'anything?]
         [(equal? meta-identifier 'inner:void?) 'inner:void?]
         [else
           (let ([target-identifier (find (lambda(x) (equal? (identifier-reference-identifier x) meta-identifier)) list-instance)])
@@ -5162,7 +5163,6 @@ scheme-time scheme-write scheme-r5rs s7))
 (with-exception-handler procedure)
 (write-bytevector procedure)
 (write-char procedure)
-(write-string procedure)
 (write-u8 procedure)
 (zero? procedure)
 ) 'r7rs))

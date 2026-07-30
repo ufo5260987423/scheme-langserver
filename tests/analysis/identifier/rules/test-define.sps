@@ -25,7 +25,7 @@
     (not (null? 
         (find 
           (lambda (reference) 
-            (equal? 'read-line 
+            (equal? 'read-string 
               (annotation-stripped 
                 (index-node-datum/annotations 
                   (identifier-reference-index-node reference)))))
