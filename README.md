@@ -91,32 +91,10 @@ cache.
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Release
-2.1.6 — Bug-fix release completing shared/cyclic literal handling in binding forms and enabling workspace cache saves from compiled binaries.
+2.1.7 — Bug-fix release improving log replay robustness, custom file-filter support, identifier analysis for script-level `define-record-type`, and various internal fixes.
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system.
 
-### What's new in 2.1.6
-- **Identifier analysis**:
-  - All remaining binding-form rules (`let`, `let*`, `letrec`, `let-values`, `do`, `fluid-let`, `let-syntax`, `letrec-syntax`, `with-syntax`, `syntax-case`, `syntax-rules`, `define-syntax`, `define-record-type`, `s7/lambda*`, `s7/define*`) now dereference shared index-nodes before accessing children, preventing crashes or infinite loops on cyclic parameter/binding lists.
-- **Build**:
-  - Release and development builds now use `compile-chez-program --full-chez`, so the compiled `./run` binary retains the `$write-fasl-bytevectors` primitive and can save the workspace FASL cache.
-  - `Dockerfile`, `Dockerfile.musl`, and CI workflows updated to install the static libraries required for linking against `full-chez.a`.
-
-### What's new in 2.1.5
-- **AST**:
-  - `init-index-node` now detects cyclic and shared reader graph notation (`#n=` / `#n#`) via an internal `compound->node` hashtable.
-  - Reference occurrences become leaf index-nodes with a new `shared-reference` field pointing to the defining node, keeping the AST acyclic.
-- **Bug fixes**:
-  - Fixes the memory leak/hang when analyzing files like swish `src/swish/db.ss`, which contains `#0=(101 . #0#)`.
-- **Type inference**:
-  - Reference nodes generate a type constraint equating their type with the referenced definition node.
-
-### What's new in 2.1.4
-- **Type inference**:
-  - Rest/dotted parameters in `define`, `lambda`, and `case-lambda` now produce function signatures containing `(inner:list? something? ...)`.
-- **Identifier analysis**:
-  - Rest/dotted parameter bindings in `define`, `case-lambda`, and `do` loop variables now point to the correct per-symbol index-node.
-- **AST**:
-  - Dotted-pair structure is now preserved in the index-node tree via synthetic annotations, preventing dot-position symbols from being dropped.
+See [doc/release-history.md](./doc/release-history.md) for older releases.
 
 ### Features
 1. Completion for top-level and local identifier bindings.

@@ -1,5 +1,29 @@
 # Release History
 
+## 2.1.7
+Bug-fix release improving log replay robustness, custom file-filter support, identifier analysis for script-level `define-record-type`, and various internal fixes.
+
+### What's new in 2.1.7
+- **Log replay**:
+  - `bin/log-debug.sps` and `bin/parallel-log-debug.sps` now support multi-line JSON messages in production logs by buffering body lines until the next `read-message`/`send-message` marker.
+
+- **Workspace / file-filter**:
+  - New `file-filter` API supports presets (`'akku`, `'txt`, `'scheme`), custom extension lists, and predicate procedures. CLI split into `--package-manager/-p` (preset) and `--file-filter/-f` (extension list).
+  - `.sld` is included in the standard Scheme extension set.
+
+- **Identifier analysis**:
+  - Fixed a crash when a `define-record-type` with single-argument immutable fields (e.g. `(immutable expression)`) appears at the top level of a script file. The rule now correctly falls back to the document's ordered reference list when the parent index-node is `()`.
+  - `dereference-index-node` is inlined and repeated dereferences are avoided for better performance.
+
+- **Type inference**:
+  - Trivial type rule for `include`/`resolve` libraries now resolves pointer references to real definitions.
+
+- **Internal**:
+  - Replaced custom I/O helpers with Chez built-ins.
+  - Multi-thread server initialization now uses Chez's built-in `threaded?` check.
+  - `ufo-match` wildcard pattern uses `:_` instead of `_` to comply with R6RS restrictions on syntax-rules auxiliary literals.
+
+
 ## 2.1.6
 Bug-fix release completing shared/cyclic literal handling in binding forms and enabling workspace cache saves from compiled binaries.
 
