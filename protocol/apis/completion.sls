@@ -64,20 +64,20 @@
       (cond 
         [(not (index-node? target-index-node)) 
           (map  
-            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
+            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "" position))
             (sort-identifier-references whole-list))]
         [(and type-inference? (not (is-first-child? target-index-node))) 
           (let ([t (sort-with-type-inferences target-index-node whole-list)])
             (append 
               (map  
-                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "0-"))
+                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "0-" position))
                 (car t))
               (map  
-                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "1-"))
+                (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "1-" position))
                 (cdr t))))]
         [else 
           (map  
-            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix ""))
+            (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "" position))
             (sort-identifier-references whole-list))]))))))
 
 (define (private-generate-position-expression index-node)
@@ -127,11 +127,19 @@
       (sort-identifier-references true-list)
       (sort-identifier-references false-list))))
 
-(define (identifier-reference->completion-item-alist reference prefix index-string-prefix)
+(define (identifier-reference->completion-item-alist reference prefix index-string-prefix position)
   (let* ([s (symbol->string (identifier-reference-identifier reference))]
-      [l (string-length prefix)])
+      [l (string-length prefix)]
+      [start-char (max 0 (- (position-character position) l))]
+      [suffix-start (min l (string-length s))])
     (make-alist 
       'label s
-      'insertText (substring s (if (< l 1) 0 (- l 1)) (string-length s))
+      'insertText (substring s suffix-start (string-length s))
+      'textEdit (make-alist
+                  'range (range->alist
+                           (make-range
+                             (make-position (position-line position) start-char)
+                             position))
+                  'newText s)
       'sortText (string-append index-string-prefix s))))
 )

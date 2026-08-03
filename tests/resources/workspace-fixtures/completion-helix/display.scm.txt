@@ -1,0 +1,4 @@
+(library (fixtures completion-helix display)
+  (export display)
+  (import (rnrs))
+  (define (display x) x))
