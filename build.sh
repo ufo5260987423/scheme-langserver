@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Generate version file for release builds (fallback when .git is absent)
-git describe --tags --always --dirty > .version 2>/dev/null || echo "2.1.5" > .version
+git describe --tags --always --dirty > .version 2>/dev/null || echo "2.1.8" > .version
 
 # akku install
 # bash .akku/env

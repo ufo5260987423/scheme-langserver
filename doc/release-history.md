@@ -1,5 +1,17 @@
 # Release History
 
+## 2.1.8
+Bug-fix release correcting completion item insertion for Helix and fixing the Debian Docker build.
+
+### What's new in 2.1.8
+- **Completion**:
+  - Fixed truncated insertion in Helix (and other `textEdit`-capable clients). Completion items now include a proper `textEdit` that replaces the full prefix range, plus a correct suffix-only `insertText` for clients that do not support `textEdit`.
+- **Build / Docker**:
+  - Removed the non-existent `libuuid-dev` package from `Dockerfile`; Debian provides uuid development files via `uuid-dev`.
+  - Updated the default `VERSION` build-arg in `Dockerfile` and `Dockerfile.musl` to 2.1.8.
+- **Tests**:
+  - Updated stale pattern-expander and record-type test expectations after recent `let.sls` and `trivial.sls` changes.
+
 ## 2.1.7
 Bug-fix release improving log replay robustness, custom file-filter support, identifier analysis for script-level `define-record-type`, and various internal fixes.
 

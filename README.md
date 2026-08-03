@@ -91,7 +91,7 @@ cache.
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Release
-2.1.7 — Bug-fix release improving log replay robustness, custom file-filter support, identifier analysis for script-level `define-record-type`, and various internal fixes.
+2.1.8 — Bug-fix release correcting completion item insertion for Helix and fixing the Debian Docker build.
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system.
 
 See [doc/release-history.md](./doc/release-history.md) for older releases.

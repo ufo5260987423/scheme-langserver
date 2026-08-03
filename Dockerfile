@@ -92,7 +92,7 @@ COPY --from=build-chez /usr/local/lib/getlogin_stub.o /usr/local/lib/
 # add project
 COPY --from=akku-install /root/scheme-langserver/ /root/scheme-langserver/
 
-ARG VERSION=2.1.5
+ARG VERSION=2.1.8
 RUN echo "$VERSION" > /root/scheme-langserver/.version
 
 # Remove .so files compiled by akku's built-in Chez 9.5.2 to avoid
