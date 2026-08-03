@@ -129,7 +129,7 @@
 (let ([point?-node (find-usage-node root-index-node 'point?)])
   (test-assert "point? usage node exists" (index-node? point?-node))
   (let ([subs (index-node-substitution-list point?-node)])
-    ;; trivial.sls L98-99: (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? something?)))
+    ;; trivial.sls L98-99: (extend-index-node-substitution-list index-node `(,private-boolean? <- (inner:list? anything?)))
     ;; So the substitution should be a LIST (function type), NOT an identifier-reference
     (test-assert "point? subs contain at least one list"
       (find list? subs))
@@ -157,9 +157,9 @@
 (let ([point?-node (find-usage-node root-index-node 'point?)])
   (let ([results (type:interpret-result-list point?-node)])
     (test-assert "predicator interpret result exists" (> (length results) 0))
-    ;; The result comes from trivial.sls hard-coded (boolean? <- (inner:list? something?))
+    ;; The result comes from trivial.sls hard-coded (boolean? <- (inner:list? anything?))
     (test-equal "predicator interpret string"
-      "([identifier-reference boolean?] <- (inner:list? something? ) ) "
+      "([identifier-reference boolean?] <- (inner:list? anything? ) ) "
       (inner:type->string (car results)))))
 
 ;; Getter
