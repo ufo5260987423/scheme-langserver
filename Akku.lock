@@ -109,9 +109,14 @@
    (sha256 "424aa360577d7cac0ceb4e7e6cbf8943ffe958870338d5b0fef1c22789a07186")))
  ((name "ufo-match")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-match_1.0.0_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-match_1.1.0_repack.tar.xz"))
   (content
-   (sha256 "3200ebeb66a1b030ba244ee048c1ed7c6a256d6f091129a362ef1af53de16383")))
+   (sha256 "08f1f7ff2d9b8adb9d1baab393301d221e231b8d8ce6c345ae7cbf22185b1442")))
+ ((name "ufo-match-steer")
+  (location
+   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-match-steer_1.1.0_repack.tar.xz"))
+  (content
+   (sha256 "6eaac5bee1ba420ef5f5a009fedd78b94704bdeb6422743f7489711862850a74")))
  ((name (slib string-search))
   (location
    (url "http://snow-fort.org/s/peterlane.info/peter/slib/string-search/SLIB-3b5-r7rs/slib-string-search-SLIB-3b5-r7rs.tgz"))
