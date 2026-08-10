@@ -203,7 +203,7 @@
 
       ;; Case 8: pair pattern
       ((match-two v (p . q) g+s sk fk i)
-       24
+       25
        (if (pair? v)
            (let ((w (car v)) (x (cdr v)))
              (match-one w p ((car v) (set-car! v))

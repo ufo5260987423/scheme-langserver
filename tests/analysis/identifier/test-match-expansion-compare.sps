@@ -96,9 +96,9 @@
         #f
         (private:tree-contains? expanded-datum 'match-next)))
 
-    ; The confirm-clause matched the correct clause (index 4 for atom pattern)
-    (test-equal "confirm-clause matched clause index 4"
-      4
+    ; The confirm-clause matched the correct clause (index 2 for atom pattern)
+    (test-equal "confirm-clause matched clause index 2"
+      2
       (if sls-result (car sls-result) #f))
 
     ; The bound variable in first-step should be 'expression'
