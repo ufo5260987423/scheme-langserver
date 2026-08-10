@@ -42,10 +42,17 @@
         (null? (resolve-uri->file-node (workspace-file-node workspace) uri)))
         ;TODO:well, can be optimized
         (refresh-workspace workspace)]
-      ; [(not (null? target-file))
-      ;   (let ([target-document (file-node-document target-file)])
-      ;     (if (not (equal? (document-text target-document) text))
-      ;       (update-file-node-with-tail workspace target-file text)))]
+      [(and (file-node? target-file) (string? text)
+          (not (equal? (document-text (file-node-document target-file)) text)))
+        ; The client may have opened a file whose content differs from the
+        ; cached/disk copy (e.g. because the cache was saved against an older
+        ; version with a matching mtime). Synchronize the server's document with
+        ; the text supplied by the client so subsequent position conversions and
+        ; lookups are consistent.
+        (if (null? (workspace-mutex workspace))
+          (update-file-node-with-tail workspace target-file text)
+          (with-mutex (workspace-mutex workspace)
+            (update-file-node-with-tail workspace target-file text)))]
       [else '()])))
 
 (define (did-close workspace params)
