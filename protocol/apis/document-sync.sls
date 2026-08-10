@@ -22,12 +22,15 @@
     (only (srfi :13 strings) string-replace))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_synchronization
-(define (did-open workspace params)
+(define (did-open workspace params . maybe-open-document-uris)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [uri (text-document-uri text-document)]
       [text (text-document-text text-document)]
       [path (uri->path uri)]
-      [target-file (walk-file (workspace-file-node workspace) path)])
+      [target-file (walk-file (workspace-file-node workspace) path)]
+      [open-document-uris (if (null? maybe-open-document-uris) #f (car maybe-open-document-uris))])
+    (when (and open-document-uris (string? uri))
+      (hashtable-set! open-document-uris uri #t))
     (cond 
       [(and 
         (null? target-file)
@@ -55,8 +58,15 @@
             (update-file-node-with-tail workspace target-file text)))]
       [else '()])))
 
-(define (did-close workspace params)
-  (did-open workspace params))
+(define (did-close workspace params . maybe-open-document-uris)
+  (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
+      [uri (text-document-uri text-document)]
+      [open-document-uris (if (null? maybe-open-document-uris) #f (car maybe-open-document-uris))])
+    (when (and open-document-uris (string? uri))
+      (hashtable-delete! open-document-uris uri))
+    ; did-close currently does not need to mutate the document; the LSP spec
+    ; treats the file as closed and the disk as authoritative again.
+    '()))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didSave
 (define (did-save workspace params)

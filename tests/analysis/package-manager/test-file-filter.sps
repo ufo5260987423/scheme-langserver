@@ -69,4 +69,16 @@
   (test-equal #f (scheme-file?/extensions "/some/dir" '(".sls" ".scm")))
 (test-end)
 
+(test-begin "file-filter-watched-glob-patterns")
+  (test-equal '("**/*.scm.txt") (file-filter->watched-file-glob-patterns 'txt))
+  (test-equal '("**/*.sls" "**/*.scm" "**/*.ss" "**/*.sps" "**/*.sld")
+    (file-filter->watched-file-glob-patterns 'scheme))
+  (test-equal '("**/*.sls" "**/*.scm" "**/*.ss" "**/*.sps" "**/*.sld")
+    (file-filter->watched-file-glob-patterns 'akku))
+  (test-equal '("**/*.sls" "**/*.scm.txt")
+    (file-filter->watched-file-glob-patterns '(".sls" ".scm.txt")))
+  (test-equal '("**/*.sls" "**/*.scm" "**/*.ss" "**/*.sps" "**/*.sld")
+    (file-filter->watched-file-glob-patterns (lambda (x) #t)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

@@ -22,6 +22,8 @@
     server-top-environment
     server-cache-path
     server-file-filter
+    server-open-document-uris
+    server-open-document-uris-set!
 
     server-work-done-progress?
     server-work-done-progress?-set!)
@@ -46,7 +48,8 @@
     (mutable work-done-progress?)
     (immutable top-environment)
     (immutable cache-path)
-    (immutable file-filter))
+    (immutable file-filter)
+    (mutable open-document-uris))
   (protocol
     (lambda (new)
       (case-lambda
@@ -66,7 +69,8 @@
             #f
             'r6rs
             #f
-            'akku)]
+            'akku
+            (make-hashtable string-hash equal?))]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment)
           (new 
             input-port 
@@ -83,7 +87,8 @@
             #f
             top-environment
             #f
-            'akku)]
+            'akku
+            (make-hashtable string-hash equal?))]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment cache-path)
           (new 
             input-port 
@@ -100,7 +105,8 @@
             #f
             top-environment
             cache-path
-            'akku)]
+            'akku
+            (make-hashtable string-hash equal?))]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment cache-path file-filter)
           (new
             input-port
@@ -117,7 +123,8 @@
             #f
             top-environment
             cache-path
-            file-filter)]))))
+            file-filter
+            (make-hashtable string-hash equal?))]))))
 
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))

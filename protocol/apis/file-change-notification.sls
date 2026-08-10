@@ -46,11 +46,12 @@
     (vector->list (assq-ref params 'files))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeWatchedFiles
-(define (did-change-watched-files workspace params)
+(define (did-change-watched-files workspace params . maybe-open-document-uris)
   (let* ([changes (vector->list (assq-ref params 'changes))]
       [root-file-node (workspace-file-node workspace)]
       [facet (workspace-facet workspace)]
       [top-env (workspace-top-environment workspace)]
+      [open-document-uris (if (null? maybe-open-document-uris) #f (car maybe-open-document-uris))]
       [body (lambda ()
               (for-each
                 (lambda (change)
@@ -60,11 +61,12 @@
                     (when (facet path)
                       (case type
                         [1 (attach-new-file path root-file-node facet top-env)]
-                        [2 (let ([file-node (walk-file root-file-node path)])
-                             (when (file-node? file-node)
-                               (let ([text (read-string path)])
-                                 (when (string? text)
-                                   (update-file-node-with-tail workspace file-node text)))))]
+                        [2 (when (not (and open-document-uris (hashtable-ref open-document-uris uri #f)))
+                             (let ([file-node (walk-file root-file-node path)])
+                               (when (file-node? file-node)
+                                 (let ([text (read-string path)])
+                                   (when (string? text)
+                                     (update-file-node-with-tail workspace file-node text))))))]
                         [3 (let ([file-node (walk-file root-file-node path)])
                              (when (file-node? file-node)
                                (did-delete workspace 

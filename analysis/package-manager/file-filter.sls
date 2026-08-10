@@ -3,6 +3,7 @@
     make-extension-filter
     make-scheme-file-filter
     file-filter->predicate
+    file-filter->watched-file-glob-patterns
     file-filter-config?
     file-filter-config-serializable?)
   (import 
@@ -63,4 +64,20 @@
 (define (file-filter-config-serializable? x)
   (or (symbol? x)
       (and (list? x) (andmap string? x))))
+
+;; Convert a file-filter configuration into a list of glob patterns suitable
+;; for LSP static file watchers (workspace/didChangeWatchedFiles).
+;; Procedure filters cannot be expressed as globs and fall back to the
+;; standard Scheme extension set.
+(define (file-filter->watched-file-glob-patterns config)
+  (cond
+    [(eq? config 'txt) '("**/*.scm.txt")]
+    [(or (eq? config 'scheme) (eq? config 'akku))
+     '("**/*.sls" "**/*.scm" "**/*.ss" "**/*.sps" "**/*.sld")]
+    [(and (list? config) (andmap string? config))
+     (if (null? config)
+       '("**/*.sls" "**/*.scm" "**/*.ss" "**/*.sps" "**/*.sld")
+       (map (lambda (ext) (string-append "**/*" ext)) config))]
+    [else
+      '("**/*.sls" "**/*.scm" "**/*.ss" "**/*.sps" "**/*.sld")]))
 )

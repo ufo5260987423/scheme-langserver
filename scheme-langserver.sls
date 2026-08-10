@@ -8,6 +8,7 @@
     (ufo-timer) 
 
     (scheme-langserver analysis workspace)
+    (scheme-langserver analysis package-manager file-filter)
 
     (scheme-langserver protocol error-code) 
     (scheme-langserver protocol request)
@@ -98,15 +99,15 @@
           ["initialized" '()] 
           ["private:publish-diagnostics" (private:publish-diagnostics server-instance)] 
 
-          ["textDocument/didOpen" (did-open workspace params)]
-          ["textDocument/didClose" (did-close workspace params)]
+          ["textDocument/didOpen" (did-open workspace params (server-open-document-uris server-instance))]
+          ["textDocument/didClose" (did-close workspace params (server-open-document-uris server-instance))]
           ["textDocument/didChange" (did-change workspace params)]
           ["textDocument/didSave" (did-save workspace params)]
 
           ["workspace/didCreateFiles" (did-create workspace params)]
           ["workspace/didRenameFiles" (did-rename workspace params)]
           ["workspace/didDeleteFiles" (did-delete workspace params)]
-          ["workspace/didChangeWatchedFiles" (did-change-watched-files workspace params)]
+          ["workspace/didChangeWatchedFiles" (did-change-watched-files workspace params (server-open-document-uris server-instance))]
           ;; lsp-bridge (and many other clients) send this after `initialized`.
           ;; It's a notification so we must not reply even if we ignore it.
           ["workspace/didChangeConfiguration" '()]
@@ -186,7 +187,14 @@
                       'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
                       'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
                       'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*")))))
-                  'didChangeWatchedFiles (make-alist 'dynamicRegistration #f))
+                  'didChangeWatchedFiles 
+                    (make-alist 
+                      'dynamicRegistration #f
+                      'watchers 
+                        (list->vector 
+                          (map 
+                            (lambda (glob) (make-alist 'globPattern glob 'kind 7))
+                            (file-filter->watched-file-glob-patterns (server-file-filter server-instance))))))
               )])
 
     (if (null? (server-mutex server-instance))
