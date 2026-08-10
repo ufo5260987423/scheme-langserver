@@ -84,7 +84,13 @@
       (test-assert "workspace? load" (workspace? workspace))
       (let ([child-paths (map file-node-path (file-node-children (workspace-file-node workspace)))])
         (test-assert "main-in-children load" (contain? child-paths main-path))
-        (test-assert "math-in-children load" (contain? child-paths math-path))))
+        (test-assert "math-in-children load" (contain? child-paths math-path)))
+      ;; After loading from cache, undiagnosed-paths should be seeded with all
+      ;; file paths so that diagnostics can be published without re-analysis.
+      (let ([undiagnosed (workspace-undiagnosed-paths workspace)])
+        (test-assert "undiagnosed-paths includes main" (contain? undiagnosed main-path))
+        (test-assert "undiagnosed-paths includes math" (contain? undiagnosed math-path))
+        (test-assert "undiagnosed-paths is sorted" (equal? undiagnosed (sort string<? undiagnosed)))))
   (test-end)
 
   (test-begin "cache-invalidation-on-change")

@@ -214,11 +214,11 @@
               (= cached-nsec (time-nanosecond disk-mtime))))))
 
 (define (private:prepare-workspace-payload workspace)
-  ;; 1. Clear document diagnoses (runtime state, must not be persisted)
-  (private:clear-file-node-diagnoses (workspace-file-node workspace))
+  ;; 1. Diagnoses are now persisted so that clients can receive them
+  ;; immediately after loading the cache without re-running the full analysis.
   ;; 2. Clear procedure-valued fields that Chez fasl-write cannot serialize
   (private:clear-non-serializable-fields! workspace)
-  ;; 3. Clear workspace undiagnosed-paths
+  ;; 3. Clear workspace undiagnosed-paths; it will be repopulated after load.
   (workspace-undiagnosed-paths-set! workspace '())
   ;; 4. Convert file-linkage path->id-map (equal-hashtable, not FASL-serializable)
   ;;    to an alist and store it separately in the payload.
@@ -416,6 +416,8 @@
              (let-values ([(changed deleted new) (private:cache-consistency-check workspace-instance)])
                (cond
                  [(and (null? changed) (null? deleted) (null? new))
+                  (workspace-undiagnosed-paths-set! workspace-instance
+                    (sort string<? (private:collect-cached-file-paths workspace-instance)))
                   workspace-instance]
                  [else
                    ;; Phase 3: true incremental refresh
@@ -423,6 +425,8 @@
                      (lambda (target-path) (private:delete-file-node workspace-instance target-path))
                      deleted)
                    (private:apply-cache-incremental-refresh! workspace-instance changed new)
+                   (workspace-undiagnosed-paths-set! workspace-instance
+                     (sort string<? (private:collect-cached-file-paths workspace-instance)))
                    workspace-instance])))))))
 
 (define (save-workspace-cache-for! workspace cache-path top-environment type-inference? threaded?)
