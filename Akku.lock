@@ -49,9 +49,9 @@
    (sha256 "45dc285ed1dbfe24fc54c2417fe5baefc408c3cad502333894d3c111f8255be6")))
  ((name "industria")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/i/industria_2.2.0_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/i/industria_2.2.1_repack.tar.xz"))
   (content
-   (sha256 "04a3695cb5ce1e0516fb5414bab045b215e64ac302a07e4731cdc4de2c330243")))
+   (sha256 "460e32b794ff91da521fed156013f332d963ab7271215404b8f66146fb17d1ad")))
  ((name "ip-address")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/i/ip-address_1.1.0_repack.tar.xz"))
@@ -59,14 +59,14 @@
    (sha256 "2313fdd9bd3024d6776ad4c1abd22f8386838e46cdfa3163bec7871223483920")))
  ((name "laesare")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.2_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/l/laesare_1.0.3_repack.tar.xz"))
   (content
-   (sha256 "b0cc8ccc940995e7bfd01cc30191c55561f8142195749bad945bde73bfa2a18c")))
+   (sha256 "19f66489a1f53b2cb6f87620af8664875b2dfbb4320a2307e62737d1e630580f")))
  ((name "struct-pack")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/s/struct-pack_1.1.1_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/s/struct-pack_1.1.2_repack.tar.xz"))
   (content
-   (sha256 "42d34a4d7052bdda1bddec0dfddd8f1e576bd0a51b483215a4ca3a8ed7b56d09")))
+   (sha256 "be89dcec0a0d9549b7ac258cba7cd70cad18b79acd696144a921fcb9c5873aa0")))
  ((name "ufo-thread-pool")
   (location
    (url "https://archive.akkuscm.org/archive/pkg/u/ufo-thread-pool_1.0.4_repack.tar.xz"))
@@ -113,10 +113,7 @@
   (content
    (sha256 "08f1f7ff2d9b8adb9d1baab393301d221e231b8d8ce6c345ae7cbf22185b1442")))
  ((name "ufo-match-steer")
-  (location
-   (url "https://archive.akkuscm.org/archive/pkg/u/ufo-match-steer_1.1.0_repack.tar.xz"))
-  (content
-   (sha256 "6eaac5bee1ba420ef5f5a009fedd78b94704bdeb6422743f7489711862850a74")))
+  (location (directory "/home/ufo/Documents/workspace/ufo-match-steer")))
  ((name (slib string-search))
   (location
    (url "http://snow-fort.org/s/peterlane.info/peter/slib/string-search/SLIB-3b5-r7rs/slib-string-search-SLIB-3b5-r7rs.tgz"))
@@ -124,6 +121,6 @@
    (sha256 "b32f539326abebc0ac8169a2dd1085944ce244ae8e29eee9ae79c6a886662d7c")))
  ((name "chez-srfi")
   (location
-   (url "https://archive.akkuscm.org/archive/pkg/c/chez-srfi_0.0.0-akku.244.b424440_repack.tar.xz"))
+   (url "https://archive.akkuscm.org/archive/pkg/c/chez-srfi_0.0.0-akku.280.2771423_repack.tar.xz"))
   (content
-   (sha256 "f4968e3d74c30d98297aaff3753b11225de45f99795cc2e3f6233e93f46d7c41"))))
+   (sha256 "a8607d53346c10580c91e129e654934b87bf07d24a12f5d6f66a9fd4b68848be"))))

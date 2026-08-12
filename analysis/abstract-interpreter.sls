@@ -4,6 +4,7 @@
     (chezscheme) 
 
     (ufo-try)
+    (ufo-match-steer)
 
     (scheme-langserver analysis util)
 
@@ -83,52 +84,55 @@
         (document-index-node-list current-document))
       (document-ordered-reference-list current-document)]
     [(root-file-node root-library-node file-linkage current-document current-index-node expanded+callee-list memory)
-      (cond 
-        [(quote? current-index-node) 
-          (index-node-excluded-references-set! current-index-node (private:find-available-references-for expanded+callee-list current-document current-index-node))]
-        [(quasiquote? current-index-node) 
+      (match-index-node current-index-node
+        [('quote . :_)
+          (index-node-excluded-references-set! current-index-node 
+            (private:find-available-references-for expanded+callee-list current-document current-index-node))]
+        [('quasiquote . :_)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
             (index-node-excluded-references-set! current-index-node available-identifiers)
-            (map 
+            (for-each 
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasiquoted expanded+callee-list memory))
               (index-node-children current-index-node)))]
-        [(syntax? current-index-node) 
+        [('syntax . :_)
           (index-node-excluded-references-set! current-index-node 
-            (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
-        [(quasisyntax? current-index-node)
+            (filter 
+              (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) 
+              (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
+        [('quasisyntax . :_)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (index-node-excluded-references-set! current-index-node (filter (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) available-identifiers))
-            (map 
+            (index-node-excluded-references-set! current-index-node 
+              (filter 
+                (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) 
+                available-identifiers))
+            (for-each 
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasisyntaxed expanded+callee-list memory))
               (index-node-children current-index-node)))]
-        [(not (null? (index-node-children current-index-node))) 
-          (let* ([children (index-node-children current-index-node)]
-              [head (car children)]
+        [(children **1)
+          (let* ([head (car children)]
               [head-expression (annotation-stripped (index-node-datum/annotations head))]
               [target-rules
-                (cond 
-                  [(symbol? head-expression)
-                    (establish-available-rules-from 
-                      file-linkage
-                      (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
-                      current-document
-                      expanded+callee-list 
-                      memory)]
-                  [else '()])])
+                (if (index-node-symbol? head)
+                  (establish-available-rules-from 
+                    file-linkage
+                    (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
+                    current-document
+                    expanded+callee-list 
+                    memory)
+                  '())])
             (try 
-              (map (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
+              (for-each (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
               (except c 
                 [else 
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: fail to catch identifiers" "identifier" "identifier-resolution-failure"))]))
-            (fold-left
-              (lambda (l child-index-node)
+            (for-each
+              (lambda (child-index-node)
                 (step root-file-node root-library-node file-linkage current-document child-index-node expanded+callee-list memory))
-              '()
               children)
             (try 
-              (map 
+              (for-each 
                 (lambda (f) 
                   (if (not (null? (cddr f)))
                     ((cddr f) root-file-node root-library-node current-document current-index-node))) 
@@ -136,16 +140,15 @@
               (except c 
                 [else 
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: fail to catch identifiers" "identifier" "identifier-resolution-failure"))])))]
-        [else 
-          (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))])
-            (if (symbol? expression)
-              (let ([refs (find-available-references-for current-document current-index-node expression)])
-                (for-each 
-                  (lambda (ref)
-                    (identifier-reference-usage-count-set! ref (+ 1 (identifier-reference-usage-count ref))))
-                  refs)
-                refs)
-              '()))])]
+        [(? index-node-symbol?)
+          (let ([refs (find-available-references-for current-document current-index-node
+                        (annotation-stripped (index-node-datum/annotations current-index-node)))])
+            (for-each 
+              (lambda (ref)
+                (identifier-reference-usage-count-set! ref (+ 1 (identifier-reference-usage-count ref))))
+              refs)
+            refs)]
+        [else '()])]
       [(root-file-node root-library-node file-linkage current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list memory)
         (if (case quasi-quoted-syntaxed
             ['quasiquoted  (or (unquote? current-index-node) (unquote-splicing? current-index-node))]

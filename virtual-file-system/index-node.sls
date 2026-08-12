@@ -58,12 +58,17 @@
     init-index-node
     is-first-child?
     is-leaf?
+    index-node-symbol?
     is-ancestor?
     cover?
-    clear-references-for)
+    clear-references-for
+
+    index-node-match-protocol
+    match-index-node)
   (import 
     (chezscheme)
     (uuid)
+    (ufo-match-steer)
     (scheme-langserver util dedupe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,6 +93,21 @@
     (lambda (new)
       (lambda (parent start end datum/annotations shared-reference children references-export-to-other-node references-import-in-this-node excluded-references)
         (new parent start end datum/annotations shared-reference (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
+
+(define index-node-match-protocol
+  (make-match-protocol
+    index-node?
+    (lambda (n) (annotation-stripped (index-node-datum/annotations n)))
+    (lambda (n) (index-node-children n))
+    (lambda (n) (car (index-node-children n)))
+    (lambda (n) (cdr (index-node-children n)))
+    #f
+    #f))
+
+(define-syntax match-index-node
+  (syntax-rules ()
+    [(_ expr (pattern . body) ...)
+     (match-steer index-node-match-protocol expr (pattern . body) ...)]))
 
 (define make-virtual-index-node
   (case-lambda 
@@ -273,6 +293,9 @@
 
 (define (is-leaf? index-node)
   (null? (index-node-children index-node)))
+
+(define (index-node-symbol? index-node)
+  (symbol? (annotation-stripped (index-node-datum/annotations index-node))))
 
 (define (cover? index-node position)
   (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position)))
