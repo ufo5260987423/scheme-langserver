@@ -23,6 +23,7 @@
     index-node-datum/annotations
     index-node-shared-reference
     index-node-uuid
+    index-node-expression
 
     index-node-children
     index-node-children-set!
@@ -59,6 +60,8 @@
     is-first-child?
     is-leaf?
     index-node-symbol?
+    index-node-reference?
+    index-node-pair?
     is-ancestor?
     cover?
     clear-references-for
@@ -94,10 +97,13 @@
       (lambda (parent start end datum/annotations shared-reference children references-export-to-other-node references-import-in-this-node excluded-references)
         (new parent start end datum/annotations shared-reference (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
 
+(define (index-node-expression index-node)
+  (annotation-stripped (index-node-datum/annotations index-node)))
+
 (define index-node-match-protocol
   (make-match-protocol
     index-node?
-    (lambda (n) (annotation-stripped (index-node-datum/annotations n)))
+    index-node-expression
     (lambda (n) (index-node-children n))
     (lambda (n) (car (index-node-children n)))
     (lambda (n) (cdr (index-node-children n)))
@@ -295,7 +301,15 @@
   (null? (index-node-children index-node)))
 
 (define (index-node-symbol? index-node)
-  (symbol? (annotation-stripped (index-node-datum/annotations index-node))))
+  (and 
+    (symbol? (annotation-stripped (index-node-datum/annotations index-node)))
+    (not (index-node-reference? index-node))))
+
+(define (index-node-pair? index-node)
+  (pair? (annotation-stripped (index-node-datum/annotations index-node))))
+
+(define (index-node-reference? index-node)
+  (not (not (index-node-shared-reference index-node))))
 
 (define (cover? index-node position)
   (and (<= (index-node-start index-node) position) (> (index-node-end index-node) position)))
