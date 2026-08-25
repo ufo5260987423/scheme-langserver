@@ -2,7 +2,7 @@
   (export begin-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
 
@@ -10,14 +10,11 @@
 
 ; reference-identifier-type include 
 (define (begin-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ fuzzy ... ) 
-        (let* ([parent (index-node-parent index-node)]
-            [children (index-node-children index-node)]
-            [pre-target (map index-node-references-import-in-this-node children)]
-            [target `(,@pre-target ,(index-node-references-import-in-this-node index-node))])
-          (append-references-into-ordered-references-for document parent (apply append target)))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ bodies **1)
+      (let* ([parent (index-node-parent index-node)]
+          [pre-target (map index-node-references-import-in-this-node bodies)]
+          [target `(,@pre-target ,(index-node-references-import-in-this-node index-node))])
+        (append-references-into-ordered-references-for document parent (apply append target)))]
+    [else '()]))
 )
