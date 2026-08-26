@@ -100,13 +100,17 @@
 (define (index-node-expression index-node)
   (annotation-stripped (index-node-datum/annotations index-node)))
 
+(define (index-node-match-dereference n)
+  (let ([target (index-node-shared-reference n)])
+    (if target target n)))
+
 (define index-node-match-protocol
   (make-match-protocol
     index-node?
     index-node-expression
-    (lambda (n) (index-node-children n))
-    (lambda (n) (car (index-node-children n)))
-    (lambda (n) (cdr (index-node-children n)))
+    (lambda (n) (index-node-children (index-node-match-dereference n)))
+    (lambda (n) (car (index-node-children (index-node-match-dereference n))))
+    (lambda (n) (cdr (index-node-children (index-node-match-dereference n))))
     #f
     #f))
 

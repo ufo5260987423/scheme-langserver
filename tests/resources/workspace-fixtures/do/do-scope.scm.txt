@@ -1,0 +1,10 @@
+(library (do-scope)
+  (export do-scope)
+  (import (rnrs (6)))
+
+  (define (do-scope)
+    (do ((i i (+ i 1))
+         (j 10 (- j i)))
+        ((> i j) (+ i j))
+      (display i)))
+)

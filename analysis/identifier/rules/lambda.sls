@@ -23,7 +23,7 @@
             (parameter-process index-node parameter (index-node-parent parameter) index-node document))
           parameters))]
     [(:_ (? index-node-symbol? parameter) . body)
-      (parameter-process index-node parameter index-node index-node document)]
+      (parameter-process index-node parameter parameter index-node document)]
     ;improper list
     [(:_ (? index-node-pair? parameters) . body)
       (map 

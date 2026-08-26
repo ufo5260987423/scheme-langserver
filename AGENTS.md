@@ -547,3 +547,95 @@ abstract interpreter and the cache cannot avoid the dominant phase. Before
 re-introducing persistence, profile to ensure the saved phase is actually a
 significant fraction of startup time, and design the cache to skip that phase
 entirely rather than merely replacing file I/O with deserialization.
+
+
+---
+
+## 12. Identifier Rule Semantics — What `do-process` Teaches Us
+
+A large part of the scheme-langserver codebase is dedicated to a single job:
+**modeling Scheme lexical scope as edges between `index-node`s and
+`identifier-reference`s**. Every rule under `analysis/identifier/rules/` is
+essentially doing the same thing for a different syntactic form: it decides,
+for each bound identifier, *where the binding is introduced*, *where it is
+visible*, and *where it must be shadowed or excluded*.
+
+When refactoring these rules, keep the scope model in mind rather than just
+the surface syntax.
+
+### The three `index-node` fields
+
+| Field | Meaning | Typical use |
+|-------|---------|-------------|
+| `references-export-to-other-node` | "This node **defines** the identifier." | The variable/parameter symbol in `do`, `lambda`, `let`, etc. |
+| `references-import-in-this-node` | "This node and all descendants can **see** these references." | The body of a `lambda`, the `do` form itself, a `let` body, ... |
+| `excluded-references` | "These references are **not** visible from this node downward." | The init expression of a `do` variable, the parameter list of a `lambda`, the binding form of a `letrec` |
+
+These three fields are how the abstract interpreter (`find-available-references-for`)
+knows where a symbol resolves.
+
+### `do-process` as a worked example
+
+A `do` form such as:
+
+```scheme
+(do ((i i (+ i 1))
+     (j 10 (- j i)))
+    ((> i j) (+ i j))
+  (display i))
+```
+
+is modeled like this:
+
+1. **Export** each variable from its own symbol node.  
+   The node for `i` in `(i i (+ i 1))` gets an `identifier-reference` for `i`.
+2. **Import** all `do` variables at the `do` node itself.  
+   This makes `i` and `j` visible in the test expression, the body, and every
+   step expression, because all of those nodes are descendants of the `do` node.
+3. **Exclude** the variables at each init-expression node.  
+   The second `i` in `(i i (+ i 1))` is the init expression; it must **not**
+   resolve to the `do` variable. Attaching the variable references to the
+   `excluded-references` of that init node filters them out during lookup.
+
+The current implementation (`analysis/identifier/rules/do.sls`) expresses this
+with `match-index-node` / `ufo-match-steer`:
+
+```scheme
+(match-index-node index-node
+  [(:_ (((? index-node-symbol? var-index-nodes) . fuzzy) **1) body ... )
+    ...])
+```
+
+- `var-index-nodes` captures the bound variables.
+- `fuzzy` captures the rest of each binding clause (init + step). The init
+  nodes are excluded from the imported references.
+- `body ...` matches the remaining test/body forms.
+
+### Consequences for refactoring
+
+- **Preserve scope semantics first, syntax second.** Rewriting a rule with
+  `match-index-node` is fine, but verify that imports/exports/excludes land on
+  the same nodes as before.
+- **Use `dereference-index-node` before descending into children.** Shared
+  compound literals (`#1=(x y)`) can make an `index-node` a reference to
+  another node; rules must dereference it before calling `index-node-children`.
+- **Binding forms are all cousins.** `lambda`, `case-lambda`, `let`, `let*`,
+  `letrec`, `let-values`, `do`, `define`, `syntax-case`, etc. all use the same
+  three-field mechanism. A fix or pattern learned in one rule usually applies
+  to several others.
+- **Test visibility, not just non-empty imports.** A good regression test
+  checks both that a binding is imported where it should be and that it is
+  *not* resolved where it should be excluded (e.g. a `do` variable in its own
+  init expression).
+
+### Refactoring helper: `match-index-node` follows shared references
+
+`virtual-file-system/index-node.sls` defines `index-node-match-protocol`. Its
+children/first-child/rest-children getters transparently follow
+`index-node-shared-reference`, so `match-index-node` patterns such as
+`(bindings **1)` or `((? index-node-symbol? x) . rest)` can safely descend
+into shared compound literals (`#1=...`).
+
+You still need to call `dereference-index-node` explicitly when you are about
+to mutate the node (attaching exports/imports/excludes) or when you need the
+canonical node's identity.
