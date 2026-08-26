@@ -2,7 +2,7 @@
   (export do-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
@@ -12,49 +12,27 @@
 ; reference-identifier-type include 
 ; variable 
 (define (do-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ ((var init+update ... ) **1) fuzzy ... ) 
-        (let* ([children (index-node-children index-node)]
-          [var-index-node (dereference-index-node (cadr children))]
-          [var-nodes (index-node-children var-index-node)])
-          (check-duplicate-bindings document var-nodes)
-          (map (lambda (i) (private-process document i index-node var-index-node)) var-nodes))]
-      [else '()])))
-
-(define (private-process document target-index-node initialization-index-node exclude-index-node)
-  (let* ([target-index-node (dereference-index-node target-index-node)]
-      [ann (index-node-datum/annotations target-index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [((? symbol? var) :_ ...)
-        (let* ([var-index-node (car (index-node-children target-index-node))]
-            [reference 
-              (make-identifier-reference
-                var
-                document
-                var-index-node
-                initialization-index-node
-                '()
-                'variable
-                '()
-                '())])
-          (index-node-references-export-to-other-node-set! 
-            var-index-node
-            (append 
-              (index-node-references-export-to-other-node var-index-node)
-              `(,reference)))
-          (index-node-references-import-in-this-node-set! 
-            target-index-node
-            (append 
-              (index-node-references-import-in-this-node target-index-node)
-              `(,reference)))
-          (index-node-excluded-references-set! 
-            exclude-index-node
-            (append 
-              (index-node-excluded-references exclude-index-node)
-              `(,reference)))
-          reference)]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (((? index-node-symbol? var-index-nodes) . fuzzy) **1) body ... )
+      (check-duplicate-identifiers document (map (lambda (v) (cons (index-node-expression v) v)) var-index-nodes))
+      (map 
+        (lambda (var-index-node)
+          (index-node-references-export-to-other-node-set! var-index-node
+            `(,(make-identifier-reference 
+                (index-node-expression var-index-node)
+                  document
+                  var-index-node
+                  index-node
+                  '()
+                  'variable
+                  '()
+                  '()))))
+        var-index-nodes)
+      (let ([all-references (apply append (map index-node-references-export-to-other-node var-index-nodes))])
+        (append-references-into-ordered-references-for document index-node all-references)
+        (map 
+          (lambda (s)
+            (index-node-excluded-references-set! s all-references))
+          (map car (filter (lambda (s) (not (null? s))) fuzzy))))]
+    [else '()]))
 )

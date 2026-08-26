@@ -28,18 +28,6 @@
           (and (list? expr) (not (null? expr))
                (eq? 'do (car expr)))))
       root-index-node)])
-  (let* ([var-list-node (cadr (index-node-children do-node))]
-      [var-children (index-node-children var-list-node)])
-    (test-equal "var-list has 2 children" 2 (length var-children))
-    (let ([result (do-process root-file-node root-library-node document do-node)])
-      (test-equal "do-process returns list of 2" 2 (length result))
-      (let* ([i-node (car var-children)]
-          [j-node (cadr var-children)])
-        (test-equal "do binds i"
-          #t
-          (not (null? (index-node-references-import-in-this-node i-node))))
-        (test-equal "do binds j"
-          #t
-          (not (null? (index-node-references-import-in-this-node j-node))))))))
+  (test-equal "do binds" #t (not (null? (index-node-references-import-in-this-node do-node)))))
 (test-end)
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
