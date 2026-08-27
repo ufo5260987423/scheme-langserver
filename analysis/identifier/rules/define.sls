@@ -51,11 +51,12 @@
       (append 
         (index-node-references-export-to-other-node export-index-node)
         `(,reference)))
-    (index-node-excluded-references-set!
-      exclude-index-node
-      (append 
-        (index-node-excluded-references exclude-index-node)
-        `(,reference)))
+    (if exclude-index-node 
+      (index-node-excluded-references-set!
+        exclude-index-node
+        (append 
+          (index-node-excluded-references exclude-index-node)
+          `(,reference))))
     (append-references-into-ordered-references-for document import-index-node `(,reference))
   reference))
 )

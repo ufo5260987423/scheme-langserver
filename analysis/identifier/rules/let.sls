@@ -35,7 +35,7 @@
       (let ([exclude-set (apply append (map index-node-references-export-to-other-node vars))])
         (map (lambda (var) (index-node-excluded-references-set! var exclude-set)) vars))]
     [(:_ (? index-node-symbol? loop-identifier) . body)
-      (index-node:regist-as-identifier-reference loop-identifier index-node loop-identifier (caddr (index-node-children (index-node-parent loop-identifier))) index-node document 'procedure)]
+      (index-node:regist-as-identifier-reference loop-identifier index-node loop-identifier #f index-node document 'procedure)]
     [else '()]))
 
 (define (let-parameter-process initialization-index-node index-node let-node document type)
