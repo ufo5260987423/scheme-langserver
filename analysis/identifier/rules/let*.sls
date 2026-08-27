@@ -2,9 +2,9 @@
   (export let*-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
-    (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier rules define)
     (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
@@ -12,20 +12,17 @@
 ; reference-identifier-type include 
 ; variable
 (define (let*-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
-        (fold-left 
-          (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                   [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
-              (index-node-excluded-references-set! identifier-parent-index-node extended-exclude-list)
-              extended-exclude-list))
-          '()
-          (filter 
-            (lambda (i) (not (null? (index-node-children i)))) 
-            (reverse (index-node-children (dereference-index-node (cadr (index-node-children index-node)))))))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (((? index-node-symbol? vars) . vals) **1) . body)
+      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) vars))
+      (fold-left
+        (lambda (exclude-set var)
+          (index-node:regist-as-identifier-reference var index-node var #f index-node document 'variable)
+          (let ([extended-exclude-set (append exclude-set (index-node-references-export-to-other-node var))]
+              [binding-node (index-node-parent var)])
+            (index-node-excluded-references-set! binding-node extended-exclude-set)
+            extended-exclude-set))
+        '()
+        (reverse vars))]
+    [else '()]))
 )
