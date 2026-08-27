@@ -2,29 +2,25 @@
   (export letrec*-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
-    (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier util)
+    (scheme-langserver analysis identifier rules define)
 
     (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; parameter 
 (define (letrec*-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
-        (fold-left 
-          (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document 'variable)]
-                [extended-exclude-list (append exclude-list target-identifier-reference)])
-              (index-node-excluded-references-set! identifier-parent-index-node exclude-list)
-              extended-exclude-list))
-          '()
-          (filter 
-            (lambda (i) (not (null? (index-node-children i)))) 
-            (reverse (index-node-children (cadr (index-node-children index-node))))))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (((? index-node-symbol? vars) . vals) **1) . body)
+      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) vars))
+      (fold-left
+        (lambda (exclude-set var)
+          (index-node:regist-as-identifier-reference var index-node var #f index-node document 'variable)
+          (index-node-excluded-references-set! (index-node-parent var) exclude-set)
+          (append exclude-set (index-node-references-export-to-other-node var)))
+        '()
+        (reverse vars))]
+    [else '()]))
 )
