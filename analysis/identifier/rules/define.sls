@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis identifier rules define)
-  (export define-process)
+  (export 
+    define-process
+    index-node:regist-as-identifier-reference)
   (import 
     (chezscheme) 
     (ufo-match-steer)

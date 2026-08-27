@@ -1,64 +1,42 @@
 (library (scheme-langserver analysis identifier rules let)
   (export 
     let-process
-    generate-naive-let-process-with
     let-parameter-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
 
-    (scheme-langserver virtual-file-system index-node))
+    (scheme-langserver analysis identifier rules define)
 
-(define (generate-naive-let-process-with type)
-  (lambda (root-file-node root-library-node document index-node)
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
-          (let ([bindings-list-node (dereference-index-node (cadr (index-node-children index-node)))])
-            (let ([binding-nodes (filter 
-                      (lambda (i) (not (null? (index-node-children i)))) 
-                      (index-node-children bindings-list-node))])
-              (check-duplicate-bindings document binding-nodes)
-              (fold-left 
-                (lambda (exclude-list identifier-parent-index-node)
-                  (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                         [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                      [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document type)]
-                      [extended-exclude-list (append exclude-list target-identifier-reference)])
-                    (index-node-excluded-references-set! bindings-list-node extended-exclude-list)
-                    extended-exclude-list))
-                '()
-                binding-nodes)))]
-        [else '()]))))
+    (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; procedure variable 
 (define (let-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (? symbol? loop-identifier) (fuzzy0 **1) fuzzy ... ) 
-        (let ([bindings-list-node (dereference-index-node (caddr (index-node-children index-node)))])
-          (let ([binding-nodes (filter 
-                    (lambda (i) (not (null? (index-node-children i))))
-                    (index-node-children bindings-list-node))])
-            (check-duplicate-bindings document binding-nodes)
-            (fold-left 
-              (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                       [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'variable))])
-                  (index-node-excluded-references-set! bindings-list-node extended-exclude-list)
-                  extended-exclude-list))
-              (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)
-              binding-nodes)))]
-      [(_ (? symbol? loop-identifier) fuzzy **1 ) 
-        (let-parameter-process index-node (cadr (index-node-children index-node)) index-node document 'procedure)]
-      [else ((generate-naive-let-process-with 'variable) root-file-node root-library-node document index-node)])))
+  (match-index-node index-node
+    [(:_ (? index-node-symbol? loop-identifier) (((? index-node-symbol? vars) . vals) **1) . body)
+      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) vars))
+      (index-node:regist-as-identifier-reference loop-identifier index-node loop-identifier (caddr (index-node-children (index-node-parent loop-identifier))) index-node document 'procedure)
+      (map 
+        (lambda (var) 
+          (index-node:regist-as-identifier-reference var index-node var (index-node-parent var) index-node document 'variable)) 
+        vars)
+      (let ([exclude-set (apply append (map index-node-references-export-to-other-node vars))])
+        (map (lambda (var) (index-node-excluded-references-set! var exclude-set)) vars))]
+    [(:_ (((? index-node-symbol? vars) . vals) **1) . body)
+      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) vars))
+      (map 
+        (lambda (var) 
+          (index-node:regist-as-identifier-reference var index-node var (index-node-parent var) index-node document 'variable)) 
+        vars)
+      (let ([exclude-set (apply append (map index-node-references-export-to-other-node vars))])
+        (map (lambda (var) (index-node-excluded-references-set! var exclude-set)) vars))]
+    [(:_ (? index-node-symbol? loop-identifier) . body)
+      (index-node:regist-as-identifier-reference loop-identifier index-node loop-identifier (caddr (index-node-children (index-node-parent loop-identifier))) index-node document 'procedure)]
+    [else '()]))
 
 (define (let-parameter-process initialization-index-node index-node let-node document type)
   (let* ([ann (index-node-datum/annotations index-node)]

@@ -108,9 +108,9 @@
   (make-match-protocol
     index-node?
     index-node-expression
-    (lambda (n) (index-node-children (index-node-match-dereference n)))
-    (lambda (n) (car (index-node-children (index-node-match-dereference n))))
-    (lambda (n) (cdr (index-node-children (index-node-match-dereference n))))
+    index-node-children
+    (lambda (n) (car (index-node-children n)))
+    (lambda (n) (cdr (index-node-children n)))
     #f
     #f))
 
