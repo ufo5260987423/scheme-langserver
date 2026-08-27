@@ -2,36 +2,25 @@
   (export letrec-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
-    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
-    (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier rules define)
 
     (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; variable 
 (define (letrec-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (fuzzy0 **1 ) fuzzy1 ... ) 
-        (let ([bindings-list-node (dereference-index-node (cadr (index-node-children index-node)))])
-          (let ([binding-nodes (filter 
-                    (lambda (i) (not (null? (index-node-children i)))) 
-                    (index-node-children bindings-list-node))])
-            (check-duplicate-bindings document binding-nodes)
-            (fold-left 
-              (lambda (exclude-list identifier-parent-index-node)
-                (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                       [identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                    [target-identifier-reference (let-parameter-process index-node identifier-index-node index-node document 'variable)]
-                    [extended-exclude-list (append exclude-list target-identifier-reference)])
-                  (index-node-excluded-references-set! bindings-list-node extended-exclude-list)
-                  (append-references-into-ordered-references-for document identifier-index-node target-identifier-reference)
-                  extended-exclude-list))
-              '()
-              binding-nodes)))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (((? index-node-symbol? vars) . vals) **1) . body)
+      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) vars))
+      (map 
+        (lambda (var) 
+          (index-node-references-import-in-this-node-set! (index-node-parent var)
+            (list (index-node:regist-as-identifier-reference var index-node var #f index-node document 'variable)))) 
+        vars)
+      (index-node-excluded-references-set! (index-node-parent (index-node-parent (car vars)))
+        (apply append (map index-node-references-export-to-other-node vars))) ]
+    [else '()]))
 )

@@ -22,18 +22,18 @@
       (index-node:regist-as-identifier-reference loop-identifier index-node loop-identifier (caddr (index-node-children (index-node-parent loop-identifier))) index-node document 'procedure)
       (map 
         (lambda (var) 
-          (index-node:regist-as-identifier-reference var index-node var (index-node-parent var) index-node document 'variable)) 
+          (index-node:regist-as-identifier-reference var index-node var #f index-node document 'variable)) 
         vars)
-      (let ([exclude-set (apply append (map index-node-references-export-to-other-node vars))])
-        (map (lambda (var) (index-node-excluded-references-set! var exclude-set)) vars))]
+      (index-node-excluded-references-set! (index-node-parent (index-node-parent (car vars)))
+        (apply append (map index-node-references-export-to-other-node vars)))]
     [(:_ (((? index-node-symbol? vars) . vals) **1) . body)
       (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) vars))
       (map 
         (lambda (var) 
-          (index-node:regist-as-identifier-reference var index-node var (index-node-parent var) index-node document 'variable)) 
+          (index-node:regist-as-identifier-reference var index-node var #f index-node document 'variable)) 
         vars)
-      (let ([exclude-set (apply append (map index-node-references-export-to-other-node vars))])
-        (map (lambda (var) (index-node-excluded-references-set! var exclude-set)) vars))]
+      (index-node-excluded-references-set! (index-node-parent (index-node-parent (car vars)))
+        (apply append (map index-node-references-export-to-other-node vars)))]
     [(:_ (? index-node-symbol? loop-identifier) . body)
       (index-node:regist-as-identifier-reference loop-identifier index-node loop-identifier #f index-node document 'procedure)]
     [else '()]))
