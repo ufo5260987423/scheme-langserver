@@ -16,19 +16,19 @@
 (define (define-process root-file-node root-library-node document index-node)
   (match-index-node index-node
     [(:_ ((? index-node-symbol? name-node) (? index-node-symbol? params) ...) . body)
-      (index-node:regist-as-identifier-reference name-node index-node name-node (index-node-parent name-node) index-node document 'procedure)
+      (index-node:regist-as-identifier-reference name-node index-node name-node #f (index-node-parent index-node) document 'procedure)
       (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) params))
       (map 
         (lambda (p)
           (index-node:regist-as-identifier-reference p index-node p (index-node-parent p) index-node document 'parameter))
         params)]
     [(:_ (? index-node-symbol? name-node) . body)
-      (index-node:regist-as-identifier-reference name-node index-node name-node (index-node-parent name-node) index-node document 'variable)]
+      (index-node:regist-as-identifier-reference name-node index-node name-node #f (index-node-parent index-node) document 'variable)]
     [(:_ (? index-node-pair? signature-node) . body)
       (let ([name-node (car (index-node-children signature-node))]
           [params (cdr (index-node-children signature-node))])
         (if (index-node-symbol? name-node)
-          (index-node:regist-as-identifier-reference name-node index-node name-node (index-node-parent name-node) index-node document 'procedure))
+          (index-node:regist-as-identifier-reference name-node index-node name-node #f (index-node-parent index-node) document 'procedure))
         (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) params))
         (map 
           (lambda (p)
