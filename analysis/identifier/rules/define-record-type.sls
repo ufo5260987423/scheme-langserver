@@ -3,7 +3,7 @@
     define-record-type-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
@@ -13,45 +13,41 @@
 ; reference-identifier-type include 
 ; getter setter constructor predicator syntax
 (define (define-record-type-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [target-parent-index-node (index-node-parent index-node)])
-    (match expression
-      [(_ name-list) 
-        (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())]
-      [(_ (? symbol? name) (dummy ...) ... ) 
-        (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
-        (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name) ]
-      [(_ ((? symbol? name) dummy0 ...) (dummy1 ...) ... ) 
-        (process-name-list index-node document target-parent-index-node (cadr (index-node-children index-node)) '())
-        (process-define-record-type-tail index-node document target-parent-index-node (cddr (index-node-children index-node)) name)]
+  (let ([target-parent-index-node (index-node-parent index-node)])
+    (match-index-node index-node
+      [(:_ name-list) 
+        (process-name-list index-node document target-parent-index-node name-list '())]
+      [(:_ (? index-node-symbol? name-node) . clauses) 
+        (process-name-list index-node document target-parent-index-node name-node '())
+        (process-define-record-type-tail index-node document target-parent-index-node clauses (index-node-expression name-node))]
+      [(:_ ((? index-node-symbol? name-node) . _) . clauses) 
+        (let ([name-list (cadr (index-node-children index-node))])
+          (process-name-list index-node document target-parent-index-node name-list '())
+          (process-define-record-type-tail index-node document target-parent-index-node clauses (index-node-expression name-node)))]
       [else '()])))
 
 (define (process-define-record-type-tail initialization-index-node document target-parent-index-node index-node-list name)
   (let loop ([body index-node-list])
     (if (not (null? body))
-      (let* ([index-node (dereference-index-node (car body))]
-          [ann (index-node-datum/annotations index-node)]
-          [expression (annotation-stripped ann)])
-        (match expression
+      (let ([index-node (dereference-index-node (car body))])
+        (match-index-node index-node
           [('fields :_ **1) 
             (process-fields-list initialization-index-node document target-parent-index-node index-node name '())
             (loop (cdr body))]
-          [('parent (? symbol? parent-name)) 
-            (let loop ([references (find-available-references-for document index-node parent-name)])
+          [('parent (? index-node-symbol? parent-name-node)) 
+            (let loop2 ([references (find-available-references-for document index-node (index-node-expression parent-name-node))])
               (if (not (null? references))
                 (let* ([current-reference (car references)]
-                    [binding-index-node (cadr (index-node-children (dereference-index-node index-node)))]
+                    [binding-index-node parent-name-node]
                     [current-index-node (identifier-reference-index-node current-reference)]
                     [parent-index-node (index-node-parent current-index-node)]
                     [parent-children-index-node (index-node-children parent-index-node)]
-                    [parent-ann (index-node-datum/annotations parent-index-node)]
-                    [parent-expression (annotation-stripped parent-ann)]
+                    [parent-expression (index-node-expression parent-index-node)]
 
                     [grand-parent-index-node (index-node-parent parent-index-node)]
                     [grand-parent-children-index-node (index-node-children grand-parent-index-node)])
-                  (match parent-expression 
-                    [('define-record-type name-list ('fields :_ **1) dummy1 ...)
+                  (match-index-node parent-index-node
+                    [('define-record-type name-list ('fields :_ **1) . dummy1)
                       (map 
                         (lambda (index-node-tmp)
                           (process-fields-list initialization-index-node document target-parent-index-node index-node-tmp name binding-index-node))
@@ -61,26 +57,23 @@
                         (lambda (index-node-tmp)
                           (process-fields-list initialization-index-node document target-parent-index-node index-node-tmp name binding-index-node))
                         (cddr grand-parent-children-index-node))])
-                  (loop (cdr references)))))
+                  (loop2 (cdr references)))))
             (loop (cdr body))]
           [else (loop (cdr body))])))))
 
 (define (process-fields-list initialization-index-node document target-parent-index-node index-node record-name binding-index-node)
   (let loop ([children (cdr (index-node-children (dereference-index-node index-node)))])
     (if (not (null? children))
-      (let* ([current-index-node (dereference-index-node (car children))]
-          [ann (index-node-datum/annotations current-index-node)]
-          [expression (annotation-stripped ann)]
-          [record-name-string (string-append (symbol->string record-name) "-")])
-        (match expression 
-          [('mutable (? symbol? name) (? symbol? name-get) (? symbol? name-set))
-            (let* ([current-children (cdr (index-node-children current-index-node))]
-                [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
-                [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
-                [set-index-node (if (null? binding-index-node) (caddr current-children) binding-index-node)]
+      (let ([current-index-node (dereference-index-node (car children))])
+        (match-index-node current-index-node
+          [('mutable (? index-node-symbol? name-node) (? index-node-symbol? get-node) (? index-node-symbol? set-node))
+            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
+                [get-index-node (if (null? binding-index-node) get-node binding-index-node)]
+                [set-index-node (if (null? binding-index-node) set-node binding-index-node)]
+                [record-name-string (string-append (symbol->string record-name) "-")]
                 [get-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name-get)))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression get-node))))
                     document
                     get-index-node
                     initialization-index-node
@@ -90,7 +83,7 @@
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name-set)))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression set-node))))
                     document
                     set-index-node
                     initialization-index-node
@@ -111,14 +104,14 @@
                 set-index-node
                 (sort-identifier-references 
                   (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))))]
-          [('mutable (? symbol? name) (? symbol? name-get))
-            (let* ([current-children (cdr (index-node-children current-index-node))]
-                [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
-                [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
+          [('mutable (? index-node-symbol? name-node) (? index-node-symbol? get-node))
+            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
+                [get-index-node (if (null? binding-index-node) get-node binding-index-node)]
                 [set-index-node name-index-node]
+                [record-name-string (string-append (symbol->string record-name) "-")]
                 [get-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name-get)))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression get-node))))
                     document
                     get-index-node
                     initialization-index-node
@@ -128,7 +121,7 @@
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name) "-set!"))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node)) "-set!"))
                     document
                     set-index-node
                     initialization-index-node
@@ -148,14 +141,14 @@
               (index-node-references-export-to-other-node-set!
                 set-index-node
                 (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))]
-          [('mutable (? symbol? name))
-            (let* ([current-children (cdr (index-node-children current-index-node))]
-                [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
+          [('mutable (? index-node-symbol? name-node))
+            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
                 [get-index-node name-index-node]
                 [set-index-node name-index-node]
+                [record-name-string (string-append (symbol->string record-name) "-")]
                 [get-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name)))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node))))
                     document
                     get-index-node
                     initialization-index-node
@@ -165,7 +158,7 @@
                     '())]
                 [set-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name) "-set!"))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node)) "-set!"))
                     document
                     set-index-node
                     initialization-index-node
@@ -186,13 +179,13 @@
                 set-index-node
                 (sort-identifier-references
                   (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))))]
-          [('immutable (? symbol? name) (? symbol? name-get))
-            (let* ([current-children (cdr (index-node-children current-index-node))]
-                [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
-                [get-index-node (if (null? binding-index-node) (cadr current-children) binding-index-node)]
+          [('immutable (? index-node-symbol? name-node) (? index-node-symbol? get-node))
+            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
+                [get-index-node (if (null? binding-index-node) get-node binding-index-node)]
+                [record-name-string (string-append (symbol->string record-name) "-")]
                 [get-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name-get)))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression get-node))))
                     document
                     get-index-node
                     initialization-index-node
@@ -208,13 +201,13 @@
                 document
                 target-parent-index-node
                 `(,get-identifier-reference)))]
-          [('immutable (? symbol? name))
-            (let* ([current-children (cdr (index-node-children current-index-node))]
-                [name-index-node (if (null? binding-index-node) (car current-children) binding-index-node)]
+          [('immutable (? index-node-symbol? name-node))
+            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
                 [get-index-node name-index-node]
+                [record-name-string (string-append (symbol->string record-name) "-")]
                 [get-identifier-reference
                   (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string name)))
+                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node))))
                     document
                     get-index-node
                     initialization-index-node
@@ -234,43 +227,41 @@
         (loop (cdr children))))))
 
 (define (process-name-list initialization-index-node document target-parent-index-node index-node predicator-parents)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression 
-      [(? symbol? name) 
-        (let* ([name-index-node index-node]
-            [constructor-index-node index-node]
-            [predicator-index-node index-node]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                initialization-index-node
-                '()
-                'syntax
-                '()
-                '())]
-            [constructor-identifier-reference
-              (make-identifier-reference 
-                (string->symbol (string-append "make-" (symbol->string name)))
-                document
-                constructor-index-node
-                initialization-index-node
-                '()
-                'constructor
-                '()
-                '())]
-            [predicator-identifier-reference
-              (make-identifier-reference 
-                (string->symbol (string-append (symbol->string name) "?"))
-                document
-                predicator-index-node
-                initialization-index-node
-                '()
-                'predicator
-                predicator-parents
-                '())])
+  (match-index-node index-node
+    [(? index-node-symbol? name-node)
+      (let* ([name-index-node index-node]
+          [constructor-index-node index-node]
+          [predicator-index-node index-node]
+          [name-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression name-node)
+              document
+              name-index-node
+              initialization-index-node
+              '()
+              'syntax
+              '()
+              '())]
+          [constructor-identifier-reference
+            (make-identifier-reference 
+              (string->symbol (string-append "make-" (symbol->string (index-node-expression name-node))))
+              document
+              constructor-index-node
+              initialization-index-node
+              '()
+              'constructor
+              '()
+              '())]
+          [predicator-identifier-reference
+            (make-identifier-reference 
+              (string->symbol (string-append (symbol->string (index-node-expression name-node)) "?"))
+              document
+              predicator-index-node
+              initialization-index-node
+              '()
+              'predicator
+              predicator-parents
+              '())])
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
@@ -286,41 +277,41 @@
         (index-node-references-export-to-other-node-set!
           predicator-index-node
           (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
-      [((? symbol? name))
-        (let* ([children (index-node-children index-node)]
-            [name-index-node (car children)]
-            [constructor-index-node name-index-node]
-            [predicator-index-node name-index-node]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                initialization-index-node
-                '()
-                'syntax
-                '()
-                '())]
-            [constructor-identifier-reference
-              (make-identifier-reference 
-                (string->symbol (string-append "make-" (symbol->string name)))
-                document
-                constructor-index-node
-                initialization-index-node
-                '()
-                'constructor
-                '()
-                '())]
-            [predicator-identifier-reference
-              (make-identifier-reference 
-                (string->symbol (string-append (symbol->string name) "?"))
-                document
-                predicator-index-node
-                initialization-index-node
-                '()
-                'predicator
-                predicator-parents
-                '())])
+    [((? index-node-symbol? name-node))
+      (let* ([children (index-node-children index-node)]
+          [name-index-node (car children)]
+          [constructor-index-node name-index-node]
+          [predicator-index-node name-index-node]
+          [name-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression name-node)
+              document
+              name-index-node
+              initialization-index-node
+              '()
+              'syntax
+              '()
+              '())]
+          [constructor-identifier-reference
+            (make-identifier-reference 
+              (string->symbol (string-append "make-" (symbol->string (index-node-expression name-node))))
+              document
+              constructor-index-node
+              initialization-index-node
+              '()
+              'constructor
+              '()
+              '())]
+          [predicator-identifier-reference
+            (make-identifier-reference 
+              (string->symbol (string-append (symbol->string (index-node-expression name-node)) "?"))
+              document
+              predicator-index-node
+              initialization-index-node
+              '()
+              'predicator
+              predicator-parents
+              '())])
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
@@ -336,41 +327,41 @@
         (index-node-references-export-to-other-node-set!
           predicator-index-node
           (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
-      [((? symbol? name) (? symbol? constructor))
-        (let* ([children (index-node-children index-node)]
-            [name-index-node (car children)]
-            [constructor-index-node (cadr children)]
-            [predicator-index-node name-index-node]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                initialization-index-node
-                '()
-                'syntax
-                '()
-                '())]
-            [constructor-identifier-reference
-              (make-identifier-reference 
-                constructor
-                document
-                constructor-index-node
-                initialization-index-node
-                '()
-                'constructor
-                '()
-                '())]
-            [predicator-identifier-reference
-              (make-identifier-reference 
-                (string->symbol (string-append (symbol->string name) "?"))
-                document
-                predicator-index-node
-                initialization-index-node
-                '()
-                'predicator
-                predicator-parents
-                '())])
+    [((? index-node-symbol? name-node) (? index-node-symbol? constructor-node))
+      (let* ([children (index-node-children index-node)]
+          [name-index-node (car children)]
+          [constructor-index-node (cadr children)]
+          [predicator-index-node name-index-node]
+          [name-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression name-node)
+              document
+              name-index-node
+              initialization-index-node
+              '()
+              'syntax
+              '()
+              '())]
+          [constructor-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression constructor-node)
+              document
+              constructor-index-node
+              initialization-index-node
+              '()
+              'constructor
+              '()
+              '())]
+          [predicator-identifier-reference
+            (make-identifier-reference 
+              (string->symbol (string-append (symbol->string (index-node-expression name-node)) "?"))
+              document
+              predicator-index-node
+              initialization-index-node
+              '()
+              'predicator
+              predicator-parents
+              '())])
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
@@ -386,41 +377,41 @@
         (index-node-references-export-to-other-node-set!
           predicator-index-node
           (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
-      [((? symbol? name) (? symbol? constructor) (? symbol? predicator))
-        (let* ([children (index-node-children index-node)]
-            [name-index-node (car children)]
-            [constructor-index-node (cadr children)]
-            [predicator-index-node (caddr children)]
-            [name-identifier-reference
-              (make-identifier-reference 
-                name
-                document
-                name-index-node
-                initialization-index-node
-                '()
-                'syntax
-                '()
-                '())]
-            [constructor-identifier-reference
-              (make-identifier-reference 
-                constructor
-                document
-                constructor-index-node
-                initialization-index-node
-                '()
-                'constructor
-                '()
-                '())]
-            [predicator-identifier-reference
-              (make-identifier-reference 
-                predicator
-                document
-                predicator-index-node
-                initialization-index-node
-                '()
-                'predicator
-                predicator-parents
-                '())])
+    [((? index-node-symbol? name-node) (? index-node-symbol? constructor-node) (? index-node-symbol? predicator-node))
+      (let* ([children (index-node-children index-node)]
+          [name-index-node (car children)]
+          [constructor-index-node (cadr children)]
+          [predicator-index-node (caddr children)]
+          [name-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression name-node)
+              document
+              name-index-node
+              initialization-index-node
+              '()
+              'syntax
+              '()
+              '())]
+          [constructor-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression constructor-node)
+              document
+              constructor-index-node
+              initialization-index-node
+              '()
+              'constructor
+              '()
+              '())]
+          [predicator-identifier-reference
+            (make-identifier-reference 
+              (index-node-expression predicator-node)
+              document
+              predicator-index-node
+              initialization-index-node
+              '()
+              'predicator
+              predicator-parents
+              '())])
         (index-node-references-export-to-other-node-set!
           name-index-node
           (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
@@ -436,5 +427,5 @@
         (index-node-references-export-to-other-node-set!
           predicator-index-node
           (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
-      [else '()])))
-)
+    [else '()])))
+
