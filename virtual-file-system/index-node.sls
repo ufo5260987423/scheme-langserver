@@ -272,8 +272,16 @@
           (hashtable-set! compound->node expression node)
           (index-node-children-set! 
             node 
-            `(,(private:init-index-node node (private:ensure-annotation (car expression)) compound->node)
-              ,(private:init-index-node node (private:ensure-annotation (cdr expression)) compound->node)))
+            (let loop ([expr expression] [children '()])
+              (cond
+                [(pair? expr)
+                  (loop (cdr expr)
+                    (cons (private:init-index-node node (private:ensure-annotation (car expr)) compound->node) children))]
+                [else
+                  (reverse
+                    (if (null? expr)
+                      children
+                      (cons (private:init-index-node node (private:ensure-annotation expr) compound->node) children)))])))
           node)]
       [(vector? expression)
         (let* ([source (annotation-source datum/annotation)]

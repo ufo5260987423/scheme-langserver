@@ -8,6 +8,6 @@
 
 (define case-lambda-rest
   (case-lambda
-    [((z . args) (length args))]
+    [(z . args) (length args)]
     [(w w)]))
 )
