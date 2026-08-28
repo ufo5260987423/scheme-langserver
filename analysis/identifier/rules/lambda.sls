@@ -24,12 +24,6 @@
           parameters))]
     [(:_ (? index-node-symbol? parameter) . body)
       (parameter-process index-node parameter parameter index-node document)]
-    ;improper list
-    [(:_ (? index-node-pair? parameters) . body)
-      (map 
-        (lambda (parameter)
-          (parameter-process index-node parameter parameters index-node document))
-        (filter index-node-symbol? (index-node-children parameters)))]
     [else '()]))
 
 (define (parameter-process initialization-node export-node exclude-node import-node document)

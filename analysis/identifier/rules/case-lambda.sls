@@ -26,11 +26,6 @@
                   parameters))]
             [((? index-node-symbol? parameter) . body)
               (parameter-process index-node parameter clause-body clause-body document)]
-            [((? index-node-pair? parameters) . body)
-              (map 
-                (lambda (parameter)
-                  (parameter-process index-node parameter parameters clause-body document))
-                (filter index-node-symbol? (index-node-children parameters)))]
             [else '()]))
         clause-bodies)]
     [else '()]))
