@@ -2,7 +2,7 @@
   (export let-values-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier rules let)
@@ -12,24 +12,18 @@
 ; reference-identifier-type include 
 ; continuation
 (define (let-values-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ ((((? symbol? identifier) **1) no-use ... ) **1 ) fuzzy ... ) 
-        (let ([binding-nodes (index-node-children (dereference-index-node (cadr (index-node-children index-node))))])
-          (check-duplicate-values-bindings document binding-nodes)
-          (fold-left 
-            (lambda (exclude-list identifier-parent-index-node)
-              (let ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)])
-                (fold-left 
-                  (lambda (exclude-list identifier-index-node)
-                    (let ([identifier-index-node (dereference-index-node identifier-index-node)]
-                          [extended-exclude-list (append exclude-list (let-parameter-process index-node identifier-index-node index-node document 'continuation))])
-                      (index-node-excluded-references-set! (dereference-index-node (index-node-parent identifier-parent-index-node)) extended-exclude-list)
-                      extended-exclude-list))
-                  exclude-list
-                  (index-node-children (dereference-index-node (car (index-node-children identifier-parent-index-node)))))))
-            '()
-            binding-nodes))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (((or (? index-node-symbol? formals) ((? index-node-symbol? formals) **1)) init) **1) . body)
+      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) (apply append (map (lambda (f) (if (list? f) f `(,f))) formals))))
+      (for-each 
+        (lambda (formals-group)
+          (let ([formals-node (if (list? formals-group) (index-node-parent (car formals-group)) formals-group)]
+                [refs (apply append 
+                        (map 
+                          (lambda (variable-index-node)
+                            (let-parameter-process index-node variable-index-node index-node document 'continuation))
+                          (if (list? formals-group) formals-group `(,formals-group))))])
+            (index-node-excluded-references-set! formals-node refs)))
+        formals)]
+    [else '()]))
 )
