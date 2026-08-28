@@ -5,7 +5,7 @@
     get-all-symbols)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver util contain)
 
@@ -18,21 +18,16 @@
 ; syntax-parameter 
 ;https://www.zenlife.tk/scheme-hygiene-macro.md
 (define (syntax-case-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ to-match (literals ...) (a b ...) **1) 
-        (let ([rest (cdddr (index-node-children index-node))])
-          (map (lambda (clause-index-node)
-            (let ([clause-index-node (dereference-index-node clause-index-node)])
-              (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals)))
-            rest))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ to-match ((? index-node-symbol? literal) ...) . clauses)
+      (let ([literals (map index-node-expression literal)])
+        (map (lambda (clause-index-node)
+            (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
+          clauses))]
+    [else '()]))
 
 (define (clause-process initialization-index-node document index-node template-index-node literals)
-  (let* ([template-index-node (dereference-index-node template-index-node)]
-      [ann (index-node-datum/annotations template-index-node)]
-      [expression (annotation-stripped ann)]
+  (let* ([expression (index-node-expression template-index-node)]
       [symbols 
         (filter 
           (lambda (symbol)
