@@ -4,7 +4,7 @@
     fluid-let-parameter-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
@@ -14,25 +14,21 @@
 ; reference-identifier-type include 
 ; variable 
 (define (fluid-let-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
-        (fold-left 
-          (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-parent-index-node (dereference-index-node identifier-parent-index-node)]
-                   [identifier-index-node (car (index-node-children identifier-parent-index-node))]
+  (match-index-node index-node
+    [(:_ (((? index-node-symbol? variable) init) **1) . body)
+      (fold-left 
+        (lambda (exclude-list variable-index-node)
+          (let ([binding-list-node (index-node-parent (index-node-parent variable-index-node))]
                 [extended-exclude-list 
-                  (append exclude-list (fluid-let-parameter-process index-node identifier-index-node index-node exclude-list document 'variable))])
-              (index-node-excluded-references-set! (dereference-index-node (index-node-parent identifier-parent-index-node)) extended-exclude-list)
-              extended-exclude-list))
-          '()
-          (index-node-children (dereference-index-node (cadr (index-node-children index-node)))))]
-      [else '()])))
+                  (append exclude-list (fluid-let-parameter-process index-node variable-index-node index-node exclude-list document 'variable))])
+            (index-node-excluded-references-set! binding-list-node extended-exclude-list)
+            extended-exclude-list))
+        '()
+        variable)]
+    [else '()]))
 
 (define (fluid-let-parameter-process initialization-index-node index-node let-node exclude document type)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
+  (let* ([expression (index-node-expression index-node)]
       [upper (find-available-references-for document index-node expression)]
       [reference 
         (make-identifier-reference
