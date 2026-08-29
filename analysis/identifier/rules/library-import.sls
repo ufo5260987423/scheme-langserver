@@ -9,7 +9,7 @@
     resolve-import-library-identifier)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier meta)
     (scheme-langserver analysis identifier reference)
@@ -23,27 +23,26 @@
 ; reference-identifier-type include 
 ; pointer 
 (define (library-import-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ fuzzy import-things **1) 
-        (map 
-          (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
-          (cddr (index-node-children index-node)))]
-      [else '()])
-    index-node))
+  (match-index-node index-node
+    [(:_ library-identifiers . import-things)
+      (map 
+        (lambda (child-node) (match-import index-node root-file-node root-library-node document child-node))
+        import-things)]
+    [else '()])
+  index-node)
 
 (define (invoke-library-process root-file-node root-library-node document index-node)
   (filter-empty-list 
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)]
-        [parent-index-node (index-node-parent index-node)])
-      (match expression
-        [(_ ('quote (library-identifier **1)) fuzzy ...) 
-          (append-references-into-ordered-references-for 
-            document 
-            parent-index-node 
-            (filter identifier-reference? (import-references document root-library-node library-identifier)))]
+    (let ([parent-index-node (index-node-parent index-node)])
+      (match-index-node index-node
+        [(:_ quote-node . fuzzy)
+          (let ([quote-expression (index-node-expression quote-node)])
+            (if (and (list? quote-expression) (eq? 'quote (car quote-expression)))
+              (append-references-into-ordered-references-for 
+                document 
+                parent-index-node 
+                (filter identifier-reference? (import-references document root-library-node (cadr quote-expression))))
+              '()))]
         [else '()]))))
 
 (define (import-process root-file-node root-library-node document index-node)
@@ -51,14 +50,12 @@
       [flag (if (not biggest) #t (not (meta-for? document biggest 'library)))])
     (if flag 
       (filter-empty-list 
-        (let* ([ann (index-node-datum/annotations index-node)]
-            [expression (annotation-stripped ann)])
-          (match expression
-            [(_ dummy **1 ) 
-              (map 
-                (lambda (child-node) (match-clause index-node root-file-node root-library-node document child-node)) 
-                (cdr (index-node-children index-node)))]
-            [else '()])))
+        (match-index-node index-node
+          [('import . clauses)
+            (map 
+              (lambda (child-node) (match-clause index-node root-file-node root-library-node document child-node)) 
+              clauses)]
+          [else '()]))
       '())))
 
 (define process-library-identifier-excluded-references 
@@ -101,37 +98,48 @@
 
 (define (match-import initialization-index-node root-file-node root-library-node document index-node)
   (filter-empty-list 
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [('import dummy **1 ) 
-          (map 
-            (lambda (child-node) (match-clause initialization-index-node root-file-node root-library-node document child-node)) 
-            (cdr (index-node-children index-node)))]
-        [else '()]))))
+    (match-index-node index-node
+      [('import . clauses)
+        (map 
+          (lambda (child-node) (match-clause initialization-index-node root-file-node root-library-node document child-node)) 
+          clauses)]
+      [else '()])))
+
+(define (symbol-children? children)
+  (or (null? children)
+      (and (index-node-symbol? (car children))
+           (symbol-children? (cdr children)))))
 
 (define (match-clause initialization-index-node root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [grand-parent-index-node (index-node-parent (index-node-parent index-node))]
-      [actual-library-identifier (resolve-import-library-identifier expression)])
-    (match expression
-      [('only (library-identifier **1) (? symbol? identifier) **1) 
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
-        (let loop ([importion-index-node (cddr (index-node-children index-node))]
-            [identifiers identifier]
+  (let* ([grand-parent-index-node (index-node-parent (index-node-parent index-node))]
+      [scope-index-node
+        (if (and (not (null? initialization-index-node))
+              (let ([expr (index-node-expression initialization-index-node)])
+                (and (list? expr) (not (null? expr)) (memq (car expr) '(library define-library)))))
+          initialization-index-node
+          grand-parent-index-node)]
+      [children (index-node-children index-node)])
+    (match-index-node index-node
+      [('only ((? index-node-symbol? library-identifier) ...) . identifier-index-nodes)
+        (if (symbol-children? identifier-index-nodes)
+          (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+            [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)]
+            [library-identifier-node (car (cdr children))])
+          (if (null? (walk-library actual-library-identifier root-library-node))
+            (if (not (meta-library? actual-library-identifier 'r6rs))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+            (index-node-import-file-nodes-set! library-identifier-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
+
+        (let loop ([importion-index-node identifier-index-nodes]
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) identifier) #t #f))
+                  (find (lambda(id) (eq? id (identifier-reference-identifier reference))) (map index-node-expression identifier-index-nodes)))
                 (import-references document root-library-node actual-library-identifier))])
 
           (if (not (null? importion-index-node))
             (let* ([current-index-node (car importion-index-node)]
-                [current-identifier (car identifiers)]
+                [current-identifier (index-node-expression current-index-node)]
                 [current-references 
                   (filter
                     (lambda (reference) 
@@ -145,71 +153,80 @@
 
               (append-references-into-ordered-references-for document current-index-node current-references)
 
-              (append-references-into-ordered-references-for document grand-parent-index-node current-references)
+              (append-references-into-ordered-references-for document scope-index-node current-references)
 
               (loop 
                 (cdr importion-index-node) 
-                (cdr identifiers) 
                 (filter
                   (lambda (reference) 
                     (not (eq? current-identifier (identifier-reference-identifier reference))))
-                  imported-references)))))]
-      [('except (library-identifier **1) (? symbol? identifier) **1) 
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
-        (let ([tmp 
-              (filter
-                (lambda (reference) 
-                  (if (find (lambda(id) (not (eq? id (identifier-reference-identifier reference)))) identifier) #t #f))
-                (import-references document root-library-node actual-library-identifier))])
-          (if (null? grand-parent-index-node)
-            (document-ordered-reference-list-set! 
-              document
-              (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
-            (append-references-into-ordered-references-for document grand-parent-index-node tmp)))
+                  imported-references))))))
+          '())]
+      [('except ((? index-node-symbol? library-identifier) ...) . identifier-index-nodes)
+        (if (symbol-children? identifier-index-nodes)
+          (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+              [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)]
+              [library-identifier-node (car (cdr children))])
+            (if (null? (walk-library actual-library-identifier root-library-node))
+              (if (not (meta-library? actual-library-identifier 'r6rs))
+                (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+              (index-node-import-file-nodes-set! library-identifier-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
 
-        (let loop ([importion-index-node (cddr (index-node-children index-node))]
-            [identifiers identifier]
-            [imported-references 
-              (filter
-                (lambda (reference) 
-                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) identifier) #t #f))
-                (import-references document root-library-node actual-library-identifier))])
-          (if (not (null? importion-index-node))
-            (let* ([current-index-node (car importion-index-node)]
-                [current-identifier (car identifiers)]
-                [current-references 
+          (let ([tmp 
+                (filter
+                  (lambda (reference) 
+                    (find (lambda(id) (not (eq? id (identifier-reference-identifier reference)))) (map index-node-expression identifier-index-nodes)))
+                  (import-references document root-library-node actual-library-identifier))])
+            (if (null? scope-index-node)
+              (document-ordered-reference-list-set! 
+                document
+                (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
+              (append-references-into-ordered-references-for document scope-index-node tmp)))
+
+          (let loop ([importion-index-node identifier-index-nodes]
+              [imported-references 
+                (filter
+                  (lambda (reference) 
+                    (find (lambda(id) (eq? id (identifier-reference-identifier reference))) (map index-node-expression identifier-index-nodes)))
+                  (import-references document root-library-node actual-library-identifier))])
+            (if (not (null? importion-index-node))
+              (let* ([current-index-node (car importion-index-node)]
+                  [current-identifier (index-node-expression current-index-node)]
+                  [current-references 
+                    (filter
+                      (lambda (reference) 
+                        (eq? current-identifier (identifier-reference-identifier reference)))
+                      imported-references)])
+                (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
+                               (meta-library? actual-library-identifier 'r6rs))
+                           (null? current-references))
+                  (private:append-identifier-not-exported-diagnose document current-index-node current-identifier))
+
+
+                (append-references-into-ordered-references-for document current-index-node current-references)
+                (loop 
+                  (cdr importion-index-node) 
                   (filter
                     (lambda (reference) 
-                      (eq? current-identifier (identifier-reference-identifier reference)))
-                    imported-references)])
-              (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
-                             (meta-library? actual-library-identifier 'r6rs))
-                         (null? current-references))
-                (private:append-identifier-not-exported-diagnose document current-index-node current-identifier))
+                      (not (eq? current-identifier (identifier-reference-identifier reference))))
+                    imported-references))))))
+          '())]
+      [('prefix ((? index-node-symbol? library-identifier) ...) (? index-node-symbol? prefix-id))
+        (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+            [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)]
+            [library-identifier-node (car (cdr children))]
+            [prefix-id-expression (index-node-expression prefix-id)])
+          (if (null? (walk-library actual-library-identifier root-library-node))
+            (if (not (meta-library? actual-library-identifier 'r6rs))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+            (index-node-import-file-nodes-set! library-identifier-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
 
-
-              (append-references-into-ordered-references-for document current-index-node current-references)
-              (loop 
-                (cdr importion-index-node) 
-                (cdr identifiers) 
-                (filter
-                  (lambda (reference) 
-                    (not (eq? current-identifier (identifier-reference-identifier reference))))
-                  imported-references)))))]
-      [('prefix (library-identifier **1) (? symbol? prefix-id))
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (let* ([imported-references (import-references document root-library-node actual-library-identifier)]
             [prefixed-references 
               (map 
                 (lambda (reference) 
                   (make-identifier-reference
-                    (string->symbol (string-append (symbol->string prefix-id) (symbol->string (identifier-reference-identifier reference))))
+                    (string->symbol (string-append (symbol->string prefix-id-expression) (symbol->string (identifier-reference-identifier reference))))
                     (identifier-reference-document reference)
                     (identifier-reference-index-node reference)
                     initialization-index-node 
@@ -218,27 +235,33 @@
                     `(,reference)
                     (identifier-reference-type-expressions reference))) 
                 imported-references)])
-          ;;todo: add something to export-to-other-node for current-index-node?
-          (append-references-into-ordered-references-for document grand-parent-index-node prefixed-references))]
-      [('rename (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
-        (let loop ([importion-nodes (cddr (index-node-children index-node))]
-            [external-names external-name]
-            [internal-names internal-name]
+          (append-references-into-ordered-references-for document scope-index-node prefixed-references)))]
+      [('rename ((? index-node-symbol? library-identifier) ...) . rename-pairs)
+        (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+            [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)]
+            [library-identifier-node (car (cdr children))])
+          (if (null? (walk-library actual-library-identifier root-library-node))
+            (if (not (meta-library? actual-library-identifier 'r6rs))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+            (index-node-import-file-nodes-set! library-identifier-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
+
+        (let loop ([importion-nodes rename-pairs]
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) external-name) #t #f))
+                  (find 
+                    (lambda (id) (eq? id (identifier-reference-identifier reference)))
+                    (map 
+                      (lambda (rename-pair-index-node)
+                        (index-node-expression (car (index-node-children rename-pair-index-node))))
+                      rename-pairs)))
                 (import-references document root-library-node actual-library-identifier))])
           (if (not (null? importion-nodes))
             (let* ([current-importion-pair (index-node-children (car importion-nodes))]
                 [current-external-node (car current-importion-pair)]
                 [current-internal-node (cadr current-importion-pair)]
-                [current-external-name (car external-names)]
-                [current-internal-name (car internal-names)]
+                [current-external-name (index-node-expression current-external-node)]
+                [current-internal-name (index-node-expression current-internal-node)]
                 [current-references 
                   (filter
                     (lambda (reference) 
@@ -265,7 +288,7 @@
 
               (append-references-into-ordered-references-for document current-internal-node current-references)
               (append-references-into-ordered-references-for document current-internal-node renamed-references)
-              (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
+              (append-references-into-ordered-references-for document scope-index-node renamed-references)
 
               (index-node-references-export-to-other-node-set! 
                 current-external-node
@@ -274,31 +297,36 @@
                   renamed-references))
               (loop 
                 (cdr importion-nodes)
-                (cdr external-names)
-                (cdr internal-names)
                 (filter
                   (lambda (reference) 
                     (not (eq? current-external-name (identifier-reference-identifier reference))))
-                  imported-references)))))]
-      [('alias (library-identifier **1) ((? symbol? external-name) (? symbol? internal-name)) **1 ) 
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
-        (let loop ([importion-nodes (cddr (index-node-children index-node))]
-            [external-names external-name]
-            [internal-names internal-name]
+                  imported-references))))))]
+      [('alias ((? index-node-symbol? library-identifier) ...) . rename-pairs)
+        (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+            [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)]
+            [library-identifier-node (car (cdr children))])
+          (if (null? (walk-library actual-library-identifier root-library-node))
+            (if (not (meta-library? actual-library-identifier 'r6rs))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+            (index-node-import-file-nodes-set! library-identifier-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
+
+        (let loop ([importion-nodes rename-pairs]
             [imported-references 
               (filter
                 (lambda (reference) 
-                  (if (find (lambda(id) (eq? id (identifier-reference-identifier reference))) external-name) #t #f))
+                  (find 
+                    (lambda (id) (eq? id (identifier-reference-identifier reference)))
+                    (map 
+                      (lambda (rename-pair-index-node)
+                        (index-node-expression (car (index-node-children rename-pair-index-node))))
+                      rename-pairs)))
                 (import-references document root-library-node actual-library-identifier))])
           (if (not (null? importion-nodes))
             (let* ([current-importion-pair (index-node-children (car importion-nodes))]
                 [current-external-node (car current-importion-pair)]
                 [current-internal-node (cadr current-importion-pair)]
-                [current-external-name (car external-names)]
-                [current-internal-name (car internal-names)]
+                [current-external-name (index-node-expression current-external-node)]
+                [current-internal-name (index-node-expression current-internal-node)]
                 [current-references 
                   (filter
                     (lambda (reference) 
@@ -315,7 +343,7 @@
                         (identifier-reference-library-identifier reference)
                         'pointer
                         `(,reference)
-                        (identifier-reference-type-expressions reference)))
+                        (identifier-reference-type-expressions reference))) 
                     current-references)])
               (when (and (or (not (null? (walk-library actual-library-identifier root-library-node)))
                              (meta-library? actual-library-identifier 'r6rs))
@@ -325,8 +353,8 @@
 
               (append-references-into-ordered-references-for document current-internal-node current-references)
               (append-references-into-ordered-references-for document current-internal-node renamed-references)
-              (append-references-into-ordered-references-for document grand-parent-index-node current-references)
-              (append-references-into-ordered-references-for document grand-parent-index-node renamed-references)
+              (append-references-into-ordered-references-for document scope-index-node current-references)
+              (append-references-into-ordered-references-for document scope-index-node renamed-references)
 
               (index-node-references-export-to-other-node-set! 
                 current-external-node
@@ -335,48 +363,54 @@
                   renamed-references))
               (loop 
                 (cdr importion-nodes)
-                (cdr external-names)
-                (cdr internal-names)
                 (filter
                   (lambda (reference) 
                     (not (eq? current-external-name (identifier-reference-identifier reference))))
-                  imported-references)))))]
-      [('for ('only (library-identifier **1) (? symbol? identifier) **1) import-level) 
-        (if (or
-            (eq? 'run import-level)
-            (equal? '(meta 0) import-level)
-            (eq? 'expand import-level)
-            ; (equal? '(meta 1) import-level)
-            )
+                  imported-references))))))]
+      [('for ('only ((? index-node-symbol? library-identifier) ...) . (? symbol-children? identifier-index-nodes)) import-level)
+        (let ([import-level-expression (index-node-expression import-level)])
+          (if (or
+              (eq? 'run import-level-expression)
+              (equal? '(meta 0) import-level-expression)
+              (eq? 'expand import-level-expression)
+              ; (equal? '(meta 1) import-level-expression)
+              )
+            (match-clause initialization-index-node root-file-node root-library-node document (cadr children))))]
+      [('for ((? index-node-symbol? library-identifier) ...) import-level)
+        (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+            [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)]
+            [import-level-expression (index-node-expression import-level)]
+            [library-identifier-node (cadr children)])
+          (if (null? (walk-library actual-library-identifier root-library-node))
+            (if (not (meta-library? actual-library-identifier 'r6rs))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+            (index-node-import-file-nodes-set! library-identifier-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
 
-          (match-clause initialization-index-node root-file-node root-library-node document (cadr (index-node-children index-node))))]
-      [('for (library-identifier **1) import-level) 
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! (cadr (index-node-children index-node)) (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
         (if (or
-            (eq? 'run import-level)
-            (equal? '(meta 0) import-level)
-            (eq? 'expand import-level)
-            ; (equal? '(meta 1) import-level)
+            (eq? 'run import-level-expression)
+            (equal? '(meta 0) import-level-expression)
+            (eq? 'expand import-level-expression)
+            ; (equal? '(meta 1) import-level-expression)
             )
           (let ([tmp (filter identifier-reference? (import-references document root-library-node actual-library-identifier))])
-            (if (null? grand-parent-index-node)
+            (if (null? scope-index-node)
               (document-ordered-reference-list-set! 
                 document
                 (sort-identifier-references (append (document-ordered-reference-list document) tmp)))
-              (append-references-into-ordered-references-for document grand-parent-index-node tmp))))]
-      [(library-identifier **1) 
-        (if (null? (walk-library actual-library-identifier root-library-node))
-          (if (not (meta-library? actual-library-identifier 'r6rs))
-            (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier)) "import" "library-not-found")))
-          (index-node-import-file-nodes-set! index-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
+              (append-references-into-ordered-references-for document scope-index-node tmp)))))]
+      [((? index-node-symbol? library-identifier) ...)
+        (let* ([library-identifier-expression (map index-node-expression library-identifier)]
+            [actual-library-identifier (resolve-import-library-identifier library-identifier-expression)])
+          (if (null? (walk-library actual-library-identifier root-library-node))
+            (if (not (meta-library? actual-library-identifier 'r6rs))
+              (append-new-diagnoses document `(,(index-node-start index-node) ,(index-node-end index-node) 2 ,(string-append "Fail to find library: " (library-identifier->string library-identifier-expression)) "import" "library-not-found")))
+            (index-node-import-file-nodes-set! index-node (library-node-file-nodes (walk-library actual-library-identifier root-library-node))))
+
         (let ([refs (filter identifier-reference? (import-references document root-library-node actual-library-identifier))])
           ; Attach refs to the library-identifier node itself so that the unused-import
           ; checker can tell whether any binding from this specific import was used.
           (append-references-into-ordered-references-for document index-node refs)
-          (append-references-into-ordered-references-for document grand-parent-index-node refs))]
+          (append-references-into-ordered-references-for document scope-index-node refs)))]
       [else '()])))
 
 (define (import-references document root-library-node library-identifier)
@@ -404,28 +438,24 @@
     [else '()]))
 
 (define (match-export index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [('export dummy **1 ) 
-        (apply append 
-          (map 
-            (lambda (child-node) (match-export-clause child-node)) 
-            (cdr (index-node-children index-node))))]
-      [else '()])))
+  (match-index-node index-node
+    [('export . clauses)
+      (apply append 
+        (map 
+          (lambda (child-node) (match-export-clause child-node)) 
+          clauses))]
+    [else '()]))
 
 (define (match-export-clause index-node) 
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [('rename ((? symbol? internal-names) (? symbol? external-names)) **1) 
-        (let loop ([exportion-nodes (cdr (index-node-children index-node))]
-            [result '()])
-          (if (null? exportion-nodes)
-            result
-            (loop 
-              (cdr exportion-nodes)
-              (append result (index-node-references-export-to-other-node (cadr (index-node-children (car exportion-nodes))))))))]
-      [(? symbol? identifier) (index-node-references-export-to-other-node index-node)]
-      [else '()])))
+  (match-index-node index-node
+    [('rename . rename-pairs)
+      (let loop ([exportion-nodes rename-pairs]
+          [result '()])
+        (if (null? exportion-nodes)
+          result
+          (loop 
+            (cdr exportion-nodes)
+            (append result (index-node-references-export-to-other-node (cadr (index-node-children (car exportion-nodes))))))))]
+    [(? index-node-symbol? identifier) (index-node-references-export-to-other-node index-node)]
+    [else '()]))
 )
