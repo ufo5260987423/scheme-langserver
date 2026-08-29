@@ -2,7 +2,7 @@
   (export load-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver util path)
 
@@ -16,16 +16,13 @@
 ;;todo more test
 ; todo: library process
 (define (load-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [library-identifier (get-nearest-ancestor-library-identifier index-node)]
+  (let* ([library-identifier (get-nearest-ancestor-library-identifier index-node)]
       [parent-index-node (index-node-parent index-node)]
       [current-absolute-path (uri->path (document-uri document))])
-    (match expression
-      [(_ (? string? path)) 
+    (match-index-node index-node
+      [(:_ (:= index-node-expression (? string? path)))
         (let ([target-file-node 
               (cond
-                ; [(not (string? path)) '()]
                 [(path-absolute? path) (walk-file root-file-node path)]
                 [(equal? ".." (path-first path)) (walk-file root-file-node (string-append (path-parent (path-parent current-absolute-path)) "/" (path-rest path)))]
                 [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
