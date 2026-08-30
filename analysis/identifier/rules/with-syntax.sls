@@ -2,7 +2,7 @@
   (export with-syntax-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
@@ -13,28 +13,19 @@
 ; syntax-parameter 
 ;https://www.zenlife.tk/scheme-hygiene-macro.md
 (define (with-syntax-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [children (index-node-children index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (((? symbol? syntax-parameter) :_ ...) **1) body ...) 
-        (let* ([syntax-parameter-_s (dereference-index-node (cadr children))]
-            [syntax-parameters 
-              (map (lambda (p)
-                     (let ([p (dereference-index-node p)])
-                       (car (index-node-children p))))
-                   (index-node-children syntax-parameter-_s))])
-          (check-duplicate-syntax-bindings document syntax-parameters)
-          (map 
-            (lambda (current-syntax-parameter-index-node)
-              (let* ([current-syntax-parameter-index-node (dereference-index-node current-syntax-parameter-index-node)]
-                     [expression (annotation-stripped (index-node-datum/annotations current-syntax-parameter-index-node))]
-                  [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-parameter '() '())])
-                (append-references-into-ordered-references-for document index-node `(, identifier-reference))
-                (index-node-excluded-references-set! syntax-parameter-_s 
-                  (append 
-                    (index-node-excluded-references syntax-parameter-_s)
-                    `(,identifier-reference)))))
-            syntax-parameters))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (((? index-node-symbol? syntax-parameter) . ignore) **1) . body)
+      (let ([binding-list (index-node-parent (index-node-parent (car syntax-parameter)))])
+        (check-duplicate-syntax-bindings document syntax-parameter)
+        (map 
+          (lambda (current-syntax-parameter-index-node)
+            (let* ([expression (index-node-expression current-syntax-parameter-index-node)]
+                [identifier-reference (make-identifier-reference expression document current-syntax-parameter-index-node index-node '() 'syntax-parameter '() '())])
+              (append-references-into-ordered-references-for document index-node `(,identifier-reference))
+              (index-node-excluded-references-set! binding-list
+                (append 
+                  (index-node-excluded-references binding-list)
+                  `(,identifier-reference)))))
+          syntax-parameter))]
+    [else '()]))
 )
