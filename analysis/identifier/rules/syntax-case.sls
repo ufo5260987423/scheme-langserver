@@ -19,11 +19,10 @@
 ;https://www.zenlife.tk/scheme-hygiene-macro.md
 (define (syntax-case-process root-file-node root-library-node document index-node)
   (match-index-node index-node
-    [(:_ to-match ((? index-node-symbol? literal) ...) . clauses)
-      (let ([literals (map index-node-expression literal)])
-        (map (lambda (clause-index-node)
-            (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literals))
-          clauses))]
+    [(:_ to-match ((:= index-node-expression (? symbol? literal)) ...) . clauses)
+      (map (lambda (clause-index-node)
+          (clause-process index-node document clause-index-node (car (index-node-children clause-index-node)) literal))
+        clauses)]
     [else '()]))
 
 (define (clause-process initialization-index-node document index-node template-index-node literals)
