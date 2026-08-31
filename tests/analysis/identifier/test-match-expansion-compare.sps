@@ -1,7 +1,7 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Compare scheme-langserver's expansion with Chez Scheme's expansion
-;; for the match macro in load.sls
+;; for the match macro in analysis/identifier/self-defined-rules/ufo-match/match.sls
 #!r6rs
 
 (import 
@@ -51,8 +51,8 @@
 (let* ([workspace-instance (init-workspace (current-directory))]
    [root-file-node (workspace-file-node workspace-instance)]
    [root-library-node (workspace-library-node workspace-instance)]
-   ; find match call in load.sls
-   [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/rules/load.sls"))]
+   ; find match call in the ufo-match self-defined rule
+   [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/identifier/self-defined-rules/ufo-match/match.sls"))]
    [document (file-node-document target-file-node)]
    [root-index-node (car (document-index-node-list document))]
    [match-call-node (find-index-node-recursive
