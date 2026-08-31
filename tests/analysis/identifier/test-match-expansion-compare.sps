@@ -2,6 +2,11 @@
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Compare scheme-langserver's expansion with Chez Scheme's expansion
 ;; for the match macro in analysis/identifier/self-defined-rules/ufo-match/match.sls
+;;
+;; TODO: This test currently exercises a single match call. Expand coverage
+;; to compare expansions for other self-defined macros and edge cases
+;; (e.g., ellipsis patterns and nested clauses) once the match expander
+;; stabilizes after the match-index-node migration.
 #!r6rs
 
 (import 
