@@ -2,7 +2,7 @@
   (export define-macro-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
 
@@ -12,31 +12,29 @@
 ; procedure parameter
 ;https://www.zenlife.tk/scheme-hygiene-macro.md
 (define (define-macro-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ ((? symbol? identifier) . dummy0) dummy1 ... )
-        (let* ([omg-index-node (cadr (index-node-children index-node))]
-            [reference (make-identifier-reference 
-                identifier 
-                document 
-                omg-index-node
-                index-node
-                '()
-                'procedure
-                '()
-                '())])
-          (index-node-references-export-to-other-node-set! 
-            (identifier-reference-index-node reference)
-            (append 
-              (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-              `(,reference)))
-          (append-references-into-ordered-references-for document (index-node-parent index-node)  `(,reference))
-          (let loop ([rest dummy0])
-            (cond 
-              [(pair? rest) 
-                (let ([reference (make-identifier-reference 
-                    (car rest)
+  (match-index-node index-node
+    [(:_ (and omg-index-node ((? index-node-symbol? name-node) . params)) . body)
+      (let ([reference (make-identifier-reference 
+                  (index-node-expression name-node)
+                  document 
+                  omg-index-node
+                  index-node
+                  '()
+                  'procedure
+                  '()
+                  '())])
+        (index-node-references-export-to-other-node-set! 
+          (identifier-reference-index-node reference)
+          (append 
+            (index-node-references-export-to-other-node (identifier-reference-index-node reference))
+            `(,reference)))
+        (append-references-into-ordered-references-for document (index-node-parent index-node)  `(,reference))
+        (for-each
+          (lambda (param-index-node)
+            (let ([param-expression (index-node-expression param-index-node)])
+              (if (symbol? param-expression)
+                (let ([param-reference (make-identifier-reference 
+                    param-expression
                     document 
                     omg-index-node
                     index-node
@@ -45,28 +43,11 @@
                     '()
                     '())])
                   (index-node-references-export-to-other-node-set! 
-                    (identifier-reference-index-node reference)
+                    (identifier-reference-index-node param-reference)
                     (append 
-                      (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                      `(,reference)))
-                  (append-references-into-ordered-references-for document index-node `(,reference)))
-                (loop (cdr rest))]
-              [(not (null? rest)) 
-                (let ([reference (make-identifier-reference 
-                    rest
-                    document 
-                    omg-index-node
-                    index-node
-                    '()
-                    'parameter
-                    '()
-                    '())])
-                  (index-node-references-export-to-other-node-set! 
-                    (identifier-reference-index-node reference)
-                    (append 
-                      (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                      `(,reference)))
-                  (append-references-into-ordered-references-for document index-node `(,reference)))]
-              [else '()])))]
-      [else '()])))
-)
+                      (index-node-references-export-to-other-node (identifier-reference-index-node param-reference))
+                      `(,param-reference)))
+                  (append-references-into-ordered-references-for document index-node `(,param-reference))))))
+          params)
+        '())]
+    [else '()])))

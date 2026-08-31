@@ -4,93 +4,40 @@
     parameter*-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
 ; reference-identifier-type include 
 ; parameter 
 (define (lambda*-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (identifier **1) fuzzy ... ) 
-        (let loop ([rest (index-node-children (dereference-index-node (cadr (index-node-children index-node))))])
-          (if (not (null? rest))
-            (let* ([identifier-index-node (dereference-index-node (car rest))]
-                [identifier-index-node-parent (index-node-parent identifier-index-node)])
-              (parameter*-process index-node identifier-index-node index-node '() document)
-              (loop (cdr rest)))))]
-      [(_ (? symbol? identifier) fuzzy ... ) 
-        (parameter*-process index-node (cadr (index-node-children index-node)) index-node '() document)]
-      [(_ (identifier . rest) fuzzy ... ) 
-        (let* ([omg-index-node (dereference-index-node (cadr (index-node-children index-node)))]
-            [reference (make-identifier-reference 
-                identifier 
-                document 
-                omg-index-node
-                index-node
-                '()
-                'parameter
-                '()
-                '())])
-          (index-node-references-export-to-other-node-set! 
-            (identifier-reference-index-node reference)
-            (append 
-              (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-              `(,reference)))
-          (append-references-into-ordered-references-for document index-node `(,reference))
-          (let loop ([rest-node (dereference-index-node (cadr (index-node-children omg-index-node)))])
-            (if (index-node-shared-reference rest-node)
-              '()
-              (let ([rest-expr (annotation-stripped (index-node-datum/annotations rest-node))])
-                (cond 
-                  [(pair? rest-expr) 
-                    (let* ([identifier-index-node (dereference-index-node (car (index-node-children rest-node)))]
-                        [reference (make-identifier-reference 
-                            (annotation-stripped (index-node-datum/annotations identifier-index-node))
-                            document 
-                            identifier-index-node
-                            index-node
-                            '()
-                            'parameter
-                            '()
-                            '())])
-                      (index-node-references-export-to-other-node-set! 
-                        (identifier-reference-index-node reference)
-                        (append 
-                          (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                          `(,reference)))
-                      (append-references-into-ordered-references-for document index-node `(,reference)))
-                    (let ([next-node (cadr (index-node-children rest-node))])
-                      (if (index-node-shared-reference next-node)
-                        '()
-                        (loop (dereference-index-node next-node))))]
-                  [(not (null? rest-expr)) 
-                    (let ([reference (make-identifier-reference 
-                        rest-expr
-                        document 
-                        rest-node
-                        index-node
-                        '()
-                        'parameter
-                        '()
-                        '())])
-                      (index-node-references-export-to-other-node-set! 
-                        (identifier-reference-index-node reference)
-                        (append 
-                          (index-node-references-export-to-other-node (identifier-reference-index-node reference))
-                          `(,reference)))
-                      (append-references-into-ordered-references-for document index-node `(,reference)))]
-                  [else '()])))))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (and params-node
+              (? (lambda (n) (list? (annotation-stripped (index-node-datum/annotations n)))))
+              (params **1))
+        . body)
+      (for-each
+        (lambda (param)
+          (parameter*-process index-node param index-node document))
+        params)]
+    [(:_ (? index-node-symbol? params-node) . body)
+      (parameter*-process index-node params-node index-node document)]
+    [(:_ (and params-node
+              (? (lambda (n) (pair? (annotation-stripped (index-node-datum/annotations n)))))
+              ((? index-node-symbol? first-param) . rest-params))
+        . body)
+      (parameter*-process index-node first-param index-node document)
+      (let loop ([rest rest-params])
+        (if (not (null? rest))
+          (begin
+            (parameter*-process index-node (car rest) index-node document)
+            (loop (cdr rest)))))]
+    [else '()]))
 
-(define (parameter*-process initialization-index-node index-node lambda-node exclude document )
-  (let* ([index-node (dereference-index-node index-node)]
-      [ann (index-node-datum/annotations index-node)]
+(define (parameter*-process initialization-index-node index-node lambda-node document)
+  (let* ([ann (index-node-datum/annotations index-node)]
       [expression (annotation-stripped ann)]
       [identifier (cond
                     [(symbol? expression) expression]
@@ -124,7 +71,6 @@
           (index-node-parent index-node)
           (append 
             (index-node-excluded-references index-node)
-            exclude
             `(,reference)))
         `(,reference))
       '())))
