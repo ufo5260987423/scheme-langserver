@@ -2,7 +2,7 @@
   (export fluid-let-syntax-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier rules fluid-let)
 
@@ -11,18 +11,15 @@
 ; reference-identifier-type include 
 ; procedure parameter variable syntax-variable let-loop
 (define (fluid-let-syntax-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (((? symbol? identifier) no-use ... ) **1 ) fuzzy ... ) 
-        (fold-left 
-          (lambda (exclude-list identifier-parent-index-node)
-            (let* ([identifier-index-node (car (index-node-children identifier-parent-index-node))]
-                [extended-exclude-list 
+  (match-index-node index-node
+    [(:_ (and bindings-list (((? index-node-symbol? identifier) :_ ...) **1)) . body)
+      (fold-left 
+        (lambda (exclude-list identifier-index-node)
+          (let ([extended-exclude-list 
                   (append exclude-list (fluid-let-parameter-process index-node identifier-index-node index-node exclude-list document 'syntax-variable))])
-              (index-node-excluded-references-set! (index-node-parent identifier-parent-index-node) extended-exclude-list)
-              extended-exclude-list))
-          '()
-          (index-node-children (cadr (index-node-children index-node))))]
-      [else '()])))
+            (index-node-excluded-references-set! bindings-list extended-exclude-list)
+            extended-exclude-list))
+        '()
+        identifier)]
+    [else '()]))
 )
