@@ -17,7 +17,7 @@
   (match-index-node index-node
     [(:_ ((? index-node-symbol? name-node) (? index-node-symbol? params) ...) . body)
       (index-node:regist-as-identifier-reference name-node index-node name-node #f (index-node-parent index-node) document 'procedure)
-      (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) params))
+      (check-duplicate-identifiers document (collect-parameter-pairs (index-node-parent name-node)))
       (map 
         (lambda (p)
           (index-node:regist-as-identifier-reference p index-node p (index-node-parent p) index-node document 'parameter))

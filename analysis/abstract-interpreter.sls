@@ -16,7 +16,6 @@
     (scheme-langserver analysis identifier rules define)
     (scheme-langserver analysis identifier rules define-syntax)
     (scheme-langserver analysis identifier rules define-record-type)
-    (scheme-langserver analysis identifier rules define-top-level-value)
     (scheme-langserver analysis identifier rules define-top-level-syntax)
 
     (scheme-langserver analysis identifier rules do)
@@ -34,8 +33,6 @@
     (scheme-langserver analysis identifier rules letrec-syntax)
 
     (scheme-langserver analysis identifier rules load)
-    (scheme-langserver analysis identifier rules load-library)
-    (scheme-langserver analysis identifier rules load-program)
 
     (scheme-langserver analysis identifier rules fluid-let)
     (scheme-langserver analysis identifier rules fluid-let-syntax)
@@ -52,7 +49,6 @@
 
     (scheme-langserver analysis identifier rules r7rs define)
     (scheme-langserver analysis identifier rules r7rs define-library-import)
-    (scheme-langserver analysis identifier rules r7rs define-library-export)
 
     (scheme-langserver analysis identifier rules s7 define-macro)
     (scheme-langserver analysis identifier rules s7 define*)
@@ -232,11 +228,8 @@
             [(and (equal? r '(import)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,r7-import-process) . ,identifier))]
 
-            [(equal? r '(load)) (private-add-rule rules `((,load-process) . ,identifier))]
-            [(and (equal? r '(load-program)) (private:top-env=? 'r6rs top))
-              (private-add-rule rules `((,load-program-process) . ,identifier))]
-            [(and (equal? r '(load-library)) (private:top-env=? 'r6rs top))
-              (private-add-rule rules `((,load-library-process) . ,identifier))]
+            [(or (equal? r '(load)) (equal? r '(load-program)) (equal? r '(load-library)))
+              (private-add-rule rules `((,load-process) . ,identifier))]
 
             [(equal? r '(begin)) (private-add-rule rules `((,do-nothing . ,begin-process) . ,identifier))]
 

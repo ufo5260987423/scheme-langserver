@@ -8,6 +8,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules let)
+    (scheme-langserver analysis identifier rules define-syntax)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -27,26 +28,5 @@
         identifier)]
     [else '()]))
 
-; Mirror of define-syntax:attach-generator for let-syntax bindings.
-; Each binding has the form (name syntax-rules-form).
-; The expansion generator created by syntax-rules->generator:map+expansion
-; is attached to the syntax-rules index-node; we copy it to the
-; identifier-references created by let-parameter-process.
-(define (let-syntax:attach-generator root-file-node root-library-node document index-node)
-  (match-index-node index-node
-    [(:_ ((vars . val-groups) **1) . body)
-      (fold-left
-        (lambda (rest-val-groups var)
-          (if (not (null? (car rest-val-groups)))
-            (let ([generator (index-node-expansion-generator (caar rest-val-groups))])
-              (if (procedure? generator)
-                (for-each
-                  (lambda (ref)
-                    (identifier-reference-syntax-expander-set! ref
-                      (lambda x (apply generator x))))
-                  (index-node-references-export-to-other-node var)))))
-          (cdr rest-val-groups))
-        val-groups
-        vars)]
-    [else '()]))
+(define let-syntax:attach-generator syntax-binding:attach-generator)
 ) ; end library

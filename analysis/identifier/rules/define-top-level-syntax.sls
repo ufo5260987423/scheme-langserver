@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis identifier rules define-top-level-syntax)
-  (export define-top-level-syntax-process)
+  (export 
+    define-top-level-syntax-process
+    define-top-level-value-process)
   (import 
     (chezscheme) 
     (ufo-match-steer)
@@ -10,8 +12,14 @@
     (scheme-langserver virtual-file-system document))
 
 ; reference-identifier-type include 
-; syntax-variable 
+; syntax-variable variable 
 (define (define-top-level-syntax-process root-file-node root-library-node document index-node)
+  (private:define-top-level-binding-process root-file-node root-library-node document index-node 'syntax-variable))
+
+(define (define-top-level-value-process root-file-node root-library-node document index-node)
+  (private:define-top-level-binding-process root-file-node root-library-node document index-node 'variable))
+
+(define (private:define-top-level-binding-process root-file-node root-library-node document index-node type)
   (match-index-node index-node
     [(:_ (? index-node-symbol? identifier-node) . dummy)
       (let ([reference (make-identifier-reference 
@@ -20,7 +28,7 @@
               identifier-node
               index-node
               '()
-              'syntax-variable 
+              type
               '()
               '())])
         (index-node-references-export-to-other-node-set! 
@@ -34,5 +42,4 @@
             (append 
               (document-ordered-reference-list document)
               `(,reference)))))]
-    [else '()]))
-)
+    [else '()])))

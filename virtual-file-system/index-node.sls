@@ -62,6 +62,8 @@
     index-node-symbol?
     index-node-reference?
     index-node-pair?
+    index-node-proper-list?
+    index-node-improper-list?
     is-ancestor?
     cover?
     clear-references-for
@@ -319,6 +321,14 @@
 
 (define (index-node-pair? index-node)
   (pair? (annotation-stripped (index-node-datum/annotations index-node))))
+
+(define (index-node-proper-list? index-node)
+  (let ([expr (annotation-stripped (index-node-datum/annotations index-node))])
+    (or (null? expr) (and (pair? expr) (list? expr)))))
+
+(define (index-node-improper-list? index-node)
+  (let ([expr (annotation-stripped (index-node-datum/annotations index-node))])
+    (and (pair? expr) (not (list? expr)))))
 
 (define (index-node-reference? index-node)
   (not (not (index-node-shared-reference index-node))))

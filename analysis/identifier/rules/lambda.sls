@@ -16,7 +16,7 @@
 (define (lambda-process root-file-node root-library-node document index-node)
   (match-index-node index-node
     [(:_ ((? index-node-symbol? parameters) **1) . body)
-      (let ([pairs (map (lambda (parameter) (cons (index-node-expression parameter) parameter)) parameters)])
+      (let ([pairs (collect-parameter-pairs (cadr (index-node-children index-node)))])
         (check-duplicate-identifiers document pairs)
         (map 
           (lambda (parameter)

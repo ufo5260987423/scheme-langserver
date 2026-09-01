@@ -61,371 +61,153 @@
             (loop (cdr body))]
           [else (loop (cdr body))])))))
 
+(define (private:regist-field-references! initialization-index-node document target-parent-index-node get-index-node set-index-node record-name get-name set-name)
+  (let* ([record-name-string (string-append (symbol->string record-name) "-")]
+      [get-identifier-reference
+        (make-identifier-reference
+          (string->symbol (string-append record-name-string (symbol->string get-name)))
+          document
+          get-index-node
+          initialization-index-node
+          '()
+          'getter
+          '()
+          '())])
+    (index-node-references-export-to-other-node-set!
+      get-index-node
+      (sort-identifier-references
+        (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
+    (let ([references
+            (if set-name
+              (let ([set-identifier-reference
+                      (make-identifier-reference
+                        (string->symbol (string-append record-name-string (symbol->string set-name)))
+                        document
+                        set-index-node
+                        initialization-index-node
+                        '()
+                        'setter
+                        '()
+                        '())])
+                (index-node-references-export-to-other-node-set!
+                  set-index-node
+                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))
+                `(,get-identifier-reference ,set-identifier-reference))
+              `(,get-identifier-reference))])
+      (append-references-into-ordered-references-for document target-parent-index-node references))))
+
 (define (process-fields-list initialization-index-node document target-parent-index-node index-node record-name binding-index-node)
   (let loop ([children (cdr (index-node-children (dereference-index-node index-node)))])
     (if (not (null? children))
       (let ([current-index-node (dereference-index-node (car children))])
         (match-index-node current-index-node
           [('mutable (? index-node-symbol? name-node) (? index-node-symbol? get-node) (? index-node-symbol? set-node))
-            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
-                [get-index-node (if (null? binding-index-node) get-node binding-index-node)]
-                [set-index-node (if (null? binding-index-node) set-node binding-index-node)]
-                [record-name-string (string-append (symbol->string record-name) "-")]
-                [get-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression get-node))))
-                    document
-                    get-index-node
-                    initialization-index-node
-                    '()
-                    'getter
-                    '()
-                    '())]
-                [set-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression set-node))))
-                    document
-                    set-index-node
-                    initialization-index-node
-                    '()
-                    'setter
-                    '()
-                    '())])
-              (index-node-references-export-to-other-node-set!
-                get-index-node
-                (sort-identifier-references 
-                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (append-references-into-ordered-references-for 
-                document
-                target-parent-index-node
-                `(,get-identifier-reference ,set-identifier-reference))
-
-              (index-node-references-export-to-other-node-set!
-                set-index-node
-                (sort-identifier-references 
-                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))))]
+            (let ([name-index-node (if (null? binding-index-node) name-node binding-index-node)])
+              (private:regist-field-references! initialization-index-node document target-parent-index-node
+                (if (null? binding-index-node) get-node binding-index-node)
+                (if (null? binding-index-node) set-node binding-index-node)
+                record-name
+                (index-node-expression get-node)
+                (index-node-expression set-node)))]
           [('mutable (? index-node-symbol? name-node) (? index-node-symbol? get-node))
-            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
-                [get-index-node (if (null? binding-index-node) get-node binding-index-node)]
-                [set-index-node name-index-node]
-                [record-name-string (string-append (symbol->string record-name) "-")]
-                [get-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression get-node))))
-                    document
-                    get-index-node
-                    initialization-index-node
-                    '()
-                    'getter
-                    '()
-                    '())]
-                [set-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node)) "-set!"))
-                    document
-                    set-index-node
-                    initialization-index-node
-                    '()
-                    'setter
-                    '()
-                    '())])
-              (index-node-references-export-to-other-node-set!
-                get-index-node
-                (sort-identifier-references
-                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (append-references-into-ordered-references-for 
-                document
-                target-parent-index-node
-                `(,get-identifier-reference ,set-identifier-reference))
-
-              (index-node-references-export-to-other-node-set!
-                set-index-node
-                (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference))))]
+            (let ([name-index-node (if (null? binding-index-node) name-node binding-index-node)])
+              (private:regist-field-references! initialization-index-node document target-parent-index-node
+                (if (null? binding-index-node) get-node binding-index-node)
+                name-index-node
+                record-name
+                (index-node-expression get-node)
+                (string->symbol (string-append (symbol->string (index-node-expression name-node)) "-set!"))))]
           [('mutable (? index-node-symbol? name-node))
-            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
-                [get-index-node name-index-node]
-                [set-index-node name-index-node]
-                [record-name-string (string-append (symbol->string record-name) "-")]
-                [get-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node))))
-                    document
-                    get-index-node
-                    initialization-index-node
-                    '()
-                    'getter
-                    '()
-                    '())]
-                [set-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node)) "-set!"))
-                    document
-                    set-index-node
-                    initialization-index-node
-                    '()
-                    'setter
-                    '()
-                    '())])
-              (index-node-references-export-to-other-node-set!
-                get-index-node
-                (sort-identifier-references
-                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (append-references-into-ordered-references-for 
-                document
-                target-parent-index-node
-                `(,get-identifier-reference ,set-identifier-reference))
-
-              (index-node-references-export-to-other-node-set!
-                set-index-node
-                (sort-identifier-references
-                  (append (index-node-references-export-to-other-node set-index-node) `(,set-identifier-reference)))))]
+            (let ([name-index-node (if (null? binding-index-node) name-node binding-index-node)])
+              (private:regist-field-references! initialization-index-node document target-parent-index-node
+                name-index-node
+                name-index-node
+                record-name
+                (index-node-expression name-node)
+                (string->symbol (string-append (symbol->string (index-node-expression name-node)) "-set!"))))]
           [('immutable (? index-node-symbol? name-node) (? index-node-symbol? get-node))
-            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
-                [get-index-node (if (null? binding-index-node) get-node binding-index-node)]
-                [record-name-string (string-append (symbol->string record-name) "-")]
-                [get-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression get-node))))
-                    document
-                    get-index-node
-                    initialization-index-node
-                    '()
-                    'getter
-                    '()
-                    '())])
-              (index-node-references-export-to-other-node-set!
-                get-index-node
-                (sort-identifier-references
-                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (append-references-into-ordered-references-for 
-                document
-                target-parent-index-node
-                `(,get-identifier-reference)))]
+            (private:regist-field-references! initialization-index-node document target-parent-index-node
+              (if (null? binding-index-node) get-node binding-index-node)
+              #f
+              record-name
+              (index-node-expression get-node)
+              #f)]
           [('immutable (? index-node-symbol? name-node))
-            (let* ([name-index-node (if (null? binding-index-node) name-node binding-index-node)]
-                [get-index-node name-index-node]
-                [record-name-string (string-append (symbol->string record-name) "-")]
-                [get-identifier-reference
-                  (make-identifier-reference
-                    (string->symbol (string-append record-name-string (symbol->string (index-node-expression name-node))))
-                    document
-                    get-index-node
-                    initialization-index-node
-                    '()
-                    'getter
-                    '()
-                    '())])
-              (index-node-references-export-to-other-node-set!
-                get-index-node
-                (sort-identifier-references
-                  (append (index-node-references-export-to-other-node get-index-node) `(,get-identifier-reference))))
-              (append-references-into-ordered-references-for 
-                document
-                target-parent-index-node
-                `(,get-identifier-reference)))]
+            (let ([name-index-node (if (null? binding-index-node) name-node binding-index-node)])
+              (private:regist-field-references! initialization-index-node document target-parent-index-node
+                name-index-node
+                #f
+                record-name
+                (index-node-expression name-node)
+                #f))]
           [else '()])
         (loop (cdr children))))))
+
+(define (private:regist-name-references! initialization-index-node document target-parent-index-node base-index-node name-node constructor-node predicator-node predicator-parents)
+  (let* ([name (index-node-expression name-node)]
+      [constructor-name
+        (if constructor-node
+          (index-node-expression constructor-node)
+          (string->symbol (string-append "make-" (symbol->string name))))]
+      [predicator-name
+        (if predicator-node
+          (index-node-expression predicator-node)
+          (string->symbol (string-append (symbol->string name) "?")))]
+      [constructor-target-node (or constructor-node name-node)]
+      [predicator-target-node (or predicator-node name-node)]
+      [name-identifier-reference
+        (make-identifier-reference 
+          name
+          document
+          name-node
+          initialization-index-node
+          '()
+          'syntax
+          '()
+          '())]
+      [constructor-identifier-reference
+        (make-identifier-reference 
+          constructor-name
+          document
+          constructor-target-node
+          initialization-index-node
+          '()
+          'constructor
+          '()
+          '())]
+      [predicator-identifier-reference
+        (make-identifier-reference 
+          predicator-name
+          document
+          predicator-target-node
+          initialization-index-node
+          '()
+          'predicator
+          predicator-parents
+          '())])
+    (index-node-references-export-to-other-node-set!
+      name-node
+      (append (index-node-references-export-to-other-node base-index-node) `(,name-identifier-reference)))
+    (index-node-references-export-to-other-node-set!
+      constructor-target-node
+      (append (index-node-references-export-to-other-node base-index-node) `(,constructor-identifier-reference)))
+    (index-node-references-export-to-other-node-set!
+      predicator-target-node
+      (append (index-node-references-export-to-other-node base-index-node) `(,predicator-identifier-reference)))
+    (append-references-into-ordered-references-for 
+      document
+      target-parent-index-node
+      `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))))
 
 (define (process-name-list initialization-index-node document target-parent-index-node index-node predicator-parents)
   (match-index-node index-node
     [(? index-node-symbol? name-node)
-      (let* ([name-index-node index-node]
-          [constructor-index-node index-node]
-          [predicator-index-node index-node]
-          [name-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression name-node)
-              document
-              name-index-node
-              initialization-index-node
-              '()
-              'syntax
-              '()
-              '())]
-          [constructor-identifier-reference
-            (make-identifier-reference 
-              (string->symbol (string-append "make-" (symbol->string (index-node-expression name-node))))
-              document
-              constructor-index-node
-              initialization-index-node
-              '()
-              'constructor
-              '()
-              '())]
-          [predicator-identifier-reference
-            (make-identifier-reference 
-              (string->symbol (string-append (symbol->string (index-node-expression name-node)) "?"))
-              document
-              predicator-index-node
-              initialization-index-node
-              '()
-              'predicator
-              predicator-parents
-              '())])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (append-references-into-ordered-references-for 
-          document
-          target-parent-index-node
-          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
-          
-        (index-node-references-export-to-other-node-set!
-          constructor-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-          
-        (index-node-references-export-to-other-node-set!
-          predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
+      (private:regist-name-references! initialization-index-node document target-parent-index-node index-node name-node #f #f predicator-parents)]
     [((? index-node-symbol? name-node))
-      (let* ([children (index-node-children index-node)]
-          [name-index-node (car children)]
-          [constructor-index-node name-index-node]
-          [predicator-index-node name-index-node]
-          [name-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression name-node)
-              document
-              name-index-node
-              initialization-index-node
-              '()
-              'syntax
-              '()
-              '())]
-          [constructor-identifier-reference
-            (make-identifier-reference 
-              (string->symbol (string-append "make-" (symbol->string (index-node-expression name-node))))
-              document
-              constructor-index-node
-              initialization-index-node
-              '()
-              'constructor
-              '()
-              '())]
-          [predicator-identifier-reference
-            (make-identifier-reference 
-              (string->symbol (string-append (symbol->string (index-node-expression name-node)) "?"))
-              document
-              predicator-index-node
-              initialization-index-node
-              '()
-              'predicator
-              predicator-parents
-              '())])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (append-references-into-ordered-references-for 
-          document
-          target-parent-index-node
-          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
-          
-        (index-node-references-export-to-other-node-set!
-          constructor-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-          
-        (index-node-references-export-to-other-node-set!
-          predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
+      (private:regist-name-references! initialization-index-node document target-parent-index-node index-node name-node #f #f predicator-parents)]
     [((? index-node-symbol? name-node) (? index-node-symbol? constructor-node))
-      (let* ([children (index-node-children index-node)]
-          [name-index-node (car children)]
-          [constructor-index-node (cadr children)]
-          [predicator-index-node name-index-node]
-          [name-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression name-node)
-              document
-              name-index-node
-              initialization-index-node
-              '()
-              'syntax
-              '()
-              '())]
-          [constructor-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression constructor-node)
-              document
-              constructor-index-node
-              initialization-index-node
-              '()
-              'constructor
-              '()
-              '())]
-          [predicator-identifier-reference
-            (make-identifier-reference 
-              (string->symbol (string-append (symbol->string (index-node-expression name-node)) "?"))
-              document
-              predicator-index-node
-              initialization-index-node
-              '()
-              'predicator
-              predicator-parents
-              '())])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (append-references-into-ordered-references-for 
-          document
-          target-parent-index-node
-          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
-          
-        (index-node-references-export-to-other-node-set!
-          constructor-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-
-        (index-node-references-export-to-other-node-set!
-          predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
+      (private:regist-name-references! initialization-index-node document target-parent-index-node index-node name-node constructor-node #f predicator-parents)]
     [((? index-node-symbol? name-node) (? index-node-symbol? constructor-node) (? index-node-symbol? predicator-node))
-      (let* ([children (index-node-children index-node)]
-          [name-index-node (car children)]
-          [constructor-index-node (cadr children)]
-          [predicator-index-node (caddr children)]
-          [name-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression name-node)
-              document
-              name-index-node
-              initialization-index-node
-              '()
-              'syntax
-              '()
-              '())]
-          [constructor-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression constructor-node)
-              document
-              constructor-index-node
-              initialization-index-node
-              '()
-              'constructor
-              '()
-              '())]
-          [predicator-identifier-reference
-            (make-identifier-reference 
-              (index-node-expression predicator-node)
-              document
-              predicator-index-node
-              initialization-index-node
-              '()
-              'predicator
-              predicator-parents
-              '())])
-        (index-node-references-export-to-other-node-set!
-          name-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,name-identifier-reference)))
-        (append-references-into-ordered-references-for 
-          document
-          target-parent-index-node
-          `(,name-identifier-reference ,constructor-identifier-reference ,predicator-identifier-reference))
-          
-        (index-node-references-export-to-other-node-set!
-          constructor-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,constructor-identifier-reference)))
-          
-        (index-node-references-export-to-other-node-set!
-          predicator-index-node
-          (append (index-node-references-export-to-other-node index-node) `(,predicator-identifier-reference))))]
+      (private:regist-name-references! initialization-index-node document target-parent-index-node index-node name-node constructor-node predicator-node predicator-parents)]
     [else '()])))
 

@@ -6,7 +6,7 @@
 
 (import (rnrs (6)) (srfi :64 testing) 
   (scheme-langserver analysis workspace)
-  (scheme-langserver analysis identifier rules define-top-level-value)
+  (scheme-langserver analysis identifier rules define-top-level-syntax)
 
   (scheme-langserver util test)
 

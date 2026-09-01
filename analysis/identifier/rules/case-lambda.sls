@@ -18,7 +18,7 @@
         (lambda (clause-body)
           (match-index-node clause-body
             [(((? index-node-symbol? parameters) **1) . body)
-              (let ([pairs (map (lambda (parameter) (cons (index-node-expression parameter) parameter)) parameters)])
+              (let ([pairs (collect-parameter-pairs (car (index-node-children clause-body)))])
                 (check-duplicate-identifiers document pairs)
                 (map 
                   (lambda (parameter)

@@ -1,5 +1,7 @@
 (library (scheme-langserver analysis identifier rules library-export)
-  (export export-process)
+  (export 
+    export-process
+    export-process-r7rs)
   (import 
     (chezscheme) 
     (ufo-match-steer)
@@ -24,6 +26,8 @@
         clauses)]
     [else '()])
   index-node)
+
+(define export-process-r7rs export-process)
 
 (define (match-export initialization-index-node root-file-node document library-identifiers index-node)
   (match-index-node index-node

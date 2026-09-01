@@ -1,7 +1,8 @@
 (library (scheme-langserver analysis identifier rules define-syntax)
   (export 
     define-syntax-process
-    define-syntax:attach-generator)
+    define-syntax:attach-generator
+    syntax-binding:attach-generator)
   (import 
     (chezscheme) 
     (ufo-match-steer)
@@ -37,78 +38,53 @@
             (index-node-references-export-to-other-node identifier))))]
     [else '()]))
 
-(define (private:regist-syntax-variable! document identifier-node init-node import-node library-identifiers)
+; Common attachment logic for let-syntax and letrec-syntax bindings.
+; Each binding has the form (name syntax-rules-form); the expansion generator
+; created by syntax-rules->generator:map+expansion is attached to the
+; syntax-rules index-node and copied to the identifier-references of each name.
+(define (syntax-binding:attach-generator root-file-node root-library-node document index-node)
+  (match-index-node index-node
+    [(:_ ((vars . val-groups) **1) . body)
+      (fold-left
+        (lambda (rest-val-groups var)
+          (if (not (null? (car rest-val-groups)))
+            (let ([generator (index-node-expansion-generator (caar rest-val-groups))])
+              (if (procedure? generator)
+                (for-each
+                  (lambda (ref)
+                    (identifier-reference-syntax-expander-set! ref
+                      (lambda x (apply generator x))))
+                  (index-node-references-export-to-other-node var)))))
+          (cdr rest-val-groups))
+        val-groups
+        vars)]
+    [else '()]))
+
+(define (private:regist-identifier-reference! document identifier-node init-node import-node exclude-node library-identifiers type ordered-target)
   (let ([reference (make-identifier-reference
                      (index-node-expression identifier-node)
                      document
                      identifier-node
                      init-node
                      library-identifiers
-                     'syntax-variable
+                     type
                      '()
                      '())])
     (index-node-references-export-to-other-node-set!
       identifier-node
       (append (index-node-references-export-to-other-node identifier-node) `(,reference)))
-    (append-references-into-ordered-references-for document import-node `(,reference))))
-
-(define (private:regist-syntax! document identifier-node init-node import-node library-identifiers)
-  (let ([reference (make-identifier-reference
-                     (index-node-expression identifier-node)
-                     document
-                     identifier-node
-                     init-node
-                     library-identifiers
-                     'syntax
-                     '()
-                     '())])
-    (index-node-references-export-to-other-node-set!
-      identifier-node
-      (append (index-node-references-export-to-other-node identifier-node) `(,reference)))
-    (append-references-into-ordered-references-for document import-node `(,reference))))
-
-(define (private:regist-syntax-parameter! document param-node init-node exclude-node import-node)
-  (let ([reference (make-identifier-reference
-                     (index-node-expression param-node)
-                     document
-                     param-node
-                     init-node
-                     '()
-                     'syntax-parameter
-                     '()
-                     '())])
-    (index-node-references-export-to-other-node-set!
-      param-node
-      (append (index-node-references-export-to-other-node param-node) `(,reference)))
-    (index-node-references-import-in-this-node-set!
-      import-node
-      (sort-identifier-references
-        (append (index-node-references-import-in-this-node import-node) `(,reference))))
-    (index-node-excluded-references-set!
-      exclude-node
-      (append (index-node-excluded-references exclude-node) `(,reference)))))
-
-(define (private:regist-parameter! document param-node init-node exclude-node import-node)
-  (let ([reference (make-identifier-reference
-                     (index-node-expression param-node)
-                     document
-                     param-node
-                     init-node
-                     '()
-                     'parameter
-                     '()
-                     '())])
-    (index-node-references-export-to-other-node-set!
-      param-node
-      (append (index-node-references-export-to-other-node param-node) `(,reference)))
-    (index-node-references-import-in-this-node-set!
-      import-node
-      (sort-identifier-references
-        (append (index-node-references-import-in-this-node import-node) `(,reference))))
-    (index-node-excluded-references-set!
-      exclude-node
-      (append (index-node-excluded-references exclude-node) `(,reference)))
-    (append-references-into-ordered-references-for document import-node `(,reference))))
+    (when exclude-node
+      (index-node-excluded-references-set!
+        exclude-node
+        (append (index-node-excluded-references exclude-node) `(,reference))))
+    (when import-node
+      (index-node-references-import-in-this-node-set!
+        import-node
+        (sort-identifier-references
+          (append (index-node-references-import-in-this-node import-node) `(,reference)))))
+    (when ordered-target
+      (append-references-into-ordered-references-for document ordered-target `(,reference)))
+    reference))
 
 (define (private:process-improper-formals formals-list-node init-node import-node document)
   (let loop ([current-node formals-list-node])
@@ -117,26 +93,26 @@
         [(pair? expr)
           (let ([head-node (car (index-node-children current-node))]
                 [tail-node (cadr (index-node-children current-node))])
-            (private:regist-syntax-parameter! document head-node init-node formals-list-node import-node)
+            (private:regist-identifier-reference! document head-node init-node import-node formals-list-node '() 'syntax-parameter #f)
             (loop tail-node))]
         [(not (null? expr))
-          (private:regist-parameter! document current-node init-node formals-list-node import-node)]
+          (private:regist-identifier-reference! document current-node init-node import-node formals-list-node '() 'parameter import-node)]
         [else '()]))))
 
 (define (define-syntax-process root-file-node root-library-node document index-node)
   (let ([library-identifiers (get-nearest-ancestor-library-identifier index-node)])
     (match-index-node index-node
       [(:_ ((? index-node-symbol? identifier-node) (? index-node-symbol? param-nodes) ...) . body)
-        (private:regist-syntax! document identifier-node index-node (index-node-parent index-node) library-identifiers)
-        (check-duplicate-identifiers document (map (lambda (p) (cons (index-node-expression p) p)) param-nodes))
+        (private:regist-identifier-reference! document identifier-node index-node #f #f library-identifiers 'syntax (index-node-parent index-node))
+        (check-duplicate-identifiers document (collect-parameter-pairs (index-node-parent identifier-node)))
         (for-each
           (lambda (param-node)
-            (private:regist-syntax-parameter! document param-node index-node (index-node-parent identifier-node) index-node))
+            (private:regist-identifier-reference! document param-node index-node index-node (index-node-parent identifier-node) '() 'syntax-parameter #f))
           param-nodes)]
       [(:_ ((? index-node-symbol? identifier-node) . rest) . body)
-        (private:regist-syntax! document identifier-node index-node (index-node-parent index-node) '())
+        (private:regist-identifier-reference! document identifier-node index-node #f #f '() 'syntax (index-node-parent index-node))
         (private:process-improper-formals (index-node-parent identifier-node) index-node index-node document)]
       [(:_ (? index-node-symbol? identifier-node) . rest)
-        (private:regist-syntax-variable! document identifier-node index-node (index-node-parent index-node) library-identifiers)]
+        (private:regist-identifier-reference! document identifier-node index-node #f #f library-identifiers 'syntax-variable (index-node-parent index-node))]
       [else '()])))
 ) ; end library
