@@ -108,7 +108,7 @@
               (index-node-children current-index-node)))]
         [(children **1)
           (let* ([head (car children)]
-              [head-expression (annotation-stripped (index-node-datum/annotations head))]
+              [head-expression (index-node-expression head)]
               [target-rules
                 (if (index-node-symbol? head)
                   (establish-available-rules-from 
