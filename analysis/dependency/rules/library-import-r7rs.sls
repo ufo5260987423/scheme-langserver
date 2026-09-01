@@ -3,37 +3,31 @@
     library-import-process-r7rs)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (library-import-process-r7rs index-node)
   (apply append 
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [('define-library :_ **1 ) (map match-import (index-node-children index-node))]
-        [else (list (match-import index-node))]))))
+    (match-index-node index-node
+      [('define-library . clauses) (map match-import clauses)]
+      [else (list (match-import index-node))])))
 
 (define (match-import index-node)
   (filter 
     (lambda (item) (not (null? item)))
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression
-        [('import dummy **1 ) (map match-clause (index-node-children index-node))]
-        [else '()]))))
+    (match-index-node index-node
+      [('import . clauses) (map match-clause clauses)]
+      [else '()])))
 
 (define (match-clause index-node)
   (filter 
     (lambda (item) (not (null? item)))
-    (let* ([ann (index-node-datum/annotations index-node)]
-        [expression (annotation-stripped ann)])
-      (match expression 
-        [('only (identifier **1) :_ ...) identifier]
-        [('except (identifier **1) :_ ...) identifier]
-        [('prefix (identifier **1) :_ ...) identifier]
-        [('rename (identifier **1) :_ ...) identifier]
-        [(identifier **1) identifier]
-        [else '()]))))
+    (match-index-node index-node 
+      [('only ((:= index-node-expression identifier) ...) . rest) identifier]
+      [('except ((:= index-node-expression identifier) ...) . rest) identifier]
+      [('prefix ((:= index-node-expression identifier) ...) . rest) identifier]
+      [('rename ((:= index-node-expression identifier) ...) . rest) identifier]
+      [((:= index-node-expression identifier) ...) identifier]
+      [else '()])))
 )
