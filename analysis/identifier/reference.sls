@@ -40,7 +40,7 @@
   (import 
     (chezscheme)
 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -235,27 +235,27 @@
               (and 
                 (not (eq? bigest-sibling index-node))
                 (contain? sibling index-node eq?)
-                (match (annotation-stripped (index-node-datum/annotations grandparent))
-                  [('library :_ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
-                  [('define-library :_ ...) (not (eq? (cadr (index-node-children grandparent)) parent))]
+                (match-index-node grandparent
+                  [('library . rest) (not (eq? (cadr (index-node-children grandparent)) parent))]
+                  [('define-library . rest) (not (eq? (cadr (index-node-children grandparent)) parent))]
                   [else #f])))))])
     (if (null? parent)
       #f
-      (match (annotation-stripped (index-node-datum/annotations parent))
-        [('library identifier :_ ...) 
+      (match-index-node parent
+        [('library identifier-node . rest) 
           (and 
-            (eq? (cadr (index-node-children parent)) index-node)
+            (eq? identifier-node index-node)
             (not (check?)))]
-        [('define-library identifier :_ ...) 
+        [('define-library identifier-node . rest) 
           (and 
-            (eq? (cadr (index-node-children parent)) index-node)
+            (eq? identifier-node index-node)
             (not (check?)))]
-        [('import identifier **1) (check?)]
-        [('only identifier :_ ...) (check?)]
-        [('rename identifier :_ ...) (check?)]
-        [('prefix identifier :_ ...) (check?)]
-        [('except identifier :_ ...) (check?)]
-        [('alias identifier :_ ...) (check?)]
+        [('import identifier-node . rest) (check?)]
+        [('only identifier-node . rest) (check?)]
+        [('rename identifier-node . rest) (check?)]
+        [('prefix identifier-node . rest) (check?)]
+        [('except identifier-node . rest) (check?)]
+        [('alias identifier-node . rest) (check?)]
         [else #f]))))
 
 (define (private:list->eq-set lst)
@@ -318,28 +318,26 @@
     (fold-right append '() (map root-ancestor (identifier-reference-parents identifier-reference)))))
 
 (define (find-references-in document index-node available-references predicate?)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-expression ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(? predicate? maybe-symbol) 
-        (let ([result 
-              (find 
-                (lambda (candidate-reference) 
-                  (if (find (lambda (cr) (eq? cr candidate-reference)) available-references)
-                    #t
-                    #f))
-                (find-available-references-for document index-node maybe-symbol))])
-          (if result
-            `(,(make-location
-              (document-uri document) 
-              (make-range
-                (apply make-position (document+bias->position-list document (index-node-start index-node)))
-                (apply make-position (document+bias->position-list document (index-node-end index-node))))))
-            '()))]
-      [else 
+  (match-index-node index-node
+    [(:= index-node-expression (? predicate? maybe-symbol)) 
+      (let ([result 
+            (find 
+              (lambda (candidate-reference) 
+                (if (find (lambda (cr) (eq? cr candidate-reference)) available-references)
+                  #t
+                  #f))
+              (find-available-references-for document index-node maybe-symbol))])
+        (if result
+          `(,(make-location
+            (document-uri document) 
+            (make-range
+              (apply make-position (document+bias->position-list document (index-node-start index-node)))
+              (apply make-position (document+bias->position-list document (index-node-end index-node))))))
+          '()))]
+    [else 
+      (let ([children (index-node-children index-node)])
         (if (null? children)
           '()
           (fold-left append '()
-            (map (lambda (child-index-node) (find-references-in document child-index-node available-references predicate?)) children)))])))
+            (map (lambda (child-index-node) (find-references-in document child-index-node available-references predicate?)) children))))]))
 )
