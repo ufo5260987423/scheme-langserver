@@ -2,7 +2,7 @@
   (export include-resolve-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver util path)
 
@@ -17,22 +17,20 @@
 (define (private:library-ancestor index-node)
   (if (null? index-node)
     #f
-    (let ([expression (annotation-stripped (index-node-datum/annotations index-node))])
-      (if (and (not (index-node-shared-reference index-node))
-               (pair? expression)
-               (or (eq? 'library (car expression)) (eq? 'define-library (car expression))))
-        index-node
-        (private:library-ancestor (index-node-parent index-node))))))
+    (if (index-node-shared-reference index-node)
+      (private:library-ancestor (index-node-parent index-node))
+      (match-index-node index-node
+        [('library . rest) index-node]
+        [('define-library . rest) index-node]
+        [else (private:library-ancestor (index-node-parent index-node))]))))
 
 (define (include-resolve-process root-file-node root-library-node document index-node step-without-document)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [current-absolute-path (uri->path (document-uri document))]
+  (let* ([current-absolute-path (uri->path (document-uri document))]
       [target-parent-index-node 
         (or (private:library-ancestor (index-node-parent index-node))
           (index-node-parent index-node))])
-    (match expression
-      [(_ (? string? file-name))
+    (match-index-node index-node
+      [(_ (:= index-node-expression (? string? file-name)))
         (let ([suffix file-name])
           (for-each 
             (lambda (target-file-node)
@@ -46,8 +44,12 @@
                   target-parent-index-node 
                   (document-ordered-reference-list target-document))))
             (search-end-with root-file-node suffix)))]
-      [(_ ((? string? lib-path) **1) (? string? file-name))
-        (let ([suffix (fold-left (lambda (l r) (string-append r "/" l)) file-name (reverse lib-path))])
+      [(_ lib-path-node (:= index-node-expression (? string? file-name)))
+        (let ([suffix 
+                (fold-left 
+                  (lambda (l r) (string-append r "/" l)) 
+                  file-name 
+                  (reverse (map index-node-expression (index-node-children lib-path-node))))])
           (for-each 
             (lambda (target-file-node)
               (let ([target-document (file-node-document target-file-node)])

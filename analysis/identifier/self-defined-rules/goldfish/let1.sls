@@ -4,7 +4,7 @@
     let1-parameter-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
 
@@ -13,22 +13,19 @@
 ; reference-identifier-type include 
 ; procedure variable 
 (define (let1-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (? symbol? identifier) fuzzy ... )
-        (let* ([identifier-index-node (cadr (index-node-children index-node))]
-            [exclude-list (let1-parameter-process index-node identifier-index-node index-node '() document 'variable)])
-          (index-node-excluded-references-set! identifier-index-node exclude-list)
-          exclude-list)]
-      [else '()])))
+  (match-index-node index-node
+    [(_ (:= index-node-expression (? symbol? identifier)) . rest)
+      (let* ([identifier-index-node (cadr (index-node-children index-node))]
+          [exclude-list (let1-parameter-process index-node identifier-index-node index-node '() document 'variable)])
+        (index-node-excluded-references-set! identifier-index-node exclude-list)
+        exclude-list)]
+    [else '()]))
 
 (define (let1-parameter-process initialization-index-node index-node let-node exclude document type)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
+  (let ([expression (index-node-expression index-node)]
       [reference 
         (make-identifier-reference
-          expression
+          (index-node-expression index-node)
           document
           index-node
           initialization-index-node

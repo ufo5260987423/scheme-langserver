@@ -4,58 +4,36 @@
     typed-parameter-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node))
 
-; reference-identifier-type include 
-; parameter 
 (define (typed-lambda-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ (identifier **1) fuzzy ... )
-        (let loop ([rest (index-node-children (cadr (index-node-children index-node)))])
-          (if (not (null? rest))
-            (let* ([identifier-index-node (car rest)]
-                [identifier-index-node-parent (index-node-parent identifier-index-node)])
-              (let* ([ann (index-node-datum/annotations identifier-index-node)]
-                [expression (annotation-stripped ann)])
-                (match expression
-                  [(? symbol? x)
-                    (typed-parameter-process index-node identifier-index-node index-node '() document)]
-                  [(? pair? y)
-                    (let* ([sub-identifier-index-node (car (index-node-children identifier-index-node))]
-                      [sub-identifier-index-node-parent (index-node-parent sub-identifier-index-node)])
-                      (typed-parameter-process index-node sub-identifier-index-node index-node '() document))]))
-              (loop (cdr rest)))))]
-      
-      [(_ (? symbol? identifier) fuzzy ... ) 
-        (typed-parameter-process index-node (cadr (index-node-children index-node)) index-node '() document)]
-      [(_ (identifier . rest) fuzzy ... ) 
-        (let* ([formals-index-node (cadr (index-node-children index-node))]
-            [formals-children (index-node-children formals-index-node)])
-          (let loop ([children formals-children])
-            (if (not (null? children))
-              (let* ([identifier-index-node (car children)]
-                  [identifier-index-node-parent (index-node-parent identifier-index-node)])
-                (let* ([ann (index-node-datum/annotations identifier-index-node)]
-                    [expression (annotation-stripped ann)])
-                  (match expression
-                    [(? symbol? x)
+  (match-index-node index-node
+    [(_ formals-node . rest)
+      (let ([formals-expression (index-node-expression formals-node)]
+          [formals-children (index-node-children formals-node)])
+        (cond
+          [(symbol? formals-expression)
+            (typed-parameter-process index-node formals-node index-node '() document)]
+          [(pair? formals-expression)
+            (let loop ([children formals-children])
+              (if (not (null? children))
+                (let* ([identifier-index-node (car children)]
+                    [expression (index-node-expression identifier-index-node)])
+                  (cond
+                    [(symbol? expression)
                       (typed-parameter-process index-node identifier-index-node index-node '() document)]
-                    [(? pair? y)
-                      (let* ([sub-identifier-index-node (car (index-node-children identifier-index-node))]
-                          [sub-identifier-index-node-parent (index-node-parent sub-identifier-index-node)])
-                        (typed-parameter-process index-node sub-identifier-index-node index-node '() document))]))
-                (loop (cdr children))))))]
-      [else '()])))
+                    [(pair? expression)
+                      (let* ([sub-identifier-index-node (car (index-node-children identifier-index-node))])
+                        (typed-parameter-process index-node sub-identifier-index-node index-node '() document))])
+                  (loop (cdr children)))))]))]
+    [else '()]))
 
 (define (typed-parameter-process initialization-index-node index-node lambda-node exclude document )
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
+  (let ([expression (index-node-expression index-node)])
     (if (symbol? expression)
       (let ([reference 
             (make-identifier-reference

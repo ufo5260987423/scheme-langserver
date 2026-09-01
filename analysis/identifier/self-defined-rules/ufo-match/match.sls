@@ -10,7 +10,7 @@
 
 (define (match-process root-file-node root-library-node document index-node)
   (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
+      [expression (index-node-expression index-node)])
     (match expression
       [(_ something **1)
         (let* ([children (index-node-children index-node)]
@@ -24,7 +24,7 @@
       [else '()])))
 
 (define (private:pattern+scope document pattern-index-node scope-index-node exclude-index-node)
-  (let* ([expression (annotation-stripped (index-node-datum/annotations pattern-index-node))]
+  (let* ([expression (index-node-expression pattern-index-node)]
       [children (index-node-children pattern-index-node)])
     (match expression 
       ['() '()]

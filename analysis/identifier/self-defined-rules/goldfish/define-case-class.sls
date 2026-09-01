@@ -4,7 +4,7 @@
     define-case-class-parameter-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
 
@@ -13,29 +13,23 @@
 ; reference-identifier-type include 
 ; parameter 
 (define (define-case-class-process root-file-node root-library-node document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
-    (match expression
-      [(_ _name (identifier **1) fuzzy ... )
-        (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
-          (if (not (null? rest))
-            (let* ([identifier-index-node (car rest)]
-                [identifier-index-node-parent (index-node-parent identifier-index-node)])
-              (let* ([ann (index-node-datum/annotations identifier-index-node)]
-                [expression (annotation-stripped ann)])
-                (match expression
-                  [(? symbol? x)
-                    (define-case-class-parameter-process index-node identifier-index-node index-node '() document)]
-                  [(? pair? y)
-                    (let* ([sub-identifier-index-node (car (index-node-children identifier-index-node))]
-                      [sub-identifier-index-node-parent (index-node-parent sub-identifier-index-node)])
-                      (define-case-class-parameter-process index-node sub-identifier-index-node index-node '() document))]))
-              (loop (cdr rest)))))]
-      [else '()])))
+  (match-index-node index-node
+    [(_ _name (identifier **1) fuzzy ... )
+      (let loop ([rest (index-node-children (caddr (index-node-children index-node)))])
+        (if (not (null? rest))
+          (let* ([identifier-index-node (car rest)]
+              [expression (index-node-expression identifier-index-node)])
+            (cond
+              [(symbol? expression)
+                (define-case-class-parameter-process index-node identifier-index-node index-node '() document)]
+              [(pair? expression)
+                (let* ([sub-identifier-index-node (car (index-node-children identifier-index-node))])
+                  (define-case-class-parameter-process index-node sub-identifier-index-node index-node '() document))])
+            (loop (cdr rest)))))]
+    [else '()]))
 
 (define (define-case-class-parameter-process initialization-index-node index-node lambda-node exclude document )
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)])
+  (let ([expression (index-node-expression index-node)])
     (if (symbol? expression)
       (let ([reference 
             (make-identifier-reference
