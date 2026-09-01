@@ -26,10 +26,10 @@
 (test-end)
 
 (test-begin "pattern+index-node->pair-list")
-  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") '() #f #f)]
+  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") 'txt #f #f)]
       [root-file-node (workspace-file-node workspace)]
       [root-library-node (workspace-library-node workspace)]
-      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.sls"))]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.scm.txt"))]
       [document (file-node-document target-file-node)]
       [index-node-list (document-index-node-list document)]
       [root-index-node (car index-node-list)]
@@ -138,10 +138,10 @@
 (test-end)
 
 (test-begin "pattern+context->pairs->iterator")
-  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") '() #f #f)]
+  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") 'txt #f #f)]
       [root-file-node (workspace-file-node workspace)]
       [root-library-node (workspace-library-node workspace)]
-      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.sls"))]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.scm.txt"))]
       [document (file-node-document target-file-node)]
       [index-node-list (document-index-node-list document)]
       [root-index-node (car index-node-list)]
@@ -168,10 +168,10 @@
 (test-end)
 
 (test-begin "generate-binding")
-  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") '() #f #f)]
+  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") 'txt #f #f)]
       [root-file-node (workspace-file-node workspace)]
       [root-library-node (workspace-library-node workspace)]
-      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.sls"))]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.scm.txt"))]
       [document (file-node-document target-file-node)]
       [index-node-list (document-index-node-list document)]
       [root-index-node (car index-node-list)]
@@ -193,10 +193,10 @@
 (test-end)
 
 (test-begin "expand:index-node-compound-list")
-  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") '() #f #f)]
+  (let* ([workspace (init-workspace (string-append (current-directory) "/tests/resources/fixtures/pattern-source") 'txt #f #f)]
       [root-file-node (workspace-file-node workspace)]
       [root-library-node (workspace-library-node workspace)]
-      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.sls"))]
+      [target-file-node (walk-file root-file-node (string-append (current-directory) "/tests/resources/fixtures/pattern-source/let.scm.txt"))]
       [document (file-node-document target-file-node)]
       [index-node-list (document-index-node-list document)]
       [root-index-node (car index-node-list)]
