@@ -2,35 +2,22 @@
   (export do-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (do-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ ((var init update ...) **1) (test result ...) :_ ... ) 
-        (let* ([children (index-node-children index-node)]
-            [var-index-node (cadr children)])
-          (for-each private-process (index-node-children var-index-node)))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ (bindings ...) (test . results) . body)
+      (for-each private-process bindings)]
+    [else '()]))
 
 (define (private-process target-index-node)
-  (let* ([ann (index-node-datum/annotations target-index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children target-index-node)])
-    (match expression
-      [((? symbol? var) init)
-        (let* ([var-index-node (car children)]
-            [init-index-node (cadr children)])
-          (extend-index-node-substitution-list var-index-node init-index-node))]
-      [((? symbol? var) init update)
-        (let* ([var-index-node (car children)]
-            [init-index-node (cadr children)]
-            [update-index-node (caddr children)])
-          (extend-index-node-substitution-list var-index-node init-index-node)
-          (extend-index-node-substitution-list var-index-node update-index-node))]
-      [else '()])))
+  (match-index-node target-index-node
+    [((? index-node-symbol? var) init)
+      (extend-index-node-substitution-list var init)]
+    [((? index-node-symbol? var) init update)
+      (extend-index-node-substitution-list var init)
+      (extend-index-node-substitution-list var update)]
+    [else '()]))
 )
