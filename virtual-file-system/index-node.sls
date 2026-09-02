@@ -47,10 +47,20 @@
     quote?
     quasiquote?
 
+    index-node-unquote-splicing?
+    index-node-unquote?
+    index-node-quote?
+    index-node-quasiquote?
+
     unsyntax-splicing?
     unsyntax?
     syntax?
     quasisyntax?
+
+    index-node-unsyntax-splicing?
+    index-node-unsyntax?
+    index-node-syntax?
+    index-node-quasisyntax?
 
     find-leaves 
     ancestor-recursion:index-node-import-file-nodes
@@ -133,29 +143,53 @@
       (index-node-substitution-list index-node)
       target-substitutions)))
 
-(define (unquote-splicing? index-node)
+(define (index-node-unquote-splicing? index-node)
   (private index-node 'unquote-splicing))
 
-(define (unquote? index-node)
+(define (unquote-splicing? index-node)
+  (index-node-unquote-splicing? index-node))
+
+(define (index-node-unquote? index-node)
   (private index-node 'unquote))
 
-(define (quote? index-node)
+(define (unquote? index-node)
+  (index-node-unquote? index-node))
+
+(define (index-node-quote? index-node)
   (private index-node 'quote))
 
-(define (quasiquote? index-node)
+(define (quote? index-node)
+  (index-node-quote? index-node))
+
+(define (index-node-quasiquote? index-node)
   (private index-node 'quasiquote))
 
-(define (syntax? index-node)
+(define (quasiquote? index-node)
+  (index-node-quasiquote? index-node))
+
+(define (index-node-syntax? index-node)
   (private index-node 'syntax))
 
-(define (quasisyntax? index-node)
+(define (syntax? index-node)
+  (index-node-syntax? index-node))
+
+(define (index-node-quasisyntax? index-node)
   (private index-node 'quasisyntax))
 
-(define (unsyntax? index-node)
+(define (quasisyntax? index-node)
+  (index-node-quasisyntax? index-node))
+
+(define (index-node-unsyntax? index-node)
   (private index-node 'unsyntax))
 
-(define (unsyntax-splicing? index-node)
+(define (unsyntax? index-node)
+  (index-node-unsyntax? index-node))
+
+(define (index-node-unsyntax-splicing? index-node)
   (private index-node 'unsyntax-splicing))
+
+(define (unsyntax-splicing? index-node)
+  (index-node-unsyntax-splicing? index-node))
 
 (define (private index-node target)
   (if (index-node-shared-reference index-node)

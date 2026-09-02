@@ -4,6 +4,7 @@
   (import 
     (chezscheme)
     (ufo-try)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
@@ -36,40 +37,29 @@
 (define step 
   (case-lambda 
     [(current-document current-index-node expanded+callee-list)
-      (cond 
-        [(null? (index-node-children current-index-node))
-          (trivial-process current-document current-index-node)]
-
-        [(quote? current-index-node) 
-          (extend-index-node-substitution-list 
-            current-index-node 
-            (car (index-node-children current-index-node)))
-          (trivial-process current-document (car (index-node-children current-index-node)))]
+      (match-index-node current-index-node
+        [(and (? index-node-quote? :_) (head . :_))
+          (extend-index-node-substitution-list current-index-node head)
+          (trivial-process current-document head)]
         ;#'(1 2 3) is a syntax not a list
-        [(syntax? current-index-node) '()]
-        [(quasiquote? current-index-node) 
-          (extend-index-node-substitution-list 
-            current-index-node 
-            (car (index-node-children current-index-node)))
+        [(? index-node-syntax? :_) '()]
+        [(and (? index-node-quasiquote? :_) (head . rest))
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+            (extend-index-node-substitution-list current-index-node head)
             (for-each
               (lambda (current)
                 (step current-document current available-identifiers 'quasiquoted expanded+callee-list))
-              (index-node-children current-index-node)))]
-        [(quasisyntax? current-index-node)
-          (extend-index-node-substitution-list 
-            current-index-node 
-            (car (index-node-children current-index-node)))
+              (cons head rest)))]
+        [(and (? index-node-quasisyntax? :_) (head . rest))
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+            (extend-index-node-substitution-list current-index-node head)
             (for-each
               (lambda (current)
                 (step current-document current available-identifiers 'quasisyntax expanded+callee-list))
-              (index-node-children current-index-node)))]
+              (cons head rest)))]
 
-        [(not (null? (index-node-children current-index-node))) 
-          (let* ([children (index-node-children current-index-node)]
-              [head (car children)]
-              [head-expression (annotation-stripped (index-node-datum/annotations head))]
+        [(head . rest)
+          (let* ([head-expression (index-node-expression head)]
               [target-rules
                 (cond 
                   [(symbol? head-expression)
@@ -94,7 +84,7 @@
             (try 
               (for-each
                 (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
-                children)
+                (cons head rest))
               (except c 
                 [(condition? c) 
                   (append-new-diagnoses current-document 
@@ -102,18 +92,25 @@
                       ,(string-append "Type inference warning: " (condition-message c)) 
                       "type" "type-inference-warning"))
                   '()]
-                [else (raise c)])))])]
+                [else (raise c)])))]
+        [else (trivial-process current-document current-index-node)])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
-        (if (case quasi-quoted-syntaxed
-            ['quasiquoted  (or (unquote? current-index-node) (unquote-splicing? current-index-node))]
-            ['quasisyntaxed (or (unsyntax? current-index-node) (unsyntax-splicing? current-index-node))]
-            [else #f])
-          (for-each
-            (lambda (current) (step current-document current expanded+callee-list))
-            (index-node-children current-index-node))
-          (for-each
-            (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed expanded+callee-list))
-            (index-node-children current-index-node)))]))
+        (match-index-node current-index-node
+          [(and (? (lambda (_) (eq? quasi-quoted-syntaxed 'quasiquoted)) :_)
+             (or (? index-node-unquote? :_) (? index-node-unquote-splicing? :_)))
+            (for-each
+              (lambda (current) (step current-document current expanded+callee-list))
+              (index-node-children current-index-node))]
+          [(and (? (lambda (_) (eq? quasi-quoted-syntaxed 'quasisyntaxed)) :_)
+             (or (? index-node-unsyntax? :_) (? index-node-unsyntax-splicing? :_)))
+            (for-each
+              (lambda (current) (step current-document current expanded+callee-list))
+              (index-node-children current-index-node))]
+          [(head . rest)
+            (for-each
+              (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed expanded+callee-list))
+              (cons head rest))]
+          [else '()])]))
 
 (define (private-rule-compare? item0 item1)
   (apply identifier-compare? (map car (list item0 item1))))
