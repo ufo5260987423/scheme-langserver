@@ -2,57 +2,37 @@
   (export lambda-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (lambda-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ ((? symbol? identifiers) ...) fuzzy **1 ) 
-        (let* ([return-index-node (car (reverse children))]
+  (match-index-node index-node
+    [(:_ (and :_
+               (? index-node-proper-list?)
+               ((? index-node-symbol? params) ...))
+        . (body ... return))
+      (private:emit-lambda-substitutions index-node return
+        (construct-parameter-index-nodes-products-with params))]
+    [(:_ (? index-node-symbol? rest) . (body ... return))
+      (private:emit-lambda-substitutions index-node return
+        (list `((inner:list? something? ...))))]
+    [(:_ formals . (body ... return))
+      (private:emit-lambda-substitutions index-node return
+        (list (private:collect-param-types formals)))]
+    [else '()]))
 
-            ;((? symbol? identifier) **1) index-nodes
-            [parameter-index-nodes (index-node-children (cadr children))]
-            [parameter-index-nodes-products (construct-parameter-index-nodes-products-with parameter-index-nodes)])
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list index-node t))
-            (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)))]
-      [(_ (? symbol? identifier) fuzzy **1 ) 
-        (let* ([return-index-node (car (reverse children))]
-            [formals-index-node (cadr children)]
-            [parameter-types (private:collect-param-types formals-index-node)]
-            [lambda-details (construct-lambdas-with `(,return-index-node) (list parameter-types))])
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list index-node t))
-            lambda-details))]
-      [(_ (identifier . rest) fuzzy **1 ) 
-        (let* ([return-index-node (car (reverse children))]
-            [formals-index-node (cadr children)]
-            [parameter-types (private:collect-param-types formals-index-node)]
-            [lambda-details (construct-lambdas-with `(,return-index-node) (list parameter-types))])
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list index-node t))
-            lambda-details))]
-      [else '()])))
+(define (private:emit-lambda-substitutions index-node return-node parameter-type-products)
+  (for-each 
+    (lambda (t) (extend-index-node-substitution-list index-node t))
+    (construct-lambdas-with `(,return-node) parameter-type-products)))
 
-; Collect parameter types for a dotted formal list. The last parameter (the rest
-; parameter) is represented as (inner:list? something? ...).
 (define (private:collect-param-types formals-node)
-  (let ([expression (annotation-stripped (index-node-datum/annotations formals-node))]
-      [children (index-node-children formals-node)])
+  (let loop ([children (index-node-children formals-node)])
     (cond
-      [(symbol? expression) `((inner:list? something? ...))]
       [(null? children) '()]
       [(null? (cdr children)) `((inner:list? something? ...))]
-      [else
-        (let ([car-node (car children)]
-            [cdr-node (cadr children)])
-          (if (symbol? (annotation-stripped (index-node-datum/annotations cdr-node)))
-            `(,car-node (inner:list? something? ...))
-            (cons car-node (private:collect-param-types cdr-node))))])))
+      [else (cons (car children) (loop (cdr children)))])))
 )
