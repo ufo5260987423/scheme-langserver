@@ -15,7 +15,6 @@
     (scheme-langserver analysis type substitutions rules do)
     (scheme-langserver analysis type substitutions rules let)
     (scheme-langserver analysis type substitutions rules let*)
-    (scheme-langserver analysis type substitutions rules letrec)
     (scheme-langserver analysis type substitutions rules lambda)
     (scheme-langserver analysis type substitutions rules case-lambda)
     (scheme-langserver analysis type substitutions rules record)
@@ -149,7 +148,7 @@
 
               [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
               [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
-              [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
+              [(equal? r '(letrec)) (private-add-rule rules `((,let*-process) . ,identifier))]
               [(equal? r '(letrec*)) (private-add-rule rules `((,let*-process) . ,identifier))]
 
               [(equal? r '(begin)) (private-add-rule rules `((,begin-process) . ,identifier))]

@@ -2,24 +2,14 @@
   (export let*-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node)
-
     (scheme-langserver analysis type substitutions rules let))
 
 (define (let*-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ (((? symbol? identifier) value) ... ) fuzzy **1 ) 
-        (let* ([return-index-node (car (reverse children))]
-
-            ;((? symbol? identifier) value ) index-nodes
-            [key-value-index-nodes (index-node-children (cadr children))])
-          (extend-index-node-substitution-list index-node return-index-node)
-          (extend-index-node-substitution-list return-index-node index-node)
-          (for-each let:private-process-key-value key-value-index-nodes))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ ((left value) ...) :_ ... return)
+      (let:emit-substitutions! index-node return left value)]
+    [else '()]))
 )

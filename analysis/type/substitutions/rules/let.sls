@@ -1,53 +1,34 @@
 (library (scheme-langserver analysis type substitutions rules let)
   (export 
     let-process
-    let:private-process-key-value)
+    let:emit-substitutions!)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis type substitutions util)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (let-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ (? symbol? loop-identifier) (((? symbol? identifier) value ) ... ) fuzzy ...) 
-        (let* ([return-index-node (car (reverse children))]
-            ;((? symbol? identifier) value ) index-nodes
-            [key-value-index-nodes (index-node-children (caddr children))]
-            ;identifier index-nodes
-            [key-index-nodes (map car (map index-node-children key-value-index-nodes))]
-            [parameter-index-nodes-products (construct-parameter-index-nodes-products-with key-index-nodes)]
+  (match-index-node index-node
+    [(:_ (? index-node-symbol? loop-identifier) ((left value) ...) :_ ... return)
+      (let* ([parameter-index-nodes-products (construct-parameter-index-nodes-products-with left)]
+          [loop-procedure-details (construct-lambdas-with `(,return) parameter-index-nodes-products)])
+        (let:emit-substitutions! index-node return left value)
+        (for-each 
+          (lambda (t) (extend-index-node-substitution-list loop-identifier t))
+          loop-procedure-details))]
+    [(:_ ((left value) ...) :_ ... return)
+      (let:emit-substitutions! index-node return left value)]
+    [else '()]))
 
-            ;(? symbol? loop-identifier)
-            [loop-index-node (cadr children)]
-            [loop-procedure-details (construct-lambdas-with `(,return-index-node) parameter-index-nodes-products)])
-
-          (extend-index-node-substitution-list index-node return-index-node)
-          (extend-index-node-substitution-list return-index-node index-node)
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list loop-index-node t))
-            loop-procedure-details)
-          (for-each let:private-process-key-value key-value-index-nodes))]
-      [(_ (((? symbol? identifier) value) ...) fuzzy **1) 
-        (let* ([return-index-node (car (reverse children))]
-            [key-value-index-nodes (index-node-children (cadr children))])
-          (extend-index-node-substitution-list index-node return-index-node)
-          (extend-index-node-substitution-list return-index-node index-node)
-          (for-each let:private-process-key-value key-value-index-nodes))]
-      [else '()])))
-
-(define (let:private-process-key-value parent-index-node)
-  (let* ([ann (index-node-datum/annotations parent-index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children parent-index-node)])
-    (match expression 
-      [((? symbol? left) value) 
-        (extend-index-node-substitution-list (car children) (cadr children))
-        (extend-index-node-substitution-list (cadr children) (car children))]
-      [else '()])))
+(define (let:emit-substitutions! index-node return left value)
+  (extend-index-node-substitution-list index-node return)
+  (extend-index-node-substitution-list return index-node)
+  (for-each 
+    (lambda (l v)
+      (extend-index-node-substitution-list l v)
+      (extend-index-node-substitution-list v l))
+    left value))
 )
