@@ -2,11 +2,13 @@
   (export unless-process)
   (import 
     (chezscheme) 
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (unless-process document index-node)
-  (extend-index-node-substitution-list
-    index-node
-    (car (reverse (index-node-children index-node)))))
+  (match-index-node index-node
+    [(:_ condition body ... return)
+      (extend-index-node-substitution-list index-node return)]
+    [else '()]))
 )
