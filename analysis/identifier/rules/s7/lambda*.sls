@@ -15,7 +15,7 @@
 (define (lambda*-process root-file-node root-library-node document index-node)
   (match-index-node index-node
     [(:_ (and params-node
-              (? (lambda (n) (list? (annotation-stripped (index-node-datum/annotations n)))))
+              (? index-node-proper-list?)
               (params **1))
         . body)
       (for-each

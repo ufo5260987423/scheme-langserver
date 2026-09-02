@@ -13,7 +13,7 @@
 (define (define*-process root-file-node root-library-node document index-node)
   (match-index-node index-node
     [(:_ (and signature-node
-              (? (lambda (n) (list? (annotation-stripped (index-node-datum/annotations n)))))
+              (? index-node-proper-list?)
               ((? index-node-symbol? name-node) . param-nodes))
         . body)
       (let ([reference (make-identifier-reference 
