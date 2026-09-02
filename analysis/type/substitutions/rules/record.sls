@@ -2,19 +2,16 @@
   (export define-record-type-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (define-record-type-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ dummy0 dummy1 ...) 
-        (let ([collection (private-collect-identifiers index-node)])
+  (match-index-node index-node
+    [(:_ . :_)
+      (let ([collection (private-collect-identifiers index-node)])
           (if (null? collection)
             '()
             (let* ([predicator (find (lambda (identifier) (equal? (identifier-reference-type identifier) 'predicator)) collection)]
@@ -46,7 +43,7 @@
                       constructor 
                       `((,predicator <- (inner:list? something? ...)))))))))
             '())]
-      [else '()])))
+    [else '()]))
 
 (define (private-collect-identifiers index-node)
   (if (null? (index-node-references-export-to-other-node index-node))
