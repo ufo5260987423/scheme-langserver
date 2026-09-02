@@ -2,11 +2,13 @@
   (export begin-process)
   (import 
     (chezscheme) 
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (begin-process document index-node)
-  (extend-index-node-substitution-list
-    index-node
-    (car (reverse (index-node-children index-node)))))
+  (match-index-node index-node
+    [(:_ body ... return)
+      (extend-index-node-substitution-list index-node return)]
+    [else '()]))
 )
