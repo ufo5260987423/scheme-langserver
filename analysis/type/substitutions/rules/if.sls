@@ -2,29 +2,21 @@
   (export if-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (if-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ condition clause0) 
-        (let ([condition-index-node (cadr children)]
-            [return-index-node (car (reverse children))])
-          (extend-index-node-substitution-list condition-index-node 'something?)
-          (extend-index-node-substitution-list index-node return-index-node)
-          (extend-index-node-substitution-list return-index-node index-node))]
-      [(_ condition clause0 clause1) 
-        (let ([condition-index-node (cadr children)]
-            [return-index-node0 (cadr (reverse children))]
-            [return-index-node1 (car (reverse children))])
-          (extend-index-node-substitution-list condition-index-node 'something?)
-          (extend-index-node-substitution-list index-node return-index-node0)
-          (extend-index-node-substitution-list index-node return-index-node1)
-          (extend-index-node-substitution-list return-index-node0 index-node)
-          (extend-index-node-substitution-list return-index-node1 index-node))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ condition return)
+      (extend-index-node-substitution-list condition 'something?)
+      (extend-index-node-substitution-list index-node return)
+      (extend-index-node-substitution-list return index-node)]
+    [(:_ condition return0 return1)
+      (extend-index-node-substitution-list condition 'something?)
+      (extend-index-node-substitution-list index-node return0)
+      (extend-index-node-substitution-list index-node return1)
+      (extend-index-node-substitution-list return0 index-node)
+      (extend-index-node-substitution-list return1 index-node)]
+    [else '()]))
 )
