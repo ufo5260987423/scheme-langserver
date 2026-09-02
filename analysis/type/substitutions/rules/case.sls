@@ -2,29 +2,20 @@
   (export case-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (case-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ expression clause **1)
-        (let* ([clauses (cddr children)]
-            [clauses-children (map index-node-children clauses)]
-            [previous-index-nodes (map car clauses-children)]
-            [last-index-nodes (map (lambda (c) (car (reverse c))) clauses-children)]
-            [expression-node (cadr children)])
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list expression-node t))
-            previous-index-nodes)
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list index-node t))
-            last-index-nodes)
-          (for-each 
-            (lambda (t) (extend-index-node-substitution-list t index-node))
-            last-index-nodes))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ expr (previous :_ ... return) **1)
+      (for-each 
+        (lambda (t) (extend-index-node-substitution-list expr t))
+        previous)
+      (for-each 
+        (lambda (t)
+          (extend-index-node-substitution-list index-node t)
+          (extend-index-node-substitution-list t index-node))
+        return)]
+    [else '()]))
 )
