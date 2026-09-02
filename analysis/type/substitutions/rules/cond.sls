@@ -2,31 +2,24 @@
   (export cond-process)
   (import 
     (chezscheme) 
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver virtual-file-system index-node))
 
 (define (cond-process document index-node)
-  (let* ([ann (index-node-datum/annotations index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children index-node)])
-    (match expression
-      [(_ clause **1)
-        (for-each 
-          (lambda (clause-index-node) (private-clause-process index-node clause-index-node))
-          (cdr children))]
-      [else '()])))
+  (match-index-node index-node
+    [(:_ clauses **1)
+      (for-each 
+        (lambda (clause) (private-clause-process index-node clause))
+        clauses)]
+    [else '()]))
 
 (define (private-clause-process root-index-node clause-index-node)
-  (let* ([ann (index-node-datum/annotations clause-index-node)]
-      [expression (annotation-stripped ann)]
-      [children (index-node-children clause-index-node)]
-      [first-child (car children)]
-      [last-child (car (reverse children))])
-    (match expression
-      [(predicator tail **1) 
-        (extend-index-node-substitution-list first-child 'something?)
-        (extend-index-node-substitution-list root-index-node last-child)
-        (extend-index-node-substitution-list last-child root-index-node)]
-      [else '()])))
+  (match-index-node clause-index-node
+    [(predicate . body)
+      (extend-index-node-substitution-list predicate 'something?)
+      (let ([last (car (reverse body))])
+        (extend-index-node-substitution-list root-index-node last)
+        (extend-index-node-substitution-list last root-index-node))]
+    [else '()]))
 )
