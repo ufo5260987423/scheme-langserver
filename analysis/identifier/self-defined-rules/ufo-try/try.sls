@@ -10,7 +10,7 @@
 
 (define (try-process root-file-node root-library-node document index-node)
   (match-index-node index-node
-    [(_ _ ... ('except (:= index-node-expression (? symbol? c)) . branches))
+    [(:_ :_ ... ('except (:= index-node-expression (? symbol? c)) . branches))
       (let* ([children (index-node-children index-node)]
           [except-index-node (car (reverse children))]
           [except-children (index-node-children except-index-node)]
