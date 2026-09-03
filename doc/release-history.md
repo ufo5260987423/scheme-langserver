@@ -1,5 +1,22 @@
 # Release History
 
+## 2.1.9
+Performance release migrating AST dispatch across the analyzer to `match-index-node`/`ufo-match-steer`.
+
+### What's new in 2.1.9
+- **Performance**:
+  - Migrated identifier rules, type-substitution rules, and the abstract interpreter to compiled `match-index-node` pattern dispatch. Analysis is 32–51% faster across benchmarks: `init-workspace` without type inference 42.4s → 23.2s, with type inference 64.5s → 34.1s; per-document type interpretation and hover similarly improved.
+  - The analyzer codebase shrank by ~1,100 lines (about 5%) as handwritten `car`/`cdr` destructuring was replaced by patterns, also reducing GC pressure (init-workspace GC time 10.7s → 1.9s with type inference).
+- **Workspace cache**:
+  - Diagnostics are persisted in the workspace cache and republished immediately after a cache load.
+  - Static file watchers are registered and open files are protected from external modification overwrites.
+  - Fixed `didOpen` not synchronizing document text.
+- **Dependencies**:
+  - `ufo-match-steer` is now consumed from the online Akku archive (1.1.7) instead of a local directory override.
+- **Internal**:
+  - Cleaned up unused imports and dead code; `_`-prefixed parameters are exempt from unused-variable diagnostics.
+  - `let*`/`letrec*` no longer incorrectly report duplicate identifiers.
+
 ## 2.1.8
 Bug-fix release correcting completion item insertion for Helix and fixing the Debian Docker build.
 

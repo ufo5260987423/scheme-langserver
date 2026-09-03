@@ -91,7 +91,7 @@ cache.
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Release
-2.1.8 — Bug-fix release correcting completion item insertion for Helix and fixing the Debian Docker build.
+2.1.9 — Performance release migrating AST dispatch to match-index-node/ufo-match-steer, cutting codebase size by ~5% and improving analysis speed by 32–51%.
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system.
 
 See [doc/release-history.md](./doc/release-history.md) for older releases.
