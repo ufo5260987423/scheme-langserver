@@ -393,5 +393,5 @@
               (lambda (i) (filter (lambda (r) (type:partially-solved? r 2)) i))
               (lambda (i) (filter (lambda (r) (type:partially-solved? r 3)) i))
               (lambda (i) (filter type:solved? i))
-              (lambda (i) (filter (lambda (oh-my-god) #f) i))))))]))
+              (lambda (_) '())))))]))
 )

@@ -4,7 +4,6 @@
     (chezscheme) 
     (ufo-match-steer)
 
-    (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier rules let)
 
     (scheme-langserver virtual-file-system index-node))

@@ -64,19 +64,17 @@
   (case-lambda 
     [(root-file-node root-library-node file-linkage current-document)
       (step root-file-node root-library-node file-linkage current-document '())]
-    [(root-file-node root-library-node file-linkage current-document expanded+callee-list)
-      (fold-left
-        (lambda (l current-index-node)
+    [(root-file-node root-library-node file-linkage current-document _expanded+callee-list)
+      (for-each
+        (lambda (current-index-node)
           (step root-file-node root-library-node file-linkage current-document current-index-node '() '()))
-        '() 
         (document-index-node-list current-document))
       (document-ordered-reference-list current-document)]
     ;memory: its target is to avoid infinite recursion, and now we know, only macro expander may cause this case.
-    [(root-file-node root-library-node file-linkage current-document expanded+callee-list memory)
-      (fold-left
-        (lambda (l current-index-node)
+    [(root-file-node root-library-node file-linkage current-document _expanded+callee-list memory)
+      (for-each
+        (lambda (current-index-node)
           (step root-file-node root-library-node file-linkage current-document current-index-node '() memory))
-        '() 
         (document-index-node-list current-document))
       (document-ordered-reference-list current-document)]
     [(root-file-node root-library-node file-linkage current-document current-index-node expanded+callee-list memory)

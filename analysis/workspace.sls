@@ -56,8 +56,6 @@
     (scheme-langserver analysis identifier util)
     (scheme-langserver analysis identifier rules library-import)
 
-    (scheme-langserver analysis package-manager akku)
-    (scheme-langserver analysis package-manager txt-filter)
     (scheme-langserver analysis package-manager file-filter)
 
     (scheme-langserver virtual-file-system index-node)
@@ -450,7 +448,7 @@
         (init-workspace path identifier top-environment threaded? type-inference? (private:generate-facet identifier path) identifier sixth))]
     [(path identifier top-environment threaded? type-inference? facet cache-path)
       (init-workspace path identifier top-environment threaded? type-inference? facet identifier cache-path)]
-    [(path identifier top-environment threaded? type-inference? facet file-filter cache-path)
+    [(path _identifier top-environment threaded? type-inference? facet file-filter cache-path)
       (init-workspace-cache-registry!)
       (or (private:try-load-workspace-cache cache-path path file-filter top-environment threaded? type-inference?)
           (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet file-filter))]))
@@ -737,6 +735,13 @@
 ; Only parameters (lambda/case-lambda/define parameter-list formals) are
 ; reported.  Top-level define names and let-bound variables are intentionally
 ; skipped to avoid forward-reference and import-rename false positives.
+(define (private:underscore-prefixed? id)
+  (let ([s (symbol->string id)])
+    (and (> (string-length s) 0) (char=? (string-ref s 0) #\_))))
+
+; Parameters whose name starts with "_" are conventionally ignored:
+; the author explicitly marks them as intentionally unused (e.g. callbacks
+; required by a fixed-arity protocol, rest-arg sinks like do-nothing).
 (define (private:check-unused-local-variables document)
   (let* ([exported-ht (private:collect-exported-identifiers document)]
       [seen (make-eq-hashtable)])
@@ -746,7 +751,9 @@
                 (eq? (identifier-reference-type ref) 'parameter)
                 (zero? (identifier-reference-usage-count ref)))
           (let ([id (identifier-reference-identifier ref)])
-            (when (and (symbol? id) (not (eq-hashtable-contains? exported-ht id)))
+            (when (and (symbol? id)
+                    (not (eq-hashtable-contains? exported-ht id))
+                    (not (private:underscore-prefixed? id)))
               (eq-hashtable-set! seen ref #t)
               (let ([index-node (identifier-reference-index-node ref)])
                 (when (index-node? index-node)

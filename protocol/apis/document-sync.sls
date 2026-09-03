@@ -58,7 +58,7 @@
             (update-file-node-with-tail workspace target-file text)))]
       [else '()])))
 
-(define (did-close workspace params . maybe-open-document-uris)
+(define (did-close _workspace params . maybe-open-document-uris)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [uri (text-document-uri text-document)]
       [open-document-uris (if (null? maybe-open-document-uris) #f (car maybe-open-document-uris))])

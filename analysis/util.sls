@@ -13,7 +13,7 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-(define (do-nothing . fuzzy) (void))
+(define (do-nothing . _) (void))
 
 (define get-library-identifiers-list
     (case-lambda

@@ -297,7 +297,7 @@
   (let* ([pre-pattern (assoc pattern-content context)]
       [pattern (if pre-pattern (cdr pre-pattern) pre-pattern)])
     (cond 
-      [(not pre-pattern) (lambda (pair-list) pattern-content)]
+      [(not pre-pattern) (lambda (_) pattern-content)]
       [(recursive:pattern-ellipsed? pattern)
         (lambda (pair-list)
           (let* ([ancestor-vector (list->vector (private:ancestors pattern))]

@@ -10,7 +10,6 @@
     (scheme-langserver util contain)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 

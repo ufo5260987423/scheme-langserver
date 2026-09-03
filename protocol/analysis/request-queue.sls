@@ -42,7 +42,7 @@
       (lambda (request request-queue workspace)
         (let ([new-task #f])
           (letrec ([complete 
-                (lambda (ticks value) 
+                (lambda (_ticks value) 
                   (remove:from-request-tickal-task-list request-queue new-task)
                   value)]
             ; This expire mainly aims to interrupt type inference, so that acquires workspace mutex.

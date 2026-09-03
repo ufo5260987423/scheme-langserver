@@ -21,7 +21,7 @@
         exclude-list)]
     [else '()]))
 
-(define (let1-parameter-process initialization-index-node index-node let-node exclude document type)
+(define (let1-parameter-process initialization-index-node index-node let-node _exclude document type)
   (let ([expression (index-node-expression index-node)]
       [reference 
         (make-identifier-reference

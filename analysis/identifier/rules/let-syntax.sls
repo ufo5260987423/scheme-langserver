@@ -6,7 +6,6 @@
     (chezscheme) 
     (ufo-match-steer)
 
-    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier rules let)
     (scheme-langserver analysis identifier rules define-syntax)
 

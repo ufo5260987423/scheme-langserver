@@ -8,7 +8,7 @@
 
     (scheme-langserver util cartesian-product))
 
-(define (do-nothing . fuzzy) '())
+(define (do-nothing . _) '())
 
 (define (construct-parameter-index-nodes-products-with parameter-index-nodes)
   (apply cartesian-product `((inner:list?) ,@(map list parameter-index-nodes))))

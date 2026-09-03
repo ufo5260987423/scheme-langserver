@@ -7,7 +7,6 @@
     (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -27,7 +26,7 @@
         variable)]
     [else '()]))
 
-(define (fluid-let-parameter-process initialization-index-node index-node let-node exclude document type)
+(define (fluid-let-parameter-process initialization-index-node index-node let-node _exclude document type)
   (let* ([expression (index-node-expression index-node)]
       [upper (find-available-references-for document index-node expression)]
       [reference 

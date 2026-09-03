@@ -5,7 +5,6 @@
     (ufo-match-steer)
 
     (scheme-langserver analysis identifier rules syntax-case)
-    (scheme-langserver analysis identifier util)
 
     (scheme-langserver virtual-file-system index-node))
 

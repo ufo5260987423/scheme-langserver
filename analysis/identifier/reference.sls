@@ -223,7 +223,7 @@
         candidate
           #f)))))
 
-(define (library-identifier? document index-node)
+(define (library-identifier? _document index-node)
   (let* ([parent (index-node-parent index-node)]
       [check? 
         (lambda () 

@@ -489,8 +489,20 @@ Key design points:
 - Procedure-valued fields that cannot be FASL-serialized are cleared before save:
   - `index-node-expansion-generator` reset to `'()`.
   - `identifier-reference-syntax-expander` reset to `#f`.
-- Runtime state (`document-diagnoses`, `workspace-undiagnosed-paths`) is cleared
-  before save.
+- `workspace-undiagnosed-paths` is cleared before save. `document-diagnoses`
+  are **persisted** (`workspace.sls` `private:prepare-workspace-payload`) so
+  clients can pull diagnostics immediately after a cache load.
+- **Trap: stale diagnoses after a rule-code fix.** Diagnoses are persisted
+  together with file mtimes recorded *at save time*. If the langserver's own
+  rule files (e.g. `analysis/identifier/**`) are fixed *after* a long-running
+  server analyzed the workspace, the running server still holds pre-fix
+  diagnoses in memory, and a graceful shutdown (LSP `shutdown`/`exit`) saves
+  them into the cache. The next server then loads those stale diagnoses and
+  the mtime consistency check passes (mtimes match the post-fix disk state),
+  so no refresh is triggered. `rm -rf <cache>` before a normal restart does
+  NOT help — the old server's shutdown save recreates the cache. To force a
+  fresh analysis after fixing rule code: kill the server with `kill -9` (so
+  no shutdown save happens), *then* delete the cache, then restart.
 - Incremental refresh (Phase 3) is implemented: when only some files differ from
   the cache, only added/deleted/changed files are processed; unchanged files keep
   their cached analysis results. If cache loading fails for any reason (manifest
