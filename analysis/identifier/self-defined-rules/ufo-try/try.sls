@@ -10,17 +10,13 @@
 
 (define (try-process root-file-node root-library-node document index-node)
   (match-index-node index-node
-    [(:_ :_ ... ('except (:= index-node-expression (? symbol? c)) . branches))
-      (let* ([children (index-node-children index-node)]
-          [except-index-node (car (reverse children))]
-          [except-children (index-node-children except-index-node)]
-          [c-index-node (cadr except-children)]
-          [reference (make-identifier-reference c document c-index-node index-node '() 'variable '() '())])
+    [(:_ :_ ... (and ('except (and (:= index-node-expression (? symbol? c)) c-index-node) . :_) except-index-node))
+      (let ([reference (make-identifier-reference c document c-index-node index-node '() 'variable '() '())])
         (index-node-references-export-to-other-node-set! 
           c-index-node 
           (append 
             (index-node-references-export-to-other-node c-index-node)
-              `(,reference)))
+            `(,reference)))
         (append-references-into-ordered-references-for document except-index-node `(,reference)))]
     [else '()]))
 )

@@ -1,0 +1,18 @@
+(library (try-shapes)
+  (export f1 f2 f3 f4)
+  (import (chezscheme) (ufo-try))
+
+  (define (f1)
+    (try (a)
+      (except c [else (handle c)])))
+
+  (define (f2)
+    (try (a) (b)
+      (except c [else (handle c)])))
+
+  (define (f3)
+    (try (a) (b) (c)
+      (except c [else (handle c)])))
+
+  (define (f4)
+    (try (except c [else (handle c)]))))
