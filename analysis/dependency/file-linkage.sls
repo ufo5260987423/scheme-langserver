@@ -317,6 +317,7 @@
     [(root-library-node index-node top-environment)
       (let ([func (case top-environment
                     ['r6rs library-import-process]
+                    ['fluent library-import-process]
                     ['r7rs library-import-process-r7rs]
                     ['s7 library-import-process-r7rs])])
         (apply append 

@@ -116,7 +116,7 @@ See [doc/release-history.md](./doc/release-history.md) for older releases.
 13. Peephole optimization for API requests using suspendable tasks.
 14. Type inference via a homemade DSL interpreter, now integrated into auto-completion. Parameters whose types match the expected signature are ranked higher, as shown below where `length-a` and `length-b` (both `integer?`) appear first because they match the parameter type required by `<=`.
 ![Autocompletion with type inference](./doc/figure/auto-completion-with-type-inference.png "Autocompletion with type inference")
-15. Supports R6RS, R7RS, and [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html) by switching top environments.
+15. Supports R6RS, R7RS, [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html), and Fluent Scheme (Ansys Fluent's embedded Petite Chez Scheme) by switching top environments.
 
 ```bash
 send-message

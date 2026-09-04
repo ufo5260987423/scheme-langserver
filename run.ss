@@ -26,7 +26,7 @@ Options:
 
   -v, --version                 Print version information.
 
-  -e, --top-environment         Switch between different top environments, for example R6RS, R7RS, s7, goldfish, etc.(default: R6RS)
+  -e, --top-environment         Switch between different top environments, for example R6RS, R7RS, s7, fluent, etc.(default: R6RS)
 
 
 Example Usage:
@@ -165,6 +165,7 @@ Example Usage:
     ((string-ci=? str "r7rs") 'r7rs)
     ((string-ci=? str "s7") 's7)
     ((string-ci=? str "goldfish") 's7)
+    ((string-ci=? str "fluent") 'fluent)
     (else #f)))
 
 (define (top-environment-proc option name arg seeds)
@@ -174,7 +175,7 @@ Example Usage:
         (hashtable-set! seeds "top-environment" val)
         seeds)
       (begin
-        (display "Invalid value for --top-environment. Valid values: r6rs, r7rs, s7\n")
+        (display "Invalid value for --top-environment. Valid values: r6rs, r7rs, s7, fluent\n")
         (exit 1)))))
 
 (define options

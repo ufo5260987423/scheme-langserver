@@ -137,6 +137,10 @@
             [(equal? list-instance '(scheme r5rs)) scheme-r5rs]
             [(equal? list-instance '(s7)) s7]
             [else '()])]
+        [(eq? 'fluent top-environment)
+          (cond
+            [(equal? list-instance '(fluent)) fluent]
+            [else '()])]
         [else '()])]))
 
 (define private-process
@@ -180,7 +184,7 @@ rnrs-records-inspection chezscheme-csv7 scheme-csv7
 scheme-base scheme-case-lambda scheme-char scheme-complex
 scheme-cxr scheme-eval scheme-file scheme-inexact scheme-lazy 
 scheme-load scheme-process-context scheme-read scheme-repl 
-scheme-time scheme-write scheme-r5rs s7))
+scheme-time scheme-write scheme-r5rs s7 fluent))
   ;numeric tower
   (fold-left 
     (lambda (parent identifier-reference)
@@ -5978,5 +5982,50 @@ scheme-time scheme-write scheme-r5rs s7))
 (write-string procedure)
 (zero? procedure)
 ) 's7))
+
+(define fluent-raw (private-process '(fluent) '(
+(rp-var-define procedure)
+(%rpgetvar procedure)
+(make-new-rpvar procedure)
+(rpsetvar procedure)
+(cx-create-button procedure)
+(cx-create-button-box procedure)
+(cx-create-drop-down-list procedure)
+(cx-create-integer-entry procedure)
+(cx-create-list procedure)
+(cx-create-panel procedure)
+(cx-create-real-entry procedure)
+(cx-create-table procedure)
+(cx-create-taskpage procedure)
+(cx-create-text-entry procedure)
+(cx-create-toggle-button procedure)
+(cx-set-integer-entry procedure)
+(cx-set-list-items procedure)
+(cx-set-list-selections procedure)
+(cx-set-real-entry procedure)
+(cx-set-text-entry procedure)
+(cx-set-toggle-button procedure)
+(cx-show-integer-entry procedure)
+(cx-show-list-selections procedure)
+(cx-show-panel procedure)
+(cx-show-real-entry procedure)
+(cx-show-taskpage procedure)
+(cx-show-text-entry procedure)
+(cx-show-toggle-button procedure)
+(cx-add-hitem procedure)
+(cx-add-item procedure)
+(cx-add-menu procedure)
+(Get_Input_Parameter procedure)
+(RP_Get_Boolean procedure)
+(RP_Get_Integer procedure)
+(RP_Get_Real procedure)
+(RP_Get_String procedure)
+(RP_Set_Real procedure)
+(RP_Variable_Exists_P procedure)
+) 'fluent))
+
+; Fluent Scheme is Petite Chez Scheme plus Fluent-specific GUI/RP-var
+; identifiers, so the usable meta list is the union of both.
+(define fluent (sort-identifier-references (append fluent-raw chezscheme)))
 
 )

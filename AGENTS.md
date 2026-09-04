@@ -17,7 +17,7 @@ Key subsystems:
 - `protocol/` — LSP message parsing and API handlers
 - `util/` — Shared utilities (matrix, dedupe, path, io, etc.)
 
-The server supports multiple Scheme dialects: **r6rs** (default), **r7rs**, **s7**.
+The server supports multiple Scheme dialects: **r6rs** (default), **r7rs**, **s7**, **fluent** (Ansys Fluent's embedded Petite Chez Scheme).
 
 ---
 

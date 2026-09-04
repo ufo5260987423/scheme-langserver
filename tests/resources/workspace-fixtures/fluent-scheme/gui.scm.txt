@@ -1,0 +1,15 @@
+; Fluent Scheme GUI demo: defines an RP variable and a custom panel.
+; Fluent Scheme is Petite Chez Scheme plus cx-*/rp-var identifiers.
+
+(define (apply-cb . args)
+  (let ([old-value (%rpgetvar 'user/my-real)])
+    (rpsetvar 'user/my-real (+ old-value 1.0))))
+
+(define (make-panel)
+  (let ([panel (cx-create-panel "Demo" 'apply apply-cb)])
+    (cx-create-button panel "Apply" 'callback apply-cb)
+    (cx-create-real-entry panel "Value" 'value 1.0)
+    panel))
+
+(rp-var-define 'user/my-real 1.0 'real #f)
+(make-panel)

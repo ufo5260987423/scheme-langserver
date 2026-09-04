@@ -910,6 +910,7 @@
                   ['r7rs '(scheme base)]
                   ['s7 '(s7)]
                   ['goldfish '(s7)]
+                  ['fluent '(fluent)]
                   [else '(chezscheme)])])
     (cond 
       [(string? s) 

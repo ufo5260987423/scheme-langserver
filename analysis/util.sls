@@ -25,6 +25,11 @@
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
                                     [('library (name **1) :_ ... ) name]
                                     [else '()]))]
+                            ['fluent
+                                (lambda (index-node)
+                                (match (annotation-stripped (index-node-datum/annotations index-node))
+                                    [('library (name **1) :_ ... ) name]
+                                    [else '()]))]
                             ['r7rs
                                 (lambda (index-node)
                                 (match (annotation-stripped (index-node-datum/annotations index-node))
