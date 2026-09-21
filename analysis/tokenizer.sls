@@ -629,6 +629,20 @@
               (string-append head "|" token "|" rest))))
         #f))))
 
+;;Keep error conditions small: embedding the whole preprocessed source in
+;;tokenizer-error0 irritants once per parsed top-level form (via re-catching
+;;loop frames) produced multi-MB nested conditions on files like Chez's
+;;examples/template.ss.
+(define (private:truncate-source source)
+  (let ([len (string-length source)]
+      [edge 200])
+    (if (<= len (* 2 edge))
+      source
+      (string-append
+        (substring source 0 edge)
+        "\n... <truncated> ...\n"
+        (substring source (- len edge) len)))))
+
 (define source-file->annotations
   (case-lambda
     ([path] (source-file->annotations (read-string path) path))
@@ -659,11 +673,22 @@
           (filter annotation? 
             (let loop ([position start-position])
               (try
-                (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)]) 
-                  (if (= position (port-position port))
+                (let-values ([(ann end-pos) (get-datum/annotations port source-file-descriptor position)])
+                  ;A datum can be the eof-object while still consuming input:
+                  ;the reader treats #!eof as end-of-file and skips past it. In
+                  ;that case the port has moved, but parsing must stop here ---
+                  ;everything after #!eof is not Scheme code (e.g. Chez's own
+                  ;examples/template.ss has a shell script after #!eof).
+                  (if (or (eof-object? ann) (= position (port-position port)))
                     '()
                     `(,ann . ,(loop (port-position port)))))
                 (except e
+                  ;tokenizer-error0 raised by a nested (patched) parse or by an
+                  ;outer loop frame must not be re-wrapped: every loop frame
+                  ;that catches it would embed the whole source again, giving
+                  ;an O(top-level-forms * source-size) condition.
+                  [(and (condition? e) (eq? (condition-who e) 'tokenizer-error0))
+                    (raise e)]
                   [(and tolerant? (condition? e))
                     (let ([error-position (private:compute-error-position e port)])
                       (cond
@@ -682,12 +707,12 @@
                     (let ([error-position (private:compute-error-position e port)])
                       (when maybe-document
                         (append-new-diagnoses maybe-document (append (private:condition->diagnose e preprocessed-source error-position) '("syntax" "syntax-error"))))
-                      (error 'tokenizer-error0 path `(,preprocessed-source ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
+                      (error 'tokenizer-error0 path `(,(private:truncate-source preprocessed-source) ,path ,error-position ,tolerant? ,(condition-who e) ,(condition-message e) ,(condition-irritants e))))]
                   [else 
                     (let ([error-position (max 0 (- (port-position port) 1))])
                       (when maybe-document
                         (append-new-diagnoses maybe-document `(,error-position ,(+ error-position 1) 1 "Syntax error: unknown parse error" "syntax" "syntax-error")))
-                      (warning 'tokenizer-error0 path `(,preprocessed-source ,path ,error-position ,tolerant?))
+                      (warning 'tokenizer-error0 path `(,(private:truncate-source preprocessed-source) ,path ,error-position ,tolerant?))
                       '())])))))
           (begin
             (when maybe-document

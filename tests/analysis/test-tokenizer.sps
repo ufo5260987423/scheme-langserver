@@ -86,6 +86,39 @@
   (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/hash-bang.ss.test")))
 (test-end)
 
+(test-begin "tolerant: #!eof with trailing non-Scheme content")
+  ;;Chez's own examples/template.ss puts a shell script after #!eof; parsing
+  ;;must stop at #!eof instead of running into the garbage and failing the
+  ;;whole workspace initialize.
+  (let ([annotations (source-file->annotations "tests/resources/tokenizer-exceptions/hash-bang-eof-tail.ss.test")])
+    (test-assert (list? annotations))
+    (test-equal 1 (length annotations)))
+(test-end)
+
+(test-begin "non-tolerant: tokenizer-error0 is not re-wrapped by outer loop frames")
+  ;;Several good forms before the error used to give one re-wrap per form,
+  ;;each embedding the whole source again.
+  (define (contains-tokenizer-error0? obj)
+    (cond
+      [(condition? obj)
+        (or (eq? (condition-who obj) 'tokenizer-error0)
+            (contains-tokenizer-error0? (condition-irritants obj)))]
+      [(pair? obj)
+        (or (contains-tokenizer-error0? (car obj))
+            (contains-tokenizer-error0? (cdr obj)))]
+      [else #f]))
+  (let* ([path "tests/resources/tokenizer-exceptions/many-forms-then-error.ss.test"]
+      [source (call-with-input-file path (lambda (port) (get-string-all port)))]
+      [condition
+        (guard (e [else e])
+          (source-file->annotations source path (consume-sps-auxiliary source) #f #f 'r6rs)
+          #f)])
+    (test-assert (condition? condition))
+    (test-equal 'tokenizer-error0 (condition-who condition))
+    ;;the irritants must not embed another tokenizer-error0 condition
+    (test-assert (not (contains-tokenizer-error0? (condition-irritants condition)))))
+(test-end)
+
 (test-begin "tolerant: unexpected close parenthesis")
   (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/close-paren.ss.test")))
 (test-end)

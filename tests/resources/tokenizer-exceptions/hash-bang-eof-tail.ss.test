@@ -1,0 +1,6 @@
+(define (f x) (+ x 1))
+#!eof
+this is not scheme ( at all ] #!nonsense
+#!/bin/tcsh
+cat >! /tmp/spam.h << END
+END
