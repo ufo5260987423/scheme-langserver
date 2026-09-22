@@ -27,7 +27,7 @@
 
 | 镜像 | Dockerfile | 基础系统 | 说明 |
 |------|------------|----------|------|
-| glibc | `Dockerfile` | `debian:bullseye` | 编译 Chez 10.4.1，打 `compile-chez-program` 补丁，akku 安装依赖 |
+| glibc | `Dockerfile` | `debian:bookworm` | 编译 Chez 10.4.1，打 `compile-chez-program` 补丁，akku 安装依赖 |
 | musl | `Dockerfile.musl` | Alpine | 与 glibc 类似，使用 musl libc |
 
 两个镜像都接收 `VERSION` build-arg，写入容器内的 `.version` 文件。

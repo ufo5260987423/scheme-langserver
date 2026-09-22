@@ -1,5 +1,5 @@
 # Install chez
-FROM debian:bullseye AS build-chez
+FROM debian:bookworm AS build-chez
 
 RUN apt-get update && apt-get install -y \
         curl build-essential git perl uuid-dev make libncurses-dev zlib1g-dev liblz4-dev
@@ -74,7 +74,7 @@ RUN akku install
 
 
 # Put it all together in Debian
-FROM debian:bullseye
+FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y git make build-essential uuid-dev libtinfo-dev libncurses-dev
