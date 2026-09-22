@@ -22,8 +22,12 @@
 (test-end)
 
 (test-begin "tolerant parse")
-  ; Task 2: preprocessing returns 4 clean datums instead of 8 from old patch/retry side-effects
-  (test-equal 4 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
+  ; Task 2: preprocessing returns clean datums instead of 8 from old patch/retry side-effects
+  ; consume-sps-auxiliary now stops at ANY datum start (not just "("), so the
+  ; leading "import" symbol of this half-edited file is recovered too (was
+  ; silently swallowed before): import + (chezscheme) + (scheme-langserver)
+  ; + (let ...) + (apply ...).
+  (test-equal 5 (length (source-file->annotations "tests/resources/incomplete.ss.test")))
 (test-end)
 
 ;; The following tests verify that source-file->annotations gracefully degrades
@@ -93,6 +97,16 @@
   (let ([annotations (source-file->annotations "tests/resources/tokenizer-exceptions/hash-bang-eof-tail.ss.test")])
     (test-assert (list? annotations))
     (test-equal 1 (length annotations)))
+(test-end)
+
+(test-begin "tolerant: string datum first (mats artifact shape)")
+  ;;consume-sps-auxiliary previously stopped only at "(", so a file whose
+  ;;first datum is a string (like Chez mats' testfile-cp.ss) was scanned to
+  ;;EOF and the parse started on the closing quote --- a dangling quote read
+  ;;to EOF and killed initialize with tokenizer-error0.
+  (let ([annotations (source-file->annotations "tests/resources/tokenizer-exceptions/string-first.ss.test")])
+    (test-assert (list? annotations))
+    (test-equal 2 (length annotations)))
 (test-end)
 
 (test-begin "non-tolerant: tokenizer-error0 is not re-wrapped by outer loop frames")

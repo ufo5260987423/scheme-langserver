@@ -727,6 +727,13 @@
 ; #!...
 ; line comment: ; ... 
 ; don't need consume datum comment  
+;;Return the position of the first datum. Previously this only stopped at
+;;"(", so a file whose first datum is not parenthesized (e.g. a plain
+;;string like Chez mats' testfile-cp.ss) was scanned through to EOF and the
+;;returned position landed on the file's last character --- parsing then
+;;started mid-datum (a dangling quote reads to EOF and raises
+;;"unexpected end-of-file reading ~a"). Any non-whitespace character that
+;;is not part of a comment or directive starts a datum, so stop there.
 (define (consume-sps-auxiliary source)
   (let* ([ip (open-string-input-port source)])
     (let loop ([c (get-char ip)]
@@ -748,8 +755,16 @@
               (guard (e [else (void)])
                 (get-datum ip))
               (loop (get-char ip) #f)]
+            [(and (not inline-comment?) (eqv? #\! (lookahead-char ip)))
+              ;;shebang or reader-directive line: #!/usr/bin/env scheme-script,
+              ;;#!r6rs, #!chezscheme, ... skip to end of line
+              (let skip ([c2 (get-char ip)])
+                (if (or (eof-object? c2) (eqv? c2 #\newline) (eqv? c2 #\return))
+                  (loop (if (eof-object? c2) c2 (get-char ip)) #f)
+                  (skip (get-char ip))))]
+            [(not inline-comment?) (- (port-position ip) 1)]
             [else (loop (get-char ip) inline-comment?)])]
-        [(and (not inline-comment?) (eqv? c #\( )) (- (port-position ip) 1)]
+        [(and (not inline-comment?) (not (char-whitespace? c))) (- (port-position ip) 1)]
         [else (loop (get-char ip) inline-comment?)]))))
 
 ; block comment: #| ... |#
