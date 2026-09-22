@@ -1,5 +1,18 @@
 # Release History
 
+## 2.1.10
+Bug-fix release hardening the tokenizer against whole-workspace `initialize` failures, plus a new top environment.
+
+### What's new in 2.1.10
+- **Bug fixes**:
+  - Files with content after `#!eof` (e.g. Chez's own `examples/template.ss`, which has a shell script after `#!eof`) no longer fail the whole workspace initialize: the tokenizer now stops reading at `#!eof` like the Chez reader does, and `tokenizer-error0` is no longer re-wrapped once per parsed top-level form (which produced multi-MB nested error conditions).
+  - Files whose first datum is not parenthesized (a string literal, symbol, quote, `#t`, character, ...) no longer fail initialize. `consume-sps-auxiliary` previously scanned through such files to EOF and started parsing on the file's last character; it now stops at any datum start (seen in production on Chez mats build artifacts like `testfile-cp.ss`, a bare 21-byte string literal).
+- **New**:
+  - Fluent Scheme (Ansys embedded Petite Chez) top environment.
+- **Internal**:
+  - Migrated remaining `ufo-match` match-process rules to `match-index-node`.
+  - Documented that the intermittent `robustness-concurrent` failure is an upstream Chez Scheme threading/GC race (cf. cisco/ChezScheme#1055), not a project bug.
+
 ## 2.1.9
 Performance release migrating AST dispatch across the analyzer to `match-index-node`/`ufo-match-steer`.
 
