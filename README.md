@@ -187,6 +187,9 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 9. [Development guide (中文)](./doc/development-guide.md) / [English version](./doc/development-guide-en.md)
 10. [AGENTS.md](./AGENTS.md) — build steps, testing conventions, coding style, and common traps for contributors
 
+### User Guides
+16. [Fluent Scheme support](./doc/fluent-scheme.md) — using Magic Scheme + scheme-langserver for Ansys Fluent Scheme development in VS Code
+
 ### Research & Experiments
 11. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme
 12. [Macro resolution notes](./doc/analysis/identifier.md) — debugging notes for macro identifier capture
