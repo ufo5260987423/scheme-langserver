@@ -11,7 +11,7 @@ Bug-fix release hardening the tokenizer against whole-workspace `initialize` fai
   - Fluent Scheme (Ansys embedded Petite Chez) top environment.
 - **Internal**:
   - Migrated remaining `ufo-match` match-process rules to `match-index-node`.
-  - Documented that the intermittent `robustness-concurrent` failure is an upstream Chez Scheme threading/GC race (cf. cisco/ChezScheme#1055), not a project bug.
+  - Fixed an intermittent multi-threaded failure under load ("queue is empty", lost requests, shutdown hang; cf. cisco/ChezScheme#1055): the request queue's empty-wait loop was not tail-recursive, so recursive frames each dequeued again after the inner frame returned. Diagnosed by Matthew Flatt.
 
 ## 2.1.9
 Performance release migrating AST dispatch across the analyzer to `match-index-node`/`ufo-match-steer`.

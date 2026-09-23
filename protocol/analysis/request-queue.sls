@@ -72,20 +72,27 @@
 
 (define (request-queue-pop queue request-processor)
   (with-mutex (request-queue-mutex queue)
+    ;The loop call must stay in tail position: the dequeue is the else
+    ;branch. With the previous (when (queue-empty? ...) (wait) (loop))
+    ;followed by a fall-through dequeue, every recursive frame dequeued
+    ;again after the inner frame returned --- consuming tasks that were
+    ;never delivered (lost requests/kill jobs) and raising "queue is
+    ;empty" on an emptied queue. Pointed out by Matthew Flatt.
     (let loop ()
-      (when (queue-empty? (request-queue-queue queue))
-        ; By default, this will release request-queue-mutex 
-        ; and re-enter when request-queue-condition is signed.
-        (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
-        (loop)))
-    (let* ([task (dequeue! (request-queue-queue queue))]
-        [request (tickal-task-request task)]
-        [job (lambda () 
-          (if (tickal-task-stop? task)
-            (remove:from-request-tickal-task-list queue task)
-            (request-processor request)))])
-      ; May be called in the consumer thread or directly
-      (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))
+      (if (queue-empty? (request-queue-queue queue))
+        (begin
+          ; By default, this will release request-queue-mutex
+          ; and re-enter when request-queue-condition is signed.
+          (condition-wait (request-queue-condition queue) (request-queue-mutex queue))
+          (loop))
+        (let* ([task (dequeue! (request-queue-queue queue))]
+            [request (tickal-task-request task)]
+            [job (lambda ()
+              (if (tickal-task-stop? task)
+                (remove:from-request-tickal-task-list queue task)
+                (request-processor request)))])
+          ; May be called in the consumer thread or directly
+          (lambda () ((make-engine job) ticks (tickal-task-complete task) (tickal-task-expire task))))))))
 
 (define (remove:from-request-tickal-task-list queue task)
   (with-mutex (request-queue-mutex queue)

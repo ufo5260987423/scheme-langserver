@@ -155,7 +155,7 @@ source .akku/bin/activate
 scheme --script tests/protocol/apis/test-definition.sps
 ```
 > **Note:** Tests currently focus on single-threaded execution.
-> **Note:** `tests/robustness/robustness-concurrent.sps` (multi-threaded) may intermittently fail with `Exception in thread-loop: ... no fail-handler` followed by a hang; this is an upstream Chez Scheme threading/GC race (cf. [cisco/ChezScheme#1055](https://github.com/cisco/ChezScheme/issues/1055)), not a bug in this project.
+> **Note:** `tests/robustness/robustness-concurrent.sps` (multi-threaded) used to fail intermittently with `Exception in thread-loop: ... no fail-handler` followed by a hang. The root cause was a non-tail-recursive wait loop in `request-queue-pop` (each recursive frame dequeued again, consuming tasks twice), diagnosed via [cisco/ChezScheme#1055](https://github.com/cisco/ChezScheme/issues/1055). Fixed in 2.1.10.
 
 ## Other Use Cases
 ### Script-Fu in GIMP
