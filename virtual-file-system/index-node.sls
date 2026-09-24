@@ -95,7 +95,7 @@
     (immutable end)
     (immutable datum/annotations)
     (immutable shared-reference)
-    (immutable uuid)
+    (mutable lazy-uuid)
 
     (mutable children)
     (mutable references-export-to-other-node)
@@ -107,7 +107,18 @@
   (protocol
     (lambda (new)
       (lambda (parent start end datum/annotations shared-reference children references-export-to-other-node references-import-in-this-node excluded-references)
-        (new parent start end datum/annotations shared-reference (uuid->string (random-uuid)) children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
+        (new parent start end datum/annotations shared-reference #f children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
+
+; The uuid is generated lazily: creating one eagerly for every index-node
+; made uuid.sls ~8% of workspace-init profile counts, while the value is
+; only consumed by debug printers and the type checker's error messages.
+; Concurrent first access from multiple threads may both generate; the
+; field is write-only afterwards, so either value is fine.
+(define (index-node-uuid index-node)
+  (or (index-node-lazy-uuid index-node)
+    (let ([uuid (uuid->string (random-uuid))])
+      (index-node-lazy-uuid-set! index-node uuid)
+      uuid)))
 
 (define (index-node-expression index-node)
   (annotation-stripped (index-node-datum/annotations index-node)))
