@@ -21,7 +21,7 @@ For example, when editing an incomplete project whose code is not yet fully exec
 
 The root cause is that Scheme and other Lisp dialects present a formidable challenge for program analysis: their rich data structures, flexible control flow, and especially macros make static reasoning difficult. But this does not mean Scheme is only for geniuses and meta-programming. With a better editing environment, Scheme can be accessible and productive for everyone.
 
-**scheme-langserver** is a Language Server Protocol (LSP) implementation for Scheme that provides completion, goto definition, hover, and type inference through static code analysis based on the [R6RS standard](http://www.r6rs.org/). It handles incomplete code gracefully and is published via [Akku](https://akkuscm.org/), a Scheme package manager.
+**scheme-langserver** is a Language Server Protocol (LSP) implementation for Scheme that provides completion, goto definition, hover, and type inference through static code analysis based on the [R6RS standard](http://www.r6rs.org/), with switchable top environments for **R6RS, R7RS, [S7](https://ccrma.stanford.edu/software/snd/snd/s7.html), and Fluent Scheme** (Ansys Fluent's embedded Petite Chez Scheme). It handles incomplete code gracefully and is published via [Akku](https://akkuscm.org/), a Scheme package manager.
 
 The server has been tested on [Chez Scheme](https://cisco.github.io/ChezScheme/) 9.4, 9.5, and 10.x.
 
@@ -96,7 +96,7 @@ Active development is focused on bug fixes, performance profiling, and expanding
 
 See [doc/release-history.md](./doc/release-history.md) for older releases.
 
-### Features
+## Features
 1. Completion for top-level and local identifier bindings.
 ![Top-level and local identifiers binding](./doc/figure/auto-completion.png "Top-level and local identifiers binding")
 2. Goto definition.
@@ -188,7 +188,7 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 10. [AGENTS.md](./AGENTS.md) — build steps, testing conventions, coding style, and common traps for contributors
 
 ### User Guides
-16. [Fluent Scheme support](./doc/fluent-scheme.md) — using Magic Scheme + scheme-langserver for Ansys Fluent Scheme development in VS Code
+16. [Fluent Scheme support](./doc/fluent-scheme.en.md) — using Magic Scheme + scheme-langserver for Ansys Fluent Scheme development in VS Code ([中文版](./doc/fluent-scheme.md))
 
 ### Research & Experiments
 11. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme

@@ -1,5 +1,7 @@
 # 在 VS Code 中用 Magic Scheme + scheme-langserver 支持 Fluent Scheme
 
+> [English version](./fluent-scheme.en.md)
+
 本文介绍如何把 Ansys Fluent 的嵌入式 Scheme 开发体验搬进 VS Code：语法高亮、自动补全、
 跳转定义、悬停文档、类型推断（早期阶段）。只需 VS Code + Magic Scheme 扩展 +
 scheme-langserver，**不需要安装 Fluent 或 Chez Scheme**——语言服务做的是纯静态分析。
@@ -28,7 +30,7 @@ Fluent 顶层环境把常用 API 作为"内置标识符"建模，配合 Petite C
 |------|------|
 | VS Code | 任意近期版本 |
 | Magic Scheme 扩展 | 市场搜索 "Magic Scheme"（发布者 ufo5260987423） |
-| scheme-langserver ≥ 2.1.10 | **Linux x64**：首次激活时 Magic Scheme 自动下载，无需手动安装；其他平台参考 [README](./README.md) 手动安装 |
+| scheme-langserver ≥ 2.1.10 | **Linux x64**：首次激活时 Magic Scheme 自动下载，无需手动安装；其他平台参考 [README](../README.md) 手动安装 |
 
 ## 3. 配置步骤
 

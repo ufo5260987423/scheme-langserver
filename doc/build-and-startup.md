@@ -59,6 +59,18 @@ Magic Scheme is an VScode extension supporting Scheme(r6rs standard). With the h
 - Run Scheme Script
 ![Run Scheme Script](./figure/runSchemeScript.png)
 
+#### Other top environments (R7RS / S7 / Fluent Scheme)
+
+Magic Scheme talks to the same scheme-langserver binary as other editors, so you can switch the analyzed dialect per workspace. In `.vscode/magic-scheme.json` set `topEnvironment` to `R6RS` (default), `R7RS`, `S7`, or `Fluent` — the value is passed to the server's `--top-environment` flag (case-insensitive). For example, Ansys Fluent's embedded Petite Chez Scheme scripts get completion and goto definition for the Fluent API set:
+
+```json
+{
+  "topEnvironment": "Fluent"
+}
+```
+
+See the [Fluent Scheme guide](./fluent-scheme.en.md) ([中文版](./fluent-scheme.md)) for a complete walkthrough.
+
 
 ### [LunarVim(1.4)](https://www.lunarvim.org/)
 Personally, I use [LunarVim(1.4)](https://www.lunarvim.org/) as an out-of-box IDE layer. So, you may configure `~/.config/lvim/config.lua` and add following codes like:
