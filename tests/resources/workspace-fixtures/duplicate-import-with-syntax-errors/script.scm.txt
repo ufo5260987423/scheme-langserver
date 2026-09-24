@@ -1,0 +1,11 @@
+(import (chezscheme))
+
+(define (foo x) (+ x 1))
+
+[let
+ ((formatted "(f |a;b| ; KEEP\n |cc;dd| ; KEEP2\n z)"))
+ [check
+  'symbol-semicolon-data
+  (read (open-string-input-port formatted))
+  '(f |a;b| |cc;dd| z)]
+ [check

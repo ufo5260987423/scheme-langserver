@@ -225,7 +225,7 @@ not match a function's signature.
 **Implementation status:**
 - ✅ **Unused import** is implemented for all import forms.  `abstract-interpreter.sls`
   increments `identifier-reference-usage-count` when a leaf symbol is resolved.
-  After `step`, `analysis/workspace.sls:private:check-unused-imports` walks each
+  After `step`, `analysis/document-checker/unused-imports.sls:check-unused-imports` walks each
   `import` clause and emits `"Unused import: ..."` for imported identifiers whose
   `usage-count` is still 0.
   - `only`, `except`, `rename`, `alias` — checked per identifier.
@@ -233,7 +233,7 @@ not match a function's signature.
     library was referenced, the whole import is flagged.  Implemented by attaching
     the imported references to the library-identifier node itself in
     `analysis/identifier/rules/library-import.sls` and reading them back in
-    `private:check-import-clause`.
+    `private:check-import-clause` in `analysis/document-checker/unused-imports.sls`.
 - ✅ **Unused local variable** is implemented.  Local bindings and top-level
   script definitions with zero references are flagged with code
   `"unused-local-variable"` and tagged as `Unnecessary`.
@@ -429,7 +429,7 @@ For each target path (after `init-references` has already cleared stale diagnost
      ```
    - Severity **1** (Error).
 
-4. **Unused import detection** (`private:check-unused-imports`):
+4. **Unused import detection** (`check-unused-imports` in `analysis/document-checker/unused-imports.sls`):
    - Runs after `step` and `process-library-identifier-excluded-references`.
    - Walks every `import` clause in the document.
    - For each imported `identifier-reference`, checks whether `usage-count` is 0.

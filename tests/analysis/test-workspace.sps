@@ -371,6 +371,31 @@
 (test-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 19. Duplicate-import detection with syntax errors in file
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A script file with broken brackets is re-parsed by the tolerant patcher,
+; which can leave duplicated subtrees in the index tree.  The single import
+; clause must not be misreported as a duplicate import.
+(test-begin "single import in file with syntax errors is not flagged as duplicate")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/duplicate-import-with-syntax-errors")]
+     [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+     [root (workspace-file-node workspace)]
+     [script-node (walk-file root (string-append fixture "/script.scm.txt"))]
+     [doc (file-node-document script-node)])
+   (test-equal 0 (length (filter (lambda (d) (string-contains (cadddr d) "Duplicate import")) (document-diagnoses doc)))))
+(test-end)
+
+(test-begin "genuinely duplicated import is still flagged")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/duplicate-import-genuine")]
+     [workspace (init-workspace fixture 'txt 'r6rs #f #f)]
+     [root (workspace-file-node workspace)]
+     [script-node (walk-file root (string-append fixture "/script.scm.txt"))]
+     [doc (file-node-document script-node)])
+   (test-equal 1 (length (filter (lambda (d) (string-contains (cadddr d) "Duplicate import")) (document-diagnoses doc)))))
+(test-end)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 18. Custom file-filter support
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

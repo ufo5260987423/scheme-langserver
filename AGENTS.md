@@ -13,7 +13,8 @@ Scheme, written in **Chez Scheme** and managed with the **Akku** package manager
 Key subsystems:
 - `virtual-file-system/` — File-node tree, library-node tree, documents, index-nodes
 - `analysis/` — Tokenizer, abstract interpreter, identifier reference resolution,
-  type inference, dependency graph (file-linkage)
+  type inference, dependency graph (file-linkage), document checkers
+  (`document-checker/` — unused imports, unused local variables)
 - `protocol/` — LSP message parsing and API handlers
 - `util/` — Shared utilities (matrix, dedupe, path, io, etc.)
 
@@ -333,7 +334,7 @@ Used in `lambda.sls`, `case-lambda.sls`, `let.sls`, `let*.sls`, `letrec.sls`, `l
 The `identifier-reference` record has a mutable `usage-count` field (default 0).
 - **Do not** increment it inside `find-available-references-for` (that function is called for internal lookups, guard checks, etc., not all of which represent a genuine "use").
 - **Do** increment it explicitly in `abstract-interpreter.sls` when `step` successfully resolves a leaf symbol (the `[else` branch of the top-level `cond`).
-- A post-phase `private:check-unused-imports` in `workspace.sls` scans import clauses after `step` and reports imported references with `usage-count = 0` as `"Unused import: ..."` (severity 2 / Warning). Supports plain, `only`, `except`, `rename`, and `alias` imports.
+- A post-phase `check-unused-imports` in `analysis/document-checker/unused-imports.sls` (called from `workspace.sls` after `step`) scans import clauses and reports imported references with `usage-count = 0` as `"Unused import: ..."` (severity 2 / Warning). Supports plain, `only`, `except`, `rename`, and `alias` imports. Unused local variables are checked separately by `check-unused-local-variables` in `analysis/document-checker/unused-local-variables.sls`.
 
 ### Pre-commit hook: never use `--no-verify`
 The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.

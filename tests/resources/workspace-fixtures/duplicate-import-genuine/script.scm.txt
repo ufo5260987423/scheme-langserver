@@ -1,0 +1,7 @@
+(import (chezscheme))
+
+(define (foo x) (+ x 1))
+
+(import (chezscheme))
+
+(display (foo 1))

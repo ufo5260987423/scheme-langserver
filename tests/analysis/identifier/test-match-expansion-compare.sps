@@ -2,9 +2,10 @@
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Compare scheme-langserver's expansion with Chez Scheme's expansion
 ;; for the match macro, exercised on a (match expression ...) call in
-;; analysis/workspace.sls. That file keeps its ufo-match call (not part of
-;; the self-defined-rules match-index-node migration), so it is a stable
-;; retarget now that match.sls itself no longer contains a match call.
+;; analysis/document-checker/unused-imports.sls. That file keeps the
+;; ufo-match call originally in workspace.sls (moved here during the
+;; document-checker extraction, 2026-09-24), so it is a stable retarget
+;; now that match.sls itself no longer contains a match call.
 ;;
 ;; TODO: This test currently exercises a single match call. Expand coverage
 ;; to compare expansions for other self-defined macros and edge cases
@@ -59,9 +60,11 @@
 (let* ([workspace-instance (init-workspace (current-directory))]
    [root-file-node (workspace-file-node workspace-instance)]
    [root-library-node (workspace-library-node workspace-instance)]
-   ; find match call in analysis/workspace.sls (kept as a stable target
-   ; after the self-defined-rules match.sls migration to match-index-node)
-   [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/workspace.sls"))]
+   ; find match call in analysis/document-checker/unused-imports.sls
+   ; (moved from workspace.sls during the document-checker extraction;
+   ; kept as a stable target after the self-defined-rules match.sls
+   ; migration to match-index-node)
+   [target-file-node (walk-file root-file-node (string-append (current-directory) "/analysis/document-checker/unused-imports.sls"))]
    [document (file-node-document target-file-node)]
    [root-index-node (car (document-index-node-list document))]
    [match-call-node (find-index-node-recursive
