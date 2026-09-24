@@ -47,8 +47,8 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
 
-    (scheme-langserver util dedupe)
-    (scheme-langserver util contain))
+    (scheme-langserver util contain)
+    (scheme-langserver util merge-ordered-list))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-record-type identifier-reference
   (nongenerative scheme-langserver-identifier-reference)
@@ -206,16 +206,19 @@
       (and (symbol? id1) (symbol? id2)
         (string<=? (private:identifier-name id1) (private:identifier-name id2))))))
 
+; Batch maintenance for reference lists: sort+dedupe the (small) new
+; batch, then merge it into the (large) existing list in O(n) instead
+; of re-sorting everything on every attach.  See merge-ordered-list.sls
+; for the semantics contract.
 (define (append-references-into-ordered-references-for document index-node list)
-  (if (null? index-node)
-    (document-ordered-reference-list-set! document 
-      (ordered-dedupe 
-        (sort-identifier-references 
-          (fold-left (lambda (acc x) (cons x acc)) (document-ordered-reference-list document) list))))
-    (index-node-references-import-in-this-node-set! index-node
-      (ordered-dedupe 
-        (sort-identifier-references 
-          (fold-left (lambda (acc x) (cons x acc)) (index-node-references-import-in-this-node index-node) list))))))
+  (if (null? list)
+    (void)
+    (let ([sorted-batch (dedupe-adjacent (sort-identifier-references (reverse list)) equal?)])
+      (if (null? index-node)
+        (document-ordered-reference-list-set! document
+          (merge-ordered-lists (document-ordered-reference-list document) sorted-batch identifier-compare? equal?))
+        (index-node-references-import-in-this-node-set! index-node
+          (merge-ordered-lists (index-node-references-import-in-this-node index-node) sorted-batch identifier-compare? equal?))))))
 
 (define (sort-identifier-references identifier-references)
   (sort identifier-compare? identifier-references))
