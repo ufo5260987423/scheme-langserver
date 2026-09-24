@@ -47,7 +47,6 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
 
-    (scheme-langserver util binary-search)
     (scheme-langserver util dedupe)
     (scheme-langserver util contain))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,12 +176,35 @@
           [metas (filter meta? ras)])
         (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) metas)))))
 
+; symbol->string allocates a fresh string on every call, and
+; identifier-compare? is invoked tens of millions of times during workspace
+; init.  Cache each interned symbol's name string.  The cache is per-thread:
+; init-references runs under threaded-map, and a global mutable hashtable
+; would risk the same bucket corruption that once killed
+; private:expander-doc-cache-ht.
+(define private:identifier-name-cache (make-thread-parameter #f))
+
+(define (private:identifier-name identifier)
+  (let ([cache (private:identifier-name-cache)])
+    (if cache
+      (or (eq-hashtable-ref cache identifier #f)
+        (let ([name (symbol->string identifier)])
+          (eq-hashtable-set! cache identifier name)
+          name))
+      (let ([fresh (make-weak-eq-hashtable)])
+        (private:identifier-name-cache fresh)
+        (let ([name (symbol->string identifier)])
+          (eq-hashtable-set! fresh identifier name)
+          name)))))
+
 (define (identifier-compare? target1 target2)
   (let ([id1 (identifier-reference-identifier target1)]
       [id2 (identifier-reference-identifier target2)])
-    (and (symbol? id1) (symbol? id2)
-      (or (eq? id1 id2)
-        (string<=? (symbol->string id1) (symbol->string id2))))))
+    ; eq? first: binary-search probes mostly land on the equal element,
+    ; and interned symbols hit eq? far more often than the name compare.
+    (or (eq? id1 id2)
+      (and (symbol? id1) (symbol? id2)
+        (string<=? (private:identifier-name id1) (private:identifier-name id2))))))
 
 (define (append-references-into-ordered-references-for document index-node list)
   (if (null? index-node)
@@ -300,17 +322,65 @@
             (find-available-references-for document (index-node-parent current-index-node) identifier current-exclude))
           tmp-result))]))
 
+; name of a reference's identifier, cached; non-symbol identifiers are
+; treated as the empty string (they sort first; the old comparator also
+; treated them as incomparable, so their position was never well-defined).
+(define (private:reference-name reference)
+  (let ([id (identifier-reference-identifier reference)])
+    (if (symbol? id) (private:identifier-name id) "")))
+
+; first index whose name is not < target-name (i.e. target <= name)
+(define (private:lower-bound vector-instance target-name)
+  (let ([n (vector-length vector-instance)])
+    (let loop ([lo 0] [hi n])
+      (if (< lo hi)
+        (let ([mid (fxarithmetic-shift-right (+ lo hi) 1)])
+          (if (string<? (private:reference-name (vector-ref vector-instance mid)) target-name)
+            (loop (+ mid 1) hi)
+            (loop lo mid)))
+        lo))))
+
+; Exclude-set representation: #f = no exclusion; a single reference =
+; compare with eq?; otherwise an eq-hashtable.  Most lookups have an empty
+; or single-element exclude list, so skip building a hashtable for them.
+(define (private:exclude-set exclude)
+  (cond
+    [(null? exclude) #f]
+    [(null? (cdr exclude)) (car exclude)]
+    [else (private:list->eq-set exclude)]))
+
+(define (private:excluded? exclude-set reference)
+  (cond
+    [(not exclude-set) #f]
+    [(eq-hashtable? exclude-set) (eq-hashtable-contains? exclude-set reference)]
+    [else (eq? exclude-set reference)]))
+
+; Find all references in a list sorted by identifier-compare? whose
+; identifier is equal to `identifier`, without allocating a dummy
+; identifier-reference per lookup (the old code built one just to feed
+; util/binary-search's order-compare).  A single lower-bound search
+; plus a forward scan of the equal-name run: cheaper than the old
+; converge-then-collect and than two bound searches.
 (define (private-binary-search reference-list identifier exclude)
-  (let ([exclude-ht (private:list->eq-set exclude)]
-        [prev
-          (binary-search
-            (list->vector reference-list)
-            identifier-compare?
-            (make-identifier-reference identifier '() '() '() '() '() '() '()))])
-    (filter
-      (lambda (reference)
-        (not (eq-hashtable-contains? exclude-ht reference)))
-      prev)))
+  (if (not (symbol? identifier))
+    '()
+    (let ([vector-instance (list->vector reference-list)]
+        [target-name (private:identifier-name identifier)])
+      (let ([n (vector-length vector-instance)]
+          [lo (private:lower-bound vector-instance target-name)])
+        (if (or (>= lo n)
+                (not (string=? (private:reference-name (vector-ref vector-instance lo)) target-name)))
+          '()
+          (let ([exclude-set (private:exclude-set exclude)])
+            (let loop ([i lo] [acc '()])
+              (if (or (>= i n)
+                      (not (string=? (private:reference-name (vector-ref vector-instance i)) target-name)))
+                (reverse acc)
+                (let ([reference (vector-ref vector-instance i)])
+                  (loop (+ i 1)
+                    (if (private:excluded? exclude-set reference)
+                      acc
+                      (cons reference acc))))))))))))
 
 (define (root-ancestor identifier-reference)
   (if (null? (identifier-reference-parents identifier-reference))
