@@ -41,12 +41,15 @@
                         (if (condition? ex) (condition-message ex) ex)
                         (if (condition? ex) (condition-irritants ex) ""))
                       server-instance)])
-        (save-workspace-cache-for! 
-          workspace 
-          cache-path 
-          (server-top-environment server-instance)
-          (server-type-inference? server-instance)
-          (not (null? (server-mutex server-instance))))))))
+        ;Take the workspace mutex so the save is serialized with any
+        ;in-flight worker-thread analysis (didChange etc.).
+        (with-mutex (workspace-mutex workspace)
+          (save-workspace-cache-for! 
+            workspace 
+            cache-path 
+            (server-top-environment server-instance)
+            (server-type-inference? server-instance)
+            (not (null? (server-mutex server-instance)))))))))
 
 (define (private:send-error-response server-instance id method)
   (try
@@ -274,10 +277,22 @@
                     (read-message server-instance)))])
             (when thread-pool
               (start-timer interval-timer)
-              (thread-pool-add-job thread-pool 
-                (lambda () 
+              (thread-pool-add-job thread-pool
+                (lambda ()
                   (let loop ()
-                    ((request-queue-pop request-queue request-processor))
+                    ;private:try-catch handles ordinary conditions inside
+                    ;request processing, but a runtime-level error (e.g. an
+                    ;invalid memory reference from the engine layer, observed
+                    ;rarely when a condition is raised and handled inside an
+                    ;engine body) can escape it. Without this guard such an
+                    ;escape would kill the consumer, after which every queued
+                    ;request starves and the server hangs. Log and continue.
+                    (guard (e [else
+                                (do-log
+                                  (string-append "request processor escaped: "
+                                    (with-output-to-string (lambda () (write e))))
+                                  server-instance)])
+                      ((request-queue-pop request-queue request-processor)))
                     (if (not (and (or (server-shutdown? server-instance) debug?) (request-queue-empty? request-queue))) (loop))))))
             (let loop ([request-message (private:safe-read-message)])
               (cond 
@@ -293,8 +308,40 @@
 
                 [thread-pool
                   (when debug? (sleep (make-time 'time-duration 1000000 0)))
-                  (request-queue-push request-queue request-message (server-workspace server-instance))
-                  (loop (private:safe-read-message))]
+                  (cond
+                    ;shutdown and exit are control messages and run on the
+                    ;main thread. Besides avoiding a queue round-trip, exit
+                    ;*must* run here: in Chez, (exit) executed on a
+                    ;fork-thread terminates only that thread, while the main
+                    ;thread stays blocked on stdin and the process never
+                    ;dies. Handling shutdown here too guarantees the flag is
+                    ;set before any exit that follows it is read.
+                    [(equal? "shutdown" (request-method request-message))
+                      (server-shutdown?-set! server-instance #t)
+                      (send-message server-instance (success-response (request-id request-message) 'null))
+                      (loop (private:safe-read-message))]
+                    [(equal? "exit" (request-method request-message))
+                      (let ([status (if (server-shutdown? server-instance) 0 1)])
+                        ;Setting shutdown? also disarms the interval timer,
+                        ;so the drain below terminates even without a
+                        ;preceding shutdown request.
+                        (server-shutdown?-set! server-instance #t)
+                        ;Wait until the worker has consumed every queued
+                        ;request, so the cache is saved from a quiescent
+                        ;workspace. Bounded: if the consumer died (e.g. an
+                        ;escaped engine error), the queue never drains and
+                        ;exit must not hang.
+                        (let ([start (time-second (current-time))])
+                          (let drain ()
+                            (unless (or (request-queue-empty? request-queue)
+                                        (> (- (time-second (current-time)) start) 5))
+                              (sleep (make-time 'time-duration 1000000 0))
+                              (drain))))
+                        (private:save-workspace-cache-if-any server-instance)
+                        (exit status))]
+                    [else
+                      (request-queue-push request-queue request-message (server-workspace server-instance))
+                      (loop (private:safe-read-message))])]
                 [else
                   (request-processor request-message)
                   (loop (private:safe-read-message))]))

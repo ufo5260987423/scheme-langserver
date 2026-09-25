@@ -75,8 +75,8 @@
          [output-port (open-file-output-port "/tmp/scheme-langserver-test2.out"
                         (file-options replace) 'none)]
          [log-port (open-file-output-port "/tmp/scheme-langserver-test2.log"
-                      (file-options replace) 'block (make-transcoder (utf-8-codec)))]
-         [server-instance (init-server input-port output-port log-port #f #f)])
+                      (file-options replace) 'block (make-transcoder (utf-8-codec)))])
+    (init-server input-port output-port log-port #f #f)
     (close-port output-port)
     (close-port log-port)
     (let ([output (bytevector->string
@@ -84,6 +84,30 @@
                       (open-file-input-port "/tmp/scheme-langserver-test2.out")
                       get-bytevector-all)
                     (make-transcoder (utf-8-codec)))])
+      (test-assert (string-contains output "InvalidRequest"))
+      (test-assert (string-contains output "\"id\":\"3\""))))
+
+  ;; Test 2b: same as Test 2, multi-threaded (shutdown is handled on the
+  ;; main thread there, so the flag is set before the hover is processed)
+  (let* ([input-str (string-append
+                      (make-lsp-request "1" "initialize" init-params)
+                      (make-lsp-request "2" "shutdown" #f)
+                      (make-lsp-request "3" "textDocument/hover"
+                        "{\"textDocument\":{\"uri\":\"file:///x\"},\"position\":{\"line\":0,\"character\":0}}"))]
+         [input-port (open-bytevector-input-port (string->utf8 input-str))]
+         [output-port (open-file-output-port "/tmp/scheme-langserver-test2b.out"
+                        (file-options replace) 'none)]
+         [log-port (open-file-output-port "/tmp/scheme-langserver-test2b.log"
+                      (file-options replace) 'block (make-transcoder (utf-8-codec)))])
+    (init-server input-port output-port log-port #t #f)
+    (close-port output-port)
+    (close-port log-port)
+    (let ([output (bytevector->string
+                    (call-with-port
+                      (open-file-input-port "/tmp/scheme-langserver-test2b.out")
+                      get-bytevector-all)
+                    (make-transcoder (utf-8-codec)))])
+      (test-assert (string-contains output "\"id\":\"2\""))
       (test-assert (string-contains output "InvalidRequest"))
       (test-assert (string-contains output "\"id\":\"3\""))))
 
@@ -108,38 +132,49 @@
       (test-assert (string-contains output "InvalidRequest"))
       (test-assert (string-contains output "\"id\":\"3\""))))
 
-  ;; Test 4: exit without shutdown terminates with code 1
-  (let ([exit-script
-         (string-append
-           "(import (rnrs (6)) (scheme-langserver) (scheme-langserver util io))"
-           "(define exit-json \"{\\\"method\\\":\\\"exit\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
-           "(define exit-header (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 exit-json))) \"\\r\\n\\r\\n\"))"
-           "(let* ([input-port (open-bytevector-input-port (string->utf8 (string-append exit-header exit-json)))]"
-           "       [output-port (open-file-output-port \"/tmp/exit-only.out\" (file-options replace) 'none)]"
-           "       [log-port (open-file-output-port \"/tmp/exit-only.log\" (file-options replace) 'block (make-transcoder (utf-8-codec)))])"
-           "  (init-server input-port output-port log-port #f #f))")])
-    (call-with-port
-      (open-file-output-port "/tmp/exit-only.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
-      (lambda (p) (display exit-script p) (newline p)))
-    (test-equal 1 (system ". .akku/bin/activate && scheme --script /tmp/exit-only.sps >/dev/null 2>&1")))
+  ;; Test 4: exit without shutdown terminates with code 1 (single- and
+  ;; multi-threaded; in Chez (exit) on a fork-thread would only kill the
+  ;; worker, so the multi-thread case must exit from the main thread)
+  (for-each
+    (lambda (multi-thread? expected-code)
+      (let ([exit-script
+             (string-append
+               "(import (rnrs (6)) (scheme-langserver) (scheme-langserver util io))"
+               "(define exit-json \"{\\\"method\\\":\\\"exit\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
+               "(define exit-header (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 exit-json))) \"\\r\\n\\r\\n\"))"
+               "(let* ([input-port (open-bytevector-input-port (string->utf8 (string-append exit-header exit-json)))]"
+               "       [output-port (open-file-output-port \"/tmp/exit-only.out\" (file-options replace) 'none)]"
+               "       [log-port (open-file-output-port \"/tmp/exit-only.log\" (file-options replace) 'block (make-transcoder (utf-8-codec)))])"
+               "  (init-server input-port output-port log-port " (if multi-thread? "#t" "#f") " #f))")])
+        (call-with-port
+          (open-file-output-port "/tmp/exit-only.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
+          (lambda (p) (display exit-script p) (newline p)))
+        (test-equal expected-code (system ". .akku/bin/activate && scheme --script /tmp/exit-only.sps >/dev/null 2>&1"))))
+    (list #f #t)
+    (list 1 1))
 
-  ;; Test 5: exit after shutdown terminates with code 0
-  (let ([exit-script
-         (string-append
-           "(import (rnrs (6)) (scheme-langserver) (scheme-langserver util io))"
-           "(define shutdown-json \"{\\\"id\\\":\\\"1\\\",\\\"method\\\":\\\"shutdown\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
-           "(define shutdown-header (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 shutdown-json))) \"\\r\\n\\r\\n\"))"
-           "(define exit-json \"{\\\"method\\\":\\\"exit\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
-           "(define exit-header (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 exit-json))) \"\\r\\n\\r\\n\"))"
-           "(define input-str (string-append shutdown-header shutdown-json exit-header exit-json))"
-           "(let* ([input-port (open-bytevector-input-port (string->utf8 input-str))]"
-           "       [output-port (open-file-output-port \"/tmp/shutdown-exit.out\" (file-options replace) 'none)]"
-           "       [log-port (open-file-output-port \"/tmp/shutdown-exit.log\" (file-options replace) 'block (make-transcoder (utf-8-codec)))])"
-           "  (init-server input-port output-port log-port #f #f))")])
-    (call-with-port
-      (open-file-output-port "/tmp/shutdown-exit.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
-      (lambda (p) (display exit-script p) (newline p)))
-    (test-equal 0 (system ". .akku/bin/activate && scheme --script /tmp/shutdown-exit.sps >/dev/null 2>&1")))
+  ;; Test 5: exit after shutdown terminates with code 0 (single- and
+  ;; multi-threaded)
+  (for-each
+    (lambda (multi-thread? expected-code)
+      (let ([exit-script
+             (string-append
+               "(import (rnrs (6)) (scheme-langserver) (scheme-langserver util io))"
+               "(define shutdown-json \"{\\\"id\\\":\\\"1\\\",\\\"method\\\":\\\"shutdown\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
+               "(define shutdown-header (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 shutdown-json))) \"\\r\\n\\r\\n\"))"
+               "(define exit-json \"{\\\"method\\\":\\\"exit\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
+               "(define exit-header (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 exit-json))) \"\\r\\n\\r\\n\"))"
+               "(define input-str (string-append shutdown-header shutdown-json exit-header exit-json))"
+               "(let* ([input-port (open-bytevector-input-port (string->utf8 input-str))]"
+               "       [output-port (open-file-output-port \"/tmp/shutdown-exit.out\" (file-options replace) 'none)]"
+               "       [log-port (open-file-output-port \"/tmp/shutdown-exit.log\" (file-options replace) 'block (make-transcoder (utf-8-codec)))])"
+               "  (init-server input-port output-port log-port " (if multi-thread? "#t" "#f") " #f))")])
+        (call-with-port
+          (open-file-output-port "/tmp/shutdown-exit.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
+          (lambda (p) (display exit-script p) (newline p)))
+        (test-equal expected-code (system ". .akku/bin/activate && scheme --script /tmp/shutdown-exit.sps >/dev/null 2>&1"))))
+    (list #f #t)
+    (list 0 0))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
