@@ -14,7 +14,7 @@
   (scheme-langserver util path))
 
 (test-begin "completion on unresolved uri returns empty vector")
-(let* ([workspace (init-workspace (current-directory) 'akku 'r6rs #f #f)]
+(let* ([workspace (init-workspace (string-append (current-directory) "/util/") 'scheme 'r6rs #f #f)]
        [params (make-alist
                  'textDocument (make-alist 'uri "file:///nonexistent/ignored.sls")
                  'position (make-alist 'line 0 'character 0))]

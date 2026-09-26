@@ -25,9 +25,9 @@
         [else (loop (+ i 1))]))))
 
 (test-begin "hover without type inference")
-(let* ([root (current-directory)]
-       [workspace (init-workspace root 'akku 'r6rs #f #f)]
-       [target-path (string-append root "/util/binary-search.sls")]
+(let* ([root (string-append (current-directory) "/util/")]
+       [workspace (init-workspace root 'scheme 'r6rs #f #f)]
+       [target-path (string-append root "binary-search.sls")]
        [uri (path->uri target-path)]
        [file-node (walk-file (workspace-file-node workspace) target-path)]
        [document (file-node-document file-node)]
@@ -50,9 +50,9 @@
 (test-end)
 
 (test-begin "hover with type inference")
-(let* ([root (current-directory)]
-       [workspace (init-workspace root 'akku 'r6rs #f #t)]
-       [target-path (string-append root "/util/association.sls")]
+(let* ([root (string-append (current-directory) "/util/")]
+       [workspace (init-workspace root 'scheme 'r6rs #f #t)]
+       [target-path (string-append root "association.sls")]
        [uri (path->uri target-path)]
        [file-node (walk-file (workspace-file-node workspace) target-path)]
        [document (file-node-document file-node)]
@@ -78,7 +78,7 @@
 (test-end)
 
 (test-begin "hover on unresolved uri returns null")
-(let* ([workspace (init-workspace (current-directory) 'akku 'r6rs #f #f)]
+(let* ([workspace (init-workspace (string-append (current-directory) "/util/") 'scheme 'r6rs #f #f)]
        [params (make-alist
                  'textDocument (make-alist 'uri "file:///nonexistent/ignored.sls")
                  'position (make-alist 'line 0 'character 0))]

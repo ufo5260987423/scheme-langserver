@@ -18,9 +18,9 @@
 
 (test-begin "document-symbol on util/binary-search.sls")
 
-(let* ([root (current-directory)]
-       [workspace (init-workspace root 'akku 'r6rs #f #f)]
-       [target-path (string-append root "/util/binary-search.sls")]
+(let* ([root (string-append (current-directory) "/util/")]
+       [workspace (init-workspace root 'scheme 'r6rs #f #f)]
+       [target-path (string-append root "binary-search.sls")]
        [uri (path->uri target-path)]
 
        [file-node (walk-file (workspace-file-node workspace) target-path)]

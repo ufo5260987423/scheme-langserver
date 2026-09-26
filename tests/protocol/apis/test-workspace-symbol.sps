@@ -24,8 +24,8 @@
 
 (test-begin "workspace-symbol on util/")
 
-(let* ([root (current-directory)]
-       [workspace (init-workspace root 'akku 'r6rs #f #f)]
+(let* ([root (string-append (current-directory) "/util/")]
+       [workspace (init-workspace root 'scheme 'r6rs #f #f)]
        [result-empty (workspace-symbol workspace '((query . "")))]
        [result-vec (workspace-symbol workspace '((query . "binary")))]
        [result-list (vector->list result-vec)])
