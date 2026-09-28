@@ -42,14 +42,23 @@
                         (if (condition? ex) (condition-irritants ex) ""))
                       server-instance)])
         ;Take the workspace mutex so the save is serialized with any
-        ;in-flight worker-thread analysis (didChange etc.).
-        (with-mutex (workspace-mutex workspace)
-          (save-workspace-cache-for! 
-            workspace 
-            cache-path 
-            (server-top-environment server-instance)
-            (server-type-inference? server-instance)
-            (not (null? (server-mutex server-instance)))))))))
+        ;in-flight worker-thread analysis (didChange etc.). In single-thread
+        ;mode the workspace has no mutex ('()), so save directly.
+        (let ([mutex (workspace-mutex workspace)])
+          (if (null? mutex)
+            (save-workspace-cache-for! 
+              workspace 
+              cache-path 
+              (server-top-environment server-instance)
+              (server-type-inference? server-instance)
+              (not (null? (server-mutex server-instance))))
+            (with-mutex mutex
+              (save-workspace-cache-for! 
+                workspace 
+                cache-path 
+                (server-top-environment server-instance)
+                (server-type-inference? server-instance)
+                (not (null? (server-mutex server-instance)))))))))))
 
 (define (private:send-error-response server-instance id method)
   (try

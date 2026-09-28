@@ -189,4 +189,36 @@
 
 (test-end)
 
+(test-begin "cache-saved-on-exit-in-single-thread-mode")
+  ;; Regression: private:save-workspace-cache-if-any unconditionally took
+  ;; workspace-mutex, which is '() in single-thread mode, so the cache was
+  ;; never saved when an ST server shut down.
+  (let* ([tmp-root "/tmp/scheme-langserver-test-cache-st-exit"]
+      [cache-dir (string-append tmp-root "/cache")]
+      [cache-file (string-append cache-dir "/workspace.fasl")]
+      [fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/simple-lib")]
+      [exit-script
+        (string-append
+          "(import (rnrs (6)) (scheme-langserver) (scheme-langserver util io))"
+          "(define fixture \"" fixture "\")"
+          "(define init-json (string-append \"{\\\"id\\\":\\\"1\\\",\\\"method\\\":\\\"initialize\\\",\\\"jsonrpc\\\":\\\"2.0\\\",\\\"params\\\":{\\\"processId\\\":1,\\\"rootUri\\\":\\\"file://\" fixture \"\\\",\\\"capabilities\\\":{}}}\"))"
+          "(define shutdown-json \"{\\\"id\\\":\\\"2\\\",\\\"method\\\":\\\"shutdown\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
+          "(define exit-json \"{\\\"method\\\":\\\"exit\\\",\\\"jsonrpc\\\":\\\"2.0\\\"}\")"
+          "(define (framed json) (string-append \"Content-Length: \" (number->string (bytevector-length (string->utf8 json))) \"\\r\\n\\r\\n\" json))"
+          "(define input (open-bytevector-input-port (string->utf8 (string-append (framed init-json) (framed shutdown-json) (framed exit-json)))))"
+          "(define output (open-file-output-port \"/dev/null\" (file-options no-fail) 'none))"
+          "(define log (open-file-output-port \"/dev/null\" (file-options no-fail) 'block (make-transcoder (utf-8-codec))))"
+          "(init-server input output log #f #f 'r6rs #f \"" cache-dir "\" 'txt)")])
+    (when (file-directory? tmp-root)
+      (private:delete-directory tmp-root))
+    (mkdir tmp-root)
+    (call-with-port
+      (open-file-output-port "/tmp/cache-st-exit.sps" (file-options replace) 'block (make-transcoder (utf-8-codec)))
+      (lambda (p) (display exit-script p) (newline p)))
+    (test-equal 0 (system ". .akku/bin/activate && scheme --script /tmp/cache-st-exit.sps >/dev/null 2>&1"))
+    (test-assert "single-thread exit saves workspace cache" (file-exists? cache-file))
+    (when (file-directory? tmp-root)
+      (private:delete-directory tmp-root)))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
