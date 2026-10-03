@@ -115,7 +115,20 @@
     (begin
       (index-node-expansion-generator-set! input-index-node (lambda _ #f))
       #f)
-    (let ([clause-selector (private:compile-clause-selector literals clause-index-nodes)])
+    (let ([clause-selector (private:compile-clause-selector literals clause-index-nodes)]
+        ;definition-time per-clause compilation (Chez convert-pattern style):
+        ;pattern tree, template tree and variable context are built once,
+        ;not per call
+        [clause-data-vector
+          (list->vector
+            (map
+              (lambda (clause-index-node)
+                (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+                    [pattern (make-pattern (car clause-expression))])
+                  (vector pattern
+                    (make-pattern (extract-template clause-expression))
+                    (gather-context pattern))))
+              clause-index-nodes))])
       (index-node-expansion-generator-set! input-index-node
         (lambda (local-root-file-node local-root-library-node local-document local-index-node)
           (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
@@ -126,17 +139,24 @@
           (if (or (private:tree-has? local-expression '...) (not index+expansion))
             #f
             (let* ([index (car index+expansion)]
-                [clause-index-node (vector-ref (list->vector clause-index-nodes) index)]
-                [clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+                [clause-data (vector-ref clause-data-vector index)]
+                ;NB: the selector (and Chez syntax-case generally) instantiates
+                ;the output template via pattern-variable substitution, so cdr
+                ;is the INSTANTIATED expansion, not the raw template
                 [expansion-expression (cdr index+expansion)]
 
-                [pattern-expression (car clause-expression)]
-                [pattern (make-pattern pattern-expression)]
-                [template-expression (extract-template clause-expression)]
-                [template-pattern (make-pattern template-expression)]
-                [pattern-context (gather-context pattern)]
-                [pairs (pattern+index-node->pair-list pattern local-index-node)]
-                [bindings (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs))) (pattern-exposed-literals template-pattern))]
+                [pattern (vector-ref clause-data 0)]
+                [template-pattern (vector-ref clause-data 1)]
+                [pattern-context (vector-ref clause-data 2)]
+                ;single-pass binding collection; #f or 'fallback defers to the
+                ;legacy pairs+iterator path (complex ellipsis shapes)
+                [bindings-result (pattern+index-node->bindings pattern local-index-node literals)]
+                [bindings
+                  (if (list? bindings-result)
+                    bindings-result
+                    (let ([pairs (pattern+index-node->pair-list pattern local-index-node)])
+                      (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs)))
+                        (pattern-exposed-literals template-pattern))))]
                 [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
                 [expansion-index-node 
