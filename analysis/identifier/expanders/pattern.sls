@@ -90,11 +90,12 @@
                     successed-matched-pattern-expression
                     (map make-pattern (vector->list successed-matched-pattern-expression))
                     #f
-                    '())])
+                    '()
+                    #f)])
               (map (lambda (child) (pattern-parent-set! child p)) (pattern-children p))
               (pattern-exposed-literals-set! p (dedupe (apply append (map pattern-exposed-literals (pattern-children p)))))
               p)]
-          [else (new 'equal?-datum successed-matched-pattern-expression '() #f '())])))))
+          [else (new 'equal?-datum successed-matched-pattern-expression '() #f '() #f)])))))
 
 (define (expansion->printable-object expansion)
   (cond 
