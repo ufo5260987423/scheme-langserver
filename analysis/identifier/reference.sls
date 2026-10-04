@@ -31,13 +31,9 @@
 
     identifier-compare?
 
-    transform
-
     root-ancestor
-    
+
     sort-identifier-references
-    pure-identifier-reference-misture?
-    is-ancestor-of?
     library-identifier?)
   (import 
     (chezscheme)
@@ -57,9 +53,8 @@
   (fields
     (immutable identifier)
     (immutable document)
-    ;these two only mutable for transform
-    (mutable index-node)
-    (mutable initialization-index-node)
+    (immutable index-node)
+    (immutable initialization-index-node)
 
     (immutable library-identifier)
     (immutable type)
@@ -84,94 +79,6 @@
           (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0 #f)]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
           (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0 #f)]))))
-
-(define (is-ancestor-of? identifier-reference0 identifier-reference1)
-  (if (eq? identifier-reference0 identifier-reference1)
-    #t
-    (if (find (lambda (parent) (is-ancestor-of? identifier-reference0 parent)) (identifier-reference-parents identifier-reference1))
-      #t
-      #f)))
-
-(define (transform document origin-index-node-list target-index-node-list mapper-vector target-index-node-blacklist)
-  (if (null? origin-index-node-list)
-    '()
-    (let* ([head (car origin-index-node-list)]
-        [children (index-node-children head)]
-        [imported-reference (index-node-references-import-in-this-node head)]
-        [exported-reference (index-node-references-export-to-other-node head)]
-        [exclude-reference (index-node-excluded-references head)])
-      (if (and 
-          (null? imported-reference)
-          (null? exported-reference)
-          (null? exclude-reference))
-        '()
-        (let ([target-index-node (pick-index-node-with-mapper head target-index-node-list mapper-vector)])
-          (if (index-node? target-index-node)
-            (begin
-              (transform document children target-index-node-list mapper-vector target-index-node-blacklist)
-              (transform document (cdr origin-index-node-list) target-index-node-list mapper-vector target-index-node-blacklist)
-              (index-node-excluded-references-set!
-                target-index-node
-                (append 
-                  (index-node-excluded-references target-index-node)
-                  (filter 
-                    (lambda (item)
-                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
-                        (and 
-                          (index-node? tmp) 
-                          (not (contain? target-index-node-blacklist tmp eq?)) 
-                          (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
-                    exclude-reference)))
-              (index-node-references-import-in-this-node-set!
-                target-index-node
-                (append 
-                  (index-node-references-import-in-this-node target-index-node)
-                  (filter 
-                    (lambda (item)
-                      (let ([tmp (pick-index-node-with-mapper (identifier-reference-initialization-index-node item) target-index-node-list mapper-vector)])
-                        (and 
-                          (index-node? tmp) 
-                          (not (contain? target-index-node-blacklist tmp eq?)) 
-                          (find (lambda (p) (is-ancestor? p item)) target-index-node-blacklist))))
-                    imported-reference)))
-              (for-each 
-                (lambda (item) (private-export-transform item target-index-node-list mapper-vector))
-                exported-reference))
-            '()))))))
-
-;only for export identifier-references
-(define (private-export-transform identifier-reference target-index-node-list mapper-vector)
-  (let ([document (identifier-reference-document identifier-reference)]
-      [initialization-index-node (identifier-reference-initialization-index-node identifier-reference)]
-      [index-node (identifier-reference-index-node identifier-reference)])
-    (let ([target-initialization-index-node (pick-index-node-with-mapper initialization-index-node target-index-node-list mapper-vector)]
-        [target-index-node (pick-index-node-with-mapper index-node target-index-node-list mapper-vector)])
-      (if (and (index-node? target-index-node) (index-node? target-initialization-index-node))
-        (begin
-          (identifier-reference-initialization-index-node-set! identifier-reference target-initialization-index-node)
-          (identifier-reference-index-node-set! identifier-reference target-index-node)
-          (index-node-references-export-to-other-node-set! 
-            target-index-node
-            (append 
-              (index-node-references-export-to-other-node target-index-node)
-              identifier-reference)))))))
-
-(define (pure-identifier-reference-misture? expression)
-  (if (list? expression) 
-    (not (contain? (map pure-identifier-reference-misture? expression) #f))
-    (or 
-      (equal? '<- expression) 
-      (equal? '<-record-set!  expression) 
-      (equal? '<-record-ref  expression) 
-      (equal? '<-record-constructor expression) 
-      (equal? '**1 expression) 
-      (equal? '... expression) 
-      (equal? 'something? expression) 
-      (equal? 'inner:void? expression) 
-      (equal? 'inner:list? expression) 
-      (equal? 'inner:pair? expression) 
-      (equal? 'inner:vector? expression) 
-      (identifier-reference? expression))))
 
 (define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
 (define (meta-for? document index-node identifier)
