@@ -7,23 +7,12 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver util contain))
 
-(define (private:tree-has? ready target)
-  (cond 
-    [(equal? ready target) #t]
-    [(null? ready) #f]
-    [(vector? ready) (private:tree-has? (vector->list ready) target)]
-    [(pair? ready) (or (private:tree-has? (car ready) target) (private:tree-has? (cdr ready) target))]
-    [else #f]))
 
 (define (expansion-generator->rule proc step file-linkage expanded+callee-list memory . maybe-expander-ref)
   (let ([expander-ref (if (null? maybe-expander-ref) #f (car maybe-expander-ref))])
     (lambda (root-file-node root-library-node document index-node)
       (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
-          ;taking analysis/identifier/expanders/syntax-rules as an example
-          [pairs+expansion 
-            (if (private:tree-has? expression '...)
-              '()
-              (proc root-file-node root-library-node document index-node))])
+          [pairs+expansion (proc root-file-node root-library-node document index-node)])
         (if pairs+expansion
           (let* ([pairs (car pairs+expansion)]
               [expansion-index-node (cdr pairs+expansion)]

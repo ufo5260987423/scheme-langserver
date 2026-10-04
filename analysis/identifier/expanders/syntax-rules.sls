@@ -136,7 +136,7 @@
                         (hashtable-set! selector-cache local-expression confirmed))
                       confirmed))
                   (private:confirm-clause literals clause-index-nodes local-expression))])
-          (if (or (private:tree-has? local-expression '...) (not index+expansion))
+          (if (not index+expansion)
             #f
             (let* ([index (car index+expansion)]
                 [clause-data (vector-ref clause-data-vector index)]
@@ -168,13 +168,6 @@
     '()
     (cons (car list) (private:take (cdr list) (- n 1)))))
 
-(define (private:tree-has? ready target)
-  (cond 
-    [(equal? ready target) #t]
-    [(null? ready) #f]
-    [(vector? ready) (private:tree-has? (vector->list ready) target)]
-    [(pair? ready) (or (private:tree-has? (car ready) target) (private:tree-has? (cdr ready) target))]
-    [else #f]))
 
 ;these two parameter are supposed to be correct and this procedure won't do fault-tolerant things.
 (define (private:expansion+index-node->pairs compound-list index-node)
