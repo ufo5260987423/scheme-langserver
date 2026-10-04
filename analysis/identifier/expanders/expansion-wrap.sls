@@ -140,7 +140,17 @@
 (define (private:shallow-copy pairs all-pairs expansion-index-node document initialization-index-node)
   (let* ([reverse-map (build-reverse-map all-pairs)]
       [local-identifiers+export-index-node (private:recursive-collect expansion-index-node index-node-references-export-to-other-node)]
-      [local-identifiers+import-index-node (private:recursive-collect expansion-index-node index-node-references-import-in-this-node)])
+      [local-identifiers+import-index-node (private:recursive-collect expansion-index-node index-node-references-import-in-this-node)]
+      ;Inserting each new reference one-by-one into the ordered lists costs
+      ;one full merge pass per reference (quadratic in the number of
+      ;back-propagated references). Queue them per target instead and flush
+      ;once per target after the walk.
+      [pending-inserts-ht (make-eq-hashtable)])
+    (define (queue-insert! import-index-node ni)
+      (hashtable-update! pending-inserts-ht
+        import-index-node
+        (lambda (old) (cons ni old))
+        '()))
     (for-each 
       (lambda (p)
         (let* ([lis (cdr p)]
@@ -195,7 +205,7 @@
                             (append current-exports `(,ni)))
                           (for-each
                             (lambda (import-index-node)
-                              (append-references-into-ordered-references-for document import-index-node `(,ni)))
+                              (queue-insert! import-index-node ni))
                             (private:recursive-filter compound-import-list index-node?)))
                         '()))))
                 lis)
@@ -205,5 +215,10 @@
               [(index-node? compound-export-list) `(,compound-export-list)]
               [(list? compound-export-list) (filter index-node? compound-export-list)]
               [else '()]))))
-      local-identifiers+export-index-node)))
+      local-identifiers+export-index-node)
+    (vector-for-each
+      (lambda (import-index-node)
+        (append-references-into-ordered-references-for document import-index-node
+          (hashtable-ref pending-inserts-ht import-index-node '())))
+      (hashtable-keys pending-inserts-ht))))
 ) ; end library
