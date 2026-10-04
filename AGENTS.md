@@ -336,6 +336,41 @@ The `identifier-reference` record has a mutable `usage-count` field (default 0).
 - **Do** increment it explicitly in `abstract-interpreter.sls` when `step` successfully resolves a leaf symbol (the `[else` branch of the top-level `cond`).
 - A post-phase `check-unused-imports` in `analysis/document-checker/unused-imports.sls` (called from `workspace.sls` after `step`) scans import clauses and reports imported references with `usage-count = 0` as `"Unused import: ..."` (severity 2 / Warning). Supports plain, `only`, `except`, `rename`, and `alias` imports. Unused local variables are checked separately by `check-unused-local-variables` in `analysis/document-checker/unused-local-variables.sls`.
 
+### Macro analysis architecture (2026-10 rework)
+
+Generic auto-expansion ("route 2") is production for the ufo-match family:
+
+- `analysis/identifier/self-defined-rules/router.sls` dispatches eagerly: the
+  six ufo-match family macros (match, match-next, match-one,
+  match-check-ellipsis, match-two, match-check-identifier) expand fully at
+  analysis time (+~230 ms init on this repo). try/let1/define-case-class/
+  typed-lambda/include/resolve keep hand-written rules; `match-process` is the
+  fallback when no expander is available. The generic all-macros eager
+  fallback is OFF (unfiltered eager exceeds 5 minutes -- measured).
+- Expander lookup goes through `private:find-expander` (cycle-safe BFS with an
+  eq-seen set). Never use `root-ancestor` for this: it diverges on cyclic
+  identifier-reference parent chains.
+- `expanders/syntax-rules.sls`: clause selector and per-clause data compiled
+  once per macro definition; selector transcription memoized per
+  (macro, call-datum).
+- `expanders/pattern.sls`: Chez-style single-pass matcher
+  (`pattern+index-node->bindings`). The legacy pairs+iterator pipeline is
+  gone; the module has no module-level mutable state (reentrant).
+- `expanders/expansion-wrap.sls`: back-propagation on BOTH sides -- exports
+  to compound counterpart nodes, imports via an independent import pass
+  (root/symbol shapes fall back to the macro call node). New references are
+  marked `identifier-reference-speculative?` (tentative-level knowledge).
+- Workspace cache: expansion generators are re-attached after fasl load
+  (`private:reattach-expanders-after-cache-load!` in `workspace.sls`), so
+  cached workspaces keep route-2 functionality.
+- Docs: `doc/analysis/macro-analysis-framework.md` (theory, 28-paper
+  bibliography), `doc/analysis/macro-resolution-profile.md` (measured
+  costs), `doc/analysis/todo.md` (roadmap; TODO-10 performance half and
+  TODO-12 remain).
+- Key tests: `test-match-cascade-auto-resolve.sps` (the comprehensive one),
+  `test-multi-layer-backprop.sps`, `test-ellipsis-call-site.sps`,
+  `expanders/test-pattern.sps`.
+
 ### Pre-commit hook: never use `--no-verify`
 The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.
 
@@ -494,6 +529,10 @@ Key design points:
 - Procedure-valued fields that cannot be FASL-serialized are cleared before save:
   - `index-node-expansion-generator` reset to `'()`.
   - `identifier-reference-syntax-expander` reset to `#f`.
+- Generators are rebuilt on load: `rebuild-workspace-from-payload` walks every
+  document bottom-up and re-invokes the builder/attach procedures for
+  `syntax-rules`/`syntax-case`/`define-syntax`/`let-syntax` forms, so cached
+  workspaces keep route-2 (auto-expansion) functionality.
 - `workspace-undiagnosed-paths` is cleared before save. `document-diagnoses`
   are **persisted** (`workspace.sls` `private:prepare-workspace-payload`) so
   clients can pull diagnostics immediately after a cache load.
