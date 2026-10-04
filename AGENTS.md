@@ -353,9 +353,18 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
 - `expanders/syntax-rules.sls`: clause selector and per-clause data compiled
   once per macro definition; selector transcription memoized per
   (macro, call-datum).
-- `expanders/pattern.sls`: Chez-style single-pass matcher
-  (`pattern+index-node->bindings`). The legacy pairs+iterator pipeline is
-  gone; the module has no module-level mutable state (reentrant).
+- `expanders/pattern.sls`: template instantiation
+  (`expand->index-node-compound-list`) plus the retired single-pass matcher
+  (`pattern+index-node->bindings`, still covered by
+  `expanders/test-pattern.sps` as the reference implementation).
+- `expanders/dispatch-matcher.sls`: the PRODUCTION matcher -- a line-by-line
+  transcription of Chez `s/syntax.ss` `convert-pattern` + `$syntax-dispatch`
+  family onto index-node trees. Fidelity traps: `match` needs the
+  `((not r) #f)` guard (else tail failure becomes a dotted pair); each+
+  consumes fixed segments from the RIGHT; quoted forms carry no quote head
+  among index-node children (see `quoted-node?`/`quote-content-node`).
+  Chez rejects `(x ... y ... . t)` at definition time ("misplaced
+  ellipsis") -- never a runtime input.
 - `expanders/expansion-wrap.sls`: back-propagation on BOTH sides -- exports
   to compound counterpart nodes, imports via an independent import pass
   (root/symbol shapes fall back to the macro call node). New references are
@@ -365,8 +374,8 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   cached workspaces keep route-2 functionality.
 - Docs: `doc/analysis/macro-analysis-framework.md` (theory, 28-paper
   bibliography), `doc/analysis/macro-resolution-profile.md` (measured
-  costs), `doc/analysis/todo.md` (roadmap; TODO-10 performance half and
-  TODO-12 remain).
+  costs), `doc/analysis/todo.md` (roadmap; TODO-10 performance half
+  remains).
 - Key tests: `test-match-cascade-auto-resolve.sps` (the comprehensive one),
   `test-multi-layer-backprop.sps`, `test-ellipsis-call-site.sps`,
   `expanders/test-pattern.sps`.
