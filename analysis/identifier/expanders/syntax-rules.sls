@@ -118,13 +118,23 @@
                   (vector pattern
                     (make-pattern (extract-template clause-expression))
                     (gather-context pattern))))
-              clause-index-nodes))])
+              clause-index-nodes))]
+        ;memoize the selector's transcription: keyed by the call-site datum,
+        ;it maps to (clause-index . instantiated-template-datum). Only this
+        ;node-independent stage is cached -- bindings/compound/skeleton/pairs
+        ;embed call-site nodes and must be rebuilt per call site even for
+        ;identical datums (89% of cascade expansions are exact duplicates).
+        [selector-cache (make-hashtable equal-hash equal?)])
       (index-node-expansion-generator-set! input-index-node
         (lambda (local-root-file-node local-root-library-node local-document local-index-node)
           (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
-              [index+expansion 
+              [index+expansion
                 (if clause-selector
-                  (private:selector-confirm clause-selector local-expression)
+                  (or (hashtable-ref selector-cache local-expression #f)
+                    (let ([confirmed (private:selector-confirm clause-selector local-expression)])
+                      (when confirmed
+                        (hashtable-set! selector-cache local-expression confirmed))
+                      confirmed))
                   (private:confirm-clause literals clause-index-nodes local-expression))])
           (if (or (private:tree-has? local-expression '...) (not index+expansion))
             #f
