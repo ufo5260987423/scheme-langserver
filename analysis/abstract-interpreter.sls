@@ -116,10 +116,10 @@
                     expanded+callee-list 
                     memory)
                   '())])
-            (try 
+            (try
               (for-each (lambda (f) ((cadr f) root-file-node root-library-node current-document current-index-node)) target-rules)
-              (except c 
-                [else 
+              (except c
+                [else
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: fail to catch identifiers" "identifier" "identifier-resolution-failure"))]))
             (for-each
               (lambda (child-index-node)
