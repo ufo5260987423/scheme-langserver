@@ -41,7 +41,9 @@
     (let ([exports (index-node-references-export-to-other-node var-node)])
       (test-equal "auto-resolve simple-let attaches 'x reference after bug3 fix"
         '(x)
-        (map identifier-reference-identifier exports))))
+        (map identifier-reference-identifier exports))
+      (test-assert "back-propagated references are speculative"
+        (and (not (null? exports)) (andmap identifier-reference-speculative? exports)))))
 (test-end)
 
 ;; from test-let-syntax-auto-resolve.sps

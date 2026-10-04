@@ -26,6 +26,8 @@
     identifier-reference-syntax-expander-set!
     identifier-reference-usage-count
     identifier-reference-usage-count-set!
+    identifier-reference-speculative?
+    identifier-reference-speculative?-set!
 
     identifier-compare?
 
@@ -70,14 +72,18 @@
     (mutable type-expressions)
     (mutable top-environment)
     (mutable syntax-expander)
-    (mutable usage-count))
+    (mutable usage-count)
+    ;#t when this reference was back-propagated from a macro expansion
+    ;(tentative-level knowledge, cf. Culpepper 2010): consumers that need
+    ;definite bindings should treat these with suspicion
+    (mutable speculative?))
   (protocol
     (lambda (new)
       (case-lambda
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0)]
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0 #f)]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0)]))))
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0 #f)]))))
 
 (define (is-ancestor-of? identifier-reference0 identifier-reference1)
   (if (eq? identifier-reference0 identifier-reference1)

@@ -129,6 +129,7 @@
                 '()
                 '()
                 (identifier-reference-top-environment current-identifier))])
+            (identifier-reference-speculative?-set! ni #t)
             (index-node-references-export-to-other-node-set!
               parent-node
               (append 
@@ -185,6 +186,7 @@
                         '()
                         '()
                         (identifier-reference-top-environment current-identifier))])
+                    (identifier-reference-speculative?-set! ni #t)
                     (let ([current-exports (index-node-references-export-to-other-node single-compound-export-index-node)])
                       (if (not (find (lambda (e) (eq? (identifier-reference-identifier current-identifier) (identifier-reference-identifier e))) current-exports))
                         (begin
