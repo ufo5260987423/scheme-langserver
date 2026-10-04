@@ -271,6 +271,21 @@
                 (lambda ()
                   (server-shutdown?-set! server-instance #t)
                   (when thread-pool
+                    ;Drain before the final push: requests read after the
+                    ;shutdown flag was set (e.g. a hover racing behind
+                    ;shutdown) are still queued and each expects an
+                    ;InvalidRequest reply from process-request. Bounded.
+                    (let ([start (time-second (current-time))])
+                      (let drain ()
+                        (unless (or (request-queue-empty? request-queue)
+                                    (> (- (time-second (current-time)) start) 5))
+                          (sleep (make-time 'time-duration 1000000 0))
+                          (drain))))
+                    ;Mark the last push BEFORE pushing it: the consumer
+                    ;exits on (shutdown? AND consumer-exit? AND empty), so
+                    ;after this point a blocked consumer wakes on the push,
+                    ;processes it, and exits deterministically.
+                    (server-consumer-exit?-set! server-instance #t)
                     (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) (server-workspace server-instance))
                     (thread-pool-stop! thread-pool))
                   (private:save-workspace-cache-if-any server-instance)
@@ -302,7 +317,15 @@
                                     (with-output-to-string (lambda () (write e))))
                                   server-instance)])
                       ((request-queue-pop request-queue request-processor)))
-                    (if (not (and (or (server-shutdown? server-instance) debug?) (request-queue-empty? request-queue))) (loop))))))
+                    ;Exit only when shutdown is complete AND the main
+                    ;thread has pushed its LAST request (consumer-exit?)
+                    ;AND the queue is drained -- "shutdown? AND empty" alone
+                    ;was racy and could strand a request pushed between the
+                    ;flag and the trailing push (hover after shutdown).
+                    (if (not (and (or (server-shutdown? server-instance) debug?)
+                                  (or (server-consumer-exit? server-instance) debug?)
+                                  (request-queue-empty? request-queue)))
+                      (loop))))))
             (let loop ([request-message (private:safe-read-message)])
               (cond 
                 [(eq? request-message 'invalid)

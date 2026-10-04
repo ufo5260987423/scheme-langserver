@@ -10,6 +10,8 @@
     server-log-mutex
     server-shutdown?
     server-shutdown?-set!
+    server-consumer-exit?
+    server-consumer-exit?-set!
     server-workspace
     server-workspace-set!
     server-thread-pool
@@ -44,6 +46,12 @@
     (immutable type-inference?)
     (mutable workspace)
     (mutable shutdown?)
+    ;set by the main thread after its LAST queue push; the consumer loop
+    ;exits on (shutdown? AND consumer-exit? AND queue-empty) -- without
+    ;this, "shutdown? AND empty" was racy: the consumer could observe it
+    ;between a trailing request's push... no, between the shutdown flag
+    ;and the trailing push, dropping the trailing request forever
+    (mutable consumer-exit?)
     (mutable condition)
     (mutable work-done-progress?)
     (immutable top-environment)
@@ -65,6 +73,7 @@
             type-inference?
             workspace
             #f
+            #f
             (make-condition)
             #f
             'r6rs
@@ -82,6 +91,7 @@
             request-queue
             type-inference?
             workspace
+            #f
             #f
             (make-condition)
             #f
@@ -101,6 +111,7 @@
             type-inference?
             workspace
             #f
+            #f
             (make-condition)
             #f
             top-environment
@@ -118,6 +129,7 @@
             request-queue
             type-inference?
             workspace
+            #f
             #f
             (make-condition)
             #f
