@@ -88,5 +88,16 @@
             (if (equal? expressions '(match))
               (add-rule-procedure rules `((,match-process) . ,target-identifier))
               rules)))]
+      ;TODO-10 characterization (temporary): relay-family fixture for the
+      ;multi-layer back-propagation attack tests; revert after phase 0
+      [(and (equal? library-identifiers '((relay)))
+        (find (lambda (e) (equal? expressions (list e)))
+          '(my-let1 my-let2 my-let3)))
+        (let ([expander (private:find-expander target-identifier)])
+          (if expander
+            (add-rule-procedure rules
+              `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
+                ,target-identifier))
+            rules))]
       [else rules])))
 )

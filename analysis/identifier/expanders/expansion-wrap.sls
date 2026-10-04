@@ -163,12 +163,21 @@
                           initialization-index-node
                           matches))
                       initialization-index-node))])]
-            [corresponding-import-ip 
+            [corresponding-import-ip
               (filter (lambda (entry) (equal? (car entry) i)) local-identifiers+import-index-node)]
-            [compound-import-list 
-              (if (not (null? corresponding-import-ip))
-                (apply append (map cdr corresponding-import-ip))
-                '())])
+            ;import-side counterpart nodes: for each import-bearing
+            ;skeleton node, its compound counterpart (call-site node) is
+            ;where the new reference must be queued so use-site
+            ;resolution works. NB the old code filtered the import
+            ;REFERENCES by index-node?, which is always empty and left
+            ;the import side of back-propagation permanently unwired.
+            [compound-import-targets
+              (filter index-node?
+                (map
+                  (lambda (entry)
+                    (let ([p (assoc (car entry) pairs)])
+                      (if p (cdr p) #f)))
+                  corresponding-import-ip))])
           (for-each
             (lambda (single-compound-export-index-node)
               ; Primary attachment: write to callee tree (existing behavior)
@@ -195,7 +204,7 @@
                           (for-each
                             (lambda (import-index-node)
                               (queue-insert! import-index-node ni))
-                            (private:recursive-filter compound-import-list index-node?)))
+                            compound-import-targets))
                         '()))))
                 lis)
               ; Reverse-map sync: also write to parent expansion tree so outer layer can see it
