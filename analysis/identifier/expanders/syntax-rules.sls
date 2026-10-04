@@ -81,13 +81,6 @@
 ; inside templates are fine.  We only reject define-syntax in templates
 ; because runtime define-syntax is almost always a mistake and our
 ; scope tracking for it is not fully tested.
-(define (private:template-has-nested-macro? template-expr)
-  (cond
-    [(null? template-expr) #f]
-    [(not (pair? template-expr)) #f]
-    [(eq? (car template-expr) 'define-syntax) #t]
-    [else (or (private:template-has-nested-macro? (car template-expr))
-              (private:template-has-nested-macro? (cdr template-expr)))]))
 
 ;; ---- Main generator factory ----
 
@@ -105,17 +98,14 @@
 ; extract-template is a function that takes a clause-expression datum
 ; and returns the bare template (for syntax-rules it is the last element;
 ; for syntax-case it is the unwrapped syntax form).
+;NB: templates that themselves contain define-syntax (macro-generating
+;macros) are no longer rejected here. Building the generator is pure
+;definition-time work and stays inert until invoked; any expansion cascade
+;through generated define-syntax forms is bounded by the recursion guard
+;(memory cap) in expansion-wrap.sls. Telemetry (fallback/mismatch counters)
+;now covers these macros too.
 (define (make-generator-for-clauses input-index-node literals clause-index-nodes extract-template)
-  (if (find 
-        (lambda (clause-node)
-          (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-node))]
-              [template-expression (extract-template clause-expression)])
-            (private:template-has-nested-macro? template-expression)))
-        clause-index-nodes)
-    (begin
-      (index-node-expansion-generator-set! input-index-node (lambda _ #f))
-      #f)
-    (let ([clause-selector (private:compile-clause-selector literals clause-index-nodes)]
+  (let ([clause-selector (private:compile-clause-selector literals clause-index-nodes)]
         ;definition-time per-clause compilation (Chez convert-pattern style):
         ;pattern tree, template tree and variable context are built once,
         ;not per call
@@ -166,7 +156,7 @@
                         (with-output-to-string (lambda () (pretty-print expansion-expression)))
                         (uri->path (document-uri local-document)))))]
                 [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-              `(,matching-pairs . ,expansion-index-node)))))))))))
+              `(,matching-pairs . ,expansion-index-node))))))))))
 
 (define (private:take list n)
   (if (or (zero? n) (null? list))
