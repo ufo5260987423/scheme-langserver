@@ -163,22 +163,7 @@
                           initialization-index-node
                           matches))
                       initialization-index-node))])]
-            [corresponding-import-ip
-              (filter (lambda (entry) (equal? (car entry) i)) local-identifiers+import-index-node)]
-            ;import-side counterpart nodes: for each import-bearing
-            ;skeleton node, its compound counterpart (call-site node) is
-            ;where the new reference must be queued so use-site
-            ;resolution works. NB the old code filtered the import
-            ;REFERENCES by index-node?, which is always empty and left
-            ;the import side of back-propagation permanently unwired.
-            [compound-import-targets
-              (filter index-node?
-                (map
-                  (lambda (entry)
-                    (let ([p (assoc (car entry) pairs)])
-                      (if p (cdr p) #f)))
-                  corresponding-import-ip))])
-          (for-each
+)          (for-each
             (lambda (single-compound-export-index-node)
               ; Primary attachment: write to callee tree (existing behavior)
               (for-each
@@ -201,10 +186,7 @@
                           (index-node-references-export-to-other-node-set!
                             single-compound-export-index-node
                             (append current-exports `(,ni)))
-                          (for-each
-                            (lambda (import-index-node)
-                              (queue-insert! import-index-node ni))
-                            compound-import-targets))
+)
                         '()))))
                 lis)
               ; Reverse-map sync: also write to parent expansion tree so outer layer can see it
@@ -214,6 +196,35 @@
               [(list? compound-export-list) (filter index-node? compound-export-list)]
               [else '()]))))
       local-identifiers+export-index-node)
+    ;Import side, independent of the export walk: for every
+    ;import-bearing skeleton node, copy its references to the compound
+    ;counterpart (call-site) node so use-site resolution works. (The old
+    ;code cross-joined import entries against EXPORT-bearing nodes and
+    ;filtered references by index-node?, leaving this side permanently
+    ;unwired.)
+    (for-each
+      (lambda (import-entry)
+        (let ([counterpart
+            (let ([p (assoc (car import-entry) pairs)])
+              (if p (cdr p) #f))])
+          (when (index-node? counterpart)
+            (for-each
+              (lambda (import-reference)
+                (let ([ni
+                    (make-identifier-reference
+                      (identifier-reference-identifier import-reference)
+                      document
+                      counterpart
+                      initialization-index-node
+                      (identifier-reference-library-identifier import-reference)
+                      (identifier-reference-type import-reference)
+                      '()
+                      '()
+                      (identifier-reference-top-environment import-reference))])
+                  (identifier-reference-speculative?-set! ni #t)
+                  (queue-insert! counterpart ni)))
+              (cdr import-entry)))))
+      local-identifiers+import-index-node)
     (when (positive? (hashtable-size pending-inserts-ht))
       (vector-for-each
         (lambda (import-index-node)
