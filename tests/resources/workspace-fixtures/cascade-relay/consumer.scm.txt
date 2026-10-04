@@ -1,6 +1,0 @@
-(library (consumer)
-  (export test)
-  (import (chezscheme) (relay))
-
-  (define (test)
-    (my-let3 ((a 1)) a)))

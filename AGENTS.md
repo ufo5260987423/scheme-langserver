@@ -377,7 +377,7 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   costs), `doc/analysis/todo.md` (roadmap; TODO-10 performance half
   remains).
 - Key tests: `test-match-cascade-auto-resolve.sps` (the comprehensive one),
-  `test-multi-layer-backprop.sps`, `test-ellipsis-call-site.sps`,
+  `test-ellipsis-call-site.sps`,
   `expanders/test-pattern.sps`.
 
 ### Pre-commit hook: never use `--no-verify`

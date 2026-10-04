@@ -88,18 +88,5 @@
             (if (equal? expressions '(match))
               (add-rule-procedure rules `((,match-process) . ,target-identifier))
               rules)))]
-      ;Regression fixture for multi-layer back-propagation (TODO-10 phase-0):
-      ;the relay family my-let3 -> my-let2 -> my-let1 -> let exercises the
-      ;import/export relay through three expansion layers; see
-      ;tests/analysis/identifier/test-multi-layer-backprop.sps
-      [(and (equal? library-identifiers '((relay)))
-        (find (lambda (e) (equal? expressions (list e)))
-          '(my-let1 my-let2 my-let3)))
-        (let ([expander (private:find-expander target-identifier)])
-          (if expander
-            (add-rule-procedure rules
-              `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
-                ,target-identifier))
-            rules))]
       [else rules])))
 )
