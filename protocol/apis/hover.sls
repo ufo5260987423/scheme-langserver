@@ -6,7 +6,9 @@
     (only (srfi :13 strings) string-trim)
 
     (scheme-langserver analysis workspace)
+    (scheme-langserver analysis abstract-interpreter)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier self-defined-rules router)
     (scheme-langserver analysis type domain-specific-language interpreter)
 
     (scheme-langserver protocol alist-access-object)
@@ -61,7 +63,19 @@
                       "")
                     ,type-string)
                   (if (symbol? prefix)
-                    (dedupe (map identifier-reference->hover (find-available-references-for document target-index-node prefix)))
+                    (let* ([refs0 (find-available-references-for document target-index-node prefix)]
+                        ;Q2 lazy expansion: expand an enclosing uncovered macro
+                        ;call once when the symbol does not resolve, then retry
+                        [refs (if (null? refs0)
+                                (begin
+                                  (lazy-expand-enclosing-call
+                                    (workspace-file-node workspace)
+                                    (workspace-library-node workspace)
+                                    (workspace-file-linkage workspace)
+                                    document target-index-node step)
+                                  (find-available-references-for document target-index-node prefix))
+                                refs0)])
+                      (dedupe (map identifier-reference->hover refs)))
                     '()))))
             '()))))))
 

@@ -4,7 +4,9 @@
     (chezscheme) 
 
     (scheme-langserver analysis workspace)
+    (scheme-langserver analysis abstract-interpreter)
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier self-defined-rules router)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -62,9 +64,22 @@
               ;; When the cursor is on a declaration identifier (e.g. the `foo` in `(define (foo ...) ...)`),
               ;; `find-available-references-for` intentionally returns empty (so declarations are not
               ;; treated as references). But `textDocument/definition` should still succeed.
-              [candidates (if (null? exported)
+              [candidates0 (if (null? exported)
                             (find-available-references-for document target-index-node prefix)
                             exported)]
+              ;Q2 lazy expansion: an unresolved symbol inside a macro call with an
+              ;expander but no hand-written rule gets the call expanded on demand,
+              ;once, and the query is retried.
+              [expanded? (if (and (null? exported) (null? candidates0))
+                          (lazy-expand-enclosing-call
+                            (workspace-file-node workspace)
+                            (workspace-library-node workspace)
+                            (workspace-file-linkage workspace)
+                            document target-index-node step)
+                          #f)]
+              [candidates (if (and expanded? (null? candidates0))
+                            (find-available-references-for document target-index-node prefix)
+                            candidates0)]
               [roots (apply append (map root-ancestor candidates))])
             (map identifier-reference->location->alist
               (filter 
