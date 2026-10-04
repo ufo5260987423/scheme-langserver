@@ -154,6 +154,18 @@
   ;non-divisible middle defers to fallback
   (test-equal 'fallback
     (bindings-summary '(x ... y ...) '(1 2 3) '()))
+  ;vector patterns (zero coverage in .akku/lib; the make-pattern vector
+  ;branch once had an arity bug that nothing exercised)
+  (test-equal '((b . 2) (a . 1))
+    (bindings-summary '#(a b) '#(1 2) '()))
+  (test-equal '((a 1 2 3))
+    (bindings-summary '#(a ...) '#(1 2 3) '()))
+  (test-equal '((a 1 3) (b 2 4))
+    (bindings-summary '#((a b) ...) '#((1 2) (3 4)) '()))
+  (test-equal '((b . 2) (a . 1))
+    (bindings-summary '(_ #(a b)) '(m #(1 2)) '()))
+  (test-equal 'vector-form (pattern-type (make-pattern '#(a b))))
+  (test-equal 'ellipse-vector-form (pattern-type (make-pattern '#(a ...))))
   ;fallback and mismatch counters
   (pattern-matcher-reset-counters!)
   (test-equal 'fallback
