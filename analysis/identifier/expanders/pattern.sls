@@ -11,7 +11,10 @@
 
     expansion->printable-object
     pattern+index-node->bindings
-    expand->index-node-compound-list)
+    expand->index-node-compound-list
+
+    quoted-node?
+    quote-content-node)
   (import
     (chezscheme)
     (scheme-langserver util contain)
@@ -267,11 +270,11 @@
           (eq? 'pattern-variable/literal-identifier (pattern-type (car kids)))
           (eq? 'quote (pattern-content (car kids)))
           (memq 'quote literals)
-          (private:quoted-node? node))
-      (private:match-pattern (cadr kids) (private:quote-content-node node) literals bindings)
+          (quoted-node? node))
+      (private:match-pattern (cadr kids) (quote-content-node node) literals bindings)
       (private:match-children kids (index-node-children node) literals bindings))))
 
-(define (private:quoted-node? node)
+(define (quoted-node? node)
   (let ([datum (private:node-datum node)]
       [children (index-node-children node)])
     (and (pair? datum)
@@ -279,7 +282,7 @@
       (or (null? children)
         (not (eq? 'quote (private:node-datum (car children))))))))
 
-(define (private:quote-content-node node)
+(define (quote-content-node node)
   (let* ([datum (private:node-datum node)]
       [content (cadr datum)]
       [source

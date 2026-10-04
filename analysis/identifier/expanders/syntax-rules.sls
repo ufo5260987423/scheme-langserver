@@ -7,6 +7,7 @@
     (ufo-match)
 
     (scheme-langserver analysis identifier expanders pattern)
+    (scheme-langserver analysis identifier expanders dispatch-matcher)
     (scheme-langserver analysis tokenizer)
     (scheme-langserver util path)
 
@@ -114,10 +115,14 @@
             (map
               (lambda (clause-index-node)
                 (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
-                    [pattern (make-pattern (car clause-expression))])
-                  (vector pattern
-                    (make-pattern (extract-template clause-expression))
-                    (gather-context pattern))))
+                    [pattern-expression (car clause-expression)]
+                    ;the match pattern record is only kept for gather-context
+                    ;(ellipsis cdr? flags); matching itself goes through the
+                    ;Chez-transcribed dispatch-matcher (TODO-12)
+                    [pattern (make-pattern pattern-expression)]
+                    [template-pattern (make-pattern (extract-template clause-expression))])
+                  (let-values ([(dsl pvars) (convert-pattern pattern-expression literals)])
+                    (vector dsl pvars template-pattern (gather-context pattern)))))
               clause-index-nodes))]
         ;memoize the selector's transcription: keyed by the call-site datum,
         ;it maps to (clause-index . instantiated-template-datum). Only this
@@ -141,14 +146,13 @@
             (let* ([index (car index+expansion)]
                 [clause-data (vector-ref clause-data-vector index)]
 
-                [pattern (vector-ref clause-data 0)]
-                [template-pattern (vector-ref clause-data 1)]
-                [pattern-context (vector-ref clause-data 2)]
-                ;single-pass binding collection; anything but an alist means
-                ;the matcher declines this shape -- decline the expansion too
-                ;rather than mis-analyze (the retired legacy pairs+iterator
-                ;path was the old fallback; telemetry showed zero triggers)
-                [bindings (pattern+index-node->bindings pattern local-index-node literals)])
+                [dsl (vector-ref clause-data 0)]
+                [pvars (vector-ref clause-data 1)]
+                [template-pattern (vector-ref clause-data 2)]
+                [pattern-context (vector-ref clause-data 3)]
+                ;Chez-style dispatch matcher; anything but an alist means the
+                ;match failed -- decline the expansion rather than mis-analyze
+                [bindings (dsl+index-node->bindings dsl pvars local-index-node literals)])
             (if (not (list? bindings))
               #f
               (let* (
