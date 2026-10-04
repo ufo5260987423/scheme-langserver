@@ -130,10 +130,6 @@
             #f
             (let* ([index (car index+expansion)]
                 [clause-data (vector-ref clause-data-vector index)]
-                ;NB: the selector (and Chez syntax-case generally) instantiates
-                ;the output template via pattern-variable substitution, so cdr
-                ;is the INSTANTIATED expansion, not the raw template
-                [expansion-expression (cdr index+expansion)]
 
                 [pattern (vector-ref clause-data 0)]
                 [template-pattern (vector-ref clause-data 1)]
@@ -148,13 +144,12 @@
               (let* (
                   [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
-                [expansion-index-node 
-                  (init-index-node 
+                [expansion-index-node
+                  (init-index-node
                     (index-node-parent input-index-node)
-                    (car 
-                      (source-file->annotations 
-                        (with-output-to-string (lambda () (pretty-print expansion-expression)))
-                        (uri->path (document-uri local-document)))))]
+                    (car (source-file->annotations
+                      (with-output-to-string (lambda () (pretty-print (cdr index+expansion))))
+                      (uri->path (document-uri local-document)))))]
                 [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
               `(,matching-pairs . ,expansion-index-node))))))))))
 

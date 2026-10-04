@@ -216,9 +216,10 @@
               [(list? compound-export-list) (filter index-node? compound-export-list)]
               [else '()]))))
       local-identifiers+export-index-node)
-    (vector-for-each
-      (lambda (import-index-node)
-        (append-references-into-ordered-references-for document import-index-node
-          (hashtable-ref pending-inserts-ht import-index-node '())))
-      (hashtable-keys pending-inserts-ht))))
+    (when (positive? (hashtable-size pending-inserts-ht))
+      (vector-for-each
+        (lambda (import-index-node)
+          (append-references-into-ordered-references-for document import-index-node
+            (hashtable-ref pending-inserts-ht import-index-node '())))
+        (hashtable-keys pending-inserts-ht)))))
 ) ; end library

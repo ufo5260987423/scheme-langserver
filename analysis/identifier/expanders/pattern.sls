@@ -108,6 +108,7 @@
       (annotation-stripped (index-node-datum/annotations expansion))]
     [else expansion]))
 
+
 (define (expand->index-node-compound-list template-pattern bindings pattern-context)
   (let* ([type (pattern-type template-pattern)]
       [content (pattern-content template-pattern)]
@@ -302,7 +303,9 @@
         (or (guard (e [else #f]) (annotation-source (index-node-datum/annotations node)))
           (guard (e [else #f])
             (annotation-source (index-node-datum/annotations (index-node-parent node))))
-          (make-source-object (make-source-file-descriptor "quote-content" (open-bytevector-output-port)) 0 0))]
+          (make-source-object
+            (make-source-file-descriptor "quote-content" (open-bytevector-input-port #vu8()))
+            0 0))]
       [annotation (make-annotation content source content)])
     (make-index-node (index-node-parent node)
       (index-node-start node)
