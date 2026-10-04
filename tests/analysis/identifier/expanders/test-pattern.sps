@@ -166,14 +166,9 @@
     (bindings-summary '(_ #(a b)) '(m #(1 2)) '()))
   (test-equal 'vector-form (pattern-type (make-pattern '#(a b))))
   (test-equal 'ellipse-vector-form (pattern-type (make-pattern '#(a ...))))
-  ;fallback and mismatch counters
-  (pattern-matcher-reset-counters!)
+  ;non-divisible middle defers to fallback (the expansion is declined)
   (test-equal 'fallback
     (bindings-summary '(x ... y ...) '(1 2 3) '()))
-  (test-equal 1 (pattern-matcher-fallback-count))
-  (test-equal 0 (pattern-matcher-mismatch-count))
-  (pattern-matcher-reset-counters!)
-  (test-equal 0 (pattern-matcher-fallback-count))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

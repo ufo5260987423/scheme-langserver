@@ -11,9 +11,6 @@
 
     expansion->printable-object
     pattern+index-node->bindings
-    pattern-matcher-fallback-count
-    pattern-matcher-mismatch-count
-    pattern-matcher-reset-counters!
     expand->index-node-compound-list)
   (import
     (chezscheme)
@@ -207,22 +204,9 @@
 ;a list of index-nodes (ellipsed), or nested lists; #f if not matched;
 ;the symbol 'fallback if the pattern shape exceeds this matcher's coverage
 ;(the caller treats it as no-match and declines the expansion).
-;Counters pattern-matcher-fallback-count / pattern-matcher-mismatch-count
-;track how often each deferral happens; MATCHER_DEBUG=1 prints mismatching
-;patterns on the mismatch path.
-(define private:fallback-count 0)
-(define private:mismatch-count 0)
-
-(define (pattern-matcher-fallback-count) private:fallback-count)
-
-(define (pattern-matcher-mismatch-count) private:mismatch-count)
-
-(define (pattern-matcher-reset-counters!)
-  (set! private:fallback-count 0)
-  (set! private:mismatch-count 0))
-
+;MATCHER_DEBUG=1 in the environment prints mismatching patterns on the
+;mismatch path (a matcher/Chez disagreement is always worth investigating).
 (define (private:return-fallback)
-  (set! private:fallback-count (+ 1 private:fallback-count))
   'fallback)
 
 (define (pattern+index-node->bindings pattern index-node literals)
@@ -230,7 +214,6 @@
     (cond
       [(eq? r 'fallback) 'fallback]
       [(not r)
-        (set! private:mismatch-count (+ 1 private:mismatch-count))
         (when (getenv "MATCHER_DEBUG")
           (display "MISMATCH pattern: ")
           (write (pattern-content pattern))
