@@ -45,12 +45,38 @@
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
-      [(and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
-        (add-rule-procedure rules `((,match-process) . ,target-identifier))]
-      ; [(equal? library-identifiers '((ufo-match)))
-      ;   (add-rule-procedure rules 
-      ;     `((,(expansion-generator->rule (identifier-reference-syntax-expander target-identifier) step file-linkage expanded+callee-list memory target-identifier)) . 
-      ;       ,target-identifier))]
+      ;Eager auto-expansion for the match macro family entry point (Q2):
+      ;expanding match one layer at analysis time establishes clause
+      ;bindings via the generated let structure; deeper cascade members
+      ;(match-next/match-one/...) intentionally have no eager rule and
+      ;fall back to query-time lazy expansion. The expander is looked up
+      ;through the ancestor chain because imported references do not copy
+      ;the syntax-expander field. Falls back to the hand-written rule when
+      ;no expander is available (e.g. stale cache state).
+      ;Eager auto-expansion for the whole ufo-match macro family (Q2):
+      ;expanding match fully at analysis time establishes clause bindings
+      ;through the cascade (match -> match-next -> match-one -> ...), the
+      ;coverage the hand-written match-process used to declare directly.
+      ;The expander is looked up through the ancestor chain because
+      ;imported references do not copy the syntax-expander field. Falls
+      ;back to the hand-written rule for match when no expander is
+      ;available (e.g. stale cache state); the recursion guard (memory
+      ;cap) bounds pathological cascades.
+      [(and (equal? library-identifiers '((ufo-match)))
+        (find (lambda (e) (equal? expressions (list e)))
+          '(match match-next match-one match-check-ellipsis match-two match-check-identifier)))
+        (let ([expander
+            (or (identifier-reference-syntax-expander target-identifier)
+              (guard (e [else #f])
+                (identifier-reference-syntax-expander
+                  (find identifier-reference-syntax-expander (root-ancestor target-identifier)))))])
+          (if expander
+            (add-rule-procedure rules
+              `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
+                ,target-identifier))
+            (if (equal? expressions '(match))
+              (add-rule-procedure rules `((,match-process) . ,target-identifier))
+              rules)))]
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
         (add-rule-procedure rules `((,let1-process) . ,target-identifier))]
       [(and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
@@ -72,11 +98,12 @@
   (let* ([top (root-ancestor target-identifier)]
       [expressions (map identifier-reference-identifier top)]
       [library-identifiers (map identifier-reference-library-identifier top)])
-    (or 
+    (or
       (and (equal? library-identifiers '((srfi :23 error tricks))) (equal? expressions '(SRFI-23-error->R6RS)))
       (and (equal? library-identifiers '((srfi private include))) (equal? expressions '(include/resolve)))
       (and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
-      (and (equal? library-identifiers '((ufo-match))) (equal? expressions '(match)))
+      ;match is handled by eager auto-expansion (see route&add above), not
+      ;by a hand-written rule -- keep this predicate in sync with route&add
       (and (equal? library-identifiers '((liii base))) (equal? expressions '(let1)))
       (and (equal? library-identifiers '((liii oop))) (equal? expressions '(define-case-class)))
       (and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda))))))
@@ -97,16 +124,20 @@
             [head (if (pair? expr) (car expr) #f)])
           (if (symbol? head)
             (let ([expander-reference
-                (find 
+                (find
                   (lambda (r)
-                    (and (identifier-reference-syntax-expander r)
+                    (and (or (identifier-reference-syntax-expander r)
+                          (find identifier-reference-syntax-expander (root-ancestor r)))
                       (not (hand-written-rule-covers? r))))
                   (guard (e [else '()])
                     (find-available-references-for document node head)))])
               (if expander-reference
-                (begin
-                  ((expansion-generator->rule
-                    (identifier-reference-syntax-expander expander-reference)
+                (let ([expander
+                    (or (identifier-reference-syntax-expander expander-reference)
+                      (guard (e [else #f])
+                        (identifier-reference-syntax-expander
+                          (find identifier-reference-syntax-expander (root-ancestor expander-reference)))))])
+                  ((expansion-generator->rule expander
                     step file-linkage '() '() expander-reference)
                     root-file-node root-library-node document node)
                   #t)
