@@ -204,9 +204,17 @@
     ;unwired.)
     (for-each
       (lambda (import-entry)
+        ;counterpart: the compound pair of the import-bearing skeleton
+        ;node. Root and symbol-leaf shapes have no node-level pair (the
+        ;pairs walk only pairs index-node compounds and child zips), so
+        ;fall back to the macro call node -- the import's scope is the
+        ;whole expansion, which at the call site is exactly the call.
         (let ([counterpart
             (let ([p (assoc (car import-entry) pairs)])
-              (if p (cdr p) #f))])
+              (if p
+                (let ([c (cdr p)])
+                  (if (index-node? c) c initialization-index-node))
+                initialization-index-node))])
           (when (index-node? counterpart)
             (for-each
               (lambda (import-reference)

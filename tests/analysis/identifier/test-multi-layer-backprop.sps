@@ -14,9 +14,11 @@
 ;;             (currently PASSES -- the export side of back-propagation
 ;;             is multi-layer capable);
 ;;   imports:  the body use site must resolve to that binding
-;;             (currently FAILS -- the import side of back-propagation
-;;             loses the relay at the pair-mapping granularity; tracked
-;;             as the TODO-10 correctness half).
+;;             (PASSES since 4afd834 + the call-node fallback: the
+;;             import-bearing skeleton root has no node-level pair --
+;;             the pairs walk only covers index-node compounds and
+;;             child zips -- so the import scope falls back to the
+;;             macro call node, exactly the expansion's scope).
 
 (import
   (chezscheme)
@@ -54,7 +56,6 @@
       (= (index-node-start call-node)
         (index-node-start (identifier-reference-initialization-index-node (car exports))))))
 
-  (test-expect-fail "use-site resolution through the cascade")
   (test-assert "use-site resolution through the cascade"
     (not (null? (find-available-references-for document body-a 'a)))))
 
