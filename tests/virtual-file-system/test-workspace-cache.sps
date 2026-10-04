@@ -147,6 +147,42 @@
   (when (file-directory? tmp-root)
     (private:delete-directory tmp-root)))
 
+(test-begin "cache-load-reattaches-expansion-generators")
+  (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/simple-macro-auto-resolve")]
+      [tmp-root (string-append (current-directory) "/tests/resources/workspace-fixtures/.tmp-cache-gen")]
+      [work-dir (string-append tmp-root "/macro")]
+      [cache-dir (string-append tmp-root "/cache")]
+      [macro-path (string-append work-dir "/macro.scm.txt")])
+    (define (find-generator workspace)
+      (let* ([document (file-node-document (walk-file (workspace-file-node workspace) macro-path))]
+          [result #f])
+        (for-each
+          (lambda (top)
+            (let walk ([node top])
+              (let ([expr (guard (e [else '()]) (annotation-stripped (index-node-datum/annotations node)))])
+                (when (and (list? expr) (not (null? expr)) (eq? 'define-syntax (car expr)) (not result))
+                  (let ([generator (index-node-expansion-generator (car (reverse (index-node-children node))))])
+                    (when (procedure? generator) (set! result generator))))
+                (for-each walk (index-node-children node)))))
+          (document-index-node-list document))
+        result))
+    (when (file-directory? tmp-root)
+      (private:delete-directory tmp-root))
+    (mkdir tmp-root)
+    (private:copy-directory fixture work-dir)
+    (mkdir cache-dir)
+    ;; Cold start: the abstract interpreter attaches generators via the
+    ;; define-syntax post-procedure.
+    (let ([workspace (init-workspace work-dir 'txt 'r6rs #f #f cache-dir)])
+      (test-assert "generator present cold" (procedure? (find-generator workspace)))
+      (save-workspace-cache-for! workspace cache-dir 'r6rs #f #f))
+    ;; Generators are procedures and cannot be fasl-serialized, so a cache
+    ;; load must re-attach them from the macro definition forms.
+    (let ([workspace (init-workspace work-dir 'txt 'r6rs #f #f cache-dir)])
+      (test-assert "generator present after cache load" (procedure? (find-generator workspace))))
+    (private:delete-directory tmp-root))
+(test-end)
+
 (test-begin "cache-round-trip-preserves-cyclic-literal-shared-reference")
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/cyclic-literal")]
       [tmp-root (string-append (current-directory) "/tests/resources/workspace-fixtures/.tmp-cache-cyclic")]
