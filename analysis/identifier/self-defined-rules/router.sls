@@ -23,6 +23,23 @@
     (scheme-langserver analysis identifier self-defined-rules goldfish let1)
     (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda))
 
+(define (private:find-expander identifier)
+  ;expander of the reference itself, else of any ancestor, with a
+  ;cycle-safe breadth-first walk -- root-ancestor cannot be reused here
+  ;because parent chains may be cyclic and its naive recursion diverges
+  (or (identifier-reference-syntax-expander identifier)
+    (let loop ([rest (identifier-reference-parents identifier)] [seen (make-eq-hashtable)])
+      (cond
+        [(null? rest) #f]
+        [(hashtable-ref seen (car rest) #f)
+          (loop (cdr rest) seen)]
+        [else
+          (hashtable-set! seen (car rest) #t)
+          (or (identifier-reference-syntax-expander (car rest))
+            (loop
+              (append (identifier-reference-parents (car rest)) (cdr rest))
+              seen))]))))
+
 (define (route&add
   rules target-identifier
   file-linkage identifier-list current-document expanded+callee-list memory
@@ -63,11 +80,7 @@
       [(and (equal? library-identifiers '((ufo-match)))
         (find (lambda (e) (equal? expressions (list e)))
           '(match match-next match-one match-check-ellipsis match-two match-check-identifier)))
-        (let ([expander
-            (or (identifier-reference-syntax-expander target-identifier)
-              (guard (e [else #f])
-                (identifier-reference-syntax-expander
-                  (find identifier-reference-syntax-expander (root-ancestor target-identifier)))))])
+        (let ([expander (private:find-expander target-identifier)])
           (if expander
             (add-rule-procedure rules
               `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
