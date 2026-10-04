@@ -148,16 +148,15 @@
                 [pattern (vector-ref clause-data 0)]
                 [template-pattern (vector-ref clause-data 1)]
                 [pattern-context (vector-ref clause-data 2)]
-                ;single-pass binding collection; #f or 'fallback defers to the
-                ;legacy pairs+iterator path (complex ellipsis shapes)
-                [bindings-result (pattern+index-node->bindings pattern local-index-node literals)]
-                [bindings
-                  (if (list? bindings-result)
-                    bindings-result
-                    (let ([pairs (pattern+index-node->pair-list pattern local-index-node)])
-                      (map (lambda (literal) (generate-binding literal ((pattern+context->pairs->iterator literal pattern-context) pairs)))
-                        (pattern-exposed-literals template-pattern))))]
-                [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
+                ;single-pass binding collection; anything but an alist means
+                ;the matcher declines this shape -- decline the expansion too
+                ;rather than mis-analyze (the retired legacy pairs+iterator
+                ;path was the old fallback; telemetry showed zero triggers)
+                [bindings (pattern+index-node->bindings pattern local-index-node literals)])
+            (if (not (list? bindings))
+              #f
+              (let* (
+                  [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
                 [expansion-index-node 
                   (init-index-node 
@@ -167,7 +166,7 @@
                         (with-output-to-string (lambda () (pretty-print expansion-expression)))
                         (uri->path (document-uri local-document)))))]
                 [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-              `(,matching-pairs . ,expansion-index-node)))))))))
+              `(,matching-pairs . ,expansion-index-node)))))))))))
 
 (define (private:take list n)
   (if (or (zero? n) (null? list))
