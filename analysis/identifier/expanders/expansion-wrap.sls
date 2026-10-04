@@ -8,29 +8,142 @@
     (scheme-langserver util contain))
 
 
+;Cross-call-site expansion templates (TODO-10 performance half). After a
+;full expansion of (generator, call-expression), the created references
+;are captured as paths into the compound tree and cached here; a later
+;call site with an IDENTICAL datum replays them without stepping the
+;skeleton. Keyed by generator procedure (eq) so re-defined macros get a
+;fresh cache. Chez hashtables are operation-level thread-safe; a benign
+;race may compute the same template twice.
+(define private:expansion-template-cache (make-eq-hashtable))
+
+(define (private:compound-path compound target)
+  ;path of 'a (car) / 'd (cdr) steps from compound to target (eq?), #f if
+  ;unreachable (compound trees are acyclic by construction)
+  (let search ([c compound] [rev '()])
+    (cond
+      [(eq? c target) (reverse rev)]
+      [(or (index-node? c) (null? c) (not (pair? c))) #f]
+      [else
+        (or (search (car c) (cons 'a rev))
+            (search (cdr c) (cons 'd rev)))])))
+
+(define (private:compound-ref compound path)
+  (fold-left
+    (lambda (c step)
+      (if (pair? c)
+        (if (eq? step 'a) (car c) (cdr c))
+        (raise 'path-error)))
+    compound path))
+
+(define (private:store-template! proc expression created compound-root call-node)
+  ;template = list of (identifier library-identifier type kind path);
+  ;#f path means the call node itself. Returns #t iff every created
+  ;reference could be path-encoded (otherwise no template is stored).
+  (let ([specs
+      (map
+        (lambda (item)
+          (let* ([ni (car item)]
+              [target (cadr item)]
+              [kind (caddr item)]
+              [path (if (eq? target call-node)
+                    #f
+                    (private:compound-path compound-root target))])
+            (list
+              (identifier-reference-identifier ni)
+              (identifier-reference-library-identifier ni)
+              (identifier-reference-type ni)
+              kind
+              path)))
+        created)])
+    (if (find (lambda (spec) (and (not (eq? (list-ref spec 4) #f)) #f)) specs)
+      #f
+      (let ([ht (or (hashtable-ref private:expansion-template-cache proc #f)
+                  (let ([ht (make-hashtable equal-hash equal?)])
+                    (hashtable-set! private:expansion-template-cache proc ht)
+                    ht))])
+        (hashtable-set! ht expression specs)
+        #t))))
+
+(define (private:replay-template specs proc root-file-node root-library-node document index-node)
+  ;returns #t on success; #f (fall back to a full run) on any path decode
+  ;failure or if the generator declines the call
+  (guard (e [else #f])
+    (let* ([pairs+expansion (proc root-file-node root-library-node document index-node)])
+      (if (not pairs+expansion)
+        #f
+        (let* ([pairs (car pairs+expansion)]
+            [expansion-index-node (cdr pairs+expansion)]
+            [root-pair (assoc expansion-index-node pairs)]
+            [compound-root (if root-pair (cdr root-pair) (raise 'path-error))]
+            [pending-inserts-ht (make-eq-hashtable)])
+          (for-each
+            (lambda (spec)
+              (let* ([identifier (car spec)]
+                  [library-identifier (cadr spec)]
+                  [type (caddr spec)]
+                  [kind (cadddr spec)]
+                  [path (list-ref spec 4)]
+                  [target (if (eq? path #f)
+                            index-node
+                            (let ([t (private:compound-ref compound-root path)])
+                              (if (index-node? t) t (raise 'path-error))))]
+                  [ni (make-identifier-reference
+                      identifier document target index-node
+                      library-identifier type '() '() '())])
+                (identifier-reference-speculative?-set! ni #t)
+                (if (eq? kind 'export)
+                  (let ([current-exports (index-node-references-export-to-other-node target)])
+                    (if (not (find (lambda (e2) (eq? identifier (identifier-reference-identifier e2))) current-exports))
+                      (index-node-references-export-to-other-node-set!
+                        target (append current-exports `(,ni)))
+                      '()))
+                  (hashtable-update! pending-inserts-ht target
+                    (lambda (old) (cons ni old)) '()))))
+            specs)
+          (private:flush-inserts! pending-inserts-ht document)
+          #t)))))
+
 (define (expansion-generator->rule proc step file-linkage expanded+callee-list memory . maybe-expander-ref)
   (let ([expander-ref (if (null? maybe-expander-ref) #f (car maybe-expander-ref))])
     (lambda (root-file-node root-library-node document index-node)
       (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
-          [pairs+expansion (proc root-file-node root-library-node document index-node)])
-        (if pairs+expansion
-          (let* ([pairs (car pairs+expansion)]
-              [expansion-index-node (cdr pairs+expansion)]
-              [possible-new-memory `(,expression . ,memory)]
-              [expander-doc (if expander-ref (identifier-reference-document expander-ref) #f)]
-              [previous-all-pairs (if (null? expanded+callee-list)
-                                    '()
-                                    (list-ref (car expanded+callee-list) 4))]
-              [new-all-pairs (append pairs previous-all-pairs)]
-              [new-expanded+callee-list 
-                (cons `(,expansion-index-node ,index-node ,expander-doc ,pairs ,new-all-pairs) expanded+callee-list)])
-            ; Guard 1: prevent re-expansion of the exact same expression.
-            ; Guard 2: cap memory chain length to avoid infinite cascades
-            ; (e.g. match -> match-next -> match-one -> ...).
-            (if (and (not (contain? memory expression)) (< (length memory) 15))
-              (step root-file-node root-library-node file-linkage document expansion-index-node new-expanded+callee-list possible-new-memory))
-            (private:shallow-copy pairs (extract-all-pairs new-expanded+callee-list) expansion-index-node document index-node))
-          '())))))
+          [template-ht (hashtable-ref private:expansion-template-cache proc #f)]
+          [template (and template-ht (hashtable-ref template-ht expression #f))])
+        (cond
+          ;replay: identical datum seen before, recursion guards satisfied
+          [(and template
+              (not (contain? memory expression))
+              (< (length memory) 15))
+            (or (private:replay-template template proc root-file-node root-library-node document index-node)
+              (private:full-run proc step file-linkage expanded+callee-list memory expander-ref root-file-node root-library-node document index-node expression))]
+          [else
+            (private:full-run proc step file-linkage expanded+callee-list memory expander-ref root-file-node root-library-node document index-node expression)])))))
+
+(define (private:full-run proc step file-linkage expanded+callee-list memory expander-ref root-file-node root-library-node document index-node expression)
+  (let ([pairs+expansion (proc root-file-node root-library-node document index-node)])
+    (if pairs+expansion
+      (let* ([pairs (car pairs+expansion)]
+          [expansion-index-node (cdr pairs+expansion)]
+          [possible-new-memory `(,expression . ,memory)]
+          [expander-doc (if expander-ref (identifier-reference-document expander-ref) #f)]
+          [previous-all-pairs (if (null? expanded+callee-list)
+                                '()
+                                (list-ref (car expanded+callee-list) 4))]
+          [new-all-pairs (append pairs previous-all-pairs)]
+          [new-expanded+callee-list
+            (cons `(,expansion-index-node ,index-node ,expander-doc ,pairs ,new-all-pairs) expanded+callee-list)])
+        ; Guard 1: prevent re-expansion of the exact same expression.
+        ; Guard 2: cap memory chain length to avoid infinite cascades
+        ; (e.g. match -> match-next -> match-one -> ...).
+        (if (and (not (contain? memory expression)) (< (length memory) 15))
+          (step root-file-node root-library-node file-linkage document expansion-index-node new-expanded+callee-list possible-new-memory))
+        (let ([created (private:shallow-copy pairs (extract-all-pairs new-expanded+callee-list) expansion-index-node document index-node)]
+            [root-pair (assoc expansion-index-node pairs)])
+          (when root-pair
+            (private:store-template! proc expression created (cdr root-pair) index-node)))
+        #t)
+      #f)))
 
 (define (private:recursive-filter compound-list predicate?)
   (let loop ([stack (list compound-list)] [acc '()])
