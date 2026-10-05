@@ -16,7 +16,8 @@
     (scheme-langserver analysis identifier rules begin)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
-    (scheme-langserver analysis identifier self-defined-rules ufo-match match)
+    ;ufo-match/match (match-process) import removed 2026-10-05: the
+    ;hand-written fallback is disabled, nothing references it here
     (scheme-langserver analysis identifier self-defined-rules ufo-try try)
 
     (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
@@ -85,8 +86,16 @@
             (add-rule-procedure rules
               `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
                 ,target-identifier))
-            (if (equal? expressions '(match))
-              (add-rule-procedure rules `((,match-process) . ,target-identifier))
-              rules)))]
+            ;Hand-written match-process fallback DISABLED 2026-10-05:
+            ;a full-repo probe shows the auto path (expander present)
+            ;covers 100% of cross-file match-family call sites; the
+            ;no-expander remainder resolves to quoted data or in-library
+            ;self-calls that never reach this arm. Removing the fallback
+            ;aligns match with the other five family macros (no
+            ;hand-written rule either). Original line kept commented:
+            ;(if (equal? expressions '(match))
+            ;  (add-rule-procedure rules `((,match-process) . ,target-identifier))
+            ;  rules)
+            rules))]
       [else rules])))
 )
