@@ -1,7 +1,8 @@
 (library (scheme-langserver analysis identifier expanders dispatch-matcher)
   (export
     convert-pattern
-    dsl+index-node->bindings)
+    dsl+index-node->bindings
+    gather-context)
   (import
     (chezscheme)
     (scheme-langserver analysis identifier expanders pattern)
@@ -276,6 +277,33 @@
     (if (null? (car r*))
       r
       (cons (map car r*) (private:combine (map cdr r*) r)))))
+
+;template-side ellipsis context, derived from the MATCH pattern datum
+;directly (names live in the datum, not the name-erased dsl): an alist
+;of (variable . #t) for variables at the terminal of a pair's cdr chain
+;-- the improper-tail binder, cf. the old pattern record's cdr? flag,
+;which make-pattern set on the last child of every pair form. Variables
+;absent from the alist behave as #f. expand->index-node-compound-list's
+;bindings-product uses the flag to decide whether an ellipsed value list
+;may be distributed element-wise (proper position) or must stay whole
+;(cdr position containing call-site nodes).
+(define (gather-context pattern-datum keys)
+  (define (walk-tail rest)
+    ;rest sits in a cdr position: a pair continues the chain (its car is
+    ;a mid-list element, not a terminal); a non-pair is the terminal.
+    (cond
+      [(pair? rest) (append (walk (car rest) #f) (walk-tail (cdr rest)))]
+      [(null? rest) '()]
+      [else (walk rest #t)]))
+  (define (walk p terminal?)
+    (cond
+      [(symbol? p)
+        (if (or (memq p keys) (eq? p '_) (not terminal?))
+          '()
+          `((,p . #t)))]
+      [(pair? p) (append (walk (car p) #f) (walk-tail (cdr p)))]
+      [else '()]))
+  (walk pattern-datum #f))
 
 ;entry: dsl + pvars + call-site index-node + literals -> bindings alist or #f
 (define (dsl+index-node->bindings dsl pvars call-node literals)

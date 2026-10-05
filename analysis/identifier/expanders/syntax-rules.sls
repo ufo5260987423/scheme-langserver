@@ -120,13 +120,14 @@
               (lambda (clause-index-node)
                 (let* ([clause-expression (index-node-expression clause-index-node)]
                     [pattern-expression (car clause-expression)]
-                    ;the match pattern record is only kept for gather-context
-                    ;(ellipsis cdr? flags); matching itself goes through the
+                    ;template tree per clause; the ellipsis context is derived
+                    ;from the match pattern datum directly (dispatch-matcher's
+                    ;gather-context -- the old pattern record existed only for
+                    ;its cdr? flags and is gone); matching goes through the
                     ;Chez-transcribed dispatch-matcher (TODO-12)
-                    [pattern (make-pattern pattern-expression)]
                     [template-pattern (make-pattern (extract-template clause-expression))])
                   (let-values ([(dsl pvars) (convert-pattern pattern-expression literals)])
-                    (vector dsl pvars template-pattern (gather-context pattern)))))
+                    (vector dsl pvars template-pattern (gather-context pattern-expression literals)))))
               clause-index-nodes))]
         ;memoize the selector's transcription: keyed by the call-site datum,
         ;it maps to (clause-index . instantiated-template-datum). Only this

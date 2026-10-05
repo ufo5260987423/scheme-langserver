@@ -15,7 +15,8 @@
   (scheme-langserver util test)
 
   (scheme-langserver analysis tokenizer)
-  (scheme-langserver analysis identifier expanders pattern))
+  (scheme-langserver analysis identifier expanders pattern)
+  (scheme-langserver analysis identifier expanders dispatch-matcher))
 
 
 
@@ -34,141 +35,115 @@
           (let ([expr (annotation-stripped-expression n)])
             (and (list? expr) (not (null? expr)) (eq? 'match (car expr)))))
         root-index-node)]
-      [expression (annotation-stripped (index-node-datum/annotations index-node))]
+      [expression (index-node-expression index-node)]
       [pattern-expression '(match atom (pat . body) ...)]
-      [pattern (make-pattern pattern-expression)]
-      [context (gather-context pattern)]
-      [bindings (pattern+index-node->bindings pattern index-node '())]
+      [literals '()]
+      [context (gather-context pattern-expression literals)]
+      [bindings
+        (let-values ([(dsl pvars) (convert-pattern pattern-expression literals)])
+          (dsl+index-node->bindings dsl pvars index-node literals))]
       [template (make-pattern '(let ((v atom)) (match-next v (atom (set! atom)) (pat . body) ...)))]
       [expansion (expand->index-node-compound-list template bindings context)])
   ; (pretty-print (expansion->printable-object expansion))
       (test-equal 
       '(let ([v expression])
-      (match-next
-        v
-        (expression (set! expression))
-        ((_ (fuzzy0 **1) fuzzy1 ...)
-          (let ([bindings-list-node (dereference-index-node
-                                      (cadr
-                                        (index-node-children index-node)))])
-            (let ([binding-nodes (filter
-                                   (lambda (i)
-                                     (not (null? (index-node-children i))))
-                                   (index-node-children bindings-list-node))])
-              (check-duplicate-bindings document binding-nodes)
-              (fold-left
-                (lambda (exclude-list identifier-parent-index-node)
-                  (let* ([identifier-parent-index-node (dereference-index-node
-                                                         identifier-parent-index-node)]
-                         [identifier-index-node (car (index-node-children
-                                                       identifier-parent-index-node))]
-                         [target-identifier-reference (let-parameter-process index-node
-                                                        identifier-index-node
-                                                        index-node document
-                                                        type)]
-                         [extended-exclude-list (append
-                                                  exclude-list
-                                                  target-identifier-reference)])
-                    (index-node-excluded-references-set!
-                      bindings-list-node
-                      extended-exclude-list)
-                    extended-exclude-list))
-                '()
-                binding-nodes)))
-          '())
-        (else
-          (let ([bindings-list-node (dereference-index-node
-                                      (cadr
-                                        (index-node-children index-node)))])
-            (let ([binding-nodes (filter
-                                   (lambda (i)
-                                     (not (null? (index-node-children i))))
-                                   (index-node-children bindings-list-node))])
-              (check-duplicate-bindings document binding-nodes)
-              (fold-left
-                (lambda (exclude-list identifier-parent-index-node)
-                  (let* ([identifier-parent-index-node (dereference-index-node
-                                                         identifier-parent-index-node)]
-                         [identifier-index-node (car (index-node-children
-                                                       identifier-parent-index-node))]
-                         [target-identifier-reference (let-parameter-process index-node
-                                                        identifier-index-node
-                                                        index-node document
-                                                        type)]
-                         [extended-exclude-list (append
-                                                  exclude-list
-                                                  target-identifier-reference)])
-                    (index-node-excluded-references-set!
-                      bindings-list-node
-                      extended-exclude-list)
-                    extended-exclude-list))
-                '()
-                binding-nodes)))
-          '())))
+        (match-next
+          v
+          (expression (set! expression))
+          ((_ (fuzzy0 **1) fuzzy1 ...)
+            (let ([bindings-list-node (dereference-index-node
+                                        (cadr
+                                          (index-node-children index-node)))])
+              (let ([binding-nodes (filter
+                                     (lambda (i)
+                                       (not (null? (index-node-children i))))
+                                     (index-node-children bindings-list-node))])
+                (check-duplicate-bindings document binding-nodes)
+                (fold-left
+                  (lambda (exclude-list identifier-parent-index-node)
+                    (let* ([identifier-parent-index-node (dereference-index-node
+                                                           identifier-parent-index-node)]
+                           [identifier-index-node (car (index-node-children
+                                                         identifier-parent-index-node))]
+                           [target-identifier-reference (let-parameter-process index-node
+                                                          identifier-index-node
+                                                          index-node document
+                                                          type)]
+                           [extended-exclude-list (append
+                                                    exclude-list
+                                                    target-identifier-reference)])
+                      (index-node-excluded-references-set!
+                        bindings-list-node
+                        extended-exclude-list)
+                      extended-exclude-list))
+                  '()
+                  binding-nodes))))
+          (else '())))
       (expansion->printable-object expansion)))
 (test-end)
 
-(test-begin "pattern+index-node->bindings")
+(test-begin "dsl+index-node->bindings (Chez $syntax-dispatch transcription)")
+  ;NB: the 2-arity source-file->annotations (string source) parses via a
+  ;path-reopened source descriptor and produces structurally broken
+  ;index-node trees with a dev-null/odd path; write a real temp file
   (define (make-call-node expr)
-    (init-index-node '() (car (source-file->annotations (with-output-to-string (lambda () (pretty-print expr))) "/dev/null"))))
+    (with-output-to-file "/tmp/t-pattern-tmp.scm" (lambda () (pretty-print expr)) 'replace)
+    (init-index-node '() (car (source-file->annotations "/tmp/t-pattern-tmp.scm"))))
   (define (binding->datum b)
-    (let ([v (cdr b)])
+    (define (strip v)
       (cond
         [(index-node? v) (annotation-stripped (index-node-datum/annotations v))]
-        [(list? v) (map (lambda (n) (if (index-node? n) (annotation-stripped (index-node-datum/annotations n)) n)) v)]
-        [else v])))
+        [(list? v) (map strip v)]
+        [else v]))
+    (strip (cdr b)))
   (define (bindings-summary pattern expr literals)
-    (let ([r (pattern+index-node->bindings (make-pattern pattern) (make-call-node expr) literals)])
-      (cond
-        [(list? r) (map (lambda (b) (cons (car b) (binding->datum b))) r)]
-        [else r])))
+    (let-values ([(dsl pvars) (convert-pattern pattern literals)])
+      (let ([r (dsl+index-node->bindings dsl pvars (make-call-node expr) literals)])
+        (cond
+          [(list? r) (map (lambda (b) (cons (car b) (binding->datum b))) r)]
+          [else r]))))
 
-  ;simple, no ellipsis
-  (test-equal '((body . x) (val . 1) (var . x))
+  ;simple, no ellipsis (order = convert-pattern pvars order)
+  (test-equal '((var . x) (val . 1) (body . x))
     (bindings-summary '(_ ((var val)) body) '(simple-let ((x 1)) x) '()))
   ;pair tail
-  (test-equal '((t 2 3) (h . 1))
+  (test-equal '((h . 1) (t 2 3))
     (bindings-summary '(_ (h . t)) '(m (1 2 3)) '()))
   ;literal distinguished from pattern variable
   (test-equal '((x . 1))
     (bindings-summary '(_ (lit x)) '(m (lit 1)) '(lit)))
   (test-equal #f
     (bindings-summary '(_ (lit x)) '(m (k 1)) '(lit)))
-  ;single ellipsis
-  (test-equal '((atom . y) (match . match) (pat a b) (body 1 2))
+  ;single ellipsis; (pat . body) binds body to each clause's cdr; the
+  ;binding ORDER follows convert-pattern's pvars (head symbol included
+  ;-- literals is empty, so 'match is a pattern variable)
+  (test-equal '((match . match) (atom . y) (pat a b) (body (1) (2)))
     (bindings-summary '(match atom (pat . body) ...) '(match y (a 1) (b 2)) '()))
   ;nested ellipsis
   (test-equal '((a 1 3) (b 2 4))
     (bindings-summary '((a b) ...) '((1 2) (3 4)) '()))
-  ;multiple separate ellipses, equal length (R6RS)
-  (test-equal '((y 3 4) (x 1 2))
-    (bindings-summary '(x ... y ...) '(1 2 3 4) '()))
-  (test-equal '((z 5 6) (y 3 4) (x 1 2))
-    (bindings-summary '(x ... y ... z ...) '(1 2 3 4 5 6) '()))
-  ;multiple ellipses with fixed prefix and suffix
-  (test-equal '((b . 5) (y 3 4) (x 1 2) (a . 0))
-    (bindings-summary '(a x ... y ... b) '(0 1 2 3 4 5) '()))
-  ;multiple ellipses with improper tail: the tail is a final fixed segment
-  (test-equal '((a 1 3) (b 2 4) (c . 5) (d . 6))
-    (bindings-summary '((a b) ... (c) . d) '((1 2) (3 4) (5) 6) '()))
-  ;non-divisible middle defers to fallback
-  (test-equal 'fallback
-    (bindings-summary '(x ... y ...) '(1 2 3) '()))
-  ;vector patterns (zero coverage in .akku/lib; the make-pattern vector
-  ;branch once had an arity bug that nothing exercised)
-  (test-equal '((b . 2) (a . 1))
+  ;one ellipsized head plus an improper tail -- the only multi-element
+  ;each+ shape Chez's syntax-case validator accepts ((x ... . t) family;
+  ;verified against Chez: x gets the whole list, t the null tail).
+  ;Patterns with multiple ellipses at the same list level (e.g.
+  ;(x ... y ...)) are rejected by the validator ("misplaced ellipsis")
+  ;before $syntax-dispatch ever runs, so they are unreachable through
+  ;real macros; the old matcher had invented semantics for them.
+  (test-equal '((x 1 2 3) (t))
+    (bindings-summary '(x ... . t) '(1 2 3) '()))
+  (test-equal '((x 1 2 3) (t))
+    (bindings-summary '(_ (x ... . t)) '(m (1 2 3)) '()))
+  ;vector patterns
+  (test-equal '((a . 1) (b . 2))
     (bindings-summary '#(a b) '#(1 2) '()))
   (test-equal '((a 1 2 3))
     (bindings-summary '#(a ...) '#(1 2 3) '()))
   (test-equal '((a 1 3) (b 2 4))
     (bindings-summary '#((a b) ...) '#((1 2) (3 4)) '()))
-  (test-equal '((b . 2) (a . 1))
+  (test-equal '((a . 1) (b . 2))
     (bindings-summary '(_ #(a b)) '(m #(1 2)) '()))
   (test-equal 'vector-form (pattern-type (make-pattern '#(a b))))
   (test-equal 'ellipse-vector-form (pattern-type (make-pattern '#(a ...))))
-  ;non-divisible middle defers to fallback (the expansion is declined)
-  (test-equal 'fallback
-    (bindings-summary '(x ... y ...) '(1 2 3) '()))
-(test-end)
+  (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
