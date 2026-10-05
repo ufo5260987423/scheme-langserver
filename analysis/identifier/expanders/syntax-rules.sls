@@ -118,7 +118,7 @@
           (list->vector
             (map
               (lambda (clause-index-node)
-                (let* ([clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))]
+                (let* ([clause-expression (index-node-expression clause-index-node)]
                     [pattern-expression (car clause-expression)]
                     ;the match pattern record is only kept for gather-context
                     ;(ellipsis cdr? flags); matching itself goes through the
@@ -136,7 +136,7 @@
         [selector-cache (make-hashtable equal-hash equal?)])
       (index-node-expansion-generator-set! input-index-node
         (lambda (local-root-file-node local-root-library-node local-document local-index-node)
-          (let* ([local-expression (annotation-stripped (index-node-datum/annotations local-index-node))]
+          (let* ([local-expression (index-node-expression local-index-node)]
               [index+expansion
                 (if clause-selector
                   (or (hashtable-ref selector-cache local-expression #f)
@@ -182,7 +182,7 @@
   (reverse (private:expansion+index-node->pairs-rev compound-list index-node '())))
 
 (define (private:expansion+index-node->pairs-rev compound-list index-node acc)
-  (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
+  (let* ([expression (index-node-expression index-node)]
       [children (index-node-children index-node)])
     (cond 
       [(index-node? compound-list)
@@ -205,9 +205,9 @@
                       (if (null? ecs)
                         a
                         (let* ([exp-child (car ecs)]
-                            [sym (annotation-stripped (index-node-datum/annotations exp-child))])
+                            [sym (index-node-expression exp-child)])
                           (if (symbol? sym)
-                            (let ([compound-match (find (lambda (c) (eq? sym (annotation-stripped (index-node-datum/annotations c)))) compound-children)])
+                            (let ([compound-match (find (lambda (c) (eq? sym (index-node-expression c))) compound-children)])
                               (if compound-match
                                 (loop (cdr ecs) (cons `(,exp-child . ,compound-match) a))
                                 (loop (cdr ecs) a)))
@@ -243,7 +243,7 @@
         (syntax-case input-expression ,literals
           ,@(map
               (lambda (index clause-index-node)
-                (let ([clause-expression (annotation-stripped (index-node-datum/annotations clause-index-node))])
+                (let ([clause-expression (index-node-expression clause-index-node)])
                   `(,(car clause-expression)
                     #',(cons index (car (reverse clause-expression))))))
               (iota (length clause-index-nodes))
@@ -258,7 +258,7 @@
     (if (null? rest) 
       #f
       (let* ([current-clause-index-node (car rest)]
-          [current-clause-expression (annotation-stripped (index-node-datum/annotations current-clause-index-node))]
+          [current-clause-expression (index-node-expression current-clause-index-node)]
           [pattern-expression (car current-clause-expression)]
           [signature (private:extract-signature pattern-expression)])
         (if (private:signature-match? signature input-expression)
