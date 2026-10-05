@@ -1,13 +1,15 @@
 (library (scheme-langserver analysis identifier expanders syntax-rules)
   (export 
     syntax-rules->generator:map+expansion
-    make-generator-for-clauses)
+    make-generator-for-clauses
+    make-fused-generator)
   (import
     (chezscheme)
     (ufo-match-steer)
 
     (scheme-langserver analysis identifier expanders pattern)
     (scheme-langserver analysis identifier expanders dispatch-matcher)
+    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis tokenizer)
     (scheme-langserver util path)
 
@@ -170,7 +172,10 @@
                       (with-output-to-string (lambda () (pretty-print (cdr index+expansion))))
                       (uri->path (document-uri local-document)))))]
                 [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
-              `(,matching-pairs . ,expansion-index-node))))))))))
+              ;three-element result (see expansion-wrap.sls): pairs, the
+              ;reparsed skeleton, and the compound -- the compound keeps
+              ;call-site node identity and is what cascade fusion splices
+              `(,matching-pairs ,expansion-index-node ,callee-compound-index-node-list))))))))))
 
 (define (private:take list n)
   (if (or (zero? n) (null? list))
@@ -272,4 +277,166 @@
               [target (syntax->datum (eval pre-target))])
             (if target target (loop (cdr rest) (+ 1 index))))
           (loop (cdr rest) (+ 1 index)))))))
+; ---------------------------------------------------------------------------
+; TODO-14 cascade fusion (post-library install, see workspace.sls
+; private:fuse-exported-generators!): a fused generator runs its raw
+; generator, then keeps expanding family-macro call sites found in the
+; skeleton -- calling the partner macro's own generator directly, with no
+; step/routing/reparse-per-hop -- until no family calls remain (or the
+; budget/skip list says stop), then rebuilds pairs once from the final
+; compound+skeleton. Call sites the loop declines or misses are left in
+; place and handled by the ordinary per-hop path when the final skeleton
+; is stepped, so fusion is strictly opportunistic.
+
+(define private:fusion-hop-budget 2048)
+
+(define (make-fused-generator raw-generator fusion-table)
+  (lambda (root-file-node root-library-node document index-node)
+    ;guards: today the raw call runs under step's try/except; a fused
+    ;call may also come from another fusion loop, so carry our own -- a
+    ;declined expansion must return #f, never raise (e.g. match-next's
+    ;no-more-clauses clause template contains a string literal, which
+    ;expand->index-node-compound-list declines as 'illegal-template)
+    (guard (e (else #f))
+      (let ((r (raw-generator root-file-node root-library-node document index-node)))
+        (and r
+          (private:fuse-cascade root-file-node root-library-node document
+            (cadr r) (caddr r) fusion-table '() 0 '() (car r)))))))
+
+
+(define (private:fuse-cascade root-file-node root-library-node document skeleton compound table skipped hops seen acc-pairs)
+  (cond
+    ((>= hops private:fusion-hop-budget)
+      (private:fused-result skeleton compound acc-pairs))
+    (else
+      (let ((found (private:find-fusable-call skeleton table skipped)))
+        (cond
+          ((not found)
+            (when (getenv "FUSE_TRACE")
+              (printf "FUSE done hops=~a skipped=~a~%" hops (length skipped)))
+            (private:fused-result skeleton compound acc-pairs))
+          (else
+            (let* ((call-node (car found))
+                (path (cdr found))
+                (sym (car (index-node-expression call-node)))
+                ;a (symbol . call-datum) pair already expanded in this
+                ;cascade is skipped: re-expansion is deterministic, so
+                ;repeating it cannot make progress -- this breaks
+                ;ping-pong cycles between dispatcher macros while leaving
+                ;genuinely new calls to expand
+                (tag (cons sym (index-node-expression call-node)))
+                ;table values are RAW generators (workspace.sls collects
+                ;them before wrapping), so one loop owns the whole
+                ;cascade -- no nested wrapper recursion
+                (partner (cdr (assq sym table))))
+              (cond
+                ((not (procedure? partner))
+                  (when (getenv "FUSE_TRACE")
+                    (printf "FUSE decline ~a: no partner~%" sym))
+                  (private:fuse-cascade root-file-node root-library-node document skeleton compound table (cons sym skipped) hops seen acc-pairs))
+                ((member tag seen)
+                  (private:fuse-cascade root-file-node root-library-node document skeleton compound table (cons sym skipped) hops seen acc-pairs))
+                (else
+                  (let ((pr (guard (e (else
+                              (when (getenv "FUSE_TRACE")
+                                (printf "FUSE decline ~a: EXC ~a~%" sym
+                                  (if (condition? e) (condition-message e) e)))
+                              #f))
+                              (partner root-file-node root-library-node document call-node))))
+                    (cond
+                      ((not pr)
+                        (when (getenv "FUSE_TRACE")
+                          (printf "FUSE decline ~a: ~a~%" sym
+                            (let ((d (index-node-expression call-node)))
+                              (if (and (list? d) (> (length d) 5)) (append (private:take d 5) '(...)) d))))
+                        (private:fuse-cascade root-file-node root-library-node document skeleton compound table (cons sym skipped) hops seen acc-pairs))
+                      (else
+                        (let ((comp-sub (private:find-compound-subtree compound path)))
+                          (cond
+                            ((not comp-sub)
+                              (private:fuse-cascade root-file-node root-library-node document skeleton compound table (cons sym skipped) hops seen acc-pairs))
+                            ((null? path)
+                              ;the fusable call IS the skeleton root (e.g. a
+                              ;recursive macro's self-call): its parent is
+                              ;the macro definition site, so children
+                              ;mutation would splice the wrong tree --
+                              ;continue with the new skeleton/compound
+                              (private:fuse-cascade root-file-node root-library-node document
+                                (cadr pr) (caddr pr) table skipped (+ hops 1) (cons tag seen)
+                                (append acc-pairs (car pr))))
+                            (else
+                              (private:splice-skeleton! call-node (cadr pr))
+                              (private:fuse-cascade root-file-node root-library-node document skeleton
+                                (private:replace-subtree compound comp-sub (caddr pr))
+                                table skipped (+ hops 1) (cons tag seen)
+                                (append acc-pairs (car pr))))))))))))))))))
+
+;pairs handed to full-run = ONLY the first hop's (raw) pairs: node-level
+;mappings for deep generated nodes would target intermediate compounds
+;(unreachable from the original tree) and suppress the import-pass
+;fallback that per-hop relies on to anchor deep bindings at the call
+;node. The hop pairs are still accumulated through full-run's all-pairs
+;machinery, matching per-hop bookkeeping.
+(define (private:fused-result skeleton compound _acc-pairs)
+  (list (private:expansion+index-node->pairs compound skeleton) skeleton compound))
+
+;preorder search for an index-node whose datum is a list headed by a
+;fusion-table symbol (not on the skip list). A found call is replaced
+;wholesale, so we do not descend into it. Returns (node . path) where
+;path is the list of child indices from the root to the node.
+(define (private:find-fusable-call node table skipped)
+  (let ([expr (guard (e [else #f]) (index-node-expression node))])
+    (if (and (pair? expr)
+          (symbol? (car expr))
+          (assq (car expr) table)
+          (not (memq (car expr) skipped)))
+      (cons node '())
+      (let loop ([children (index-node-children node)] [i 0])
+        (cond
+          [(null? children) #f]
+          [else
+            (let ([sub (private:find-fusable-call (car children) table skipped)])
+              (if sub
+                (cons (car sub) (cons i (cdr sub)))
+                (loop (cdr children) (+ i 1))))])))))
+
+;the compound counterpart of a skeleton call node, located by the
+;call's child-index path: compound list elements align with skeleton
+;children positionally (that is the invariant pairs relies on). Improper
+;compound tails count as one final element.
+(define (private:find-compound-subtree compound path)
+  (let walk ([tree compound] [remaining path])
+    (cond
+      [(null? remaining) tree]
+      [(not (pair? tree)) #f]
+      [else
+        (let ([elements (private:compound-elements tree)])
+          (and (< (car remaining) (length elements))
+            (walk (list-ref elements (car remaining)) (cdr remaining))))])))
+
+(define (private:compound-elements tree)
+  (let loop ([rest tree])
+    (cond
+      [(null? rest) '()]
+      [(pair? rest) (cons (car rest) (loop (cdr rest)))]
+      [else (list rest)])))
+
+;splice a partner skeleton in place of the call node inside its parent
+;children (the partner built it with the call node's parent already)
+(define (private:splice-skeleton! call-node new-node)
+  (let ([parent (index-node-parent call-node)])
+    (when (index-node? parent)
+      (index-node-children-set! parent
+        (map (lambda (c) (if (eq? c call-node) new-node c))
+          (index-node-children parent))))))
+
+;pure pair-tree replacement by identity
+(define (private:replace-subtree tree old-sub new-sub)
+  (cond
+    [(eq? tree old-sub) new-sub]
+    [(pair? tree)
+      (cons (private:replace-subtree (car tree) old-sub new-sub)
+        (private:replace-subtree (cdr tree) old-sub new-sub))]
+    [else tree]))
+
 ) ; end library

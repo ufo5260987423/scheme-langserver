@@ -46,7 +46,7 @@
     (let ([gen-result (syntax-expander root-file-node root-library-node document call-node)])
       (when gen-result
         (let* ([pairs (car gen-result)]
-               [expansion-node (cdr gen-result)]
+               [expansion-node (cadr gen-result)]
                [expansion-expr (annotation-stripped (index-node-datum/annotations expansion-node))])
           (void))))
 

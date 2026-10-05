@@ -290,7 +290,9 @@
         (for-each walk-file (file-node-children node)))
       (let ([document (file-node-document node)])
         (when (document? document)
-          (for-each (lambda (top) (walk-node document top)) (document-index-node-list document)))))))
+          (for-each (lambda (top) (walk-node document top)) (document-index-node-list document))
+          ;TODO-14: generators rebuilt -- reinstall the fused wrappers
+          (private:fuse-exported-generators! root-file-node root-library-node document))))))
 
 
 (define (private:file-content-changed? path cached-text cached-mtime)
@@ -558,6 +560,60 @@
               paths)))))
     target-paths))
 
+;TODO-14 cascade fusion post-pass: after a document's step has attached
+;every expansion generator in it, wrap each macro's expander in a fused
+;generator whose table maps EVERY macro name defined in this document to
+;its RAW generator (collected before any wrapping, so the fusion loop
+;owns the whole cascade in one budget/seen-set -- no nested wrapper
+;recursion). Cross-document partners keep arriving through whatever the
+;reference's expander slot holds. Symbols without a generator in this
+;document are simply absent -- their calls fall back to the ordinary
+;per-hop path, so fusion stays strictly opportunistic. Set
+;SCHEME_LANGSERVER_FUSION=1 to enable (A/B measurement).
+;OPT-IN (TODO-14 experimental): the fusion loop expands the whole
+;reachable cascade per macro call, which benchmarked far slower than the
+;per-hop path at workspace init (measurement gate, see todo.md) -- ship
+;behind SCHEME_LANGSERVER_FUSION=1 until the cost model is fixed.
+(define (private:fuse-exported-generators! root-file-node root-library-node document)
+  (when (getenv "SCHEME_LANGSERVER_FUSION")
+    (let ((entries (private:collect-macro-generators document)))
+      (when (not (null? entries))
+        (let ((table (map (lambda (e) (cons (car e) (cadr e))) entries)))
+          (for-each
+            (lambda (e)
+              (for-each
+                (lambda (ref)
+                  (when (procedure? (identifier-reference-syntax-expander ref))
+                    (identifier-reference-syntax-expander-set! ref
+                      (make-fused-generator (identifier-reference-syntax-expander ref) table))))
+                (caddr e)))
+            entries))))))
+
+;walk the document for syntax-rules/syntax-case RHS nodes; each entry is
+;(macro-name raw-generator export-refs)
+(define (private:collect-macro-generators document)
+  (let walk ((nodes (document-index-node-list document)) (acc '()))
+    (cond
+      ((null? nodes) acc)
+      (else
+        (walk (cdr nodes)
+          (walk (index-node-children (car nodes))
+            (private:collect-macro-generator (car nodes) acc)))))))
+
+(define (private:collect-macro-generator node acc)
+  (let ((gen (index-node-expansion-generator node)))
+    (if (procedure? gen)
+      (let* ((parent (index-node-parent node))
+          (siblings (if (index-node? parent) (index-node-children parent) '())))
+        (if (and (index-node? parent) (not (null? (cdr siblings))))
+          (let ((name-node (cadr siblings)))
+            (cons
+              (list (index-node-expression name-node) gen
+                (index-node-references-export-to-other-node name-node))
+              acc))
+          acc))
+      acc)))
+
 (define (private-init-references workspace-instance target-path . maybe-syntax-diagnoses)
   (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
       [document (file-node-document current-file-node)]
@@ -570,6 +626,9 @@
     ; (pretty-print 'test0)
     ; (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)
+    ;TODO-14: every generator in this document is attached now -- fuse away
+    ;the exported macros' internal cascades
+    (private:fuse-exported-generators! (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) document)
     (process-library-identifier-excluded-references document)
     (check-unused-imports document)
     (check-unused-local-variables document)

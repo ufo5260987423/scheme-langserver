@@ -73,7 +73,7 @@
       (if (not pairs+expansion)
         #f
         (let* ([pairs (car pairs+expansion)]
-            [expansion-index-node (cdr pairs+expansion)]
+            [expansion-index-node (cadr pairs+expansion)]
             [root-pair (assoc expansion-index-node pairs)]
             [compound-root (if root-pair (cdr root-pair) (raise 'path-error))]
             [pending-inserts-ht (make-eq-hashtable)])
@@ -124,7 +124,7 @@
   (let ([pairs+expansion (proc root-file-node root-library-node document index-node)])
     (if pairs+expansion
       (let* ([pairs (car pairs+expansion)]
-          [expansion-index-node (cdr pairs+expansion)]
+          [expansion-index-node (cadr pairs+expansion)]
           [possible-new-memory `(,expression . ,memory)]
           [expander-doc (if expander-ref (identifier-reference-document expander-ref) #f)]
           [previous-all-pairs (if (null? expanded+callee-list)
@@ -239,6 +239,18 @@
                 `(,ni)))))
         export-list))))
 
+;counterpart must live in the ORIGINAL call-site tree: a pair-mapped
+;counterpart that is itself an intermediate expansion node would strand
+;the reference where no use-site lookup can reach it (fusion collapses
+;the cascade into one back-prop, making this visible; per-hop papered
+;over it with multi-hop accumulation)
+(define (private:under-node? node ancestor)
+  (let loop ((n node))
+    (cond
+      [(not (index-node? n)) #f]
+      [(eq? n ancestor) #t]
+      [else (loop (index-node-parent n))])))
+
 (define (private:shallow-copy pairs all-pairs expansion-index-node document initialization-index-node)
   ;Back-propagates references from the expansion tree to the callee
   ;(call-site/compound) tree. Returns the list of
@@ -325,7 +337,9 @@
             (let ([p (assoc (car import-entry) pairs)])
               (if p
                 (let ([c (cdr p)])
-                  (if (index-node? c) c initialization-index-node))
+                  (if (and (index-node? c) (private:under-node? c initialization-index-node))
+                    c
+                    initialization-index-node))
                 initialization-index-node))])
           (when (index-node? counterpart)
             (for-each
