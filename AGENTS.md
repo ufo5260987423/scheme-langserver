@@ -296,7 +296,12 @@ are not transitive**, so every file using `match-index-node` patterns must
 import `(ufo-match-steer)` itself. Without it the operators silently degrade
 to plain symbols: `**1` becomes a junk pattern variable, one-or-more tails
 stop matching (and `**1` as a sublist `(x **1)` is never the right shape —
-use `x **1` as an improper-tail element, cf. `define.sls`). A `match` (datum
+use `x **1` as an improper-tail element, cf. `define.sls`). Two more
+steer quirks: `(:= proc <bare-var>)` wraps a non-tree list datum in a
+`match-tail` record (and `match-tail-elements` is NOT exported, so the
+caller cannot unwrap it) -- bind child nodes with `(xs ...)` and map
+instead; `(x **1)` as a SUBLIST is never the right shape either.
+A `match` (datum
 matcher, `(ufo-match)` lib) cannot be naively swapped for `match-index-node`
 without adding this import — observed 2026-10-05 in expanders/syntax-rules.sls
 as "attempt to apply non-procedure #f/()" when generators silently stopped
