@@ -89,7 +89,10 @@
 (define (syntax-rules->generator:map+expansion root-file-node root-library-node document input-index-node)
   (match-index-node input-index-node
     ;clause means pattern and template
-    [('syntax-rules (literals ...) clauses **1)
+    ;:_ for the head: both call sites guarantee it -- the interpreter
+    ;registers this as the second-pass rule of the 'syntax-rules special
+    ;form, and the cache-reattach path case-matches (car expr) explicitly
+    [(:_ (literals ...) clauses **1)
       (make-generator-for-clauses input-index-node
         (map index-node-expression literals)
         clauses
