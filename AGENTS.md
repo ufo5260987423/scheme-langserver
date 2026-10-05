@@ -287,6 +287,21 @@ In Scheme a list is a chain of pairs terminated by `'()`, so `(cons x '())` is *
 `ufo-match` uses `:_` as the "match anything, don't bind" wildcard, **not** `_`.
 `_` is treated as a normal pattern variable.
 
+### `match-index-node` operators require a direct `(ufo-match-steer)` import
+`match-index-node` (`(scheme-langserver virtual-file-system index-node)`) is
+`match-steer` wrapped with the index-node protocol. Its special operators
+(`:_` `**1` `...` `___` `?` `:=` `get!`) are auxiliary keywords defined in
+`(ufo-match-steer)` and are recognized by free-identifier=? — **R6RS imports
+are not transitive**, so every file using `match-index-node` patterns must
+import `(ufo-match-steer)` itself. Without it the operators silently degrade
+to plain symbols: `**1` becomes a junk pattern variable, one-or-more tails
+stop matching (and `**1` as a sublist `(x **1)` is never the right shape —
+use `x **1` as an improper-tail element, cf. `define.sls`). A `match` (datum
+matcher, `(ufo-match)` lib) cannot be naively swapped for `match-index-node`
+without adding this import — observed 2026-10-05 in expanders/syntax-rules.sls
+as "attempt to apply non-procedure #f/()" when generators silently stopped
+being built.
+
 ### Finding tests that exercise a module
 ```bash
 grep -r "library-import-process" tests/

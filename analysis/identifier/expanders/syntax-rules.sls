@@ -2,9 +2,9 @@
   (export 
     syntax-rules->generator:map+expansion
     make-generator-for-clauses)
-  (import 
+  (import
     (chezscheme)
-    (ufo-match)
+    (ufo-match-steer)
 
     (scheme-langserver analysis identifier expanders pattern)
     (scheme-langserver analysis identifier expanders dispatch-matcher)
@@ -87,12 +87,13 @@
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
 (define (syntax-rules->generator:map+expansion root-file-node root-library-node document input-index-node)
-  (match (annotation-stripped (index-node-datum/annotations input-index-node))
-  ;clause means pattern and template
-    [(_ (literals ...) clauses **1) 
-      (let ([clause-index-nodes (cddr (index-node-children input-index-node))])
-        (make-generator-for-clauses input-index-node literals clause-index-nodes
-          (lambda (clause-expression) (car (reverse clause-expression)))))]
+  (match-index-node input-index-node
+    ;clause means pattern and template
+    [('syntax-rules (literals ...) clauses **1)
+      (make-generator-for-clauses input-index-node
+        (map index-node-expression literals)
+        clauses
+        (lambda (clause-expression) (car (reverse clause-expression))))]
     [else #f]))
 
 ; Shared logic for building a generator from clause index-nodes.
