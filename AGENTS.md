@@ -387,8 +387,15 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   ellipsis") -- never a runtime input.
 - `expanders/expansion-wrap.sls`: back-propagation on BOTH sides -- exports
   to compound counterpart nodes, imports via an independent import pass
-  (root/symbol shapes fall back to the macro call node). New references are
-  marked `identifier-reference-speculative?` (tentative-level knowledge).
+  (root/unpaired shapes fall back to the macro call node). Pair lookup is
+  by IDENTITY (private:pair-find) -- an assoc/equal? lookup against a
+  dotted pair never matches a record and silently disabled the whole
+  mechanism until 2026-10-06 (TODO-15 P3). Pairs carry a confidence tag
+  (`positional` for zip-produced, `symbolic` for name-matched). Copies
+  are deduped per (identifier type) at each anchor (23 -> 2 measured),
+  which also un-bloated template replay for match-shaped cascades
+  (rule e2e 193 -> 65ms). New references are marked
+  `identifier-reference-speculative?` (tentative-level knowledge).
 - Workspace cache: expansion generators are re-attached after fasl load
   (`private:reattach-expanders-after-cache-load!` in `workspace.sls`), so
   cached workspaces keep route-2 functionality.
