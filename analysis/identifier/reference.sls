@@ -9,6 +9,21 @@
 
     append-references-into-ordered-references-for 
 
+    binding-arrow?
+    make-binding-arrow
+    binding-arrow-identifier
+    binding-arrow-document
+    binding-arrow-source-node
+    binding-arrow-library-identifier
+    binding-arrow-type
+    binding-arrow-confidence
+    binding-arrow-confidence-set!
+    binding-arrow-candidates
+    binding-arrow-candidates-set!
+    binding-arrow-resolved-target
+    binding-arrow-resolved-target-set!
+    binding-arrow->identifier-reference
+
     identifier-reference?
     make-identifier-reference
     identifier-reference-identifier
@@ -79,6 +94,57 @@
           (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0 #f)]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
           (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0 #f)]))))
+
+;TODO-15 P1: tentative/definite binding knowledge in arrow form
+;(Culpepper macro stepper model, [11]/[12]). An arrow is single-copy: it
+;records the binding knowledge produced by macro-expansion back-propagation
+;WITHOUT committing to a target -- consumers resolve it to an
+;identifier-reference at query time (see find-available-references-for in
+;P2). confidence: 'tentative | 'definite; candidates: at most 3
+;index-nodes; resolved-target: set when definite.
+(define-record-type binding-arrow
+  (nongenerative scheme-langserver-binding-arrow)
+  (fields
+    (immutable identifier)
+    (immutable document)
+    ;the skeleton-side node where the binding/use was registered
+    (immutable source-node)
+    (immutable library-identifier)
+    (immutable type)
+    (mutable confidence)
+    (mutable candidates)
+    (mutable resolved-target)))
+
+;materialize an arrow as a plain identifier-reference for consumers that
+;predate the arrow model. Resolution policy: definite -> resolved-target;
+;tentative with exactly one candidate -> that candidate (and promote the
+;arrow to definite); tentative with several -> first candidate, arrow
+;stays tentative. The synthesized reference is speculative unless the
+;arrow was already definite.
+(define (binding-arrow->identifier-reference arrow)
+  (let* ([confidence (binding-arrow-confidence arrow)]
+      [target
+        (if (eq? 'definite confidence)
+          (binding-arrow-resolved-target arrow)
+          (let ([cands (binding-arrow-candidates arrow)])
+            (if (null? (cdr cands))
+              (begin
+                (binding-arrow-confidence-set! arrow 'definite)
+                (binding-arrow-resolved-target-set! arrow (car cands))
+                (car cands))
+              (car cands))))])
+    (let ([r (make-identifier-reference
+              (binding-arrow-identifier arrow)
+              (binding-arrow-document arrow)
+              target
+              (binding-arrow-source-node arrow)
+              (binding-arrow-library-identifier arrow)
+              (binding-arrow-type arrow)
+              '()
+              '())])
+      (identifier-reference-speculative?-set! r
+        (not (eq? 'definite (binding-arrow-confidence arrow))))
+      r)))
 
 (define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
 (define (meta-for? document index-node identifier)
