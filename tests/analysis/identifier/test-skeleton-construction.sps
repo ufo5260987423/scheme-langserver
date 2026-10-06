@@ -56,9 +56,9 @@
     (lambda (src)
       (let* ((call-node (make-call src))
           (ufo-doc (file-node-document (walk-file root (string-append fixture "/ufo-match.scm.txt")))))
-        (putenv "SLSCHEME_SKELETON_REPARSE" "1")
+        (putenv "SLSCHEME_ANNOTATED_SKELETON" "")
         (let ((reparse-result (raw-gen root lib ufo-doc call-node)))
-          (putenv "SLSCHEME_SKELETON_REPARSE" "")
+          (putenv "SLSCHEME_ANNOTATED_SKELETON" "1")
           (let ((built-result (raw-gen root lib ufo-doc call-node)))
             (test-assert (string-append "shape equal: " src)
               (and reparse-result built-result

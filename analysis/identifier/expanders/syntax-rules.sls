@@ -164,16 +164,16 @@
                   [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
                 [expansion-index-node
-                  (if (getenv "SLSCHEME_SKELETON_REPARSE")
+                  (if (getenv "SLSCHEME_ANNOTATED_SKELETON")
+                    (private:build-skeleton callee-compound-index-node-list (cdr index+expansion)
+                      (index-node-parent input-index-node)
+                      (index-node-start local-index-node)
+                      (index-node-end local-index-node))
                     (init-index-node
                       (index-node-parent input-index-node)
                       (car (source-file->annotations
                         (with-output-to-string (lambda () (pretty-print (cdr index+expansion))))
-                        (uri->path (document-uri local-document)))))
-                    (private:build-skeleton callee-compound-index-node-list (cdr index+expansion)
-                      (index-node-parent input-index-node)
-                      (index-node-start local-index-node)
-                      (index-node-end local-index-node)))]
+                        (uri->path (document-uri local-document))))))]
                 [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
               `(,matching-pairs . ,expansion-index-node))))))))))
 
