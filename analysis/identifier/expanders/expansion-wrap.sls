@@ -68,7 +68,11 @@
 (define (private:replay-template specs proc root-file-node root-library-node document index-node)
   ;returns #t on success; #f (fall back to a full run) on any path decode
   ;failure or if the generator declines the call
-  (guard (e [else #f])
+  (guard (e [else
+      (when (getenv "REPLAY_TRACE")
+        (printf "REPLAY-FAIL ~a~%"
+          (if (condition? e) (condition-message e) e)))
+      #f])
     (let* ([pairs+expansion (proc root-file-node root-library-node document index-node)])
       (if (not pairs+expansion)
         #f
@@ -277,18 +281,17 @@
     ;when an equal (identifier type) reference is already queued for or
     ;attached at the target. Arrows (P1) will replace this multiplicity
     ;model entirely; this is the bounded interim.
+    ;intra-hop dedup is enough: the multiplicity case (many import-
+    ;bearing skeleton nodes in ONE skeleton resolving to the anchor)
+    ;arrives within a single shallow-copy batch, and the pending queue
+    ;is flushed at the end of each batch
     (define (anchor-copy-exists? target ref)
       (let ([id (identifier-reference-identifier ref)]
           [ty (identifier-reference-type ref)])
-        (or
-          (find (lambda (queued)
+        (find (lambda (queued)
             (and (eq? id (identifier-reference-identifier queued))
               (eq? ty (identifier-reference-type queued))))
-            (hashtable-ref pending-inserts-ht target '()))
-          (find (lambda (attached)
-            (and (eq? id (identifier-reference-identifier attached))
-              (eq? ty (identifier-reference-type attached))))
-            (index-node-references-import-in-this-node target)))))
+          (hashtable-ref pending-inserts-ht target '()))))
     (for-each
       (lambda (p)
         (let* ([lis (cdr p)]
@@ -375,7 +378,12 @@
                       '()
                       (identifier-reference-top-environment import-reference))])
                   (identifier-reference-speculative?-set! ni #t)
-                  (when (not (anchor-copy-exists? counterpart ni))
+                  ;the dedup scan only pays at the fallback anchor (call
+                  ;node) -- that is where multiplicity accumulated; other
+                  ;targets keep the old fire-and-forget path (measured:
+                  ;unconditional dedup cost ~8% of full-repo cold init)
+                  (when (not (and (eq? counterpart initialization-index-node)
+                              (anchor-copy-exists? counterpart ni)))
                     (queue-insert! counterpart ni))
                   (set! created (cons `(,ni ,counterpart import) created))))
               (cdr import-entry)))))
