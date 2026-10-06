@@ -270,8 +270,14 @@
   ;for every reference this call created (kind: export | import); the
   ;rule layer uses it to build expansion templates for cross-call-site
   ;replay. New references are marked speculative (tentative knowledge).
+  ;all-pairs grows across cascade hops, and the export walk probes it
+  ;per export-bearing node -- index it once per call (TODO-15 P3 perf)
   (let* ([created '()]
+      [all-pairs-ht (make-eq-hashtable)]
       [reverse-map (build-reverse-map all-pairs)]
+      [_ (for-each
+          (lambda (entry) (eq-hashtable-set! all-pairs-ht (car entry) entry))
+          all-pairs)]
       [local-identifiers+export-index-node (private:recursive-collect expansion-index-node index-node-references-export-to-other-node)]
       [local-identifiers+import-index-node (private:recursive-collect expansion-index-node index-node-references-import-in-this-node)]
       ;queue the ordered-list inserts per target and flush once per
@@ -312,7 +318,7 @@
               (cond
                 [corresponding-export-ip
                   (cadr corresponding-export-ip)]
-                [(private:pair-find i all-pairs) => cadr]
+                [(hashtable-ref all-pairs-ht i #f) => cadr]
                 [else
                   (let ([sym (annotation-stripped (index-node-datum/annotations i))])
                     (if (symbol? sym)
