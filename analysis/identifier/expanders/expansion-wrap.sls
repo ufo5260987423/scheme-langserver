@@ -73,7 +73,7 @@
       (if (not pairs+expansion)
         #f
         (let* ([pairs (car pairs+expansion)]
-            [expansion-index-node (cadr pairs+expansion)]
+            [expansion-index-node (cdr pairs+expansion)]
             [root-pair (assoc expansion-index-node pairs)]
             [compound-root (if root-pair (cdr root-pair) (raise 'path-error))]
             [pending-inserts-ht (make-eq-hashtable)])
@@ -124,7 +124,7 @@
   (let ([pairs+expansion (proc root-file-node root-library-node document index-node)])
     (if pairs+expansion
       (let* ([pairs (car pairs+expansion)]
-          [expansion-index-node (cadr pairs+expansion)]
+          [expansion-index-node (cdr pairs+expansion)]
           [possible-new-memory `(,expression . ,memory)]
           [expander-doc (if expander-ref (identifier-reference-document expander-ref) #f)]
           [previous-all-pairs (if (null? expanded+callee-list)
@@ -241,9 +241,9 @@
 
 ;counterpart must live in the ORIGINAL call-site tree: a pair-mapped
 ;counterpart that is itself an intermediate expansion node would strand
-;the reference where no use-site lookup can reach it (fusion collapses
-;the cascade into one back-prop, making this visible; per-hop papered
-;over it with multi-hop accumulation)
+;the reference where no use-site lookup can reach it (per-hop papered
+;over this with multi-hop accumulation; the single-back-prop cascade
+;fusion experiment made the stranding visible -- TODO-13 root cause A)
 (define (private:under-node? node ancestor)
   (let loop ((n node))
     (cond

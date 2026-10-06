@@ -41,7 +41,7 @@
          [macro-a-expander (identifier-reference-syntax-expander macro-a-ref)]
          [macro-a-result (macro-a-expander root-file-node root-library-node document call-node)]
          [pairs-a (car macro-a-result)]
-         [expansion-a (cadr macro-a-result)])
+         [expansion-a (cdr macro-a-result)])
 
     ;; 2. Find the nested macro-b call inside macro-a's expansion
     (let ([mb-call (find-index-node-recursive

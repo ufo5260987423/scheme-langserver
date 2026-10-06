@@ -64,7 +64,7 @@
   ; Layer 1: match expands to something containing match-next
   (let* ([node1 (make-call-index-node '() '(match x ((? string? path) path)))]
          [result1 (match-gen #f #f ufo-match-doc node1)]
-         [exp1 (expression-from-node (cadr result1))])
+         [exp1 (expression-from-node (cdr result1))])
     (test-assert "L1: match expands" (not (equal? exp1 '(match x ((? string? path) path)))))
     (test-assert "L1: expansion contains match-next"
       (let tree-contains? ([t exp1] [target 'match-next])
@@ -80,7 +80,7 @@
                      (match-extract-vars ? (match-gen-ellipsis v ? (path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) () ()) 
                      (match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))]
          [result5 (match-check-ellipsis-gen #f #f ufo-match-doc node5)]
-         [exp5 (expression-from-node (cadr result5))])
+         [exp5 (expression-from-node (cdr result5))])
     (test-assert "L5: match-check-ellipsis expands (was #f before guard removal)" 
       (not (equal? exp5 
              '(match-check-ellipsis 
@@ -91,7 +91,7 @@
   ; Layer 6: match-two expands (was #f before removing guard)
   (let* ([node6 (make-call-index-node '() '(match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ()))]
          [result6 (match-two-gen #f #f ufo-match-doc node6)]
-         [exp6 (expression-from-node (cadr result6))])
+         [exp6 (expression-from-node (cdr result6))])
     (test-assert "L6: match-two expands (was #f before guard removal)"
       (not (equal? exp6 '(match-two v (? string? path) (x (set! x)) (match-drop-ids (begin path)) (failure) ())))))
 
@@ -99,7 +99,7 @@
   (let* ([node6b (make-call-index-node '() '(match-two v t (x (set! x)) (match-drop-ids (begin t)) (failure) ()))]
          [result6b (match-two-gen #f #f ufo-match-doc node6b)]
          [pairs6b (car result6b)]
-         [exp6b (cadr result6b)]
+         [exp6b (cdr result6b)]
          [t-node (caddr (index-node-children node6b))])
     (test-assert "L6b: match-two symbol t expands"
       (not (equal? (expression-from-node exp6b)
@@ -129,7 +129,7 @@
                                   (if (equal? v path) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) (failure)))) 
                       (if (equal? v path) (match-one v (and) (x (set! x)) (match-drop-ids (begin path)) (failure) ()) (failure))))]
          [result12 (match-check-identifier-gen #f #f ufo-match-doc node12)]
-         [exp12 (expression-from-node (cadr result12))])
+         [exp12 (expression-from-node (cdr result12))])
     (test-assert "L12: match-check-identifier expands (was #f before guard removal)"
       (not (equal? exp12 
              '(match-check-identifier 
