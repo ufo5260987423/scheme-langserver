@@ -270,6 +270,25 @@
         import-index-node
         (lambda (old) (cons ni old))
         '()))
+    ;TODO-15 P2 anchor dedup: multiple import-bearing skeleton nodes can
+    ;resolve to the SAME anchor (fallback call node or a shared compound
+    ;counterpart), and each used to stamp its own copy of a reference --
+    ;the call node accumulated ~23 duplicates per binding. Skip a copy
+    ;when an equal (identifier type) reference is already queued for or
+    ;attached at the target. Arrows (P1) will replace this multiplicity
+    ;model entirely; this is the bounded interim.
+    (define (anchor-copy-exists? target ref)
+      (let ([id (identifier-reference-identifier ref)]
+          [ty (identifier-reference-type ref)])
+        (or
+          (find (lambda (queued)
+            (and (eq? id (identifier-reference-identifier queued))
+              (eq? ty (identifier-reference-type queued))))
+            (hashtable-ref pending-inserts-ht target '()))
+          (find (lambda (attached)
+            (and (eq? id (identifier-reference-identifier attached))
+              (eq? ty (identifier-reference-type attached))))
+            (index-node-references-import-in-this-node target)))))
     (for-each
       (lambda (p)
         (let* ([lis (cdr p)]
@@ -356,7 +375,8 @@
                       '()
                       (identifier-reference-top-environment import-reference))])
                   (identifier-reference-speculative?-set! ni #t)
-                  (queue-insert! counterpart ni)
+                  (when (not (anchor-copy-exists? counterpart ni))
+                    (queue-insert! counterpart ni))
                   (set! created (cons `(,ni ,counterpart import) created))))
               (cdr import-entry)))))
       local-identifiers+import-index-node)
