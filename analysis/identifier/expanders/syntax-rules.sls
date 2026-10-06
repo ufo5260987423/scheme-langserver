@@ -164,11 +164,16 @@
                   [callee-compound-index-node-list (expand->index-node-compound-list template-pattern bindings pattern-context)]
 
                 [expansion-index-node
-                  (init-index-node
-                    (index-node-parent input-index-node)
-                    (car (source-file->annotations
-                      (with-output-to-string (lambda () (pretty-print (cdr index+expansion))))
-                      (uri->path (document-uri local-document)))))]
+                  (if (getenv "SLSCHEME_SKELETON_REPARSE")
+                    (init-index-node
+                      (index-node-parent input-index-node)
+                      (car (source-file->annotations
+                        (with-output-to-string (lambda () (pretty-print (cdr index+expansion))))
+                        (uri->path (document-uri local-document)))))
+                    (private:build-skeleton callee-compound-index-node-list (cdr index+expansion)
+                      (index-node-parent input-index-node)
+                      (index-node-start local-index-node)
+                      (index-node-end local-index-node)))]
                 [matching-pairs (private:expansion+index-node->pairs callee-compound-index-node-list expansion-index-node)])
               `(,matching-pairs . ,expansion-index-node))))))))))
 
@@ -232,6 +237,59 @@
         (cons `(,index-node . ,compound-list) acc)]
       ;symbol won't get pairs
       [else acc])))
+
+;TODO-16: annotation-carrying skeleton construction (Hieb-Dybvig 1992
+;§4.5 source-object correlation by construction, replacing the
+;pretty-print + source-file->annotations text round trip). Builds the
+;skeleton tree directly from the instantiated template datum, mirroring
+;what a reparse of the printed datum would produce: structural descent,
+;quote-abbreviation normalization (a (quote x) element reprints as 'x,
+;whose reparse DROPS the quote head from the children -- so the quote
+;head is skipped here too), improper tails as a final child. Positions
+;are inherited from bound compound nodes (real source offsets) with the
+;call node's span as fallback -- strictly better than the synthetic
+;offsets the reparse produced.
+(define private:skeleton-sfd
+  (make-source-file-descriptor "synthetic-skeleton" (open-bytevector-input-port #vu8())))
+
+(define (private:build-skeleton compound datum parent fallback-start fallback-end)
+  (define (build comp dt par fb-start fb-end)
+    (let-values ([(start end)
+        (if (index-node? comp)
+          (values (index-node-start comp) (index-node-end comp))
+          (values fb-start fb-end))])
+      (cond
+        [(pair? dt)
+          (let ((node (make-index-node par start end
+                  (make-annotation dt (make-source-object private:skeleton-sfd start end) dt)
+                  #f '() '() '() '())))
+            (index-node-children-set! node (build-children comp dt node start end))
+            node)]
+        [(vector? dt)
+          (let ((node (make-index-node par start end
+                  (make-annotation dt (make-source-object private:skeleton-sfd start end) dt)
+                  #f '() '() '() '())))
+            (index-node-children-set! node
+              (map (lambda (el) (build #f el node start end)) (vector->list dt)))
+            node)]
+        [else
+          (make-index-node par start end
+            (make-annotation dt (make-source-object private:skeleton-sfd start end) dt)
+            #f '() '() '() '())])))
+  (define (build-children comp dt par start end)
+    ;quote-abbreviation normalization: a leading quote-family head
+    ;reprints abbreviated, and the reparse drops it from the children
+    (if (and (pair? (car dt)) (memq (caar dt) '(quote quasiquote unquote unquote-splicing)))
+      (map (lambda (el) (build #f el par start end)) (cdr dt))
+      (let loop ((rest dt) (rest-comp (if (pair? comp) comp #f)) (acc '()))
+        (cond
+          ((pair? rest)
+            (loop (cdr rest)
+              (if (pair? rest-comp) (cdr rest-comp) #f)
+              (cons (build (if (pair? rest-comp) (car rest-comp) #f) (car rest) par start end) acc)))
+          ((null? rest) (reverse acc))
+          (else (reverse (cons (build #f rest par start end) acc)))))))
+  (build compound datum parent fallback-start fallback-end))
 
 ;Compile the clause selector once per macro definition, so call sites pay a
 ;procedure call instead of recompiling the whole syntax-case form via eval
