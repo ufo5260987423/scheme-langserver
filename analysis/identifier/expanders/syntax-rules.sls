@@ -192,7 +192,7 @@
               [len-ch (length children)]
               [min-len (min len-cc len-ch)]
               [extra-children (if (> len-ch min-len) (list-tail children min-len) '())])
-            (let ([acc0 (cons `(,index-node . ,compound-list) acc)])
+            (let ([acc0 (cons `(,index-node ,compound-list positional) acc)])
               (let ([acc1
                   (let loop ([lefts (private:take compound-children min-len)]
                       [rights (private:take children min-len)]
@@ -210,7 +210,7 @@
                           (if (symbol? sym)
                             (let ([compound-match (find (lambda (c) (eq? sym (index-node-expression c))) compound-children)])
                               (if compound-match
-                                (loop (cdr ecs) (cons `(,exp-child . ,compound-match) a))
+                                (loop (cdr ecs) (cons `(,exp-child ,compound-match symbolic) a))
                                 (loop (cdr ecs) a)))
                             (loop (cdr ecs) a)))))])
                   acc2)))))]
@@ -229,7 +229,7 @@
       [(pair? compound-list) 
         (private:expansion+index-node->pairs-rev `(,(car compound-list) ,(cdr compound-list)) index-node acc)]
       [(and (symbol? compound-list) (symbol? expression))
-        (cons `(,index-node . ,compound-list) acc)]
+        (cons `(,index-node ,compound-list symbolic) acc)]
       ;symbol won't get pairs
       [else acc])))
 

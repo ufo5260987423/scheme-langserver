@@ -78,8 +78,8 @@
         #f
         (let* ([pairs (car pairs+expansion)]
             [expansion-index-node (cdr pairs+expansion)]
-            [root-pair (assoc expansion-index-node pairs)]
-            [compound-root (if root-pair (cdr root-pair) (raise 'path-error))]
+            [root-pair (private:pair-find expansion-index-node pairs)]
+            [compound-root (if root-pair (cadr root-pair) (raise 'path-error))]
             [pending-inserts-ht (make-eq-hashtable)])
           (for-each
             (lambda (spec)
@@ -143,9 +143,9 @@
         (if (and (not (contain? memory expression)) (< (length memory) 15))
           (step root-file-node root-library-node file-linkage document expansion-index-node new-expanded+callee-list possible-new-memory))
         (let ([created (private:shallow-copy pairs (extract-all-pairs new-expanded+callee-list) expansion-index-node document index-node)]
-            [root-pair (assoc expansion-index-node pairs)])
+            [root-pair (private:pair-find expansion-index-node pairs)])
           (when root-pair
-            (private:store-template! proc expression created (cdr root-pair) index-node)))
+            (private:store-template! proc expression created (cadr root-pair) index-node)))
         #t)
       #f)))
 
@@ -209,11 +209,19 @@
     '()
     (list-ref (car expanded+callee-list) 4)))
 
+;pairs entries are (skeleton-node . compound-counterpart). Lookup must
+;be by IDENTITY of the skeleton node: the previous assoc-based lookup
+;compared the node record with a dotted pair via equal?, which is always
+;#f -- so pairs never matched and every consumer silently fell back to
+;the symbol/call-node chains (TODO-15 P3 step 1: resurrect the pairs)
+(define (private:pair-find node pairs)
+  (find (lambda (p) (eq? node (car p))) pairs))
+
 (define (build-reverse-map all-pairs)
   (let ([ht (make-eq-hashtable)])
     (for-each
       (lambda (pair)
-        (let ([key (cdr pair)])
+        (let ([key (cadr pair)])
           (when (and (index-node? key) (not (hashtable-contains? ht key)))
             (hashtable-set! ht key (car pair)))))
       all-pairs)
@@ -296,15 +304,15 @@
       (lambda (p)
         (let* ([lis (cdr p)]
             [i (car p)]
-            [corresponding-export-ip (assoc i pairs)]
+            [corresponding-export-ip (private:pair-find i pairs)]
             ; If the expansion-sub-node has no counterpart in pairs (e.g.
             ; ellipsis truncation caused a mismatch), fall back to the
             ; original macro-call node so the reference is not lost.
             [compound-export-list
               (cond
                 [corresponding-export-ip
-                  (cdr corresponding-export-ip)]
-                [(assoc i all-pairs) => cdr]
+                  (cadr corresponding-export-ip)]
+                [(private:pair-find i all-pairs) => cadr]
                 [else
                   (let ([sym (annotation-stripped (index-node-datum/annotations i))])
                     (if (symbol? sym)
@@ -356,9 +364,9 @@
     (for-each
       (lambda (import-entry)
         (let ([counterpart
-            (let ([p (assoc (car import-entry) pairs)])
+            (let ([p (private:pair-find (car import-entry) pairs)])
               (if p
-                (let ([c (cdr p)])
+                (let ([c (cadr p)])
                   (if (and (index-node? c) (private:under-node? c initialization-index-node))
                     c
                     initialization-index-node))
