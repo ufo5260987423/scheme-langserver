@@ -390,8 +390,7 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   (root/unpaired shapes fall back to the macro call node). Pair lookup is
   by IDENTITY (private:pair-find) -- an assoc/equal? lookup against a
   dotted pair never matches a record and silently disabled the whole
-  mechanism until 2026-10-06 (TODO-15 P3). Pairs carry a confidence tag
-  (`positional` for zip-produced, `symbolic` for name-matched). Copies
+  mechanism until 2026-10-06 (TODO-15 P3). Copies
   are deduped per (identifier type) at each anchor (23 -> 2 measured),
   which also un-bloated template replay for match-shaped cascades
   (rule e2e 193 -> 65ms). New references are marked

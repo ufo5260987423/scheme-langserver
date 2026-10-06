@@ -79,7 +79,7 @@
         (let* ([pairs (car pairs+expansion)]
             [expansion-index-node (cdr pairs+expansion)]
             [root-pair (private:pair-find expansion-index-node pairs)]
-            [compound-root (if root-pair (cadr root-pair) (raise 'path-error))]
+            [compound-root (if root-pair (cdr root-pair) (raise 'path-error))]
             [pending-inserts-ht (make-eq-hashtable)])
           (for-each
             (lambda (spec)
@@ -145,7 +145,7 @@
         (let ([created (private:shallow-copy pairs (extract-all-pairs new-expanded+callee-list) expansion-index-node document index-node)]
             [root-pair (private:pair-find expansion-index-node pairs)])
           (when root-pair
-            (private:store-template! proc expression created (cadr root-pair) index-node)))
+            (private:store-template! proc expression created (cdr root-pair) index-node)))
         #t)
       #f)))
 
@@ -221,7 +221,7 @@
   (let ([ht (make-eq-hashtable)])
     (for-each
       (lambda (pair)
-        (let ([key (cadr pair)])
+        (let ([key (cdr pair)])
           (when (and (index-node? key) (not (hashtable-contains? ht key)))
             (hashtable-set! ht key (car pair)))))
       all-pairs)
@@ -317,8 +317,8 @@
             [compound-export-list
               (cond
                 [corresponding-export-ip
-                  (cadr corresponding-export-ip)]
-                [(hashtable-ref all-pairs-ht i #f) => cadr]
+                  (cdr corresponding-export-ip)]
+                [(hashtable-ref all-pairs-ht i #f) => cdr]
                 [else
                   (let ([sym (annotation-stripped (index-node-datum/annotations i))])
                     (if (symbol? sym)
@@ -372,7 +372,7 @@
         (let ([counterpart
             (let ([p (private:pair-find (car import-entry) pairs)])
               (if p
-                (let ([c (cadr p)])
+                (let ([c (cdr p)])
                   (if (and (index-node? c) (private:under-node? c initialization-index-node))
                     c
                     initialization-index-node))

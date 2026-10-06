@@ -108,7 +108,7 @@
     (test-assert "L6b: t-node is in pairs"
       (let loop ([ps pairs6b])
         (and (not (null? ps))
-             (or (eq? (cadr (car ps)) t-node)
+             (or (eq? (cdar ps) t-node)
                  (loop (cdr ps))))))
     
     ;; Verify shallow-copy propagates let-binding ref to t-node
