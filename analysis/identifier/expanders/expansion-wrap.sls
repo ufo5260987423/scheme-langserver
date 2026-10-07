@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis identifier expanders expansion-wrap)
   (export
     expansion-generator->rule)
-  (import 
+  (import
     (chezscheme)
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver analysis identifier reference)
@@ -38,8 +38,9 @@
 
 (define (private:store-template! proc expression created compound-root call-node)
   ;template = list of (identifier library-identifier type kind path);
-  ;#f path means the call node itself. Returns #t iff every created
-  ;reference could be path-encoded (otherwise no template is stored).
+  ;#f path means the call node itself. Every target is either inside the
+  ;compound tree (path-encodable) or the call node itself (#f), so storing
+  ;is unconditional and always succeeds.
   (let ([specs
       (map
         (lambda (item)
@@ -56,14 +57,12 @@
               kind
               path)))
         created)])
-    (if (find (lambda (spec) (and (not (eq? (list-ref spec 4) #f)) #f)) specs)
-      #f
-      (let ([ht (or (hashtable-ref private:expansion-template-cache proc #f)
-                  (let ([ht (make-hashtable equal-hash equal?)])
-                    (hashtable-set! private:expansion-template-cache proc ht)
-                    ht))])
-        (hashtable-set! ht expression specs)
-        #t))))
+    (let ([ht (or (hashtable-ref private:expansion-template-cache proc #f)
+                (let ([ht (make-hashtable equal-hash equal?)])
+                  (hashtable-set! private:expansion-template-cache proc ht)
+                  ht))])
+      (hashtable-set! ht expression specs)
+      #t)))
 
 (define (private:replay-template specs proc root-file-node root-library-node document index-node)
   ;returns #t on success; #f (fall back to a full run) on any path decode
@@ -154,16 +153,16 @@
     (if (null? stack)
       (reverse acc)
       (let ([current (car stack)] [rest (cdr stack)])
-        (cond 
-          [(predicate? current) 
+        (cond
+          [(predicate? current)
             (loop rest (cons current acc))]
-          [(null? current) 
+          [(null? current)
             (loop rest acc)]
-          [(pair? current) 
+          [(pair? current)
             (loop (cons (car current) (cons (cdr current) rest)) acc)]
           [(vector? current)
             (loop (cons (vector->list current) rest) acc)]
-          [else 
+          [else
             (loop rest acc)])))))
 
 (define (private:recursive-collect expansion-index-node proc)
@@ -174,7 +173,7 @@
           [current (proc node)]
           [new-acc (if (null? current) acc (cons `(,node . ,current) acc))]
           [children (index-node-children node)]
-          [new-stack 
+          [new-stack
             (let child-loop ([cs children] [s (cdr stack)])
               (if (null? cs)
                 s
@@ -191,7 +190,7 @@
                       (cons current acc)
                       acc)]
             [children (index-node-children current)]
-            [new-stack 
+            [new-stack
               (let child-loop ([cs children] [s (cdr stack)])
                 (if (null? cs)
                   s
@@ -232,12 +231,12 @@
     (when parent-node
       (for-each
         (lambda (current-identifier)
-          (let ([ni 
-              (make-identifier-reference 
+          (let ([ni
+              (make-identifier-reference
                 (identifier-reference-identifier current-identifier)
-                document 
+                document
                 parent-node
-                initialization-index-node 
+                initialization-index-node
                 (identifier-reference-library-identifier current-identifier)
                 (identifier-reference-type current-identifier)
                 '()
@@ -246,7 +245,7 @@
             (identifier-reference-speculative?-set! ni #t)
             (index-node-references-export-to-other-node-set!
               parent-node
-              (append 
+              (append
                 (index-node-references-export-to-other-node parent-node)
                 `(,ni)))))
         export-list))))
