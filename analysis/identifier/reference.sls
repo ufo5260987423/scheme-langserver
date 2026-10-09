@@ -217,11 +217,22 @@
               (if (null? (index-node-parent current-index-node))
                 (document-ordered-reference-list document) 
                 (find-available-references-for document (index-node-parent current-index-node)))))))]
-    [(document current-index-node identifier) 
+    [(document current-index-node identifier)
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])
-        (if (and 
-            (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) export-list)
+        ;binding-position short-circuit: a node whose expression IS the
+        ;identifier and which carries a same-named export reference is a
+        ;declaration, not a use. Only a NON-speculative export counts:
+        ;back-propagation (shallow-copy) stamps speculative export copies
+        ;onto use-position nodes too (single-symbol macro clause bodies),
+        ;and those must keep resolving -- see doc/analysis/
+        ;match-auto-resolution.md TODO-steer investigation 2026-10-07.
+        (if (and
+            (find
+              (lambda (i)
+                (and (eq? identifier (identifier-reference-identifier i))
+                  (not (identifier-reference-speculative? i))))
+              export-list)
             (eq? expression identifier))
           '()
           (find-available-references-for document current-index-node identifier '())))]
