@@ -1,7 +1,7 @@
 (library (scheme-langserver protocol apis definition)
   (export definition)
-  (import 
-    (chezscheme) 
+  (import
+    (chezscheme)
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
@@ -39,35 +39,35 @@
               (pick-index-node-from index-node-list (- bias 1))
               pre-target-index-node)))]
       [import-file-node (if (null? target-index-node) '() (ancestor-recursion:index-node-import-file-nodes target-index-node))]
-      [prefix 
+      [prefix
         (if (null? target-index-node)
           '()
-          (if (null? (index-node-children target-index-node)) 
-            (annotation-stripped (index-node-datum/annotations target-index-node)) 
+          (if (null? (index-node-children target-index-node))
+            (annotation-stripped (index-node-datum/annotations target-index-node))
             '()))])
-    (list->vector 
-      (cond 
+    (list->vector
+      (cond
         [(not (null? import-file-node))
-          (map 
+          (map
             (lambda (f)
               (location->alist
                 (make-location
                   (document-uri (file-node-document f))
-                  (make-range 
+                  (make-range
                     (apply make-position (document+bias->position-list (file-node-document f) 0))
                     (apply make-position (document+bias->position-list (file-node-document f) (- (string-length (document-text (file-node-document f))) 1)))))))
             import-file-node)]
-        [(symbol? prefix) 
+        [(symbol? prefix)
           (let* ([exported (index-node-references-export-to-other-node target-index-node)]
-              ;; When the cursor is on a declaration identifier (e.g. the `foo` in `(define (foo ...) ...)`),
-              ;; `find-available-references-for` intentionally returns empty (so declarations are not
-              ;; treated as references). But `textDocument/definition` should still succeed.
+              ;;When the cursor is on a declaration identifier (e.g. the `foo` in `(define (foo ...) ...)`),
+              ;;`find-available-references-for` intentionally returns empty (so declarations are not
+              ;;treated as references). But `textDocument/definition` should still succeed.
               [candidates (if (null? exported)
                             (find-available-references-for document target-index-node prefix)
                             exported)]
               [roots (apply append (map root-ancestor candidates))])
             (map identifier-reference->location->alist
-              (filter 
+              (filter
                 (lambda (r) (not (null? (identifier-reference-document r))))
                 roots)))]
         [else '()]))))))
@@ -75,9 +75,9 @@
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#location
 (define (identifier-reference->location->alist reference)
   (location->alist
-    (make-location 
+    (make-location
       (document-uri (identifier-reference-document reference))
-      (make-range 
+      (make-range
         (apply make-position (document+bias->position-list (identifier-reference-document reference) (index-node-start (identifier-reference-index-node reference))))
         (apply make-position (document+bias->position-list (identifier-reference-document reference) (index-node-end (identifier-reference-index-node reference))))))))
 )

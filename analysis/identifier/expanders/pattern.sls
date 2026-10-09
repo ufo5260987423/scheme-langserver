@@ -20,13 +20,9 @@
 
     (scheme-langserver virtual-file-system index-node))
 
-;R6RS syntax-rules and syntax-case mainly consist of patterns and templates.
-;Since scheme-langserver faces incomplete code, some fault-tolerant features
-;are necessary:
-;First, patterns are supposed to be strictly correct.
-;Second, templates are not supposed to be strictly correct and this gives
-;some tolerance. Or in other words, though R6RS says the template is
-;literally a pattern, here we can't just do so.
+;R6RS syntax-rules and syntax-case mainly consist of patterns and templates. Since scheme-langserver faces incomplete code, some fault-tolerant features
+;are necessary: First, patterns are supposed to be strictly correct. Second, templates are not supposed to be strictly correct and this gives
+;some tolerance. Or in other words, though R6RS says the template is literally a pattern, here we can't just do so.
 
 (define-record-type pattern
   (fields
@@ -153,18 +149,15 @@
                   (if (eq? 'ellipse (pattern-type (vector-ref children-vec i)))
                     (loop (+ 1 i))
                     `(,(expand->index-node-compound-list (vector-ref children-vec i) bindings pattern-context) . ,(loop (+ 1 i))))]))))]
-      ;template tolerance: bare atoms (strings/numbers), underscore and
-      ;ellipse templates are legal R6RS template contents -- emit them as
-      ;is (previously 'illegal-template, which silently broke every macro
-      ;whose selected clause template contains a literal, e.g. match-next's
+      ;template tolerance: bare atoms (strings/numbers), underscore and ellipse templates are legal R6RS template contents -- emit them as
+      ;is (previously 'illegal-template, which silently broke every macro whose selected clause template contains a literal, e.g. match-next's
       ;no-more-clauses error clause)
       [underscore (pattern-content template-pattern)]
       [ellipse (pattern-content template-pattern)]
       [equal?-datum (pattern-content template-pattern)]
       [else (raise 'illegal-template)])))
 
-;one expansion round per ellipsis level: bindings-product distributes the
-;ellipsed variables' value lists over template-ellipsed-level rounds
+;one expansion round per ellipsis level: bindings-product distributes the ellipsed variables' value lists over template-ellipsed-level rounds
 (define (private:bindings-product->list times bindings pattern-context)
   (if (zero? times)
     bindings
@@ -196,10 +189,8 @@
                 `((,kv-pair)))))
           bindings)))))
 
-;index-node represents quoted forms (both 'x and (quote x) in source) with
-;datum (quote x) but WITHOUT the quote head among the children (tokenizer
-;abbreviation convention). A (quote p) pattern whose first position is the
-;literal quote therefore cannot use the default pairwise matching; bind the
+;index-node represents quoted forms (both 'x and (quote x) in source) with datum (quote x) but WITHOUT the quote head among the children (tokenizer
+;abbreviation convention). A (quote p) pattern whose first position is the literal quote therefore cannot use the default pairwise matching; bind the
 ;second pattern position to a synthesized content node instead.
 (define (quoted-node? node)
   (let ([datum (index-node-expression node)]

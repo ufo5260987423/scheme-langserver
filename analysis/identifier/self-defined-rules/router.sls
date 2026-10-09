@@ -16,8 +16,7 @@
     (scheme-langserver analysis identifier rules begin)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
-    ;ufo-match/match (match-process) import removed 2026-10-05: the
-    ;hand-written fallback is disabled, nothing references it here
+    ;ufo-match/match (match-process) import removed 2026-10-05: the hand-written fallback is disabled, nothing references it here
     (scheme-langserver analysis identifier self-defined-rules ufo-try try)
 
     (scheme-langserver analysis identifier self-defined-rules goldfish define-case-class)
@@ -25,8 +24,7 @@
     (scheme-langserver analysis identifier self-defined-rules goldfish typed-lambda))
 
 (define (private:find-expander identifier)
-  ;expander of the reference itself, else of any ancestor, with a
-  ;cycle-safe breadth-first walk -- root-ancestor cannot be reused here
+  ;expander of the reference itself, else of any ancestor, with a cycle-safe breadth-first walk -- root-ancestor cannot be reused here
   ;because parent chains may be cyclic and its naive recursion diverges
   (or (identifier-reference-syntax-expander identifier)
     (let loop ([rest (identifier-reference-parents identifier)] [seen (make-eq-hashtable)])
@@ -68,16 +66,11 @@
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
-      ;Eager auto-expansion for the ufo-match macro family (Q2): expanding
-      ;match fully at analysis time establishes clause bindings through the
-      ;cascade (match -> match-next -> match-one -> ...), the coverage the
-      ;hand-written match-process used to declare directly. Measured at
-      ;+231 ms init for this repo's ~57 call sites. The generic fallback
-      ;below stays OFF: unfiltered eager expansion of every .akku/lib macro
-      ;made init exceed 5 minutes (measured 2026-10-04). The expander is
-      ;taken from the reference itself first; imported references do not
-      ;copy the syntax-expander field, hence the ancestor-chain fallback
-      ;(taking the expander OF the found reference, not the reference).
+      ;Eager auto-expansion for the ufo-match macro family (Q2): expanding match fully at analysis time establishes clause bindings through the
+      ;cascade (match -> match-next -> match-one -> ...), the coverage the hand-written match-process used to declare directly. Measured at
+      ;+231 ms init for this repo's ~57 call sites. The generic fallback below stays OFF: unfiltered eager expansion of every .akku/lib macro
+      ;made init exceed 5 minutes (measured 2026-10-04). The expander is taken from the reference itself first; imported references do not
+      ;copy the syntax-expander field, hence the ancestor-chain fallback (taking the expander OF the found reference, not the reference).
       [(and (equal? library-identifiers '((ufo-match)))
         (find (lambda (e) (equal? expressions (list e)))
           '(match match-next match-one match-check-ellipsis match-two match-check-identifier)))
@@ -86,16 +79,11 @@
             (add-rule-procedure rules
               `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
                 ,target-identifier))
-            ;Hand-written match-process fallback DISABLED 2026-10-05:
-            ;a full-repo probe shows the auto path (expander present)
-            ;covers 100% of cross-file match-family call sites; the
-            ;no-expander remainder resolves to quoted data or in-library
-            ;self-calls that never reach this arm. Removing the fallback
-            ;aligns match with the other five family macros (no
-            ;hand-written rule either). Original line kept commented:
-            ;(if (equal? expressions '(match))
-            ;  (add-rule-procedure rules `((,match-process) . ,target-identifier))
-            ;  rules)
+            ;Hand-written match-process fallback DISABLED 2026-10-05: a full-repo probe shows the auto path (expander present)
+            ;covers 100% of cross-file match-family call sites; the no-expander remainder resolves to quoted data or in-library
+            ;self-calls that never reach this arm. Removing the fallback aligns match with the other five family macros (no
+            ;hand-written rule either). Original line kept commented: (if (equal? expressions '(match))
+            ;(add-rule-procedure rules `((,match-process) . ,target-identifier)) rules)
             rules))]
       [else rules])))
 )

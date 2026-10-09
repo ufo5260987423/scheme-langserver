@@ -1,7 +1,7 @@
 (library (scheme-langserver analysis abstract-interpreter)
   (export step)
-  (import 
-    (chezscheme) 
+  (import
+    (chezscheme)
 
     (ufo-try)
     (ufo-match-steer)
@@ -59,9 +59,9 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document))
 
-;TODO: in case of self-defined macro's partially evaluation leading endless recursions, add a recursion avoid mechanism. 
-(define step 
-  (case-lambda 
+;TODO: in case of self-defined macro's partially evaluation leading endless recursions, add a recursion avoid mechanism.
+(define step
+  (case-lambda
     [(root-file-node root-library-node file-linkage current-document)
       (step root-file-node root-library-node file-linkage current-document '())]
     [(root-file-node root-library-node file-linkage current-document _expanded+callee-list)
@@ -80,27 +80,27 @@
     [(root-file-node root-library-node file-linkage current-document current-index-node expanded+callee-list memory)
       (match-index-node current-index-node
         [('quote . :_)
-          (index-node-excluded-references-set! current-index-node 
+          (index-node-excluded-references-set! current-index-node
             (private:find-available-references-for expanded+callee-list current-document current-index-node))]
         [('quasiquote . :_)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
             (index-node-excluded-references-set! current-index-node available-identifiers)
-            (for-each 
+            (for-each
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasiquoted expanded+callee-list memory))
               (index-node-children current-index-node)))]
         [('syntax . :_)
-          (index-node-excluded-references-set! current-index-node 
-            (filter 
-              (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) 
+          (index-node-excluded-references-set! current-index-node
+            (filter
+              (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter)))
               (private:find-available-references-for expanded+callee-list current-document current-index-node)))]
         [('quasisyntax . :_)
           (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
-            (index-node-excluded-references-set! current-index-node 
-              (filter 
-                (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter))) 
+            (index-node-excluded-references-set! current-index-node
+              (filter
+                (lambda (i) (not (eq? (identifier-reference-type i) 'syntax-parameter)))
                 available-identifiers))
-            (for-each 
+            (for-each
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i available-identifiers 'quasisyntaxed expanded+callee-list memory))
               (index-node-children current-index-node)))]
@@ -109,11 +109,11 @@
               [head-expression (index-node-expression head)]
               [target-rules
                 (if (index-node-symbol? head)
-                  (establish-available-rules-from 
+                  (establish-available-rules-from
                     file-linkage
                     (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression)
                     current-document
-                    expanded+callee-list 
+                    expanded+callee-list
                     memory)
                   '())])
             (try
@@ -125,19 +125,19 @@
               (lambda (child-index-node)
                 (step root-file-node root-library-node file-linkage current-document child-index-node expanded+callee-list memory))
               children)
-            (try 
-              (for-each 
-                (lambda (f) 
+            (try
+              (for-each
+                (lambda (f)
                   (if (not (null? (cddr f)))
-                    ((cddr f) root-file-node root-library-node current-document current-index-node))) 
+                    ((cddr f) root-file-node root-library-node current-document current-index-node)))
                 target-rules)
-              (except c 
-                [else 
+              (except c
+                [else
                   (append-new-diagnoses current-document `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 "Scheme-langserver Warning: fail to catch identifiers" "identifier" "identifier-resolution-failure"))])))]
         [(? index-node-symbol?)
           (let ([refs (find-available-references-for current-document current-index-node
                         (annotation-stripped (index-node-datum/annotations current-index-node)))])
-            (for-each 
+            (for-each
               (lambda (ref)
                 (identifier-reference-usage-count-set! ref (+ 1 (identifier-reference-usage-count ref))))
               refs)
@@ -148,11 +148,10 @@
             ['quasiquoted  (or (unquote? current-index-node) (unquote-splicing? current-index-node))]
             ['quasisyntaxed (or (unsyntax? current-index-node) (unsyntax-splicing? current-index-node))])
           (begin
-            ;; (debug:print-expression current-index-node)
-            ;; (pretty-print (null? (index-node-children current-index-node)))
-            ;; (debug:print-expression (index-node-parent current-index-node))
+            ;;(debug:print-expression current-index-node) (pretty-print (null? (index-node-children current-index-node)))
+            ;;(debug:print-expression (index-node-parent current-index-node))
             (index-node-references-import-in-this-node-set! current-index-node (sort-identifier-references available-identifiers))
-            (map 
+            (map
               (lambda (i)
                 (step root-file-node root-library-node file-linkage current-document i expanded+callee-list memory))
               (index-node-children current-index-node)))
@@ -165,16 +164,16 @@
   (apply identifier-compare? (map car (list item0 item1))))
 
 (define (private-add-rule origin target-rule)
-  (merge private-rule-compare? origin 
+  (merge private-rule-compare? origin
     `((,(cdr target-rule) . ,(car target-rule)))))
 
 (define (establish-available-rules-from file-linkage identifier-list current-document expanded+callee-list memory)
-  (fold-left 
+  (fold-left
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]
           [r (map identifier-reference-identifier top)])
         (if (find meta? top)
-          (cond 
+          (cond
             [(and (equal? r '(define)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,define-process) . ,identifier))]
             [(and (equal? r '(define)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
@@ -233,26 +232,26 @@
 
             [(and (equal? r '(define-library)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,library-import-process-r7rs . ,export-process-r7rs) . ,identifier))]
-            
+
             [(and (equal? r '(define*)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,define*-process) . ,identifier))]
-            
+
             [(and (equal? r '(define-macro)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,define-macro-process) . ,identifier))]
-            
+
             [(and (equal? r '(lambda*)) (private:top-env=? 's7 top))
               (private-add-rule rules `((,lambda*-process) . ,identifier))]
 
             [else rules])
-          (route&add 
-            rules identifier 
+          (route&add
+            rules identifier
             file-linkage identifier-list current-document expanded+callee-list memory
             private-add-rule step))))
     '()
-    (filter 
-      (lambda (identifier) 
-        (not 
-          (or 
+    (filter
+      (lambda (identifier)
+        (not
+          (or
             ; (equal? 'syntax-variable (identifier-reference-type identifier))
             (eq? 'parameter (identifier-reference-type identifier))
             (eq? 'syntax-parameter (identifier-reference-type identifier))
@@ -270,11 +269,11 @@
             (if is-new-format (caddr entry) #f))
           (loop (index-node-parent current)))))))
 
-(define private:find-available-references-for 
-  (case-lambda 
+(define private:find-available-references-for
+  (case-lambda
     [(expanded+callee-list current-document current-index-node)
       (let ([result (assq current-index-node expanded+callee-list)])
-        (if result 
+        (if result
           (let* ([is-new-format (list? result)]
               [callee-node (if is-new-format (cadr result) (cdr result))]
               [expander-doc (if is-new-format (caddr result) #f)]
@@ -293,7 +292,7 @@
               refs))))]
     [(expanded+callee-list current-document current-index-node expression)
       (let ([result (assq current-index-node expanded+callee-list)])
-        (if result 
+        (if result
           (let* ([is-new-format (list? result)]
               [callee-node (if is-new-format (cadr result) (cdr result))]
               [expander-doc (if is-new-format (caddr result) #f)]

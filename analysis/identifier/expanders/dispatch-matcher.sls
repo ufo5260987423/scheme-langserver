@@ -8,27 +8,15 @@
     (scheme-langserver analysis identifier expanders pattern)
     (scheme-langserver virtual-file-system index-node))
 
-;Chez-native pattern machinery (TODO-12): a transcription of Chez Scheme's
-;s/syntax.ss convert-pattern (L6448-6486) and the $syntax-dispatch matcher
-;family (L7393-7554), operating on this project's index-node trees instead
-;of Chez syntax objects. The algorithm shape is kept identical to upstream
-;so future divergence checks are a diff against s/syntax.ss. Literal
-;identifiers compare by symbol equality at this level (no wrap/hygiene),
+;Chez-native pattern machinery (TODO-12): a transcription of Chez Scheme's s/syntax.ss convert-pattern (L6448-6486) and the $syntax-dispatch matcher
+;family (L7393-7554), operating on this project's index-node trees instead of Chez syntax objects. The algorithm shape is kept identical to upstream
+;so future divergence checks are a diff against s/syntax.ss. Literal identifiers compare by symbol equality at this level (no wrap/hygiene),
 ;matching what the retired matcher did.
-;
-;Evaluation-order note (same as Chez): pattern variables accumulate in
-;reverse occurrence order in BOTH pvars (convert-pattern, which walks cdr
-;before car) and the matcher's accumulator (which recurses into cdr
-;first), so the two zip aligned.
+;Evaluation-order note (same as Chez): pattern variables accumulate in reverse occurrence order in BOTH pvars (convert-pattern, which walks cdr
+;before car) and the matcher's accumulator (which recurses into cdr first), so the two zip aligned.
 
-;pattern datum + literal keys -> (values dsl pvars)
-;  dsl ::= _ | any
-;        | (dsl . dsl)                      pair tree down to a non-pair tail
-;        | #(each <dsl>)                    p ...
-;        | #(each+ <dsl> (<dsl> ...) <dsl>) x ... y ... . z
-;        | #(free-id <key>)
-;        | #(atom <object>)
-;        | #(vector <dsl>)
+;pattern datum + literal keys -> (values dsl pvars) dsl ::= _ | any | (dsl . dsl)                      pair tree down to a non-pair tail
+;| #(each <dsl>)                    p ... | #(each+ <dsl> (<dsl> ...) <dsl>) x ... y ... . z | #(free-id <key>) | #(atom <object>) | #(vector <dsl>)
 (define (convert-pattern pattern keys)
   (define cvt
     (lambda (p n ids)
@@ -75,20 +63,16 @@
       [(eq? '... (car rest)) (loop (cdr rest))]
       [else (loop (cdr rest))])))
 
-;; ---------------------------------------------------------------------------
-;; matcher
+;;--------------------------------------------------------------------------- matcher
 
 (define private:node-datum
   (lambda (node)
     (guard (e [else '()])
       (annotation-stripped (index-node-datum/annotations node)))))
 
-;this project's index-node trees represent quoted forms ('x and (quote x))
-;with datum (quote x) but WITHOUT the quote head among the children, so a
-;(quote p) pattern cannot match pairwise the way Chez's syntax objects do.
-;Mirror of pattern.sls's match-list-like special case: when quote is a
-;declared literal and the pattern is exactly (quote <p>), bind <p> against a
-;synthesized content node instead. The literals list is fixed per macro, so
+;this project's index-node trees represent quoted forms ('x and (quote x)) with datum (quote x) but WITHOUT the quote head among the children, so a
+;(quote p) pattern cannot match pairwise the way Chez's syntax objects do. Mirror of pattern.sls's match-list-like special case: when quote is a
+;declared literal and the pattern is exactly (quote <p>), bind <p> against a synthesized content node instead. The literals list is fixed per macro, so
 ;a parameter avoids threading it through every matcher function.
 (define private:literals (make-parameter '()))
 
@@ -137,8 +121,7 @@
           [else #f])]))
 )
 
-;walk a dsl pair tree against a list of child nodes; the non-pair tail of
-;the dsl (each/each+/any/atom/...) applies to the remaining children
+;walk a dsl pair tree against a list of child nodes; the non-pair tail of the dsl (each/each+/any/atom/...) applies to the remaining children
 (define private:match-children
   (lambda (children p r)
     (cond
@@ -149,8 +132,7 @@
       [(null? p) (and (null? children) r)]
       [else (private:match-dsl-tail children p r)])))
 
-;does this dsl pair tree denote a (quote <p>) pattern with quote declared
-;literal and exactly one tail pattern?
+;does this dsl pair tree denote a (quote <p>) pattern with quote declared literal and exactly one tail pattern?
 (define private:quote-pattern?
   (lambda (p)
     (let ([head (car p)])
@@ -161,8 +143,7 @@
         (pair? (cdr p))
         (null? (cddr p))))))
 
-;apply a non-pair dsl to a LIST of remaining nodes (a proper-list tail).
-;each/each-any/each+ consume the list; any binds it; a vector dsl cannot
+;apply a non-pair dsl to a LIST of remaining nodes (a proper-list tail). each/each-any/each+ consume the list; any binds it; a vector dsl cannot
 ;match a list tail.
 (define private:match-dsl-tail
   (lambda (nodes p r)
@@ -213,8 +194,7 @@
       [(null? nodes) (reverse r)]
       [else (private:match-each-any (cdr nodes) (cons (car nodes) r))])))
 
-;Chez match-each+: recurse to the right end first; the fixed y patterns
-;consume the rightmost nodes one each, x collects the rest, and the
+;Chez match-each+: recurse to the right end first; the fixed y patterns consume the rightmost nodes one each, x collects the rest, and the
 ;remaining improper tail goes to z (Chez s/syntax.ss L7436-7453)
 (define private:match-each+
   (lambda (nodes x-pat y-pats z-pat r)
@@ -278,19 +258,14 @@
       r
       (cons (map car r*) (private:combine (map cdr r*) r)))))
 
-;template-side ellipsis context, derived from the MATCH pattern datum
-;directly (names live in the datum, not the name-erased dsl): an alist
-;of (variable . #t) for variables at the terminal of a pair's cdr chain
-;-- the improper-tail binder, cf. the old pattern record's cdr? flag,
-;which make-pattern set on the last child of every pair form. Variables
-;absent from the alist behave as #f. expand->index-node-compound-list's
-;bindings-product uses the flag to decide whether an ellipsed value list
-;may be distributed element-wise (proper position) or must stay whole
+;template-side ellipsis context, derived from the MATCH pattern datum directly (names live in the datum, not the name-erased dsl): an alist
+;of (variable . #t) for variables at the terminal of a pair's cdr chain -- the improper-tail binder, cf. the old pattern record's cdr? flag,
+;which make-pattern set on the last child of every pair form. Variables absent from the alist behave as #f. expand->index-node-compound-list's
+;bindings-product uses the flag to decide whether an ellipsed value list may be distributed element-wise (proper position) or must stay whole
 ;(cdr position containing call-site nodes).
 (define (gather-context pattern-datum keys)
   (define (walk-tail rest)
-    ;rest sits in a cdr position: a pair continues the chain (its car is
-    ;a mid-list element, not a terminal); a non-pair is the terminal.
+    ;rest sits in a cdr position: a pair continues the chain (its car is a mid-list element, not a terminal); a non-pair is the terminal.
     (cond
       [(pair? rest) (append (walk (car rest) #f) (walk-tail (cdr rest)))]
       [(null? rest) '()]

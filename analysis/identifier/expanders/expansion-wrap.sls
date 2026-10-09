@@ -8,18 +8,14 @@
     (scheme-langserver util contain))
 
 
-;Cross-call-site expansion templates (TODO-10 performance half). After a
-;full expansion of (generator, call-expression), the created references
-;are captured as paths into the compound tree and cached here; a later
-;call site with an IDENTICAL datum replays them without stepping the
-;skeleton. Keyed by generator procedure (eq) so re-defined macros get a
-;fresh cache. Chez hashtables are operation-level thread-safe; a benign
+;Cross-call-site expansion templates (TODO-10 performance half). After a full expansion of (generator, call-expression), the created references
+;are captured as paths into the compound tree and cached here; a later call site with an IDENTICAL datum replays them without stepping the
+;skeleton. Keyed by generator procedure (eq) so re-defined macros get a fresh cache. Chez hashtables are operation-level thread-safe; a benign
 ;race may compute the same template twice.
 (define private:expansion-template-cache (make-eq-hashtable))
 
 (define (private:compound-path compound target)
-  ;path of 'a (car) / 'd (cdr) steps from compound to target (eq?), #f if
-  ;unreachable (compound trees are acyclic by construction)
+  ;path of 'a (car) / 'd (cdr) steps from compound to target (eq?), #f if unreachable (compound trees are acyclic by construction)
   (let search ([c compound] [rev '()])
     (cond
       [(eq? c target) (reverse rev)]
@@ -37,10 +33,8 @@
     compound path))
 
 (define (private:store-template! proc expression created compound-root call-node)
-  ;template = list of (identifier library-identifier type kind path);
-  ;#f path means the call node itself. Every target is either inside the
-  ;compound tree (path-encodable) or the call node itself (#f), so storing
-  ;is unconditional and always succeeds.
+  ;template = list of (identifier library-identifier type kind path); #f path means the call node itself. Every target is either inside the
+  ;compound tree (path-encodable) or the call node itself (#f), so storing is unconditional and always succeeds.
   (let ([specs
       (map
         (lambda (item)
@@ -65,8 +59,7 @@
       #t)))
 
 (define (private:replay-template specs proc root-file-node root-library-node document index-node)
-  ;returns #t on success; #f (fall back to a full run) on any path decode
-  ;failure or if the generator declines the call
+  ;returns #t on success; #f (fall back to a full run) on any path decode failure or if the generator declines the call
   (guard (e [else
       (when (getenv "REPLAY_TRACE")
         (printf "REPLAY-FAIL ~a~%"
@@ -136,9 +129,8 @@
           [new-all-pairs (append pairs previous-all-pairs)]
           [new-expanded+callee-list
             (cons `(,expansion-index-node ,index-node ,expander-doc ,pairs ,new-all-pairs) expanded+callee-list)])
-        ; Guard 1: prevent re-expansion of the exact same expression.
-        ; Guard 2: cap memory chain length to avoid infinite cascades
-        ; (e.g. match -> match-next -> match-one -> ...).
+        ;Guard 1: prevent re-expansion of the exact same expression. Guard 2: cap memory chain length to avoid infinite cascades
+        ;(e.g. match -> match-next -> match-one -> ...).
         (if (and (not (contain? memory expression)) (< (length memory) 15))
           (step root-file-node root-library-node file-linkage document expansion-index-node new-expanded+callee-list possible-new-memory))
         (let ([created (private:shallow-copy pairs (extract-all-pairs new-expanded+callee-list) expansion-index-node document index-node)]
@@ -198,20 +190,15 @@
           (loop new-stack new-acc))))
     '()))
 
-; Shallow-copy is a reference back-propagator:
-; it copies identifier-references from the expanded AST back to the
-; original macro-call nodes according to the pattern->expansion
-; correspondence, so that IDE features (go-to-definition, completion)
-; work on user-written code.
+;Shallow-copy is a reference back-propagator: it copies identifier-references from the expanded AST back to the
+;original macro-call nodes according to the pattern->expansion correspondence, so that IDE features (go-to-definition, completion) work on user-written code.
 (define (extract-all-pairs expanded+callee-list)
   (if (null? expanded+callee-list)
     '()
     (list-ref (car expanded+callee-list) 4)))
 
-;pairs entries are (skeleton-node . compound-counterpart). Lookup must
-;be by IDENTITY of the skeleton node: the previous assoc-based lookup
-;compared the node record with a dotted pair via equal?, which is always
-;#f -- so pairs never matched and every consumer silently fell back to
+;pairs entries are (skeleton-node . compound-counterpart). Lookup must be by IDENTITY of the skeleton node: the previous assoc-based lookup
+;compared the node record with a dotted pair via equal?, which is always #f -- so pairs never matched and every consumer silently fell back to
 ;the symbol/call-node chains (TODO-15 P3 step 1: resurrect the pairs)
 (define (private:pair-find node pairs)
   (find (lambda (p) (eq? node (car p))) pairs))
@@ -250,10 +237,8 @@
                 `(,ni)))))
         export-list))))
 
-;counterpart must live in the ORIGINAL call-site tree: a pair-mapped
-;counterpart that is itself an intermediate expansion node would strand
-;the reference where no use-site lookup can reach it (per-hop papered
-;over this with multi-hop accumulation; the single-back-prop cascade
+;counterpart must live in the ORIGINAL call-site tree: a pair-mapped counterpart that is itself an intermediate expansion node would strand
+;the reference where no use-site lookup can reach it (per-hop papered over this with multi-hop accumulation; the single-back-prop cascade
 ;fusion experiment made the stranding visible -- TODO-13 root cause A)
 (define (private:under-node? node ancestor)
   (let loop ((n node))
@@ -263,13 +248,9 @@
       [else (loop (index-node-parent n))])))
 
 (define (private:shallow-copy pairs all-pairs expansion-index-node document initialization-index-node)
-  ;Back-propagates references from the expansion tree to the callee
-  ;(call-site/compound) tree. Returns the list of
-  ;   (new-reference target-node kind)
-  ;for every reference this call created (kind: export | import); the
-  ;rule layer uses it to build expansion templates for cross-call-site
-  ;replay. New references are marked speculative (tentative knowledge).
-  ;all-pairs grows across cascade hops, and the export walk probes it
+  ;Back-propagates references from the expansion tree to the callee (call-site/compound) tree. Returns the list of (new-reference target-node kind)
+  ;for every reference this call created (kind: export | import); the rule layer uses it to build expansion templates for cross-call-site
+  ;replay. New references are marked speculative (tentative knowledge). all-pairs grows across cascade hops, and the export walk probes it
   ;per export-bearing node -- index it once per call (TODO-15 P3 perf)
   (let* ([created '()]
       [all-pairs-ht (make-eq-hashtable)]
@@ -279,24 +260,18 @@
           all-pairs)]
       [local-identifiers+export-index-node (private:recursive-collect expansion-index-node index-node-references-export-to-other-node)]
       [local-identifiers+import-index-node (private:recursive-collect expansion-index-node index-node-references-import-in-this-node)]
-      ;queue the ordered-list inserts per target and flush once per
-      ;target afterwards (per-reference singleton inserts were quadratic)
+      ;queue the ordered-list inserts per target and flush once per target afterwards (per-reference singleton inserts were quadratic)
       [pending-inserts-ht (make-eq-hashtable)])
     (define (queue-insert! import-index-node ni)
       (hashtable-update! pending-inserts-ht
         import-index-node
         (lambda (old) (cons ni old))
         '()))
-    ;TODO-15 P2 anchor dedup: multiple import-bearing skeleton nodes can
-    ;resolve to the SAME anchor (fallback call node or a shared compound
-    ;counterpart), and each used to stamp its own copy of a reference --
-    ;the call node accumulated ~23 duplicates per binding. Skip a copy
-    ;when an equal (identifier type) reference is already queued for or
-    ;attached at the target. Arrows (P1) will replace this multiplicity
-    ;model entirely; this is the bounded interim.
-    ;intra-hop dedup is enough: the multiplicity case (many import-
-    ;bearing skeleton nodes in ONE skeleton resolving to the anchor)
-    ;arrives within a single shallow-copy batch, and the pending queue
+    ;TODO-15 P2 anchor dedup: multiple import-bearing skeleton nodes can resolve to the SAME anchor (fallback call node or a shared compound
+    ;counterpart), and each used to stamp its own copy of a reference -- the call node accumulated ~23 duplicates per binding. Skip a copy
+    ;when an equal (identifier type) reference is already queued for or attached at the target. Arrows (P1) will replace this multiplicity
+    ;model entirely; this is the bounded interim. intra-hop dedup is enough: the multiplicity case (many import-
+    ;bearing skeleton nodes in ONE skeleton resolving to the anchor) arrives within a single shallow-copy batch, and the pending queue
     ;is flushed at the end of each batch
     (define (anchor-copy-exists? target ref)
       (let ([id (identifier-reference-identifier ref)]
@@ -310,9 +285,8 @@
         (let* ([lis (cdr p)]
             [i (car p)]
             [corresponding-export-ip (private:pair-find i pairs)]
-            ; If the expansion-sub-node has no counterpart in pairs (e.g.
-            ; ellipsis truncation caused a mismatch), fall back to the
-            ; original macro-call node so the reference is not lost.
+            ;If the expansion-sub-node has no counterpart in pairs (e.g. ellipsis truncation caused a mismatch), fall back to the
+            ;original macro-call node so the reference is not lost.
             [compound-export-list
               (cond
                 [corresponding-export-ip
@@ -359,12 +333,9 @@
               [(list? compound-export-list) (filter index-node? compound-export-list)]
               [else '()]))))
       local-identifiers+export-index-node)
-    ;Import side, independent of the export walk: for every
-    ;import-bearing skeleton node, copy its references to the compound
-    ;counterpart (call-site) node so use-site resolution works. Root and
-    ;symbol shapes have no node-level pair (the pairs walk only covers
-    ;index-node compounds and child zips), so fall back to the macro
-    ;call node -- the import's scope is the whole expansion, which at
+    ;Import side, independent of the export walk: for every import-bearing skeleton node, copy its references to the compound
+    ;counterpart (call-site) node so use-site resolution works. Root and symbol shapes have no node-level pair (the pairs walk only covers
+    ;index-node compounds and child zips), so fall back to the macro call node -- the import's scope is the whole expansion, which at
     ;the call site is exactly the call.
     (for-each
       (lambda (import-entry)
@@ -391,10 +362,8 @@
                       '()
                       (identifier-reference-top-environment import-reference))])
                   (identifier-reference-speculative?-set! ni #t)
-                  ;the dedup scan only pays at the fallback anchor (call
-                  ;node) -- that is where multiplicity accumulated; other
-                  ;targets keep the old fire-and-forget path (measured:
-                  ;unconditional dedup cost ~8% of full-repo cold init)
+                  ;the dedup scan only pays at the fallback anchor (call node) -- that is where multiplicity accumulated; other
+                  ;targets keep the old fire-and-forget path (measured: unconditional dedup cost ~8% of full-repo cold init)
                   (when (not (and (eq? counterpart initialization-index-node)
                               (anchor-copy-exists? counterpart ni)))
                     (queue-insert! counterpart ni))

@@ -1,5 +1,5 @@
 (library (scheme-langserver protocol server)
-  (export 
+  (export
 
     do-log
     do-log-timestamp
@@ -32,7 +32,7 @@
   (import (chezscheme))
 
 (define-record-type server
-  (fields 
+  (fields
     (immutable input-port)
     (immutable output-port)
     (immutable log-port)
@@ -46,10 +46,8 @@
     (immutable type-inference?)
     (mutable workspace)
     (mutable shutdown?)
-    ;set by the main thread after its LAST queue push; the consumer loop
-    ;exits on (shutdown? AND consumer-exit? AND queue-empty) -- without
-    ;this, "shutdown? AND empty" was racy: the consumer could observe it
-    ;between a trailing request's push... no, between the shutdown flag
+    ;set by the main thread after its LAST queue push; the consumer loop exits on (shutdown? AND consumer-exit? AND queue-empty) -- without
+    ;this, "shutdown? AND empty" was racy: the consumer could observe it between a trailing request's push... no, between the shutdown flag
     ;and the trailing push, dropping the trailing request forever
     (mutable consumer-exit?)
     (mutable condition)
@@ -62,10 +60,10 @@
     (lambda (new)
       (case-lambda
         [(input-port output-port log-port thread-pool request-queue workspace type-inference?)
-          (new 
-            input-port 
-            output-port 
-            log-port 
+          (new
+            input-port
+            output-port
+            log-port
             thread-pool
             (if thread-pool (make-mutex) '())
             (if thread-pool (make-mutex) '())
@@ -81,10 +79,10 @@
             'akku
             (make-hashtable string-hash equal?))]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment)
-          (new 
-            input-port 
-            output-port 
-            log-port 
+          (new
+            input-port
+            output-port
+            log-port
             thread-pool
             (if thread-pool (make-mutex) '())
             (if thread-pool (make-mutex) '())
@@ -100,10 +98,10 @@
             'akku
             (make-hashtable string-hash equal?))]
         [(input-port output-port log-port thread-pool request-queue workspace type-inference? top-environment cache-path)
-          (new 
-            input-port 
-            output-port 
-            log-port 
+          (new
+            input-port
+            output-port
+            log-port
             thread-pool
             (if thread-pool (make-mutex) '())
             (if thread-pool (make-mutex) '())
@@ -141,7 +139,7 @@
 (define (do-log message server-instance)
   (if (not (null? (server-log-port server-instance)))
     (if (null? (server-log-mutex server-instance))
-      (begin 
+      (begin
         (put-string (server-log-port server-instance) message)
         (put-string (server-log-port server-instance) "\n")
         (flush-output-port (server-log-port server-instance)))
@@ -152,18 +150,18 @@
 
 (define (do-log-timestamp server-instance)
   (let* ([date (current-date)]
-      [current-date-string 
-        (fold-left 
-          (lambda (h t) (string-append h " " t )) 
+      [current-date-string
+        (fold-left
+          (lambda (h t) (string-append h " " t ))
           (number->string (date-year date))
-          (map 
-            number->string 
-            (map 
+          (map
+            number->string
+            (map
               (lambda (f) (f date))
               (list date-month date-day date-hour date-minute date-second date-nanosecond))))])
     (if (not (null? (server-log-port server-instance)))
       (if (null? (server-log-mutex server-instance))
-        (begin 
+        (begin
           (put-string (server-log-port server-instance) current-date-string)
           (put-string (server-log-port server-instance) "\n")
           (flush-output-port (server-log-port server-instance)))

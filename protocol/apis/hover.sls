@@ -1,8 +1,8 @@
 (library (scheme-langserver protocol apis hover)
   (export hover)
-  (import 
-    (chezscheme) 
-    
+  (import
+    (chezscheme)
+
     (only (srfi :13 strings) string-trim)
 
     (scheme-langserver analysis workspace)
@@ -32,31 +32,31 @@
         (let* ([index-node-list (document-index-node-list document)]
             [target-index-node (pick-index-node-from index-node-list (document+position->bias document (position-line position) (position-character position)))]
             [import-file-node (if (null? target-index-node) '() (ancestor-recursion:index-node-import-file-nodes target-index-node))]
-            [prefix 
-              (if (index-node? target-index-node)  
+            [prefix
+              (if (index-node? target-index-node)
                 (if (and (null? (index-node-children target-index-node)) (null? import-file-node))
-                  (annotation-stripped (index-node-datum/annotations target-index-node)) 
+                  (annotation-stripped (index-node-datum/annotations target-index-node))
                   '())
                 '())]
-            [type-string 
+            [type-string
               (if (and (workspace-type-inference? workspace) (null? import-file-node))
                 (let* ([types (type:interpret-result-list target-index-node)])
-                  (fold-left 
+                  (fold-left
                     (lambda (prev current)
                       (string-append prev "\n\n" current))
                     "## Type Inference"
                     (dedupe (apply append (map type:interpret->strings types)))))
                 "")])
           (if (null? import-file-node)
-            (make-alist 
-              'contents 
-              (list->vector 
-                (append 
+            (make-alist
+              'contents
+              (list->vector
+                (append
                   `(
                     ,(if (index-node? target-index-node)
-                      (string-append 
+                      (string-append
                         "# "
-                        (call-with-string-output-port 
+                        (call-with-string-output-port
                           (lambda (p) (pretty-print prefix p))))
                       "")
                     ,type-string)
@@ -66,7 +66,7 @@
             '()))))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#hover
-(define (identifier-reference->hover reference) 
+(define (identifier-reference->hover reference)
   (if (null? (identifier-reference-index-node reference))
     ""
     (let* (
@@ -76,26 +76,26 @@
         [text (document-text document)]
         [start-pos (index-node-start index-node)]
         [end-pos (index-node-end index-node)]
-        [siblings 
+        [siblings
           (if (null? (index-node-parent index-node))
             (document-index-node-list document)
             (index-node-children (index-node-parent index-node)))]
-        [parent-index-node-end-list 
-          (filter 
+        [parent-index-node-end-list
+          (filter
             (lambda (end-pos) (< end-pos start-pos))
             (sort > (map index-node-end siblings)))]
-        [document-index-node-end-list 
-          (filter 
-            (lambda (end-pos) (< end-pos start-pos)) 
+        [document-index-node-end-list
+          (filter
+            (lambda (end-pos) (< end-pos start-pos))
             (sort > (map index-node-end (document-index-node-list document))))])
-      (string-append 
+      (string-append
         "## Definition\n```scheme\n"
         (string-trim
-          (substring 
-            text 
+          (substring
+            text
             (if (null? parent-index-node-end-list)
               (if (null? document-index-node-end-list) 0 (car document-index-node-end-list))
-              (car parent-index-node-end-list)) 
+              (car parent-index-node-end-list))
             end-pos))
         "\n```"
             ))))

@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis identifier reference)
-  (export 
+  (export
     find-available-references-for
     find-references-in
     guard-for
@@ -7,7 +7,7 @@
     meta?
     meta-for?
 
-    append-references-into-ordered-references-for 
+    append-references-into-ordered-references-for
 
     identifier-reference?
     make-identifier-reference
@@ -35,7 +35,7 @@
 
     sort-identifier-references
     library-identifier?)
-  (import 
+  (import
     (chezscheme)
 
     (ufo-match-steer)
@@ -58,18 +58,15 @@
 
     (immutable library-identifier)
     (immutable type)
-    ;parent can be used for two cases: 
-    ;(1) rename/prefix a identifier-reference in library importion/exportion
-    ;(2) record-type inherent
+    ;parent can be used for two cases: (1) rename/prefix a identifier-reference in library importion/exportion (2) record-type inherent
     (mutable parents)
-    ;; each type-expression is an alist consists of identifier-references and 'or 'something? 'inner:void? ...
-    ;; NOTE: it must be index-node's type expression collection, because of case-lambda
+    ;;each type-expression is an alist consists of identifier-references and 'or 'something? 'inner:void? ...
+    ;;NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)
     (mutable top-environment)
     (mutable syntax-expander)
     (mutable usage-count)
-    ;#t when this reference was back-propagated from a macro expansion
-    ;(tentative-level knowledge, cf. Culpepper 2010): consumers that need
+    ;#t when this reference was back-propagated from a macro expansion (tentative-level knowledge, cf. Culpepper 2010): consumers that need
     ;definite bindings should treat these with suspicion
     (mutable speculative?))
   (protocol
@@ -89,12 +86,9 @@
           [metas (filter meta? ras)])
         (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) metas)))))
 
-; symbol->string allocates a fresh string on every call, and
-; identifier-compare? is invoked tens of millions of times during workspace
-; init.  Cache each interned symbol's name string.  The cache is per-thread:
-; init-references runs under threaded-map, and a global mutable hashtable
-; would risk the same bucket corruption that once killed
-; private:expander-doc-cache-ht.
+;symbol->string allocates a fresh string on every call, and identifier-compare? is invoked tens of millions of times during workspace
+;init.  Cache each interned symbol's name string.  The cache is per-thread: init-references runs under threaded-map, and a global mutable hashtable
+;would risk the same bucket corruption that once killed private:expander-doc-cache-ht.
 (define private:identifier-name-cache (make-thread-parameter #f))
 
 (define (private:identifier-name identifier)
@@ -113,16 +107,13 @@
 (define (identifier-compare? target1 target2)
   (let ([id1 (identifier-reference-identifier target1)]
       [id2 (identifier-reference-identifier target2)])
-    ; eq? first: binary-search probes mostly land on the equal element,
-    ; and interned symbols hit eq? far more often than the name compare.
+    ;eq? first: binary-search probes mostly land on the equal element, and interned symbols hit eq? far more often than the name compare.
     (or (eq? id1 id2)
       (and (symbol? id1) (symbol? id2)
         (string<=? (private:identifier-name id1) (private:identifier-name id2))))))
 
-; Batch maintenance for reference lists: sort+dedupe the (small) new
-; batch, then merge it into the (large) existing list in O(n) instead
-; of re-sorting everything on every attach.  See merge-ordered-list.sls
-; for the semantics contract.
+;Batch maintenance for reference lists: sort+dedupe the (small) new batch, then merge it into the (large) existing list in O(n) instead
+;of re-sorting everything on every attach.  See merge-ordered-list.sls for the semantics contract.
 (define (append-references-into-ordered-references-for document index-node list)
   (if (null? list)
     (void)
@@ -140,15 +131,15 @@
   (let ([candidates (find-available-references-for document current-index-node target-identifier)])
     (if (private-check-library-identifier? candidates library-identifier-rest)
       #t
-      (let loop ([body 
-            (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
+      (let loop ([body
+            (filter (lambda (identifier-reference) (not (null? identifier-reference)))
               (fold-left append '() (map identifier-reference-parents (find-available-references-for document current-index-node))))])
         (if (null? body)
           (raise "no such identifier for specific libraries")
           (if (private-check-library-identifier? body library-identifier-rest)
             #t
-            (loop 
-              (filter (lambda (identifier-reference) (not (null? identifier-reference))) 
+            (loop
+              (filter (lambda (identifier-reference) (not (null? identifier-reference)))
                 (fold-right append '() (map identifier-reference-parents body))))))))))
 
 (define (private-check-library-identifier? candidates library-identifier-rest)
@@ -163,14 +154,14 @@
 
 (define (library-identifier? _document index-node)
   (let* ([parent (index-node-parent index-node)]
-      [check? 
-        (lambda () 
+      [check?
+        (lambda ()
           (let ([grandparent (index-node-parent parent)]
               [sibling (index-node-children parent)]
               [bigest-sibling (car (index-node-children parent))])
             (if (null? grandparent)
               #f
-              (and 
+              (and
                 (not (eq? bigest-sibling index-node))
                 (contain? sibling index-node eq?)
                 (match-index-node grandparent
@@ -180,12 +171,12 @@
     (if (null? parent)
       #f
       (match-index-node parent
-        [('library identifier-node . rest) 
-          (and 
+        [('library identifier-node . rest)
+          (and
             (eq? identifier-node index-node)
             (not (check?)))]
-        [('define-library identifier-node . rest) 
-          (and 
+        [('define-library identifier-node . rest)
+          (and
             (eq? identifier-node index-node)
             (not (check?)))]
         [('import identifier-node . rest) (check?)]
@@ -209,23 +200,20 @@
           [exclude-ht (private:list->eq-set (index-node-excluded-references current-index-node))])
         (filter
           (lambda (reference) (not (eq-hashtable-contains? exclude-ht reference)))
-          (append 
+          (append
             local
-            (filter 
+            (filter
               (lambda (reference)
                 (not (eq-hashtable-contains? local-ht (identifier-reference-identifier reference))))
               (if (null? (index-node-parent current-index-node))
-                (document-ordered-reference-list document) 
+                (document-ordered-reference-list document)
                 (find-available-references-for document (index-node-parent current-index-node)))))))]
     [(document current-index-node identifier)
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])
-        ;binding-position short-circuit: a node whose expression IS the
-        ;identifier and which carries a same-named export reference is a
-        ;declaration, not a use. Only a NON-speculative export counts:
-        ;back-propagation (shallow-copy) stamps speculative export copies
-        ;onto use-position nodes too (single-symbol macro clause bodies),
-        ;and those must keep resolving -- see doc/analysis/
+        ;binding-position short-circuit: a node whose expression IS the identifier and which carries a same-named export reference is a
+        ;declaration, not a use. Only a NON-speculative export counts: back-propagation (shallow-copy) stamps speculative export copies
+        ;onto use-position nodes too (single-symbol macro clause bodies), and those must keep resolving -- see doc/analysis/
         ;match-auto-resolution.md TODO-steer investigation 2026-10-07.
         (if (and
             (find
@@ -239,9 +227,9 @@
     [(document current-index-node identifier exclude)
       (let* ([current-exclude (append exclude (index-node-excluded-references current-index-node))]
           [tmp-result
-            (private-binary-search 
-              (index-node-references-import-in-this-node current-index-node) 
-              identifier 
+            (private-binary-search
+              (index-node-references-import-in-this-node current-index-node)
+              identifier
               current-exclude)])
         (if (null? tmp-result)
           (if (null? (index-node-parent current-index-node))
@@ -249,9 +237,8 @@
             (find-available-references-for document (index-node-parent current-index-node) identifier current-exclude))
           tmp-result))]))
 
-; name of a reference's identifier, cached; non-symbol identifiers are
-; treated as the empty string (they sort first; the old comparator also
-; treated them as incomparable, so their position was never well-defined).
+;name of a reference's identifier, cached; non-symbol identifiers are treated as the empty string (they sort first; the old comparator also
+;treated them as incomparable, so their position was never well-defined).
 (define (private:reference-name reference)
   (let ([id (identifier-reference-identifier reference)])
     (if (symbol? id) (private:identifier-name id) "")))
@@ -267,9 +254,8 @@
             (loop lo mid)))
         lo))))
 
-; Exclude-set representation: #f = no exclusion; a single reference =
-; compare with eq?; otherwise an eq-hashtable.  Most lookups have an empty
-; or single-element exclude list, so skip building a hashtable for them.
+;Exclude-set representation: #f = no exclusion; a single reference = compare with eq?; otherwise an eq-hashtable.  Most lookups have an empty
+;or single-element exclude list, so skip building a hashtable for them.
 (define (private:exclude-set exclude)
   (cond
     [(null? exclude) #f]
@@ -282,12 +268,9 @@
     [(eq-hashtable? exclude-set) (eq-hashtable-contains? exclude-set reference)]
     [else (eq? exclude-set reference)]))
 
-; Find all references in a list sorted by identifier-compare? whose
-; identifier is equal to `identifier`, without allocating a dummy
-; identifier-reference per lookup (the old code built one just to feed
-; util/binary-search's order-compare).  A single lower-bound search
-; plus a forward scan of the equal-name run: cheaper than the old
-; converge-then-collect and than two bound searches.
+;Find all references in a list sorted by identifier-compare? whose identifier is equal to `identifier`, without allocating a dummy
+;identifier-reference per lookup (the old code built one just to feed util/binary-search's order-compare).  A single lower-bound search
+;plus a forward scan of the equal-name run: cheaper than the old converge-then-collect and than two bound searches.
 (define (private-binary-search reference-list identifier exclude)
   (if (not (symbol? identifier))
     '()
@@ -316,22 +299,22 @@
 
 (define (find-references-in document index-node available-references predicate?)
   (match-index-node index-node
-    [(:= index-node-expression (? predicate? maybe-symbol)) 
-      (let ([result 
-            (find 
-              (lambda (candidate-reference) 
+    [(:= index-node-expression (? predicate? maybe-symbol))
+      (let ([result
+            (find
+              (lambda (candidate-reference)
                 (if (find (lambda (cr) (eq? cr candidate-reference)) available-references)
                   #t
                   #f))
               (find-available-references-for document index-node maybe-symbol))])
         (if result
           `(,(make-location
-            (document-uri document) 
+            (document-uri document)
             (make-range
               (apply make-position (document+bias->position-list document (index-node-start index-node)))
               (apply make-position (document+bias->position-list document (index-node-end index-node))))))
           '()))]
-    [else 
+    [else
       (let ([children (index-node-children index-node)])
         (if (null? children)
           '()

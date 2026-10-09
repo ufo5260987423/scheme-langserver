@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis workspace)
-  (export 
+  (export
     init-workspace
     init-virtual-file-system
     init-library-node
@@ -30,10 +30,10 @@
     attach-new-file
 
     save-workspace-cache-for!)
-  (import 
+  (import
     (ufo-threaded-function)
 
-    (chezscheme) 
+    (chezscheme)
     (only (srfi :13 strings) string-suffix? string-prefix?)
 
     (scheme-langserver util path)
@@ -48,7 +48,7 @@
     (scheme-langserver analysis abstract-interpreter)
     (scheme-langserver analysis util)
     (scheme-langserver analysis tokenizer)
-    
+
     (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver analysis identifier reference)
@@ -86,9 +86,9 @@
 
     (mutable undiagnosed-paths)
     (mutable path->mtime-cache))
-  (protocol 
+  (protocol
     (lambda (new)
-      (case-lambda 
+      (case-lambda
         [(file-node library-node file-linkage facet threaded? type-inference? top-environment)
           (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet 'akku threaded? type-inference? top-environment '() (make-hashtable string-hash equal?))]
         [(file-node library-node file-linkage facet file-filter threaded? type-inference? top-environment)
@@ -129,10 +129,8 @@
   (for-each private:clear-file-node-diagnoses (file-node-children file-node)))
 
 (define (private:clear-non-serializable-fields! workspace)
-  ;; Walk the reachable object graph and clear fields that contain procedures,
-  ;; which Chez fasl-write cannot serialize.  Currently this covers:
-  ;;   - index-node expansion-generator (procedure)
-  ;;   - identifier-reference syntax-expander (procedure)
+  ;;Walk the reachable object graph and clear fields that contain procedures, which Chez fasl-write cannot serialize.  Currently this covers:
+  ;;- index-node expansion-generator (procedure) - identifier-reference syntax-expander (procedure)
   (let ([seen (make-eq-hashtable)])
     (define (visit obj)
       (when (and (or (pair? obj) (vector? obj) (box? obj) (hashtable? obj) (record? obj))
@@ -216,14 +214,12 @@
               (= cached-nsec (time-nanosecond disk-mtime))))))
 
 (define (private:prepare-workspace-payload workspace)
-  ;; 1. Diagnoses are now persisted so that clients can receive them
-  ;; immediately after loading the cache without re-running the full analysis.
-  ;; 2. Clear procedure-valued fields that Chez fasl-write cannot serialize
+  ;;1. Diagnoses are now persisted so that clients can receive them immediately after loading the cache without re-running the full analysis.
+  ;;2. Clear procedure-valued fields that Chez fasl-write cannot serialize
   (private:clear-non-serializable-fields! workspace)
   ;; 3. Clear workspace undiagnosed-paths; it will be repopulated after load.
   (workspace-undiagnosed-paths-set! workspace '())
-  ;; 4. Convert file-linkage path->id-map (equal-hashtable, not FASL-serializable)
-  ;;    to an alist and store it separately in the payload.
+  ;;4. Convert file-linkage path->id-map (equal-hashtable, not FASL-serializable) to an alist and store it separately in the payload.
   (let* ([linkage (workspace-file-linkage workspace)]
       [path->id-alist (private:path->id-map->alist (file-linkage-path->id-map linkage))]
       [path->mtime-alist (private:collect-file-mtimes (workspace-file-node workspace))])
@@ -261,12 +257,9 @@
       (private:reattach-expanders-after-cache-load! workspace-instance)
       workspace-instance)))
 
-;Cache load restores the reference network without re-running the abstract
-;interpreter, so expansion generators (which fasl-write cannot serialize) are
-;missing from every macro definition. Rebuild and re-attach them with the same
-;procedures the interpreter registers as rules during a cold start:
-;bottom-up, so the syntax-rules/syntax-case builder runs before the enclosing
-;define-syntax / let-syntax attach step.
+;Cache load restores the reference network without re-running the abstract interpreter, so expansion generators (which fasl-write cannot serialize) are
+;missing from every macro definition. Rebuild and re-attach them with the same procedures the interpreter registers as rules during a cold start:
+;bottom-up, so the syntax-rules/syntax-case builder runs before the enclosing define-syntax / let-syntax attach step.
 (define (private:reattach-expanders-after-cache-load! workspace-instance)
   (let ([root-file-node (workspace-file-node workspace-instance)]
       [root-library-node (workspace-library-node workspace-instance)])
@@ -293,8 +286,7 @@
           (for-each (lambda (top) (walk-node document top)) (document-index-node-list document)))))))
 
 (define (private:file-content-changed? path cached-text cached-mtime)
-  ;; Fast path: if we have a cached mtime and it matches the disk, the file
-  ;; has not changed.  Avoid the expensive read-string + string=? fallback.
+  ;;Fast path: if we have a cached mtime and it matches the disk, the file has not changed.  Avoid the expensive read-string + string=? fallback.
   (if (guard (e [else #f])
         (private:mtime-matches? cached-mtime (file-modification-time path)))
     #f
@@ -468,16 +460,15 @@
     (save-workspace-cache! (private:prepare-workspace-payload workspace) cache-path (workspace-file-filter workspace) top-environment type-inference? threaded?)))
 
 (define init-workspace
-  (case-lambda 
+  (case-lambda
     [(path) (init-workspace path 'akku 'r6rs #f #f #f)]
     [(path threaded?) (init-workspace path 'akku 'r6rs threaded? #f #f)]
     [(path threaded? type-inference?) (init-workspace path 'akku 'r6rs threaded? type-inference? #f)]
     [(path identifier threaded? type-inference?) (init-workspace path identifier 'r6rs threaded? type-inference? #f)]
-    [(path identifier top-environment threaded? type-inference?) 
+    [(path identifier top-environment threaded? type-inference?)
       (init-workspace path identifier top-environment threaded? type-inference? #f)]
-    ;; The 6th argument is overloaded for backward compatibility:
-    ;; - procedure => a custom facet filter (old behavior)
-    ;; - string or #f => cache-path (new behavior), facet is generated from identifier
+    ;;The 6th argument is overloaded for backward compatibility: - procedure => a custom facet filter (old behavior)
+    ;;- string or #f => cache-path (new behavior), facet is generated from identifier
     [(path identifier top-environment threaded? type-inference? sixth)
       (if (procedure? sixth)
         (init-workspace path identifier top-environment threaded? type-inference? sixth identifier #f)
@@ -489,21 +480,15 @@
       (or (private:try-load-workspace-cache cache-path path file-filter top-environment threaded? type-inference?)
           (private:init-workspace-from-scratch path top-environment threaded? type-inference? facet file-filter))]))
 
-;; head -[linkage]->files
-;; for single file
-;; import 
-;; init define let ...
-;; export
-(define (init-references workspace-instance target-paths) 
-  (for-each 
+;;head -[linkage]->files for single file import init define let ... export
+(define (init-references workspace-instance target-paths)
+  (for-each
     (lambda (batch)
       (let ([paths (filter string? batch)])
         (if (workspace-threaded? workspace-instance)
-          ;; Cancel-barrier: did-change may mark completion/hover/definition
-          ;; tasks as stop?=#t in the tickal-task-list. Their expire callbacks
-          ;; will try to acquire workspace-mutex. Holding it for the entire
-          ;; batch ensures expire cannot interrupt the engine mid-analysis,
-          ;; which would leave document-* fields in an inconsistent state.
+          ;;Cancel-barrier: did-change may mark completion/hover/definition tasks as stop?=#t in the tickal-task-list. Their expire callbacks
+          ;;will try to acquire workspace-mutex. Holding it for the entire batch ensures expire cannot interrupt the engine mid-analysis,
+          ;;which would leave document-* fields in an inconsistent state.
           (with-mutex (workspace-mutex workspace-instance)
             (let ([path+syntax-pairs
                 (map
@@ -511,33 +496,33 @@
                     (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
                         [document (file-node-document current-file-node)]
                         [index-node-list (document-index-node-list document)]
-                        [syntax-diagnoses 
-                          (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+                        [syntax-diagnoses
+                          (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d)))
                             (document-diagnoses document))])
                       (document-diagnoses-set! document '())
                       (when (not (null? index-node-list))
                         (clear-references-for (car index-node-list)))
                       (cons path syntax-diagnoses)))
                   paths)])
-              (threaded-map 
-                (lambda (pair) 
+              (threaded-map
+                (lambda (pair)
                   (let* ([target-path (car pair)]
                       [syntax-diagnoses (cdr pair)]
                       [current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
                       [document (file-node-document current-file-node)])
-                    (try 
+                    (try
                       (private-init-references workspace-instance target-path syntax-diagnoses)
                       (except c
                         [(condition? c)
-                          (append-new-diagnoses document 
-                            `(0 0 1 ,(string-append "Analysis error: " 
-                                (with-output-to-string (lambda () (display-condition c)))) 
+                          (append-new-diagnoses document
+                            `(0 0 1 ,(string-append "Analysis error: "
+                                (with-output-to-string (lambda () (display-condition c))))
                                 "analysis" "analysis-error"))
                           '()]
-                        [else 
-                          (append-new-diagnoses document 
-                            `(0 0 1 ,(string-append "Analysis error: " 
-                                (with-output-to-string (lambda () (write c)))) 
+                        [else
+                          (append-new-diagnoses document
+                            `(0 0 1 ,(string-append "Analysis error: "
+                                (with-output-to-string (lambda () (write c))))
                                 "analysis" "analysis-error"))
                           '()]))))
                 path+syntax-pairs)))
@@ -547,8 +532,8 @@
                 (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) path)]
                     [document (file-node-document current-file-node)]
                     [index-node-list (document-index-node-list document)]
-                    [syntax-diagnoses 
-                      (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+                    [syntax-diagnoses
+                      (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d)))
                         (document-diagnoses document))])
                   (document-diagnoses-set! document '())
                   (when (not (null? index-node-list))
@@ -561,29 +546,28 @@
   (let* ([current-file-node (walk-file (workspace-file-node workspace-instance) target-path)]
       [document (file-node-document current-file-node)]
       [index-node-list (document-index-node-list document)]
-      [syntax-diagnoses 
+      [syntax-diagnoses
         (if (null? maybe-syntax-diagnoses)
-          (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d))) 
+          (filter (lambda (d) (string-prefix? "Syntax error:" (cadddr d)))
             (document-diagnoses document))
           (car maybe-syntax-diagnoses))])
-    ; (pretty-print 'test0)
-    ; (pretty-print target-path)
+    ;(pretty-print 'test0) (pretty-print target-path)
     (step (workspace-file-node workspace-instance) (workspace-library-node workspace-instance) (workspace-file-linkage workspace-instance) document)
     (process-library-identifier-excluded-references document)
     (check-unused-imports document)
     (check-unused-local-variables document)
     ; (pretty-print 'test1)
     (if (workspace-type-inference? workspace-instance)
-      (try 
+      (try
         (construct-substitutions-for document)
-        (except c 
+        (except c
           [(or (string? c) (symbol? c))
             (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (if (string? c) c (symbol->string c))) "type" "type-inference-warning"))
             (warning 'init-warning0 target-path '(,c))]
           [(condition? c)
             (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (condition-message c)) "type" "type-inference-warning"))
             (warning 'init-warning1 target-path `(,(condition-who c) ,(condition-message c) ,(condition-irritants c)))]
-          [else 
+          [else
             (error 'init-error target-path '())])))
     (document-diagnoses-set! document (append syntax-diagnoses (document-diagnoses document)))
     (document-refreshable?-set! document #f)))
@@ -594,15 +578,15 @@
       [target-document (file-node-document target-file-node)]
       [root-library-node (workspace-library-node workspace-instance)]
       [old-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))]
-      [old-library-node-list 
+      [old-library-node-list
         (filter (lambda (item) (not (null? item)))
           (map (lambda (old-library-identifiers) (walk-library old-library-identifiers root-library-node))
             old-library-identifiers-list))]
-      [new-index-nodes 
+      [new-index-nodes
         (begin
           (document-diagnoses-set! target-document '())
-          (map 
-            (lambda (item) (init-index-node '() item)) 
+          (map
+            (lambda (item) (init-index-node '() item))
             (source-file->annotations text (uri->path (document-uri target-document)) (consume-sps-auxiliary text) #t target-document (workspace-top-environment workspace-instance))))])
 ;;For old dependency
     (map (lambda (document) (document-refreshable?-set! document #t))
@@ -615,30 +599,30 @@
 
     (let ([new-library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (not (equal? new-library-identifiers-list old-library-identifiers-list))
-        (begin 
+        (begin
 ;; BEGIN: some file may change their library-identifier or even do not have library identifier, their should be process carefully.
-          (for-each 
+          (for-each
             (lambda (old-library-node)
-              (library-node-file-nodes-set! 
-                old-library-node 
-                (filter 
+              (library-node-file-nodes-set!
+                old-library-node
+                (filter
                   (lambda (file-node)
                     (not (equal? (file-node-path target-file-node) (file-node-path file-node))))
                   (library-node-file-nodes old-library-node)))
-              (if (and (null? (library-node-file-nodes old-library-node)) 
+              (if (and (null? (library-node-file-nodes old-library-node))
                   (null? (library-node-children old-library-node))
                   (not (null? (library-node-parent old-library-node))))
                 (delete-library-node-from-tree old-library-node)))
             old-library-node-list)
 ;; END
-          (for-each 
+          (for-each
             (lambda (library-identifiers)
               (make-library-node library-identifiers root-library-node target-file-node))
             new-library-identifiers-list)
           (workspace-file-linkage-set! workspace-instance (init-file-linkage root-file-node root-library-node (workspace-top-environment workspace-instance)))
 ;;For new dependency
           (map (lambda (document) (document-refreshable?-set! document #t))
-            (map (lambda (path) (file-node-document (walk-file root-file-node path))) 
+            (map (lambda (path) (file-node-document (walk-file root-file-node path)))
               (dedupe (get-reference-path-to (workspace-file-linkage workspace-instance) (file-node-path target-file-node))))))))))
 
 ;; target-file-node<-[linkage]-other-file-nodes
@@ -650,14 +634,14 @@
         [library-identifiers-list (get-library-identifiers-list (file-node-document target-file-node) (workspace-top-environment workspace-instance))])
       (if (null? library-identifiers-list)
         (let ([target-path (file-node-path target-file-node)])
-          (workspace-undiagnosed-paths-set! workspace-instance 
+          (workspace-undiagnosed-paths-set! workspace-instance
             (ordered-dedupe (merge string<? (workspace-undiagnosed-paths workspace-instance) (sort string<? `(,target-path))) string=?))
           (init-references workspace-instance `((,target-path))))
-        (let* ([path 
-            (refresh-file-linkage&get-refresh-path 
-              linkage root-library-node target-file-node 
-              (document-index-node-list (file-node-document target-file-node)) 
-              library-identifiers-list 
+        (let* ([path
+            (refresh-file-linkage&get-refresh-path
+              linkage root-library-node target-file-node
+              (document-index-node-list (file-node-document target-file-node))
+              library-identifiers-list
               (workspace-top-environment workspace-instance))]
             [path-aheadof `(,@(list-ahead-of path (file-node-path target-file-node)) ,(file-node-path target-file-node))]
             [refreshable-path (filter (lambda (single) (document-refreshable? (file-node-document (walk-file root-file-node single)))) path-aheadof)]
@@ -671,28 +655,28 @@
     [(path parent my-filter) (init-virtual-file-system path parent my-filter 'r6rs)]
     [(path parent my-filter top-environment)
       (if (my-filter path)
-      (let* ([name (path->name path)] 
+      (let* ([name (path->name path)]
           [folder? (file-directory? path)]
-          [document 
-            (if folder? 
-              '() 
+          [document
+            (if folder?
+              '()
               (init-document path top-environment))]
           [node (make-file-node path name parent folder? '() document)]
           [children (if folder?
-              (map 
-                (lambda (p) 
-                  (init-virtual-file-system 
-                    (string-append path 
+              (map
+                (lambda (p)
+                  (init-virtual-file-system
+                    (string-append path
                       (if (string-suffix? (string (directory-separator)) path)
                         ""
                         (string (directory-separator)))
-                      p) 
-                    node 
+                      p)
+                    node
                     my-filter
-                    top-environment)) 
+                    top-environment))
                 (directory-list path))
               '())])
-        (file-node-children-set! node (filter (lambda (p) (not (null? p))) children)) 
+        (file-node-children-set! node (filter (lambda (p) (not (null? p))) children))
         node)
       '())]))
 
@@ -701,19 +685,19 @@
     [(path parent my-filter) (attach-new-file path parent my-filter 'r6rs)]
     [(path parent my-filter top-environment)
       (let ([f (walk-file parent path)])
-        (cond 
+        (cond
           [(not (my-filter path)) '()]
           [(not (file-exists? path)) '()]
           [(not (null? f)) f]
           [(file-node-folder? parent)
-            (let ([maybe-parent 
+            (let ([maybe-parent
                   (find (lambda (child) (string-prefix? (file-node-path child) path))
                     (file-node-children parent))])
               (if maybe-parent
                 (attach-new-file path maybe-parent my-filter top-environment)
                 (let ([prefix-path
                       (find (lambda (p) (string-prefix? p path))
-                        (map 
+                        (map
                           (lambda (p) (string-append (file-node-path parent) (string (directory-separator)) p))
                           (directory-list (file-node-path parent))))])
                   (if prefix-path
@@ -721,8 +705,8 @@
                       (file-node-children-set! parent `(,@(file-node-children parent) ,new-node))
                       (attach-new-file path new-node my-filter top-environment))
                     '()))))]
-          [else 
-            (let* ([name (path->name path)] 
+          [else
+            (let* ([name (path->name path)]
                 [document (init-document path top-environment)]
                 [node (make-file-node path name parent #f '() document)])
               (file-node-children-set! parent `(,@(file-node-children parent) ,node))
@@ -737,29 +721,29 @@
                   ['goldfish '(s7)]
                   ['fluent '(fluent)]
                   [else '(chezscheme)])])
-    (cond 
-      [(string? s) 
+    (cond
+      [(string? s)
         (let ([d (make-document uri s (find-meta meta-lib top-environment))])
           (document-diagnoses-set! d '())
-          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d top-environment))) 
+          (document-index-node-list-set! d (map (lambda (item) (init-index-node '() item)) (source-file->annotations s path (consume-sps-auxiliary s) #t d top-environment)))
           d)]
-      [(eof-object? s) 
+      [(eof-object? s)
         (make-document uri "" (find-meta meta-lib top-environment))]
       [else '()])))
 
 (define init-library-node
-  (case-lambda 
+  (case-lambda
     [(file-node) (init-library-node file-node 'r6rs (make-library-node '() '() '() '()) )]
     [(file-node top-environment) (init-library-node file-node top-environment (make-library-node '() '() '() '()))]
     [(file-node top-environment root-library-node)
       (if (file-node-folder? file-node)
-        (for-each 
+        (for-each
           (lambda (child-node) (init-library-node child-node top-environment root-library-node))
           (file-node-children file-node))
         (let ([library-identifiers-list (get-library-identifiers-list (file-node-document file-node) top-environment)])
           (if (null? library-identifiers-list)
             (make-library-node '() root-library-node file-node)
-            (map 
+            (map
               (lambda (library-identifiers) (make-library-node library-identifiers root-library-node file-node))
               library-identifiers-list))))
       root-library-node]))

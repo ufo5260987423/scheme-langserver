@@ -1,5 +1,5 @@
 (library (scheme-langserver analysis identifier expanders syntax-rules)
-  (export 
+  (export
     syntax-rules->generator:map+expansion
     make-generator-for-clauses)
   (import
@@ -36,7 +36,7 @@
     (if (list? params)
       (let ([fixed (private:fixed-prefix params)])
         (cons (length fixed) (map private:param-shape fixed)))
-      (let ([prefix 
+      (let ([prefix
               (let loop ([p params])
                 (if (pair? p) (cons (car p) (loop (cdr p))) '()))])
         (cons (length prefix) (map private:param-shape prefix))))))
@@ -59,39 +59,31 @@
   (let ([input-params (cdr input-expr)]
       [min-len (car signature)]
       [shapes (cdr signature)])
-    (and 
+    (and
       (list? input-params)
       (>= (length input-params) min-len)
-      (private:params-shapes-match? shapes 
+      (private:params-shapes-match? shapes
         (let loop ([lst input-params] [n (length shapes)])
-          (if (or (zero? n) (null? lst)) 
-            '() 
+          (if (or (zero? n) (null? lst))
+            '()
             (cons (car lst) (loop (cdr lst) (- n 1)))))))))
 
 ;; ---- Nested-macro guard ----
 
-; If a syntax-rules template contains nested macro definitions
-; (let-syntax, letrec-syntax, syntax-rules, define-syntax),
-; the auto-resolver cannot handle them.  Detect this at definition
-; time and install a no-op generator so that define-syntax:attach-generator
-; does not crash and the macro falls back to hand-written rules.
-; Templates may contain let-syntax/letrec-syntax with inner syntax-rules
-; (e.g. match-two, match-check-identifier, match-check-ellipsis).
-; The auto-resolver already has full let-syntax/letrec-syntax support
-; (let-syntax-process + let-syntax:attach-generator), so nested macros
-; inside templates are fine.  We only reject define-syntax in templates
-; because runtime define-syntax is almost always a mistake and our
-; scope tracking for it is not fully tested.
+;If a syntax-rules template contains nested macro definitions (let-syntax, letrec-syntax, syntax-rules, define-syntax),
+;the auto-resolver cannot handle them.  Detect this at definition time and install a no-op generator so that define-syntax:attach-generator
+;does not crash and the macro falls back to hand-written rules. Templates may contain let-syntax/letrec-syntax with inner syntax-rules
+;(e.g. match-two, match-check-identifier, match-check-ellipsis). The auto-resolver already has full let-syntax/letrec-syntax support
+;(let-syntax-process + let-syntax:attach-generator), so nested macros inside templates are fine.  We only reject define-syntax in templates
+;because runtime define-syntax is almost always a mistake and our scope tracking for it is not fully tested.
 
 ;; ---- Main generator factory ----
 
 ;input-index-node is supposed have the form of `(syntax-rules ...)`
 (define (syntax-rules->generator:map+expansion root-file-node root-library-node document input-index-node)
   (match-index-node input-index-node
-    ;clause means pattern and template
-    ;:_ for the head: both call sites guarantee it -- the interpreter
-    ;registers this as the second-pass rule of the 'syntax-rules special
-    ;form, and the cache-reattach path case-matches (car expr) explicitly
+    ;clause means pattern and template :_ for the head: both call sites guarantee it -- the interpreter
+    ;registers this as the second-pass rule of the 'syntax-rules special form, and the cache-reattach path case-matches (car expr) explicitly
     [(:_ (literals ...) clauses **1)
       (make-generator-for-clauses input-index-node
         (map index-node-expression literals)
@@ -99,40 +91,29 @@
         (lambda (clause-expression) (car (reverse clause-expression))))]
     [else #f]))
 
-; Shared logic for building a generator from clause index-nodes.
-; extract-template is a function that takes a clause-expression datum
-; and returns the bare template (for syntax-rules it is the last element;
-; for syntax-case it is the unwrapped syntax form).
-;NB: templates that themselves contain define-syntax (macro-generating
-;macros) are no longer rejected here. Building the generator is pure
-;definition-time work and stays inert until invoked; any expansion cascade
-;through generated define-syntax forms is bounded by the recursion guard
-;(memory cap) in expansion-wrap.sls. Telemetry (fallback/mismatch counters)
-;now covers these macros too.
+;Shared logic for building a generator from clause index-nodes. extract-template is a function that takes a clause-expression datum
+;and returns the bare template (for syntax-rules it is the last element; for syntax-case it is the unwrapped syntax form).
+;NB: templates that themselves contain define-syntax (macro-generating macros) are no longer rejected here. Building the generator is pure
+;definition-time work and stays inert until invoked; any expansion cascade through generated define-syntax forms is bounded by the recursion guard
+;(memory cap) in expansion-wrap.sls. Telemetry (fallback/mismatch counters) now covers these macros too.
 (define (make-generator-for-clauses input-index-node literals clause-index-nodes extract-template)
   (let ([clause-selector (private:compile-clause-selector literals clause-index-nodes)]
-        ;definition-time per-clause compilation (Chez convert-pattern style):
-        ;pattern tree, template tree and variable context are built once,
-        ;not per call
+        ;definition-time per-clause compilation (Chez convert-pattern style): pattern tree, template tree and variable context are built once, not per call
         [clause-data-vector
           (list->vector
             (map
               (lambda (clause-index-node)
                 (let* ([clause-expression (index-node-expression clause-index-node)]
                     [pattern-expression (car clause-expression)]
-                    ;template tree per clause; the ellipsis context is derived
-                    ;from the match pattern datum directly (dispatch-matcher's
-                    ;gather-context -- the old pattern record existed only for
-                    ;its cdr? flags and is gone); matching goes through the
+                    ;template tree per clause; the ellipsis context is derived from the match pattern datum directly (dispatch-matcher's
+                    ;gather-context -- the old pattern record existed only for its cdr? flags and is gone); matching goes through the
                     ;Chez-transcribed dispatch-matcher (TODO-12)
                     [template-pattern (make-pattern (extract-template clause-expression))])
                   (let-values ([(dsl pvars) (convert-pattern pattern-expression literals)])
                     (vector dsl pvars template-pattern (gather-context pattern-expression literals)))))
               clause-index-nodes))]
-        ;memoize the selector's transcription: keyed by the call-site datum,
-        ;it maps to (clause-index . instantiated-template-datum). Only this
-        ;node-independent stage is cached -- bindings/compound/skeleton/pairs
-        ;embed call-site nodes and must be rebuilt per call site even for
+        ;memoize the selector's transcription: keyed by the call-site datum, it maps to (clause-index . instantiated-template-datum). Only this
+        ;node-independent stage is cached -- bindings/compound/skeleton/pairs embed call-site nodes and must be rebuilt per call site even for
         ;identical datums (89% of cascade expansions are exact duplicates).
         [selector-cache (make-hashtable equal-hash equal?)])
       (index-node-expansion-generator-set! input-index-node
@@ -155,8 +136,7 @@
                 [pvars (vector-ref clause-data 1)]
                 [template-pattern (vector-ref clause-data 2)]
                 [pattern-context (vector-ref clause-data 3)]
-                ;Chez-style dispatch matcher; anything but an alist means the
-                ;match failed -- decline the expansion rather than mis-analyze
+                ;Chez-style dispatch matcher; anything but an alist means the match failed -- decline the expansion rather than mis-analyze
                 [bindings (dsl+index-node->bindings dsl pvars local-index-node literals)])
             (if (not (list? bindings))
               #f
@@ -190,7 +170,7 @@
 (define (private:expansion+index-node->pairs-rev compound-list index-node acc)
   (let* ([expression (index-node-expression index-node)]
       [children (index-node-children index-node)])
-    (cond 
+    (cond
       [(index-node? compound-list)
         (let ([compound-children (index-node-children compound-list)])
           (let* ([len-cc (length compound-children)]
@@ -219,7 +199,7 @@
                                 (loop (cdr ecs) a)))
                             (loop (cdr ecs) a)))))])
                   acc2)))))]
-      [(list? compound-list) 
+      [(list? compound-list)
         (let ([len-c (length compound-list)]
             [len-ch (length children)])
           (let loop ([lefts (if (> len-c len-ch) (private:take compound-list len-ch) compound-list)]
@@ -229,25 +209,20 @@
               a
               (loop (cdr lefts) (cdr rights)
                 (private:expansion+index-node->pairs-rev (car lefts) (car rights) a)))))]
-      [(vector? compound-list) 
+      [(vector? compound-list)
         (private:expansion+index-node->pairs-rev (vector->list compound-list) index-node acc)]
-      [(pair? compound-list) 
+      [(pair? compound-list)
         (private:expansion+index-node->pairs-rev `(,(car compound-list) ,(cdr compound-list)) index-node acc)]
       [(and (symbol? compound-list) (symbol? expression))
         (cons `(,index-node . ,compound-list) acc)]
       ;symbol won't get pairs
       [else acc])))
 
-;TODO-16: annotation-carrying skeleton construction (Hieb-Dybvig 1992
-;§4.5 source-object correlation by construction, replacing the
-;pretty-print + source-file->annotations text round trip). Builds the
-;skeleton tree directly from the instantiated template datum, mirroring
-;what a reparse of the printed datum would produce: structural descent,
-;quote-abbreviation normalization (a (quote x) element reprints as 'x,
-;whose reparse DROPS the quote head from the children -- so the quote
-;head is skipped here too), improper tails as a final child. Positions
-;are inherited from bound compound nodes (real source offsets) with the
-;call node's span as fallback -- strictly better than the synthetic
+;TODO-16: annotation-carrying skeleton construction (Hieb-Dybvig 1992 §4.5 source-object correlation by construction, replacing the
+;pretty-print + source-file->annotations text round trip). Builds the skeleton tree directly from the instantiated template datum, mirroring
+;what a reparse of the printed datum would produce: structural descent, quote-abbreviation normalization (a (quote x) element reprints as 'x,
+;whose reparse DROPS the quote head from the children -- so the quote head is skipped here too), improper tails as a final child. Positions
+;are inherited from bound compound nodes (real source offsets) with the call node's span as fallback -- strictly better than the synthetic
 ;offsets the reparse produced.
 (define private:skeleton-sfd
   (make-source-file-descriptor "synthetic-skeleton" (open-bytevector-input-port #vu8())))
@@ -277,8 +252,7 @@
             (make-annotation dt (make-source-object private:skeleton-sfd start end) dt)
             #f '() '() '() '())])))
   (define (build-children comp dt par start end)
-    ;quote-abbreviation normalization: a leading quote-family head
-    ;reprints abbreviated, and the reparse drops it from the children
+    ;quote-abbreviation normalization: a leading quote-family head reprints abbreviated, and the reparse drops it from the children
     (if (and (pair? (car dt)) (memq (caar dt) '(quote quasiquote unquote unquote-splicing)))
       (map (lambda (el) (build #f el par start end)) (cdr dt))
       (let loop ((rest dt) (rest-comp (if (pair? comp) comp #f)) (acc '()))
@@ -291,10 +265,8 @@
           (else (reverse (cons (build #f rest par start end) acc)))))))
   (build compound datum parent fallback-start fallback-end))
 
-;Compile the clause selector once per macro definition, so call sites pay a
-;procedure call instead of recompiling the whole syntax-case form via eval
-;(measured: ~72% of generator body cost was this per-call compilation).
-;Returns #f when compilation fails, keeping private:confirm-clause as fallback.
+;Compile the clause selector once per macro definition, so call sites pay a procedure call instead of recompiling the whole syntax-case form via eval
+;(measured: ~72% of generator body cost was this per-call compilation). Returns #f when compilation fails, keeping private:confirm-clause as fallback.
 (define (private:compile-clause-selector literals clause-index-nodes)
   (guard (e [else #f])
     (eval
@@ -314,16 +286,16 @@
 
 (define (private:confirm-clause literals clause-index-nodes input-expression)
   (let loop ([rest clause-index-nodes] [index 0])
-    (if (null? rest) 
+    (if (null? rest)
       #f
       (let* ([current-clause-index-node (car rest)]
           [current-clause-expression (index-node-expression current-clause-index-node)]
           [pattern-expression (car current-clause-expression)]
           [signature (private:extract-signature pattern-expression)])
         (if (private:signature-match? signature input-expression)
-          (let* ([pre-target 
-            `(syntax-case ',input-expression ,literals 
-              (,(car current-clause-expression) 
+          (let* ([pre-target
+            `(syntax-case ',input-expression ,literals
+              (,(car current-clause-expression)
                 ;result
                 #'(,index . ,(car (reverse current-clause-expression))))
               (else #f))]

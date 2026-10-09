@@ -1,16 +1,16 @@
 (library (scheme-langserver)
-  (export 
+  (export
     init-server)
-  (import 
-    (chezscheme) 
-    (ufo-thread-pool) 
-    (ufo-try) 
-    (ufo-timer) 
+  (import
+    (chezscheme)
+    (ufo-thread-pool)
+    (ufo-try)
+    (ufo-timer)
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis package-manager file-filter)
 
-    (scheme-langserver protocol error-code) 
+    (scheme-langserver protocol error-code)
     (scheme-langserver protocol request)
     (scheme-langserver protocol response)
     (scheme-langserver protocol server)
@@ -41,21 +41,20 @@
                         (if (condition? ex) (condition-message ex) ex)
                         (if (condition? ex) (condition-irritants ex) ""))
                       server-instance)])
-        ;Take the workspace mutex so the save is serialized with any
-        ;in-flight worker-thread analysis (didChange etc.). In single-thread
+        ;Take the workspace mutex so the save is serialized with any in-flight worker-thread analysis (didChange etc.). In single-thread
         ;mode the workspace has no mutex ('()), so save directly.
         (let ([mutex (workspace-mutex workspace)])
           (if (null? mutex)
-            (save-workspace-cache-for! 
-              workspace 
-              cache-path 
+            (save-workspace-cache-for!
+              workspace
+              cache-path
               (server-top-environment server-instance)
               (server-type-inference? server-instance)
               (not (null? (server-mutex server-instance))))
             (with-mutex mutex
-              (save-workspace-cache-for! 
-                workspace 
-                cache-path 
+              (save-workspace-cache-for!
+                workspace
+                cache-path
                 (server-top-environment server-instance)
                 (server-type-inference? server-instance)
                 (not (null? (server-mutex server-instance)))))))))))
@@ -70,25 +69,25 @@
 (define (private:try-catch server-instance request debug?)
   (let ([method (request-method request)]
       [id (request-id request)])
-    (try 
+    (try
       (process-request server-instance request debug?)
-      (except c 
-        [(condition? c) 
-          (do-log 
+      (except c
+        [(condition? c)
+          (do-log
             (string-append "error: " (with-output-to-string (lambda () (pretty-print `(,(condition-message c) ,@(condition-irritants c))))))
             server-instance)
           (do-log-timestamp server-instance)
           (private:send-error-response server-instance id method)]
-        [else 
-          (do-log 
+        [else
+          (do-log
             (string-append "error: " (with-output-to-string (lambda () (pretty-print c))))
             server-instance)
-          (do-log-timestamp server-instance) 
+          (do-log-timestamp server-instance)
           (private:send-error-response server-instance id method)]))))
 
 (define (private:publish-diagnostics server-instance)
   (if (not (null? (server-workspace server-instance)))
-    (for-each 
+    (for-each
       (lambda (params)
         (send-message server-instance (make-notification "textDocument/publishDiagnostics"  params) 'publish))
       (unpublish-diagnostics->list (server-workspace server-instance)))))
@@ -107,9 +106,9 @@
           (send-message server-instance (fail-response id invalid-request "InvalidRequest"))
           '())
         (case method
-          ["initialize" (send-message server-instance (initialize server-instance id params))] 
-          ["initialized" '()] 
-          ["private:publish-diagnostics" (private:publish-diagnostics server-instance)] 
+          ["initialize" (send-message server-instance (initialize server-instance id params))]
+          ["initialized" '()]
+          ["private:publish-diagnostics" (private:publish-diagnostics server-instance)]
 
           ["textDocument/didOpen" (did-open workspace params (server-open-document-uris server-instance))]
           ["textDocument/didClose" (did-close workspace params (server-open-document-uris server-instance))]
@@ -120,23 +119,21 @@
           ["workspace/didRenameFiles" (did-rename workspace params)]
           ["workspace/didDeleteFiles" (did-delete workspace params)]
           ["workspace/didChangeWatchedFiles" (did-change-watched-files workspace params (server-open-document-uris server-instance))]
-          ;; lsp-bridge (and many other clients) send this after `initialized`.
-          ;; It's a notification so we must not reply even if we ignore it.
+          ;;lsp-bridge (and many other clients) send this after `initialized`. It's a notification so we must not reply even if we ignore it.
           ["workspace/didChangeConfiguration" '()]
           ["workspace/didChangeWorkspaceFolders"
             (let* ([event (assq-ref params 'event)]
                 [added (vector->list (assq-ref event 'added))])
-              ; For now, scheme-langserver supports a single root workspace.
-              ; When new folders are added, re-init the workspace to pick them up.
+              ;For now, scheme-langserver supports a single root workspace. When new folders are added, re-init the workspace to pick them up.
               (when (and (not (null? added)) (not (null? (server-workspace server-instance))))
                 (let* ([first-added (car added)]
                     [new-uri (assq-ref first-added 'uri)]
                     [new-path (uri->path new-uri)]
                     [current-path (file-node-path (workspace-file-node (server-workspace server-instance)))])
                   (when (not (string=? new-path current-path))
-                    (server-workspace-set! server-instance 
-                      (init-workspace 
-                        new-path 
+                    (server-workspace-set! server-instance
+                      (init-workspace
+                        new-path
                         (server-file-filter server-instance)
                         (server-top-environment server-instance)
                         (not (null? (server-mutex server-instance)))
@@ -144,10 +141,8 @@
                         (server-cache-path server-instance)))))))
             '()]
 
-          ; Defensive: some clients (e.g. certain VS Code extensions, lsp-bridge)
-          ; send codeAction requests even when the server does not advertise
-          ; codeActionProvider. Returning an empty vector avoids method-not-found
-          ; noise in client logs.
+          ;Defensive: some clients (e.g. certain VS Code extensions, lsp-bridge) send codeAction requests even when the server does not advertise
+          ;codeActionProvider. Returning an empty vector avoids method-not-found noise in client logs.
           ["textDocument/codeAction" (send-message server-instance (success-response id (vector)))]
 
           ["textDocument/hover" (send-message server-instance (success-response id (hover workspace params)))]
@@ -163,8 +158,7 @@
             (send-message server-instance (success-response id 'null))]
           ["$/cancelRequest" '()]
           [else
-            ;; For JSON-RPC notifications, `id` is absent => `#f`.
-            ;; LSP requires servers to ignore unknown notifications and not respond.
+            ;;For JSON-RPC notifications, `id` is absent => `#f`. LSP requires servers to ignore unknown notifications and not respond.
             (if id
               (send-message server-instance (fail-response id method-not-found (string-append "invalid request for method " method "\n")))
               '())])))))
@@ -178,12 +172,11 @@
         [textDocument (assq-ref params 'textDocument)]
         [workspace-configuration-body (make-alist 'workspaceFolders (make-alist 'changeNotifications #t 'supported #t))]
 
-        [text-document-body (make-alist 
-              'openClose #t 
-              ;; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind
-              ;; Incremental=2
+        [text-document-body (make-alist
+              'openClose #t
+              ;;https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncKind Incremental=2
               'change 2)]
-        [server-capabilities (make-alist 
+        [server-capabilities (make-alist
               'textDocumentSync text-document-body
               'hoverProvider #t
               'definitionProvider #t
@@ -192,31 +185,31 @@
               'documentSymbolProvider #t
               'workspaceSymbolProvider #t
               'documentFormattingProvider #f
-              'workspace 
-                (make-alist 
-                  'fileOperations 
-                    (make-alist 
+              'workspace
+                (make-alist
+                  'fileOperations
+                    (make-alist
                       'didCreate (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
                       'didRename (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*"))))
                       'didDelete (make-alist 'filters (vector (make-alist 'scheme "file" 'pattern (make-alist 'glob "**/*")))))
-                  'didChangeWatchedFiles 
-                    (make-alist 
+                  'didChangeWatchedFiles
+                    (make-alist
                       'dynamicRegistration #f
-                      'watchers 
-                        (list->vector 
-                          (map 
+                      'watchers
+                        (list->vector
+                          (map
                             (lambda (glob) (make-alist 'globPattern glob 'kind 7))
                             (file-filter->watched-file-glob-patterns (server-file-filter server-instance))))))
               )])
 
     (if (null? (server-mutex server-instance))
-      (begin 
+      (begin
         (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #f (server-type-inference? server-instance) (server-cache-path server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
         (success-response id (make-alist 'capabilities server-capabilities)))
-      (with-mutex (server-mutex server-instance) 
+      (with-mutex (server-mutex server-instance)
         (if (null? (server-workspace server-instance))
-          (begin 
+          (begin
             (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #t (server-type-inference? server-instance) (server-cache-path server-instance)))
             (server-work-done-progress?-set! server-instance workDoneProgress?)
             (success-response id (make-alist 'capabilities server-capabilities)))
@@ -224,27 +217,27 @@
 
 (define init-server
     (case-lambda
-        [() 
-          (init-server 
-            (standard-input-port) 
-            (standard-output-port) 
-            '() 
+        [()
+          (init-server
+            (standard-input-port)
+            (standard-output-port)
+            '()
             #f
             #f
             'r6rs)]
-        [(log-path) 
-          (init-server 
-            (standard-input-port) 
-            (standard-output-port) 
-            (open-file-output-port 
-              log-path 
-              (file-options replace) 
-              'block 
-              (make-transcoder (utf-8-codec))) 
+        [(log-path)
+          (init-server
+            (standard-input-port)
+            (standard-output-port)
+            (open-file-output-port
+              log-path
+              (file-options replace)
+              'block
+              (make-transcoder (utf-8-codec)))
             #f
             #f
             'r6rs)]
-        [(input-port output-port log-port enable-multi-thread? type-inference?) 
+        [(input-port output-port log-port enable-multi-thread? type-inference?)
           (init-server input-port output-port log-port enable-multi-thread? type-inference? 'r6rs)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment)
           (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment #f)]
@@ -258,11 +251,11 @@
               [request-queue (if (and enable-multi-thread? (threaded?)) (make-request-queue) #f)]
               [server-instance (make-server input-port output-port log-port thread-pool request-queue '() type-inference? top-environment cache-path file-filter)]
               [request-processor (lambda (r) (private:try-catch server-instance r debug?))]
-              [interval-timer 
-                (if (and enable-multi-thread? (threaded?)) 
-                  (init-interval-timer 
+              [interval-timer
+                (if (and enable-multi-thread? (threaded?))
+                  (init-interval-timer
                     (make-time 'time-duration 0 1)
-                    (lambda () 
+                    (lambda ()
                       (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) (server-workspace server-instance)))
                     (lambda () (not (server-shutdown? server-instance)))
                     thread-pool)
@@ -271,20 +264,16 @@
                 (lambda ()
                   (server-shutdown?-set! server-instance #t)
                   (when thread-pool
-                    ;Drain before the final push: requests read after the
-                    ;shutdown flag was set (e.g. a hover racing behind
-                    ;shutdown) are still queued and each expects an
-                    ;InvalidRequest reply from process-request. Bounded.
+                    ;Drain before the final push: requests read after the shutdown flag was set (e.g. a hover racing behind
+                    ;shutdown) are still queued and each expects an InvalidRequest reply from process-request. Bounded.
                     (let ([start (time-second (current-time))])
                       (let drain ()
                         (unless (or (request-queue-empty? request-queue)
                                     (> (- (time-second (current-time)) start) 5))
                           (sleep (make-time 'time-duration 1000000 0))
                           (drain))))
-                    ;Mark the last push BEFORE pushing it: the consumer
-                    ;exits on (shutdown? AND consumer-exit? AND empty), so
-                    ;after this point a blocked consumer wakes on the push,
-                    ;processes it, and exits deterministically.
+                    ;Mark the last push BEFORE pushing it: the consumer exits on (shutdown? AND consumer-exit? AND empty), so
+                    ;after this point a blocked consumer wakes on the push, processes it, and exits deterministically.
                     (server-consumer-exit?-set! server-instance #t)
                     (request-queue-push request-queue (make-request '() "private:publish-diagnostics" '()) (server-workspace server-instance))
                     (thread-pool-stop! thread-pool))
@@ -292,7 +281,7 @@
                   server-instance)]
               [private:safe-read-message
                 (lambda ()
-                  (guard (e [else 
+                  (guard (e [else
                               ; 安全地尝试记录日志；log-port 可能也已断开
                               (guard (inner [else (void)])
                                 (do-log "read-message fatal error" server-instance)
@@ -304,12 +293,9 @@
               (thread-pool-add-job thread-pool
                 (lambda ()
                   (let loop ()
-                    ;private:try-catch handles ordinary conditions inside
-                    ;request processing, but a runtime-level error (e.g. an
-                    ;invalid memory reference from the engine layer, observed
-                    ;rarely when a condition is raised and handled inside an
-                    ;engine body) can escape it. Without this guard such an
-                    ;escape would kill the consumer, after which every queued
+                    ;private:try-catch handles ordinary conditions inside request processing, but a runtime-level error (e.g. an
+                    ;invalid memory reference from the engine layer, observed rarely when a condition is raised and handled inside an
+                    ;engine body) can escape it. Without this guard such an escape would kill the consumer, after which every queued
                     ;request starves and the server hangs. Log and continue.
                     (guard (e [else
                                 (do-log
@@ -317,36 +303,31 @@
                                     (with-output-to-string (lambda () (write e))))
                                   server-instance)])
                       ((request-queue-pop request-queue request-processor)))
-                    ;Exit only when shutdown is complete AND the main
-                    ;thread has pushed its LAST request (consumer-exit?)
-                    ;AND the queue is drained -- "shutdown? AND empty" alone
-                    ;was racy and could strand a request pushed between the
+                    ;Exit only when shutdown is complete AND the main thread has pushed its LAST request (consumer-exit?)
+                    ;AND the queue is drained -- "shutdown? AND empty" alone was racy and could strand a request pushed between the
                     ;flag and the trailing push (hover after shutdown).
                     (if (not (and (or (server-shutdown? server-instance) debug?)
                                   (or (server-consumer-exit? server-instance) debug?)
                                   (request-queue-empty? request-queue)))
                       (loop))))))
             (let loop ([request-message (private:safe-read-message)])
-              (cond 
+              (cond
                 [(eq? request-message 'invalid)
                   (loop (private:safe-read-message))]
 
                 ;in case of specific parallel-log-debug.sps trouble
-                [(and debug? thread-pool (not request-message)) 
+                [(and debug? thread-pool (not request-message))
                   (private:shutdown-server)]
 
-                [(not request-message) 
+                [(not request-message)
                   (private:shutdown-server)]
 
                 [thread-pool
                   (when debug? (sleep (make-time 'time-duration 1000000 0)))
                   (cond
-                    ;shutdown and exit are control messages and run on the
-                    ;main thread. Besides avoiding a queue round-trip, exit
-                    ;*must* run here: in Chez, (exit) executed on a
-                    ;fork-thread terminates only that thread, while the main
-                    ;thread stays blocked on stdin and the process never
-                    ;dies. Handling shutdown here too guarantees the flag is
+                    ;shutdown and exit are control messages and run on the main thread. Besides avoiding a queue round-trip, exit
+                    ;*must* run here: in Chez, (exit) executed on a fork-thread terminates only that thread, while the main
+                    ;thread stays blocked on stdin and the process never dies. Handling shutdown here too guarantees the flag is
                     ;set before any exit that follows it is read.
                     [(equal? "shutdown" (request-method request-message))
                       (server-shutdown?-set! server-instance #t)
@@ -354,15 +335,10 @@
                       (loop (private:safe-read-message))]
                     [(equal? "exit" (request-method request-message))
                       (let ([status (if (server-shutdown? server-instance) 0 1)])
-                        ;Setting shutdown? also disarms the interval timer,
-                        ;so the drain below terminates even without a
-                        ;preceding shutdown request.
+                        ;Setting shutdown? also disarms the interval timer, so the drain below terminates even without a preceding shutdown request.
                         (server-shutdown?-set! server-instance #t)
-                        ;Wait until the worker has consumed every queued
-                        ;request, so the cache is saved from a quiescent
-                        ;workspace. Bounded: if the consumer died (e.g. an
-                        ;escaped engine error), the queue never drains and
-                        ;exit must not hang.
+                        ;Wait until the worker has consumed every queued request, so the cache is saved from a quiescent
+                        ;workspace. Bounded: if the consumer died (e.g. an escaped engine error), the queue never drains and exit must not hang.
                         (let ([start (time-second (current-time))])
                           (let drain ()
                             (unless (or (request-queue-empty? request-queue)
