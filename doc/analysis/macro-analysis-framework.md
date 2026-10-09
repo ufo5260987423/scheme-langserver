@@ -241,7 +241,9 @@ Source-object correlation 的分配形式（Hieb et al. 1992 §4.5）：
 
 思路：把每条糖规则（pattern → template）翻译成关于 scope 的约束（模板里哪个位置绑定、哪个位置引用、哪个位置导入/导出名字），在最小不动点下求解这些约束，得到一套表面语言的 scoping 规则，再用 `checkScope` 验证一致性。论文**定理 5.4**保证：用推断出的表面规则定界，与"先去糖、再按核心语言规则定界"的结果完全一致。论文的应用目标写得很直白——把推断出的规则装进编辑器，画出 Check-Syntax 式的绑定箭头。
 
-**对本项目的意义**：本项目的手写规则（`match-process` 等）本质上就是人工编写的 scope 声明——该论文提供了把它们**机械化生成 + 验证**的路径：对任意 syntax-rules 宏自动生成声明、验证通过则用（零展开开销的精确解），不通过再回退到展开路线。这就是 §6-Q1 的理论支柱。
+**对本项目的意义（原评估）**：本项目的手写规则（`match-process` 等）本质上就是人工编写的 scope 声明——该论文提供了把它们**机械化生成 + 验证**的路径：对任意 syntax-rules 宏自动生成声明、验证通过则用（零展开开销的精确解），不通过再回退到展开路线。这就是 §6-Q1 的理论支柱。
+
+**适用范围勘定（2026-10-07，经全文核实）**：该论文的场景是**语言规范定义的糖**——语言设计者给出核心语言的 scoping 规则 + 模式化去糖规则，算法把核心规则提升到表面；对标物是 DrRacket 给**内建形式**画 Check-Syntax 箭头的功能，不是宏系统。论文确有 hygiene 章节（§7，防糖引入捕获），但两个理由使其不能作为本项目的宏线杠杆：① 输入形式化（设计者保证的规范糖）与用户宏世界不匹配——我们的分析对象是任意 syntax-rules 宏的**展开产物**，拿不到这一前提；② 论文自己的案例研究即暴露算法边界：Scheme `do` 的绑定列表（绑定在 step 可见、在 init 不可见）**推断失败**（§6.4 原文 "we cannot infer scope for this macro"），named-let 情形还允许 let 绑定遮蔽函数名——这恰是真实宏家族的主导形状，与本项目 P5 实测（CPS/级联宏绑定在终点物化、match 家族静态提取覆盖 0%）收敛。**结论：对 scheme-langserver，[22] 的对应物是非宏功能**——30+ 个手写真特殊形规则（let/lambda/cond/do……）正是"语言规范糖"的角色，理论上可用其框架机械化生成/验证；宏线（Q1/P5）的机械化期望随之下调。
 
 与项目代码的具体对应关系：
 
@@ -398,7 +400,7 @@ doc/analysis/identifier.md:478-485 的对比表可翻译为：
 ## 6. 开放问题的理论化表述（供重做时参考）
 
 **Q1 可判定子语言的边界划在哪？**
-手写规则的实际覆盖面 = "模式守卫组合可直读的宏"。ICFP 2017 的 `inferScope` 算法 [文献: 22] 表明这一覆盖面可以**机械化扩展**：对任意 syntax-rules 宏自动生成 bind/import/export 声明并验证（checkScope），不满足约束时回退到展开路线。这把手写规则的"soundness 靠人"变成"soundness 靠定理 + 验证器"。
+手写规则的实际覆盖面 = "模式守卫组合可直读的宏"。ICFP 2017 的 `inferScope` 算法 [文献: 22] 表明这一覆盖面可以**机械化扩展**：对任意 syntax-rules 宏自动生成 bind/import/export 声明并验证（checkScope），不满足约束时回退到展开路线。这把手写规则的"soundness 靠人"变成"soundness 靠定理 + 验证器"。**边界（2026-10-07 勘定，见 §2.6）**：[22] 的算法对 do 式绑定列表（绑定对部分子表达式可见）自认失败（论文 §6.4），而真实宏家族正由此类形状主导（P5 实测 match 家族 0% 覆盖）——Q1 的机械化扩展应视为"仅覆盖可直读宏的语法部分"；[22] 对本项目真正成立的落点是**非宏特殊形规则**（let/lambda/cond/do……）的机械化生成与验证，即把我们手写的 language-spec 糖规则换成"核心规则 + 去糖规约 + 推断器"。
 
 **Q2 级联展开的控制能否有 principled 方法？**
 现状 = 全量 eager 展开 + memory cap。文献无直接答案，但三个理论资源：(a) 宏隐藏（macro hiding，Racket macro-debugger）——已知宏家族按白名单 opaque 化，等价于"极点 1 规则优先、极点 2 兜底"的分层调度；(b) 按需展开（lazy/partial expansion, [文献: 9]）——只在符号解析失败处触发；(c) 展开结果缓存 keyed by (宏定义, 调用点形状)——部分展开程序的序列化 [文献: 9] 是其理论形态。
@@ -467,7 +469,7 @@ expander-doc fallback 是文档级近似。若要语义精确，需要 scope-set
 19. Ganz, Sabry, Taha. *Macros as Multi-Stage Computations*. ICFP 2001. <https://doi.org/10.1145/507635.507646>；Taha. *Multistage Programming*, 1999 — 宏 = 编译期阶段；绑定时间分析。
 20. Pombrio, Krishnamurthi. *Resugaring: Lifting Evaluation Sequences through Syntactic Sugar*. PLDI 2014. <https://doi.org/10.1145/2594291.2594319> — Emulation/Abstraction 准则。
 21. Pombrio, Krishnamurthi. *Hygienic Resugaring of Compositional Desugaring*. ICFP 2015. <https://doi.org/10.1145/2784731.2784755> — DAG 表示、共享子项。
-22. Pombrio, Krishnamurthi, Wand. *Inferring Scope through Syntactic Sugar*. PACMPL 1(ICFP), 2017. <https://dl.acm.org/doi/pdf/10.1145/3110288> — ★最直接相关：模式宏的绑定静态推断 + 定理 5.4。
+22. Pombrio, Krishnamurthi, Wand. *Inferring Scope through Syntactic Sugar*. PACMPL 1(ICFP), 2017. <https://dl.acm.org/doi/pdf/10.1145/3110288> — 绑定静态推断 + 定理 5.4。~~★最直接相关~~ **评级下调（2026-10-07 全文核实）**：场景是语言规范糖（设计者写核心规则 + 去糖规则）与 DrRacket 内建形式箭头，非宏系统；算法对 do 式绑定列表自认失败（§6.4）。本项目落点 = 非宏特殊形规则的机械化生成（§2.6 勘定、§6-Q1）。
 23. Pombrio, Krishnamurthi. *Inferring Type Rules for Syntactic Sugar*. PLDI 2018. <https://doi.org/10.1145/3192366.3192398>；Pombrio. PhD diss., Brown, 2018. — 类型规则回推。
 24. Guan, Cao, Yu, Wang, Wang, Hu. *Semantics Lifting for Syntactic Sugar*. OOPSLA 2024 — 静态语义提升（resugaring 的对偶路线）。
 
