@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis identifier expanders expansion-wrap)
   (export
-    expansion-generator->rule)
+    expansion-generator->rule
+    expansion-template-lookup)
   (import
     (chezscheme)
     (scheme-langserver virtual-file-system index-node)
@@ -13,6 +14,11 @@
 ;skeleton. Keyed by generator procedure (eq) so re-defined macros get a fresh cache. Chez hashtables are operation-level thread-safe; a benign
 ;race may compute the same template twice.
 (define private:expansion-template-cache (make-eq-hashtable))
+
+(define (expansion-template-lookup proc expression)
+  ;diagnostic accessor (tests): the stored template (list of specs) for (generator, call-site datum), or #f
+  (let ([ht (hashtable-ref private:expansion-template-cache proc #f)])
+    (and ht (hashtable-ref ht expression #f))))
 
 (define (private:compound-path compound target)
   ;path of 'a (car) / 'd (cdr) steps from compound to target (eq?), #f if unreachable (compound trees are acyclic by construction)
@@ -70,8 +76,10 @@
         #f
         (let* ([pairs (car pairs+expansion)]
             [expansion-index-node (cdr pairs+expansion)]
+            ;templates stored against the call-node fallback carry only #f paths (see private:full-run), so a
+            ;missing root pair is fine as long as every path is #f; a non-#f path with no anchor raises below
             [root-pair (private:pair-find expansion-index-node pairs)]
-            [compound-root (if root-pair (cdr root-pair) (raise 'path-error))]
+            [compound-root (and root-pair (cdr root-pair))]
             [pending-inserts-ht (make-eq-hashtable)])
           (for-each
             (lambda (spec)
@@ -135,8 +143,14 @@
           (step root-file-node root-library-node file-linkage document expansion-index-node new-expanded+callee-list possible-new-memory))
         (let ([created (private:shallow-copy pairs (extract-all-pairs new-expanded+callee-list) expansion-index-node document index-node)]
             [root-pair (private:pair-find expansion-index-node pairs)])
-          (when root-pair
-            (private:store-template! proc expression created (cdr root-pair) index-node)))
+          ;the list-shaped template instantiations of real macros (e.g. the match family) give the expansion root
+          ;no pair in pairs (see syntax-rules.sls pairs-rev), so gating storage on root-pair meant templates were
+          ;almost never stored and identical call-site datums re-expanded at full price. Store unconditionally:
+          ;with a root pair the compound counterpart anchors path encoding as before; without one, anchor at the
+          ;call node -- private:compound-path then yields #f for every target and replay attaches references at the
+          ;call node instead of the precise counterpart (graceful degradation, still sound: no reference is lost).
+          (private:store-template! proc expression created
+            (if root-pair (cdr root-pair) index-node) index-node))
         #t)
       #f)))
 

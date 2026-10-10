@@ -395,6 +395,14 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   which also un-bloated template replay for match-shaped cascades
   (rule e2e 193 -> 65ms). New references are marked
   `identifier-reference-speculative?` (tentative-level knowledge).
+  Template storage is UNCONDITIONAL (fixed 2026-10-10): gating
+  `private:store-template!` on a root pair meant list-shaped template
+  instantiations -- the common case -- were never stored and replay never
+  fired; without a root pair the call node anchors path encoding and every
+  path degrades to #f (replay then attaches references at the call node,
+  sound but coarse). Measured: identical call-site datums collapse to
+  sub-ms on warm calls (cold ~83ms). Covered by
+  `tests/analysis/identifier/test-expansion-template-replay.sps`.
 - Workspace cache: expansion generators are re-attached after fasl load
   (`private:reattach-expanders-after-cache-load!` in `workspace.sls`), so
   cached workspaces keep route-2 functionality.
