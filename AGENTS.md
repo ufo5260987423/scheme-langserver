@@ -408,8 +408,7 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   cached workspaces keep route-2 functionality.
 - Docs: `doc/analysis/macro-analysis-framework.md` (theory, 28-paper
   bibliography), `doc/analysis/macro-resolution-profile.md` (measured
-  costs), `doc/analysis/todo.md` (roadmap; TODO-10 performance half
-  remains).
+  costs).
 - Key tests: `test-match-cascade-auto-resolve.sps` (the comprehensive one),
   `test-ellipsis-call-site.sps`,
   `expanders/test-pattern.sps`.

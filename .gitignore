@@ -40,3 +40,6 @@ out/
 
 benchmark-type-inference.json
 debug-trace/
+
+# langserver debug reports (lsp_export_debug_report output)
+scheme-langserver-debug-report-*/
