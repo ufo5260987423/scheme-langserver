@@ -159,6 +159,36 @@ step 之外的 max 单项）；② step 本身（§1.3 的引用解析缓存与�
 **教训**：vfs 曾被认为是"解析"主项，但真正的成本藏在 make-document 的一个 O(n²)+慢原语
 组合里——阶段级 profile（各项之和 ≈ 墙钟）是定位这类黑洞的唯一可靠手段。
 
+### 1.5 step 内部深剖面（2026-10-11；插桩已还原，回归 14/14、5/5）
+
+> 口径：整个 init（墙钟 15.8 s）。prep/leaf/dispatch 为排他叶测量；run/children-recursion 为含嵌套
+> 级联的累计口径。比 §1.3 多拆三层：prep 拆 find-refs vs establish-rules；leaf 拆 find-refs vs
+> usage 记账；children 递归单独计时（反推 step 自身分派开销）。
+
+n = 198,784 复合访问 + 329,514 叶子访问（≈53 万）：
+
+| step 内部组件 | 时间 | 单次 | 口径 |
+|---|---|---|---|
+| **prep-find-refs（头部符号引用查找）** | **2,067 ms** | 10 µs | 排他 |
+| **leaf-find-refs（叶子符号引用查找）** | **2,509 ms** | 8 µs | 排他 |
+| post-rules（后置段） | 891 ms | 4 µs | 排他 |
+| **step 自身分派（match-index-node + let 开销）** | **337 ms** | 2 µs | 排他 |
+| establish-rules（规则表构建） | 6.5 ms | ~0 | 排他 |
+| usage-count 记账 | 0.5 ms | ~0 | 排他 |
+| run（规则体执行） | 13,672 ms | — | 嵌套累计 |
+| children-recursion（子节点递归） | 49,083 ms | — | 嵌套累计（深度 ~5 层） |
+
+**结论（step 优化依据）**：
+
+1. **引用查找是 step 内部唯一的大头**：prep-find + leaf-find = 4.6 s（占 step 墙钟的一半），
+   每次 8-10 µs。这是与级联形状无关的纯查找成本——`find-available-references-for` 按
+   (节点, 符号) 缓存后，step 墙钟可直接砍 ~4 s 级。**#1 优化靶**。
+2. **steer/分派假设彻底排除**：step 自身 match-index-node 分派 2 µs/访问、establish-rules
+   ~0、usage 记账 ~0——分派层无任何优化空间。
+3. 规则体（run 的排他部分）≈ define/library/import 的 ~2.3 s（§1.3 直方图），其中 define 单次
+   135 µs × 7,830 次是最大单项——值得单独剖（check-duplicate-identifiers / 引用建立）。
+4. GC 1.5 s / 10.4 GB 分配分布在级联分配上，随引用缓存与级联压缩联动下降。
+
 ## 2. 级联形状与缓存现状
 
 - **级联呈宽展形**：单次顶层调用产生 ~300 次 generator 调用、~248 次 step 递归（在 cap 15 截断前）。内层宏（match-next/match-one/…）的相同子树被反复展开、反复 step——DAG 共享未利用。
