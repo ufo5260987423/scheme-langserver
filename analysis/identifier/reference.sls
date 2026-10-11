@@ -89,7 +89,7 @@
 ;symbol->string allocates a fresh string on every call, and identifier-compare? is invoked tens of millions of times during workspace
 ;init.  Cache each interned symbol's name string.  The cache is per-thread: init-references runs under threaded-map, and a global mutable hashtable
 ;would risk the same bucket corruption that once killed private:expander-doc-cache-ht.
-(define private:identifier-name-cache (make-thread-parameter #f))
+(define private:identifier-name-cache (make-thread-parameter #f)) ;plain eq-hashtable: symbols are interned (never collected)
 
 (define (private:identifier-name identifier)
   (let ([cache (private:identifier-name-cache)])
@@ -98,7 +98,7 @@
         (let ([name (symbol->string identifier)])
           (eq-hashtable-set! cache identifier name)
           name))
-      (let ([fresh (make-weak-eq-hashtable)])
+      (let ([fresh (make-eq-hashtable)])
         (private:identifier-name-cache fresh)
         (let ([name (symbol->string identifier)])
           (eq-hashtable-set! fresh identifier name)
@@ -254,6 +254,18 @@
             (loop lo mid)))
         lo))))
 
+;sorted-list -> vector memo (2026-10-11 perf): private-binary-search materialized the (possibly
+;long, ~3000-entry) root reference list into a fresh vector on EVERY lookup -- a large per-lookup
+;allocation driving GC. Lists are replaced functionally on every update, so keying the memo by list
+;identity is sound: a stale vector can never be observed. Weak so replaced lists are collected.
+(define private:sorted-list-vector-cache (make-weak-eq-hashtable))
+
+(define (private:sorted-list->vector lst)
+  (or (eq-hashtable-ref private:sorted-list-vector-cache lst #f)
+    (let ([v (list->vector lst)])
+      (eq-hashtable-set! private:sorted-list-vector-cache lst v)
+      v)))
+
 ;Exclude-set representation: #f = no exclusion; a single reference = compare with eq?; otherwise an eq-hashtable.  Most lookups have an empty
 ;or single-element exclude list, so skip building a hashtable for them.
 (define (private:exclude-set exclude)
@@ -274,7 +286,7 @@
 (define (private-binary-search reference-list identifier exclude)
   (if (not (symbol? identifier))
     '()
-    (let ([vector-instance (list->vector reference-list)]
+    (let ([vector-instance (private:sorted-list->vector reference-list)]
         [target-name (private:identifier-name identifier)])
       (let ([n (vector-length vector-instance)]
           [lo (private:lower-bound vector-instance target-name)])
