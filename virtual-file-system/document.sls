@@ -67,10 +67,25 @@
 
 (define (text->line-length-vector text)
   (let ([l (string-length text)])
-    (list->vector 
-      (let loop ([s 0])
-        (if (< s l)
-          (let ([e (get-line-end-position text s)])
-            `(,(- e s) ,@(loop (+ e 1))))
-            '())))))
+    ;single scan with string-ref: the old per-line get-line-end-position called srfi-13
+    ;string-index twice per line (~2us/char, measured 81 ms for a 40 KB file) and the
+    ;quasiquote splice built the list in O(lines^2); together ~6.9 s of init on this repo
+    ;(2026-10-11 profile). Line length semantics preserved: \\r\\n counts as one terminator
+    ;with the \\r included in the line length (max NL RE), matching the old (min/max ...) rule.
+    (let loop ([s 0] [acc '()])
+      (if (>= s l)
+        (list->vector (reverse acc))
+        (let scan ([e s])
+          (cond
+            [(>= e l)
+              (list->vector (reverse (cons (- e s) acc)))]
+            [(char=? (string-ref text e) #\newline)
+              (if (and (< (+ e 1) l) (char=? (string-ref text (+ e 1)) #\return))
+                (loop (+ e 2) (cons (- (+ e 1) s) acc))
+                (loop (+ e 1) (cons (- e s) acc)))]
+            [(char=? (string-ref text e) #\return)
+              (if (and (< (+ e 1) l) (char=? (string-ref text (+ e 1)) #\newline))
+                (loop (+ e 2) (cons (- (+ e 1) s) acc))
+                (loop (+ e 1) (cons (- e s) acc)))]
+            [else (scan (+ e 1))]))))))
 )

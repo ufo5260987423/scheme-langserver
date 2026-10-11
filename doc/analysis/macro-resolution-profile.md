@@ -37,6 +37,128 @@ step 在复合节点上的四个阶段（n=1144 复合节点访问/调用点）�
 
 ---
 
+### 1.2 复测（2026-10-10 晚，f95d0b54 模板存储修复后；插桩已还原）
+
+> 口径：3 个全新形状的真实 repo 调用点 datum（合成节点，ufo-match 文档上下文），每进程 init-workspace
+> 后测量——init 自身的 eager 展开已把全部规范化内层形式（match-next/match-one/match-two 标准调用）
+> 填入模板缓存，因此本次测量的是**顶层冷调用 + 内层热 replay** 的真实生产形态。计数器 ns 级。
+
+| 调用点 | wall | full-run 次数 | replay 命中 | generator | shallow-copy | store |
+|---|---|---|---|---|---|---|
+| site1（2 子句） | 22 ms | 18 | 7 | 0 ms / 20 次 | 0 ms / 18 次 | 0 ms / 18 次 |
+| site2（1 子句） | 13 ms | 12 | 0 | 0 ms / 13 次 | 0 ms / 12 次 | 0 ms / 12 次 |
+
+**结构变化（对比 §1）**：f95d0b54 的模板无条件存储让内层宏全部走 replay（7 次 replay 总耗时 <0.5 ms），
+generator 调用从 ~300 次降到 12-20 次且单次亚毫秒——**冷调用点的成本 100% 落在 step 上**，
+generator/shallow-copy/store 在热路径上趋零。旧 §1 的 228ms 分解（step 69% / generator 22% /
+shallow-copy 8%）是模板修复前的口径，保留作历史参照。
+
+**step 内部四段（ns 插桩，run 为含嵌套级联的累计口径）**：
+
+| 调用点 | rules-prep | rules-run | post-rules | leaf | n-composite | n-leaf |
+|---|---|---|---|---|---|---|
+| site1 | 2.4 ms | **170 ms** | 1.8 ms | 2.7 ms | 261 | 403 |
+| site2 | 1.0 ms | **64 ms** | 2.3 ms | 0.9 ms | 180 | 256 |
+
+**step 的开销花在哪（回答本轮复测的核心问题）**：
+
+1. **rules-run（规则体执行）独占大头**：170ms/64ms（嵌套累计），其余三段合计仅 ~5-7ms。
+   每次复合节点访问 prep≈9µs、post≈7µs、leaf≈6.7µs——引用解析（rules-prep + leaf）和
+   后置段在 ns 口径下也只占 step 的 ~3%，**不是热点**。
+2. rules-run 的主体又是**递归**：级联各层的 step 几乎都经规则体触发（step-incl 计数 172ms/18 次
+   ≈ rules-run 总量），即"规则体执行 → route&add → 内层 full-run/replay → 内层 step"的嵌套循环；
+   手写核心形规则（let/lambda 的参数收集、重复检查、绑定建立）摊销在 ~660 次节点访问上。
+3. **优化含义**：模板修复后，进一步压缩冷调用成本的方向不再是 generator/shallow-copy，
+   而是 ① 减少 step 访问的生成代码节点数（级联形状决定）② 手写规则体本身的常数
+   （check-duplicate-identifiers/collect-parameter-pairs 每次调用成本）③ 引用解析按调用点缓存
+   （当前每次 ~7-9µs × 660 次 ≈ 5ms/调用点，占 wall 的 ~20-25%，是 step 之外最大的单项）。
+
+### 1.3 init 全口径分解 + 规则体直方图（2026-10-11；插桩已还原，回归 14/14、5/5 全绿）
+
+> 口径：整个 `init-workspace`（本仓 834 文档，墙钟 22.7 s）。计数器 ns 级；规则体与 step 为含嵌套级联的
+> 累计口径（内层 full-run 的 step 会再触发内层规则体，层层相含）。
+
+**expansion 组件（全部 full-run 累计）**：
+
+| 组件 | 总时间 | 调用次数 | 单次均值 |
+|---|---|---|---|
+| **step（inclusive）** | **9.87 s** | 673 | 14.7 ms |
+| generator（syntax-rules 机器：子句选择+模板实例化+重解析） | 149 ms | 874 | 171 µs |
+| shallow-copy（引用回传+sync） | 114 ms | 759 | 150 µs |
+| store-template | 3 ms | 759 | 4 µs |
+| replay | 0 | 0 | init 期间无重复 datum |
+
+**step 内部四段（init 全口径）**：run=13.2 s / prep=2.3 s / leaf=2.6 s / post=0.9 s；
+节点访问 **198,817 复合 + 329,545 叶子 ≈ 53 万次**。
+
+**rules-run 规则体直方图（init 全口径，按累计时间排序，节选）**：
+
+| 规则体 | 累计 | 次数 | 单次 |
+|---|---|---|---|
+| match-next | 3.80 s | 177 | 21.5 ms |
+| match-one | 2.12 s | 598 | 3.5 ms |
+| match-two | 1.50 s | 310 | 4.8 ms |
+| match-check-ellipsis | 1.25 s | 93 | 13.5 ms |
+| match | 1.20 s | 45 | 26.8 ms |
+| define | 1.06 s | 7,830 | 135 µs |
+| library | 0.81 s | 665 | 1.2 ms |
+| import | 0.46 s | 782 | 589 µs |
+| match-check-identifier | 0.32 s | 39 | 8.3 ms |
+| **ufo-match 家族小计** | **≈10.2 s** | | 占 run 的 77% |
+| let/lambda/let*/case-lambda 等核心形 | ≈0.02 s | ~11k 次 | **1-5 µs/次** |
+
+**"规则体执行为何慢 / 是不是 ufo-match-steer 的问题"——实测结论：**
+
+1. **不是 steer 慢。** generator（就是 steer 驱动的 syntax-rules 机器：match-check-ellipsis 子句
+   选择、dispatch-matcher、模板实例化）全 init 仅 149 ms（171 µs/次）；连调用最频繁的核心形规则
+   （let-process 5,064 次、lambda-process 4,590 次，自身都用 match-index-node 解析形参）也只要
+   1-5 µs/次。steer 的匹配常数不是问题。
+2. **慢的是被分析对象，不是分析器。** match 家族规则体的 10.2 s 几乎全是其内部 step 的嵌套累计
+   （与 step-incl 9.87 s 高度重叠）——级联为每个顶层 match 调用点生成并逐步分析了数千个节点的
+   展开代码；DAG 共享未利用，相同子树在兄弟分支被反复 step（§2 的宽展形状）。
+3. **init 的真实瓶颈排序**：① step 对 53 万次生成代码节点访问（含级联嵌套重复）≈10 s；
+   ② 每节点常数成本 prep+leaf ≈4.9 s（~15 µs/节点 × 33 万叶子 + 引用解析，其中
+   find-available-references-for 按节点解析是主体）——**不依赖级联形状、可独立优化**
+   （按调用点缓存引用解析）；③ 手写规则体（define/library/import，~2.3 s，真实排他成本）。
+
+### 1.4 整程序视角：init 墙钟的阶段分解（2026-10-11；step 只是其中一个组件）
+
+> 口径：整个 `init-workspace`（本仓 834 文档），workspace/abstract-interpreter 临时插桩（已还原），
+> (time ...) 提供 GC 数据。这一节回答的问题：**跳出宏解析，全程序的时间花在哪**。
+
+**修复前**（墙钟 21.0 s，GC 1.4 s，分配 10.3 GB）：
+
+| 阶段 | ms | 占比 |
+|---|---|---|
+| **vfs parse+build** | **7,450** | **35%** |
+| **step 总计** | **9,870** | **47%** |
+| unused-imports 检查 | 2,130 | 10% |
+| file-linkage 构建 | 1,860 | 9% |
+| excluded-refs 处理 | 860 | 4% |
+| unused-locals 检查 | 110 | 0.5% |
+| library-node | 2 | ~0 |
+
+vfs 细分（修复前）：read 140 / annotations(含 consume-sps-aux) 270 / index-node 190 / **make-document 7,000（94%！）** /
+其余壳操作 ~0。make-document 的成本几乎全部在 `text->line-length-vector`：
+**每行调用两次 srfi-13 `string-index`（~2 µs/char）+ quasiquote `,@` 拼接建表（O(行数²)）**，
+单 40 KB 文件实测 81 ms；全仓累计 ~7 s。
+
+**修复**（`virtual-file-system/document.sls` text->line-length-vector 改为单次 string-ref 扫描，
+O(n) 且零分配；15 个边界用例含 \r\n/\n\r/孤立 \r 与旧实现对拍全等）：
+
+| 指标 | 修复前 | 修复后 | 倍数 |
+|---|---|---|---|
+| vfs parse+build | 7,450 ms | **659 ms** | 11.3× |
+| **init 墙钟** | **21.0 s** | **14.7 s** | **-30%** |
+
+**修复后的全景**（墙钟 14.7 s）：step 9.1 s（62%，内部见 §1.3）、unused-imports 2.1 s（14%）、
+file-linkage 1.7 s（12%）、excluded-refs 0.8 s（5%）、vfs 0.66 s（4%）。
+**下一步优化排序**：① unused-imports / file-linkage / excluded-refs 三个后置阶段（合计 ~4.6 s，
+step 之外的 max 单项）；② step 本身（§1.3 的引用解析缓存与级联形状）；
+③ GC 1.4 s 与 10.3 GB 分配主要产自 step/级联，随 ② 一并下降。
+**教训**：vfs 曾被认为是"解析"主项，但真正的成本藏在 make-document 的一个 O(n²)+慢原语
+组合里——阶段级 profile（各项之和 ≈ 墙钟）是定位这类黑洞的唯一可靠手段。
+
 ## 2. 级联形状与缓存现状
 
 - **级联呈宽展形**：单次顶层调用产生 ~300 次 generator 调用、~248 次 step 递归（在 cap 15 截断前）。内层宏（match-next/match-one/…）的相同子树被反复展开、反复 step——DAG 共享未利用。
