@@ -189,6 +189,26 @@ n = 198,784 复合访问 + 329,514 叶子访问（≈53 万）：
    135 µs × 7,830 次是最大单项——值得单独剖（check-duplicate-identifiers / 引用建立）。
 4. GC 1.5 s / 10.4 GB 分配分布在级联分配上，随引用缓存与级联压缩联动下降。
 
+### 1.6 2026-10-11 追加测量（b2fc5b41 之后的 9.6 s 基线）
+
+**引用表 merge 成本坐实**：`append-references-into-ordered-references-for` 全程 **1,851 ms /
+51,600 次调用 / 36 µs 每次**——step 5.1 s 的 ~36%。每次插入走 `merge-ordered-lists` O(表长)，
+是 define-process 135 µs 单次成本的主构成。根治需动表表示（差分+惰性排序视图 / 分桶），
+风险中高，暂记为候选；调用端批量化（同一 pass 内小批量合并）是较温和的变体。
+
+**threaded init 挂死/崩溃（已解决，2026-10-11）**：`(init-workspace path #t)` 在裸 bench 下
+要么 20 分钟无进展，要么 6 秒 `nonrecoverable invalid memory reference`（core dump）。
+根因：`b2fc5b41` 引入的 `sorted-list-vector-cache` 是**全局 weak-eq 哈希表**，由
+threaded-map 工作线程并发读写 → 桶链表损坏——与当年 `private:expander-doc-cache-ht`
+事故完全同类。`expansion-wrap.sls` 的 `expansion-template-cache` 同病（注释错误声称
+"operation-level thread-safe"）。修复：reference.sls 两处 memo 改为 make-thread-parameter
++ get-thread-id 属主标记的每线程缓存（fork 线程继承参数值，单查 #f 不够）；模板缓存走
+互斥锁（冷路径，保住跨线程 replay）。修复后 threaded init 连续 6 次干净通过，
+~6.0s vs 单线程 9.6s。
+
+**unused-imports 连带收益**：修复引用查找后从 2.1 s 降到 0.62 s（其内部也走
+find-available-references-for）——确认查找基建是跨阶段公共成本。
+
 ## 2. 级联形状与缓存现状
 
 - **级联呈宽展形**：单次顶层调用产生 ~300 次 generator 调用、~248 次 step 递归（在 cap 15 截断前）。内层宏（match-next/match-one/…）的相同子树被反复展开、反复 step——DAG 共享未利用。

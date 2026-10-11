@@ -87,22 +87,25 @@
         (find (lambda (i) (eq? identifier (identifier-reference-identifier i))) metas)))))
 
 ;symbol->string allocates a fresh string on every call, and identifier-compare? is invoked tens of millions of times during workspace
-;init.  Cache each interned symbol's name string.  The cache is per-thread: init-references runs under threaded-map, and a global mutable hashtable
-;would risk the same bucket corruption that once killed private:expander-doc-cache-ht.
+;init.  Cache each interned symbol's name string.  Per-thread: init-references runs under threaded-map, and a shared mutable hashtable risks
+;the bucket corruption that once killed private:expander-doc-cache-ht (nonrecoverable invalid memory reference).  thread-parameter values are
+;inherited by forked threads, so the cell is tagged with its owner thread and re-created on mismatch -- a #f-or-shared cell is never reused.
 (define private:identifier-name-cache (make-thread-parameter #f)) ;plain eq-hashtable: symbols are interned (never collected)
 
-(define (private:identifier-name identifier)
-  (let ([cache (private:identifier-name-cache)])
-    (if cache
-      (or (eq-hashtable-ref cache identifier #f)
-        (let ([name (symbol->string identifier)])
-          (eq-hashtable-set! cache identifier name)
-          name))
-      (let ([fresh (make-eq-hashtable)])
+(define (private:my-name-cache)
+  (let ([cell (private:identifier-name-cache)])
+    (if (and cell (eqv? (car cell) (get-thread-id)))
+      (cdr cell)
+      (let ([fresh (cons (get-thread-id) (make-eq-hashtable))])
         (private:identifier-name-cache fresh)
-        (let ([name (symbol->string identifier)])
-          (eq-hashtable-set! fresh identifier name)
-          name)))))
+        (cdr fresh)))))
+
+(define (private:identifier-name identifier)
+  (let ([cache (private:my-name-cache)])
+    (or (eq-hashtable-ref cache identifier #f)
+      (let ([name (symbol->string identifier)])
+        (eq-hashtable-set! cache identifier name)
+        name))))
 
 (define (identifier-compare? target1 target2)
   (let ([id1 (identifier-reference-identifier target1)]
@@ -258,13 +261,24 @@
 ;long, ~3000-entry) root reference list into a fresh vector on EVERY lookup -- a large per-lookup
 ;allocation driving GC. Lists are replaced functionally on every update, so keying the memo by list
 ;identity is sound: a stale vector can never be observed. Weak so replaced lists are collected.
-(define private:sorted-list-vector-cache (make-weak-eq-hashtable))
+;Per-thread (owner-tagged, cf. private:my-name-cache): threaded-map workers would corrupt a shared
+;weak hashtable -- observed as nonrecoverable invalid memory reference on threaded init.
+(define private:sorted-list-vector-cache (make-thread-parameter #f))
+
+(define (private:my-vector-cache)
+  (let ([cell (private:sorted-list-vector-cache)])
+    (if (and cell (eqv? (car cell) (get-thread-id)))
+      (cdr cell)
+      (let ([fresh (cons (get-thread-id) (make-weak-eq-hashtable))])
+        (private:sorted-list-vector-cache fresh)
+        (cdr fresh)))))
 
 (define (private:sorted-list->vector lst)
-  (or (eq-hashtable-ref private:sorted-list-vector-cache lst #f)
-    (let ([v (list->vector lst)])
-      (eq-hashtable-set! private:sorted-list-vector-cache lst v)
-      v)))
+  (let ([cache (private:my-vector-cache)])
+    (or (eq-hashtable-ref cache lst #f)
+      (let ([v (list->vector lst)])
+        (eq-hashtable-set! cache lst v)
+        v))))
 
 ;Exclude-set representation: #f = no exclusion; a single reference = compare with eq?; otherwise an eq-hashtable.  Most lookups have an empty
 ;or single-element exclude list, so skip building a hashtable for them.

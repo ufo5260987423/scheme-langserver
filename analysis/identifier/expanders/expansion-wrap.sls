@@ -11,14 +11,28 @@
 
 ;Cross-call-site expansion templates (TODO-10 performance half). After a full expansion of (generator, call-expression), the created references
 ;are captured as paths into the compound tree and cached here; a later call site with an IDENTICAL datum replays them without stepping the
-;skeleton. Keyed by generator procedure (eq) so re-defined macros get a fresh cache. Chez hashtables are operation-level thread-safe; a benign
-;race may compute the same template twice.
+;skeleton. Keyed by generator procedure (eq) so re-defined macros get a fresh cache. Guarded by a mutex: threaded-map workers read AND
+;write this during parallel step, and Chez hashtables corrupt under concurrent mutation (same failure class as the reference.sls
+;sorted-list-vector-cache crash, 2026-10-11). Critical sections hold no callbacks, so no deadlock; accesses are ns-scale vs ms-scale calls.
 (define private:expansion-template-cache (make-eq-hashtable))
+(define private:expansion-template-cache-mutex (make-mutex))
+
+(define (private:template-cache-ref proc expression)
+  (with-mutex private:expansion-template-cache-mutex
+    (let ([ht (hashtable-ref private:expansion-template-cache proc #f)])
+      (and ht (hashtable-ref ht expression #f)))))
+
+(define (private:template-cache-set! proc expression specs)
+  (with-mutex private:expansion-template-cache-mutex
+    (let ([ht (or (hashtable-ref private:expansion-template-cache proc #f)
+                (let ([ht (make-hashtable equal-hash equal?)])
+                  (hashtable-set! private:expansion-template-cache proc ht)
+                  ht))])
+      (hashtable-set! ht expression specs))))
 
 (define (expansion-template-lookup proc expression)
   ;diagnostic accessor (tests): the stored template (list of specs) for (generator, call-site datum), or #f
-  (let ([ht (hashtable-ref private:expansion-template-cache proc #f)])
-    (and ht (hashtable-ref ht expression #f))))
+  (private:template-cache-ref proc expression))
 
 (define (private:compound-path compound target)
   ;path of 'a (car) / 'd (cdr) steps from compound to target (eq?), #f if unreachable (compound trees are acyclic by construction)
@@ -57,12 +71,8 @@
               kind
               path)))
         created)])
-    (let ([ht (or (hashtable-ref private:expansion-template-cache proc #f)
-                (let ([ht (make-hashtable equal-hash equal?)])
-                  (hashtable-set! private:expansion-template-cache proc ht)
-                  ht))])
-      (hashtable-set! ht expression specs)
-      #t)))
+    (private:template-cache-set! proc expression specs)
+    #t))
 
 (define (private:replay-template specs proc root-file-node root-library-node document index-node)
   ;returns #t on success; #f (fall back to a full run) on any path decode failure or if the generator declines the call
@@ -112,8 +122,7 @@
   (let ([expander-ref (if (null? maybe-expander-ref) #f (car maybe-expander-ref))])
     (lambda (root-file-node root-library-node document index-node)
       (let* ([expression (annotation-stripped (index-node-datum/annotations index-node))]
-          [template-ht (hashtable-ref private:expansion-template-cache proc #f)]
-          [template (and template-ht (hashtable-ref template-ht expression #f))])
+          [template (private:template-cache-ref proc expression)])
         (cond
           ;replay: identical datum seen before, recursion guards satisfied
           [(and template
