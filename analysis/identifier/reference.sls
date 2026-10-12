@@ -150,7 +150,7 @@
 (define (private:insert-one-into-ordered reference old compare? equal-procedure)
   (let loop ([rest old] [rev-prefix '()])
     (cond
-      [(null? rest) (cons reference (reverse rev-prefix))]
+      [(null? rest) (reverse (cons reference rev-prefix))]
       [(compare? reference (car rest))
         (fold-left (lambda (acc x) (cons x acc))
           (if (compare? (car rest) reference)

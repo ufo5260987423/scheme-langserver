@@ -86,4 +86,42 @@
 
 (test-end)
 
+; ---- single-element fast path (private:insert-one-into-ordered, e44f36c4) ----
+; The batch fuzz above almost never exercises the fast path's null branch:
+; with a small fixed symbol pool, most single attaches are same-name re-attaches
+; that land on the equal-anchor branch.  A 2026-10-12 regression (null branch
+; consed the newcomer onto (reverse rev-prefix), reversing the whole spine --
+; test-let.sps caught it, this fuzz pins it) needs FRESH distinct names so the
+; newcomer actually walks the spine to its sorted position, including the tail.
+(test-begin "insert-one-into-ordered equivalence fuzz")
+
+(define fresh-pool
+  (let loop ([i 0] [acc '()])
+    (if (= i 200)
+      (reverse acc)
+      (loop (+ i 1) (cons (string->symbol (string-append "v" (number->string i))) acc)))))
+
+(let ([doc2 (make-document "file:///fuzz2" "" '())])
+  (random-seed 20261012)
+  (set! failures 0)
+  (let loop ([i 800])
+    (unless (zero? i)
+      (let* ([fresh (make-identifier-reference (list-ref fresh-pool (mod i 200)) '() '() '() '() '() '() '())]
+          [old (document-ordered-reference-list doc2)]
+          [expected (old-step old (list fresh))])
+        (append-references-into-ordered-references-for doc2 '() (list fresh))
+        (let ([actual (document-ordered-reference-list doc2)])
+          (unless
+            (and
+              (equal? (map identifier-reference-identifier expected)
+                (map identifier-reference-identifier actual))
+              (permutation-of? expected actual))
+            (set! failures (+ failures 1)))))
+      (loop (- i 1)))))
+
+(test-equal "800 fresh-name single attaches equivalent to old sort+dedupe"
+  0 failures)
+
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
