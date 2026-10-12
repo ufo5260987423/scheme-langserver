@@ -235,22 +235,51 @@
     (for-each (lambda (item) (eq-hashtable-set! ht item #t)) lst)
     ht))
 
+;the root-level (filter (not-in local-ht) document-ordered-reference-list) sub-result of the 2-arity
+;find-available-references-for variant is identical for every no-symbol lookup in the same document
+;while the root's local list and the document ordered list keep their identity. Both are replaced
+;functionally on every update (no set-car!/set-cdr!, same invariant as sorted-list-vector-cache in
+;b2fc5b41), so an identity check is a sound validity test. Excluded-refs re-did this filter ~3k times
+;per init (330 us each, ~1 s); with the cache it happens once per document. Mutex: MT workers on
+;different documents share the cache table.
+(define private:document-tail-cache (make-eq-hashtable))
+(define private:document-tail-cache-mutex (make-mutex))
+(define (private:document-tail document local)
+  (let ([doc-list (document-ordered-reference-list document)])
+    (with-mutex private:document-tail-cache-mutex
+      (let ([entry (eq-hashtable-ref private:document-tail-cache document #f)])
+        (if (and entry (eq? (car entry) local) (eq? (cadr entry) doc-list))
+          (cddr entry)
+          (let* ([local-ht (private:list->eq-set (map identifier-reference-identifier local))]
+              [tail
+                (filter
+                  (lambda (reference)
+                    (not (eq-hashtable-contains? local-ht (identifier-reference-identifier reference))))
+                  doc-list)])
+            (eq-hashtable-set! private:document-tail-cache document (cons local (cons doc-list tail)))
+            tail))))))
+
 (define find-available-references-for
   (case-lambda
     [(document current-index-node)
       (let* ([local (index-node-references-import-in-this-node current-index-node)]
-          [local-ht (private:list->eq-set (map identifier-reference-identifier local))]
-          [exclude-ht (private:list->eq-set (index-node-excluded-references current-index-node))])
-        (filter
-          (lambda (reference) (not (eq-hashtable-contains? exclude-ht reference)))
-          (append
-            local
-            (filter
-              (lambda (reference)
-                (not (eq-hashtable-contains? local-ht (identifier-reference-identifier reference))))
+          [excluded (index-node-excluded-references current-index-node)]
+          [combined
+            (append
+              local
               (if (null? (index-node-parent current-index-node))
-                (document-ordered-reference-list document)
-                (find-available-references-for document (index-node-parent current-index-node)))))))]
+                (private:document-tail document local)
+                (let ([local-ht (private:list->eq-set (map identifier-reference-identifier local))])
+                  (filter
+                    (lambda (reference)
+                      (not (eq-hashtable-contains? local-ht (identifier-reference-identifier reference))))
+                    (find-available-references-for document (index-node-parent current-index-node))))))])
+        (if (null? excluded)
+          combined
+          (let ([exclude-ht (private:list->eq-set excluded)])
+            (filter
+              (lambda (reference) (not (eq-hashtable-contains? exclude-ht reference)))
+              combined))))]
     [(document current-index-node identifier)
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])

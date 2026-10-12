@@ -9,9 +9,6 @@
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis abstract-interpreter)
   (scheme-langserver analysis dependency file-linkage)
-  (scheme-langserver analysis identifier rules library-import)
-  (scheme-langserver analysis dependency file-linkage)
-  (scheme-langserver analysis identifier rules library-import)
   (scheme-langserver analysis package-manager file-filter)
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system library-node))
@@ -77,8 +74,6 @@
                                 (lambda () (init-workspace path file-filter top-environment #f type-inference?)))])
                   (report "5. init-references (derived)" (- real acc) cpu gc #f)
                   (report "   total init-workspace      " real cpu gc #f))))))
-    (printf "== excluded-refs counters (ns) ==~n")
-    (debug:excl-profile-report)
     (printf "done.~n")))))
 
 (main)

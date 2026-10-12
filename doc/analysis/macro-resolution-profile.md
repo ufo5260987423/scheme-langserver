@@ -240,9 +240,19 @@ set! 0.32 + include/resolve 0.19 ≈ 2.1 s。
 "涨到 1.32 s"主要是 GC 记账差异，真实构成——`find-available-references-for` 双参变体
 （无 symbol，沿父链收集全部可见引用）2,992 次调用占 ~1 s（每次 ~330 µs，内含大量分配）；
 `library-identifier?` 135,580 次仅 0.086-0.13 s（0.6-1 µs/次）；遍历本身可忽略。
-该变体的优化方向是按 (document, node) memo，但 step 的 quote/quasiquote 子句在分析中途
-调用它时 document-ordered-reference-list 仍在被 mutate——memo 需要按 step-pass 失效，
-设计上要先解决失效粒度（参照 optimization-literature.md 中 per-node 缓存被证伪的教训）。
+
+**excluded-refs 已修复（2026-10-12 下午）**：完整结果 memo 不可行（step 中途
+quote/quasiquote/expander 路径也会调双参变体，彼时 document 引用表仍在 mutate）。
+实际实现的是**根层子结果缓存**：双参变体在根层对 document-ordered-reference-list 的
+filter 子结果在同一 document 内只要 (root-local, doc-list) 两个列表对象 identity 不变
+就成立——两者都是函数式替换（无 set-car!/set-cdr!，同 b2fc5b41 的不变量），identity
+检查即有效失效检测。再叠加 cached local-ht 与空 excluded 短路。A/B 对照（交错测量）：
+init 墙钟中位数 9.8 s -> 8.45 s（-13%），excl-find-refs 0.73 s -> 0.32 s。
+缓存表全局 eq-hashtable + 互斥锁（MT 下不同文档的工作线程共享）。
+
+**MT 扩展性复测（2026-10-12，load-process 修复后）**：threaded init 6/6 干净通过，
+4.2-4.6 s vs 单线程 ~7-8.5 s，扩展比 ~1.6x，与修复前（6.0 vs 9.6 s）一致——
+per-thread memo 与 merge 快路径未引入新的并发问题。
 
 **load-process 已修复（2026-10-12，e44f36c4 之后）**：file-linkage 1.7 s ≈ 99% 在
 `analysis/dependency/rules/load.sls` 对每文档每 index-node 的 match-index-node 分派
