@@ -16,10 +16,13 @@
 
 (define (private-clause-process root-index-node clause-index-node)
   (match-index-node clause-index-node
-    [(predicate . body)
+    [(predicate)
       (extend-index-node-substitution-list predicate 'something?)
-      (let ([last (car (reverse body))])
-        (extend-index-node-substitution-list root-index-node last)
-        (extend-index-node-substitution-list last root-index-node))]
+      (extend-index-node-substitution-list root-index-node predicate)
+      (extend-index-node-substitution-list predicate root-index-node) ]
+    [(predicate . (:_ ... last))
+      (extend-index-node-substitution-list predicate 'something?)
+      (extend-index-node-substitution-list root-index-node last)
+      (extend-index-node-substitution-list last root-index-node)]
     [else '()]))
 )
