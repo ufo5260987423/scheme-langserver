@@ -209,6 +209,54 @@ threaded-map 工作线程并发读写 → 桶链表损坏——与当年 `privat
 **unused-imports 连带收益**：修复引用查找后从 2.1 s 降到 0.62 s（其内部也走
 find-available-references-for）——确认查找基建是跨阶段公共成本。
 
+### 1.7 2026-10-12 复测（e44f36c4 之后，插桩已还原；复测脚本 `bin/profile-workspace-init.ss`）
+
+> 口径：本仓 'akku 过滤 829 路径、type-inference #f、单线程；init 墙钟 ~8.5-10.5 s
+> （脚本轮 1 手动跑阶段 1-4 + 轮 2 全量 init-workspace，计数器只来自轮 2）。
+
+**init-references ~7.8 s 的相位分解**：step 5.63 s / excluded-refs 1.32 s /
+unused-imports 0.62 s / unused-locals 0.12 s。step 之外合计 ~2.1 s（27%），其中
+excluded-refs 比 §1.4 的 0.86 s 涨了一半，值得单独剖。
+
+**§1.5 的“#1 优化靶”已解决**：prep-find-refs 2.07 s → 0.38 s（174k 次，2.2 µs/次），
+leaf-find-refs 2.51 s → 0.51 s（330k 次，1.5 µs/次）——合计 4.6 s → 0.89 s（-81%），
+b2fc5b41 + e44f36c4 的 memo/快路径效果坐实。establish-rules 0.06 s、leaf-usage 0.09 s、
+post-rules 0.93 s 均为噪声级。
+
+**剩余 step 墙钟 5.6 s 的构成（run-rules 10.5 s / children-rec 10.8 s 为嵌套累计口径，
+compound-total 39.8 s）**：规则体直方图（嵌套累计）——ufo-match 家族 ≈8.3 s
+（match-next 3.17 + match-one 1.72 + match-two 1.18 + match-check-ellipsis 0.99 +
+match 0.99 + match-check-identifier 0.24）仍是最大项，与 §1.3 结论一致（慢的是被反复
+step 的生成代码，不是 steer）；手写规则 library 0.79 + import 0.45 + define 0.36 +
+set! 0.32 + include/resolve 0.19 ≈ 2.1 s。
+
+**新靶子：file-linkage 1.7 s ≈ load-process 1.7 s（99%）**。`init-matrix` 里
+`load-process` 对**每个文档的每个 index-node** 做 match-index-node 分派只为找稀有的
+`(load/load-library/load-program "...")` 形式（`analysis/dependency/rules/load.sls`），
+矩阵写入仅 3.5 ms、import 库解析 12 ms、init-maps 0.4 ms。优化方向：分派前先做
+头符号预判（非 load 家族直接 cheap-reject），或对 load 形式做一遍独立扫描。
+
+**excluded-refs 内部剖析（1.32 s 墙钟）**：`process-library-identifier-excluded-references` 的
+"涨到 1.32 s"主要是 GC 记账差异，真实构成——`find-available-references-for` 双参变体
+（无 symbol，沿父链收集全部可见引用）2,992 次调用占 ~1 s（每次 ~330 µs，内含大量分配）；
+`library-identifier?` 135,580 次仅 0.086-0.13 s（0.6-1 µs/次）；遍历本身可忽略。
+该变体的优化方向是按 (document, node) memo，但 step 的 quote/quasiquote 子句在分析中途
+调用它时 document-ordered-reference-list 仍在被 mutate——memo 需要按 step-pass 失效，
+设计上要先解决失效粒度（参照 optimization-literature.md 中 per-node 缓存被证伪的教训）。
+
+**load-process 已修复（2026-10-12，e44f36c4 之后）**：file-linkage 1.7 s ≈ 99% 在
+`analysis/dependency/rules/load.sls` 对每文档每 index-node 的 match-index-node 分派
+（外加每次递归重算 uri->path）。改为头符号预判 cheap-reject + uri->path 提升到入口一次：
+file-linkage 1,727 ms -> 63 ms（27×），init 墙钟 8.5 s -> ~7.0 s（-18%）。
+回归：test-file-linkage 84、test-library-import 5、test-workspace 68、
+test-match-cascade-auto-resolve 14 全绿。
+
+**方法备注**：eq-hashtable 不能拿 (cons 'rule name) 当 key（每次 fresh pair，
+直方图退化成每调用一条）；计数 key 用 symbol； Chez 对 (define x (case-lambda ...))
+的右侧体内放内部 define 会报 invalid syntax（变量 define 无函数 define 的体）；
+排他段计时器会把 GC 停顿记到当时活跃的调用帧上（excl-walk 含 GC 口径 3.4-5.0 s
+波动 vs 外部墙钟 1.3 s，判断热点时须用外部相位计时交叉验证）。
+
 ## 2. 级联形状与缓存现状
 
 - **级联呈宽展形**：单次顶层调用产生 ~300 次 generator 调用、~248 次 step 递归（在 cap 15 截断前）。内层宏（match-next/match-one/…）的相同子树被反复展开、反复 step——DAG 共享未利用。

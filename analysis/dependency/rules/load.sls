@@ -12,25 +12,37 @@
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node))
 
+;; A cheap-reject fast path: only compound nodes whose head is one of the
+;; load-family symbols can match the clauses below; everything else just
+;; recurses into children. This avoids a match-index-node dispatch (and the
+;; per-node uri->path re-computation the old code paid) on every one of the
+;; ~500k index-nodes in a workspace, for the sake of the rare (load "...").
 (define (load-process root-file-node document index-node)
-  (let ([current-absolute-path (uri->path (document-uri document))])
-    (match-index-node index-node
-      [('load (:= index-node-expression (? string? path)) . rest) 
-        (guard-for document index-node 'load '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-        (append 
-          (private:target-file-node-list root-file-node current-absolute-path path)
-          (private:children-load-process root-file-node document index-node))]
-      [('load-library (:= index-node-expression (? string? path)) . rest) 
-        (guard-for document index-node 'load-library '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-        (append 
-          (private:target-file-node-list root-file-node current-absolute-path path)
-          (private:children-load-process root-file-node document index-node))]
-      [('load-program (:= index-node-expression (? string? path)) . rest) 
-        (guard-for document index-node 'load-program '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
-        (append 
-          (private:target-file-node-list root-file-node current-absolute-path path)
-          (private:children-load-process root-file-node document index-node))]
-      [else (private:children-load-process root-file-node document index-node)])))
+  (private:load-process root-file-node document (uri->path (document-uri document)) index-node))
+
+(define (private:load-process root-file-node document current-absolute-path index-node)
+  (let ([children (index-node-children index-node)])
+    (if (and (pair? children)
+          (index-node-symbol? (car children))
+          (memq (index-node-expression (car children)) '(load load-library load-program)))
+      (match-index-node index-node
+        [('load (:= index-node-expression (? string? path)) . rest) 
+          (guard-for document index-node 'load '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (append 
+            (private:target-file-node-list root-file-node current-absolute-path path)
+            (private:children-load-process root-file-node document current-absolute-path index-node))]
+        [('load-library (:= index-node-expression (? string? path)) . rest) 
+          (guard-for document index-node 'load-library '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (append 
+            (private:target-file-node-list root-file-node current-absolute-path path)
+            (private:children-load-process root-file-node document current-absolute-path index-node))]
+        [('load-program (:= index-node-expression (? string? path)) . rest) 
+          (guard-for document index-node 'load-program '(chezscheme) '(rnrs) '(rnrs base) '(scheme))
+          (append 
+            (private:target-file-node-list root-file-node current-absolute-path path)
+            (private:children-load-process root-file-node document current-absolute-path index-node))]
+        [else (private:children-load-process root-file-node document current-absolute-path index-node)])
+      (private:children-load-process root-file-node document current-absolute-path index-node))))
 
 (define (private:target-file-node-list root-file-node current-absolute-path path)
   (let ([target-file-node 
@@ -40,6 +52,6 @@
             [else (walk-file root-file-node (string-append (path-parent current-absolute-path) "/" path))])])
     (if (null? target-file-node) target-file-node `(,target-file-node))))
 
-(define (private:children-load-process root-file-node document index-node)
-  (apply append (map (lambda (child) (load-process root-file-node document child)) (index-node-children index-node))))
+(define (private:children-load-process root-file-node document current-absolute-path index-node)
+  (apply append (map (lambda (child) (private:load-process root-file-node document current-absolute-path child)) (index-node-children index-node))))
 )
