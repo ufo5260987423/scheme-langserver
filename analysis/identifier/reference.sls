@@ -115,17 +115,57 @@
       (and (symbol? id1) (symbol? id2)
         (string<=? (private:identifier-name id1) (private:identifier-name id2))))))
 
-;Batch maintenance for reference lists: sort+dedupe the (small) new batch, then merge it into the (large) existing list in O(n) instead
-;of re-sorting everything on every attach.  See merge-ordered-list.sls for the semantics contract.
+;Batch maintenance for reference lists.  The dominant call shape is a SINGLE fresh reference from a
+;binding rule (define/let/lambda/...): sort+dedupe is skipped and private:insert-one-into-ordered walks
+;the sorted spine once (one cons per preceding element, tail shared) -- merge-ordered-lists' per-run
+;split+reverse+append triple-touches every run on the way, measured at 1.85s init-wide (2026-10-11).
+;Multi-element batches keep the merge path; see merge-ordered-list.sls for the semantics contract.
 (define (append-references-into-ordered-references-for document index-node list)
-  (if (null? list)
-    (void)
-    (let ([sorted-batch (dedupe-adjacent (sort-identifier-references (reverse list)) equal?)])
-      (if (null? index-node)
-        (document-ordered-reference-list-set! document
-          (merge-ordered-lists (document-ordered-reference-list document) sorted-batch identifier-compare? equal?))
-        (index-node-references-import-in-this-node-set! index-node
-          (merge-ordered-lists (index-node-references-import-in-this-node index-node) sorted-batch identifier-compare? equal?))))))
+  (cond
+    [(null? list) (void)]
+    [(null? (cdr list))
+      (let ([new-list
+              (private:insert-one-into-ordered
+                (car list)
+                (if (null? index-node)
+                  (document-ordered-reference-list document)
+                  (index-node-references-import-in-this-node index-node))
+                identifier-compare? equal?)])
+        (if (null? index-node)
+          (document-ordered-reference-list-set! document new-list)
+          (index-node-references-import-in-this-node-set! index-node new-list)))]
+    [else
+      (let ([sorted-batch (dedupe-adjacent (sort-identifier-references (reverse list)) equal?)])
+        (if (null? index-node)
+          (document-ordered-reference-list-set! document
+            (merge-ordered-lists (document-ordered-reference-list document) sorted-batch identifier-compare? equal?))
+          (index-node-references-import-in-this-node-set! index-node
+            (merge-ordered-lists (index-node-references-import-in-this-node index-node) sorted-batch identifier-compare? equal?))))]))
+
+;Insert a single reference into a sorted+deduped list.  Walks past every element that sorts strictly
+;before the newcomer (consing into a reversed prefix), then anchors before the first element of its
+;compare-run: elements of that run which are eq?/equal? to the newcomer are dropped (batch-first anchor
+;semantics, matching merge-same-run's drop-prefix-equal; the list is deduped, so at most one), the rest
+;of the run and the untouched tail are shared.
+(define (private:insert-one-into-ordered reference old compare? equal-procedure)
+  (let loop ([rest old] [rev-prefix '()])
+    (cond
+      [(null? rest) (cons reference (reverse rev-prefix))]
+      [(compare? reference (car rest))
+        (fold-left (lambda (acc x) (cons x acc))
+          (if (compare? (car rest) reference)
+            (cons reference (private:drop-prefix-equal reference rest equal-procedure))
+            (cons reference rest))
+          rev-prefix)]
+      [else (loop (cdr rest) (cons (car rest) rev-prefix))])))
+
+;matching merge-ordered-lists' drop-prefix-equal: drop the leading run of elements eq?/equal? to target
+(define (private:drop-prefix-equal target lst equal-procedure)
+  (cond
+    [(null? lst) '()]
+    [(or (eq? target (car lst)) (equal-procedure target (car lst)))
+      (private:drop-prefix-equal target (cdr lst) equal-procedure)]
+    [else lst]))
 
 (define (sort-identifier-references identifier-references)
   (sort identifier-compare? identifier-references))
