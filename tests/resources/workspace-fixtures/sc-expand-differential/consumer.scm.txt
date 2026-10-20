@@ -1,0 +1,9 @@
+(library (sc-expand-differential-consumer)
+  (export classify)
+  (import (chezscheme) (ufo-match))
+
+  (define (classify input)
+    (match input
+      [(a b) (+ a b)]
+      [('sym) 0]
+      [(? number? n) n])))

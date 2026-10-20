@@ -5,6 +5,7 @@
   (import
     (chezscheme)
     (scheme-langserver virtual-file-system index-node)
+    (scheme-langserver virtual-file-system document)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver util contain))
 
@@ -270,6 +271,47 @@
       [(eq? n ancestor) #t]
       [else (loop (index-node-parent n))])))
 
+;TODO-13 test against the DOCUMENT roots, not the hop-local call node: expansion trees are free-standing (their parent chains never reach a
+;document root -- the under-node? checks elsewhere rely on exactly that), so call-site-tree membership identifies original source nodes at ANY
+;cascade hop. The pvar substitution inserts call-site nodes (e.g. pattern variables) into template compounds; only document-root membership
+;recognizes them across hops.
+(define (private:call-site-node? node document)
+  (let ([roots (document-index-node-list document)])
+    (let loop ([n node])
+      (cond
+        [(not (index-node? n)) #f]
+        [(memq n roots) #t]
+        [else (loop (index-node-parent n))]))))
+
+(define (private:call-site-subleaf node identifier document)
+  ;First leaf in node's subtree whose symbol is identifier AND that lives in the original call-site tree. Template pvar substitution places
+  ;call-site nodes inside compound subtrees, so a pair's compound (or a binding reference's index-node) can contain the true anchor as a
+  ;descendant -- e.g. a pattern-variable binding reference registers the whole `(a w)` binding pair as its index-node, whose car is the
+  ;call-site pattern node. Returns #f when no such leaf exists (genuinely macro-introduced identifier). Mirrors Chez's own expander
+  ;attribution (see tests/analysis/identifier/test-sc-expand-differential.sps).
+  (let loop ([stack (list node)])
+    (if (null? stack)
+      #f
+      (let ([current (car stack)])
+        (cond
+          [(not (index-node? current)) (loop (cdr stack))]
+          [(and (eq? identifier (annotation-stripped (index-node-datum/annotations current)))
+              (private:call-site-node? current document))
+            current]
+          [else
+            (loop (append (index-node-children current) (cdr stack)))])))))
+
+(define (private:call-site-leaf-in-pairs identifier all-pairs document)
+  ;First call-site-tree leaf named identifier found in any hop's pair compounds. See the
+  ;fallback recovery in private:shallow-copy for why the scan spans all hops.
+  (let loop ([ps all-pairs])
+    (if (null? ps)
+      #f
+      (let ([compound (cdar ps)])
+        (or (and (index-node? compound)
+              (private:call-site-subleaf compound identifier document))
+          (loop (cdr ps)))))))
+
 (define (private:shallow-copy pairs all-pairs expansion-index-node document initialization-index-node)
   ;Back-propagates references from the expansion tree to the callee (call-site/compound) tree. Returns the list of (new-reference target-node kind)
   ;for every reference this call created (kind: export | import); the rule layer uses it to build expansion templates for cross-call-site
@@ -366,18 +408,48 @@
             (let ([p (private:pair-find (car import-entry) pairs)])
               (if p
                 (let ([c (cdr p)])
-                  (if (and (index-node? c) (private:under-node? c initialization-index-node))
+                  (if (and (index-node? c) (private:call-site-node? c document))
                     c
                     initialization-index-node))
                 initialization-index-node))])
           (when (index-node? counterpart)
             (for-each
               (lambda (import-reference)
+                ;When still on the fallback anchor, recover the true anchor: the reference's own
+                ;index-node may BE a call-site node (paired compounds embed pvar call-site nodes),
+                ;and otherwise the pair's compound subtree is searched for a matching call-site leaf
+                ;(e.g. pattern-variable bindings anchor at the pattern -- Chez expander attribution).
+                (let* ([p (private:pair-find (car import-entry) pairs)]
+                    [c (and p (cdr p))]
+                    [identifier (identifier-reference-identifier import-reference)]
+                    [ref-node (identifier-reference-index-node import-reference)]
+                    [anchor
+                      (if (eq? counterpart initialization-index-node)
+                        (or (and (index-node? ref-node)
+                                (not (eq? ref-node initialization-index-node))
+                                (private:call-site-node? ref-node document)
+                                ref-node)
+                          (and (index-node? c)
+                            (private:call-site-subleaf c identifier document))
+                          (and (index-node? ref-node)
+                            (private:call-site-subleaf ref-node identifier document))
+                          ;Bindings attach to interior scope nodes (e.g. the generated let),
+                          ;which have no pair -- the pvar link exists only at the leaf pairs.
+                          ;Scan every hop's pair compounds for a call-site leaf with this
+                          ;identifier: at the outermost hop the compounds embed the original
+                          ;call-site nodes (pattern variables), so the binding anchors at its
+                          ;true source position (Chez expander attribution; cf. the sc-expand
+                          ;differential test). Inner hops have no document compounds and keep
+                          ;the fallback. First match wins: template (left-to-right) order puts
+                          ;the binding pattern before the body.
+                          (private:call-site-leaf-in-pairs identifier all-pairs document)
+                          initialization-index-node)
+                        counterpart)])
                 (let ([ni
                     (make-identifier-reference
-                      (identifier-reference-identifier import-reference)
+                      identifier
                       document
-                      counterpart
+                      anchor
                       initialization-index-node
                       (identifier-reference-library-identifier import-reference)
                       (identifier-reference-type import-reference)
@@ -385,12 +457,15 @@
                       '()
                       (identifier-reference-top-environment import-reference))])
                   (identifier-reference-speculative?-set! ni #t)
-                  ;the dedup scan only pays at the fallback anchor (call node) -- that is where multiplicity accumulated; other
-                  ;targets keep the old fire-and-forget path (measured: unconditional dedup cost ~8% of full-repo cold init)
+                  ;Insertion (scope visibility) and anchor (definition position) are separated:
+                  ;the reference resolves from the whole macro call (fallback counterpart, an
+                  ;ancestor of every use), while goto-definition lands at the recovered
+                  ;call-site position (e.g. the pattern). Inserting at the anchor instead would
+                  ;hide the binding from sibling use sites (measured: resolution collapses to 0).
                   (when (not (and (eq? counterpart initialization-index-node)
                               (anchor-copy-exists? counterpart ni)))
                     (queue-insert! counterpart ni))
-                  (set! created (cons `(,ni ,counterpart import) created))))
+                  (set! created (cons `(,ni ,counterpart import) created)))))
               (cdr import-entry)))))
       local-identifiers+import-index-node)
     (private:flush-inserts! pending-inserts-ht document)
