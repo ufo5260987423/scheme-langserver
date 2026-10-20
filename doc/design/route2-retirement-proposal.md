@@ -77,10 +77,10 @@ router 的 ufo-match 臂改为 IR-only；route 2 规则保留在
       配置跑 MCP 桥即天然覆盖）；
 - [ ] 外部至少一个非 ufo-match 重度用户项目验证（IR 路径对调用点含跨库
       自由变量的 define 目前会回退——见 §4，需量化回退率可接受）。
-- [ ] 部署形态缺口补齐或接受：IR 路径仅在脚本模式生效（实测编译二进制
-      的 interaction env 无库绑定、运行时注入失败）；发行版（编译产物）
-      要退役 route 2 必须先解决宏解析环境——当前结论见
-      chez-sc-expand-records-switch.md §9 部署形态矩阵。
+- [x] ~~部署形态缺口~~（2026-10-20 修正：不存在缺口。初版"编译二进制不可用"
+      系探测探针误用 `_` 通配符所致——ufo-match 对 `_` 一律报 "misplaced aux
+      keyword"（两种模式共有 quirk）；探针改为 `(match 1 [x x])` 后，编译二进制
+      的 sc-expand 正常解析编进二进制的 ufo-match。两种部署形态均可用。）
 
 ### Phase 3 — 管线退役（条件满足后）
 

@@ -421,14 +421,16 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   traps: expand the enclosing DEFINE, never the library form (library
   expansion defers definitions to compile-time parts, runtime IR is empty);
   the host process must import (ufo-match) or the IR path probes unavailable
-  and stays off. Deployment matrix (measured with compile-chez-program probe
-  programs): SCRIPT mode (scheme --script run.ss, the MCP/docker entry via
-  run-mcp-cache.sh) probes OK and takes the IR path; COMPILED binaries keep
-  route 2 -- the interaction env there has no library bindings, runtime
-  eval-import fails, and eval'd define-syntax fails ("~:s is not bound"), so
-  the probe marks unavailable and the gate silently no-ops (status quo, no
-  regression). Stats: (ir-auto-route:stats) -> (hits fallbacks ms); miss
-  reasons under REPLAY_TRACE=1. Full-repo canary
+  Deployment (corrected 2026-10-20; the earlier same-day "compiled binaries
+  keep route 2" conclusion was WRONG -- the env probe used the `[_ 1]`
+  wildcard, which ufo-match rejects in EVERY mode ("misplaced aux keyword"),
+  so the probe falsely reported unavailable in compiled binaries and silently
+  disabled the IR path there. sc-expand resolves compiled-in ufo-match macros
+  fine in compile-chez-program binaries -- measured; the probe is now
+  '(match 1 [x x])'. The run.ss (ufo-match) import is still required:
+  without it the macros are not compiled into the binary at all. Stats:
+  (ir-auto-route:stats) -> (hits fallbacks ms); miss reasons under
+  REPLAY_TRACE=1.
   (bin/ir-route-canary.ss): on this repo (835 docs) IR mode hit 45 real call
   sites and strictly dominated on diagnoses -- 14 "Unused local variable"
   FALSE POSITIVES of route 2 (usage-count corruption from duplicate
@@ -441,7 +443,8 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   to over-analyze them; that was the +231 ms eager cost). Forms parse from
   the DOCUMENT TEXT (sfd over the string), so unsaved buffers are handled by
   construction. Retirement plan: doc/design/route2-retirement-proposal.md
-  (Phase 1 done; the compiled-binary deployment gap is a Phase 2 condition).
+  (Phase 1 done; no deployment gap -- compiled binaries work, see the
+  Deployment note above).
   It is the ONLY project library starting
   with `#!chezscheme` (required for `#%$` kernel primitives; the directive
   must be the file's first line and immediately precede `(library ...)`,

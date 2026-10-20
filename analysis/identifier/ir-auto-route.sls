@@ -47,7 +47,13 @@
           (let ([built
               (guard (e [else 'unavailable])
                 (let ([env (interaction-environment)])
-                  (sc-expand '(match 1 [_ 1]) env #t)
+                  ;NOTE the probe must NOT use the `_` wildcard: ufo-match
+                  ;rejects it ("misplaced aux keyword") in every mode -- a
+                  ;pre-existing quirk unrelated to env availability. A `_`
+                  ;probe falsely reported 'unavailable in COMPILED binaries
+                  ;(measured 2026-10-20) and silently disabled the IR path
+                  ;there. [x x] probes macro resolution only.
+                  (sc-expand '(match 1 [x x]) env #t)
                   env))])
             (set-box! private:env-cache built)
             (and (not (eq? built 'unavailable)) built))]))))
