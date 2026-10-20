@@ -421,7 +421,13 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   traps: expand the enclosing DEFINE, never the library form (library
   expansion defers definitions to compile-time parts, runtime IR is empty);
   the host process must import (ufo-match) or the IR path probes unavailable
-  and stays off. Stats: (ir-auto-route:stats) -> (hits fallbacks ms); miss
+  and stays off. Deployment matrix (measured with compile-chez-program probe
+  programs): SCRIPT mode (scheme --script run.ss, the MCP/docker entry via
+  run-mcp-cache.sh) probes OK and takes the IR path; COMPILED binaries keep
+  route 2 -- the interaction env there has no library bindings, runtime
+  eval-import fails, and eval'd define-syntax fails ("~:s is not bound"), so
+  the probe marks unavailable and the gate silently no-ops (status quo, no
+  regression). Stats: (ir-auto-route:stats) -> (hits fallbacks ms); miss
   reasons under REPLAY_TRACE=1. Full-repo canary
   (bin/ir-route-canary.ss): on this repo (835 docs) IR mode hit 45 real call
   sites and strictly dominated on diagnoses -- 14 "Unused local variable"
@@ -435,7 +441,8 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   to over-analyze them; that was the +231 ms eager cost). Forms parse from
   the DOCUMENT TEXT (sfd over the string), so unsaved buffers are handled by
   construction. Retirement plan: doc/design/route2-retirement-proposal.md
-  (Phase 1 done). It is the ONLY project library starting
+  (Phase 1 done; the compiled-binary deployment gap is a Phase 2 condition).
+  It is the ONLY project library starting
   with `#!chezscheme` (required for `#%$` kernel primitives; the directive
   must be the file's first line and immediately precede `(library ...)`,
   no comment lines between). Differential test:
