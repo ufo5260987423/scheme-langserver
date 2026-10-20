@@ -1,7 +1,12 @@
 (import
     (chezscheme)
     (srfi :37 args-fold)
-    (scheme-langserver))
+    (scheme-langserver)
+    ;ufo-match: makes the route-3 IR path (ir-auto-route) available in this
+    ;process -- the IR expander probe resolves match against the interaction
+    ;environment. Without this import the IR path silently stays off
+    ;(SLSCHEME_IR_ROUTE gate; see doc/analysis/chez-sc-expand-records-switch.md).
+    (ufo-match))
 
 (define (display-help)
   (let ([prog-name (car (command-line))])

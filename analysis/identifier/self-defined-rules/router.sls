@@ -13,6 +13,7 @@
 
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier expanders expansion-wrap)
+    (scheme-langserver analysis identifier ir-auto-route)
     (scheme-langserver analysis identifier rules begin)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)
@@ -77,7 +78,11 @@
         (let ([expander (private:find-expander target-identifier)])
           (if expander
             (add-rule-procedure rules
-              `((,(expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier)) .
+              ;Route-3 controlled parallel phase (env-gated, silent fallback to
+              ;the route-2 rule; see ir-auto-route and doc/analysis/chez-sc-expand-
+              ;records-switch.md §9). With the gate off the wrapper is a pass-through.
+              `((,(ir-auto-route:wrap-rule
+                  (expansion-generator->rule expander step file-linkage expanded+callee-list memory target-identifier))) .
                 ,target-identifier))
             ;Hand-written match-process fallback DISABLED 2026-10-05: a full-repo probe shows the auto path (expander present)
             ;covers 100% of cross-file match-family call sites; the no-expander remainder resolves to quoted data or in-library

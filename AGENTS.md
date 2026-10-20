@@ -408,7 +408,53 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   cached workspaces keep route-2 functionality.
 - Docs: `doc/analysis/macro-analysis-framework.md` (theory, 28-paper
   bibliography), `doc/analysis/macro-resolution-profile.md` (measured
-  costs).
+  costs), `doc/analysis/chez-sc-expand-records-switch.md` (undocumented
+  `(sc-expand x env #t)` switch: returns the compiler's parsed Lsrc IR with
+  per-expression/reference/binding source locations — the Chez-native
+  counterpart of Racket's syntax objects; usable as route-2 ground truth
+  or expander-doc fallback replacement).
+- Ground truth: `analysis/identifier/chez-ir.sls` wraps the switch (feature
+  self-check `chez-ir-available?`). Controlled parallel phase (route 3):
+  `analysis/identifier/ir-auto-route.sls` -- the router's ufo-match arm tries
+  Chez's own expander first and silently falls back to route 2; gated by the
+  SLSCHEME_IR_ROUTE env var (OFF = bit-for-bit route 2 behavior). Two measured
+  traps: expand the enclosing DEFINE, never the library form (library
+  expansion defers definitions to compile-time parts, runtime IR is empty);
+  the host process must import (ufo-match) or the IR path probes unavailable
+  and stays off. Stats: (ir-auto-route:stats) -> (hits fallbacks ms); miss
+  reasons under REPLAY_TRACE=1. Full-repo canary
+  (bin/ir-route-canary.ss): on this repo (835 docs) IR mode hit 45 real call
+  sites and strictly dominated on diagnoses -- 14 "Unused local variable"
+  FALSE POSITIVES of route 2 (usage-count corruption from duplicate
+  references) absent in IR mode, zero new ones; refs -0.03%; wall time on par.
+  Default ON since 2026-10-20 (SLSCHEME_IR_ROUTE=0 opts out per process;
+  flip basis: canary dominance + 14 false-positive diagnoses eliminated +
+  threaded soak 6/6 + full match-family suite green under the default). The
+  ~256 repo fallbacks are all pseudo-call-sites inside macro templates --
+  Chez-semantically not call sites, IR correctly declines them (route 2 used
+  to over-analyze them; that was the +231 ms eager cost). Forms parse from
+  the DOCUMENT TEXT (sfd over the string), so unsaved buffers are handled by
+  construction. Retirement plan: doc/design/route2-retirement-proposal.md
+  (Phase 1 done). It is the ONLY project library starting
+  with `#!chezscheme` (required for `#%$` kernel primitives; the directive
+  must be the file's first line and immediately precede `(library ...)`,
+  no comment lines between). Differential test:
+  `tests/analysis/identifier/test-sc-expand-differential.sps` compares IR
+  `(name ref-bias binding-bias)` triples against route-2 resolution.
+  Pattern-variable anchoring was fixed the same day (expansion-wrap.sls
+  shallow-copy import fallback): pair compounds are scanned for a
+  call-site-tree leaf with the binding identifier (the pvar link exists
+  only at leaf pairs; bindings attach to interior scope nodes), and
+  scope visibility (insert at the macro call node) is separated from the
+  definition position (the reference's index-node = recovered pattern
+  position). Known remaining gap pinned in the test comment: duplicate
+  speculative references (resolution count 2 vs Chez's 1, TODO-15 P1/P2
+  multiplicity). Route-3 spike (Chez IR as route-2 replacement):
+  `tests/analysis/identifier/test-sc-expand-route3-spike.sps` -- 15/15 green,
+  pipeline ~11 ms vs route-2 cold call 228 ms; open questions for a full
+  switch are listed in doc/analysis/chez-sc-expand-records-switch.md §9.
+  Note: `prelex.source` slots hold ANNOTATED identifiers (unwrap once), while
+  `ref` maybe-src slots hold plain source objects.
 - Key tests: `test-match-cascade-auto-resolve.sps` (the comprehensive one),
   `test-ellipsis-call-site.sps`,
   `expanders/test-pattern.sps`.
