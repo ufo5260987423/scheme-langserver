@@ -67,6 +67,7 @@
                 (find-available-references-for document node name))))))
       ground-truth))
 (test-end)
+(newline)
 
 ;; free-variable case: classify calls its sibling helper. The strict fresh
 ;; env rejects unbound identifiers; the wrapper grows one parameter per error.
