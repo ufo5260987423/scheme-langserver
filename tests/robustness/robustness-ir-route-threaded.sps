@@ -25,8 +25,6 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 
-(putenv "SLSCHEME_IR_ROUTE" "1")
-
 (define iterations 6)
 
 (define fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential"))

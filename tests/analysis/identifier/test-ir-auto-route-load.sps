@@ -27,8 +27,6 @@
   (scheme-langserver analysis workspace))
 
 ;; 注意：故意不 import (ufo-match)
-(putenv "SLSCHEME_IR_ROUTE" "1")
-
 (define fixture
   (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential"))
 (define consumer-path (string-append fixture "/consumer.scm.txt"))

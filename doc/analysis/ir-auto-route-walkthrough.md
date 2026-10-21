@@ -66,19 +66,19 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
 与退役前的区别：
 
 - **不再需要 langserver 侧的 expander**（`private:find-expander` 已删）——IR 路径靠 Chez 自己的 expander 解析头符号，臂只负责"哪些标识符挂 IR 规则"；机制内部完全宏无关：`private:try` 从调用点推导头符号与库标识，`private:env` 按**该库**的副本引导（fresh env = `(chezscheme) + <头符号的库>`，缓存键 = 源路径 × 库）；
-- **不再包裹 route-2 规则**。`SLSCHEME_IR_ROUTE=0` 的语义变为"不做自动解析"（旧的 route-2 逃生门随管线一起消失）。
+- **不再包裹 route-2 规则**。无任何 opt-out 门控——IR 路径无条件启用。
 
 ## 2. 规则入口 — `ir-auto-route:try-expand`
 
 ```scheme
 (define (ir-auto-route:try-expand)
   (lambda (root-file-node root-library-node document index-node)
-    (and private:gate? (chez-ir-available?)
+    (and (chez-ir-available?)
       (private:try root-library-node document index-node))))
 ```
 
-- `private:gate?`：默认开，`SLSCHEME_IR_ROUTE=0/off` 逐进程关闭（二分排障用）；
-- `chez-ir-available?`（`chez-ir.sls`）：进程级自检——3-arity `sc-expand` 可用 + `#%$record-type-descriptor` 正常。**Chez 升级破坏未文档化 API 时在此降级（该家族不自动解析），不是崩溃。**
+- **无门控**（2026-10-21 移除；上游正在推进把底层 Chez API 文档化，未文档化不再是留逃生门的理由）；
+- `chez-ir-available?`（`chez-ir.sls`）：进程级自检——3-arity `sc-expand` 可用 + `#%$record-type-descriptor` 正常。**Chez 环境缺这些 API 时在此优雅降级（不自动解析），不是崩溃。**
 
 ## 3. env 引导 — `private:env`（源优先）
 

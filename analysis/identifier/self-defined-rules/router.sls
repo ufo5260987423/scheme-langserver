@@ -59,9 +59,10 @@
       ;ir-auto-route from the WORKSPACE'S OWN copy of the head's library
       ;(per-call-site import resolution; source-first, deterministic). On ANY
       ;failure the call site silently gets no expansion-derived references:
-      ;see ir-auto-route:stats / REPLAY_TRACE. SLSCHEME_IR_ROUTE=0 now means
-      ;"no auto-resolution for these macros" (the old route-2 opt-out is gone
-      ;with the pipeline).
+      ;see ir-auto-route:stats / REPLAY_TRACE. No opt-out gate: the path is
+      ;unconditional (the underlying Chez APIs are being upstreamed for
+      ;documentation; chez-ir-available? remains as a graceful-degradation
+      ;self-check).
       [(and (equal? library-identifiers '((ufo-match)))
           (find (lambda (e) (equal? expressions (list e)))
             '(match match-next match-one match-check-ellipsis match-two match-check-identifier)))

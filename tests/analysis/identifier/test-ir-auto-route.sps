@@ -2,11 +2,9 @@
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright (c) 2026 WANG Zheng
 ;; SPDX-License-Identifier: MIT
-;; Controlled parallel phase test: with SLSCHEME_IR_ROUTE on, the router's
-;; ufo-match arm resolves the call site through Chez's own expander IR
-;; (ir-auto-route) instead of route 2's generator pipeline, and the analysis
-;; must still satisfy the IR ground truth. With the gate off (every other
-;; test), ir-auto-route is inert and behavior is unchanged.
+;; IR auto-route test: the router's ufo-match arm resolves the call site
+;; through Chez's own expander IR (ir-auto-route), and the analysis must
+;; satisfy the IR ground truth. The path is unconditional (no gate).
 #!r6rs
 
 (import
@@ -23,8 +21,6 @@
   (scheme-langserver analysis identifier expander ir-auto-route)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
-
-(putenv "SLSCHEME_IR_ROUTE" "1")
 
 (test-begin "ir-auto-route: parallel Chez-IR path through the real workspace init")
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential")]

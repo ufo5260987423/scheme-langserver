@@ -4,6 +4,9 @@
 > Phase 2（router 简化）与 Phase 3（管线删除）于 2026-10-21 一并执行——
 > route 2 回退与自研展开管线已彻底移除，ufo-match 家族的自动宏解析
 > 全部走 ir-auto-route（IR 路径），失败即静默不分析。本章保留作为决策记录。
+> 后续（2026-10-21）：机制泛化至 match-index-node（宏无关）；`SLSCHEME_IR_ROUTE`
+> 门控已移除——上游正推进将 `(sc-expand x env #t)`、`#%$record-type-descriptor`、
+> Lsrc IR 文档化，未文档化不再是保留逃生门的理由。文中提及门控的段落均为历史记录。
 > 依据文档：`doc/analysis/chez-sc-expand-records-switch.md`（机制与全部落地记录）、
 > `doc/analysis/macro-resolution-profile.md`（route 2 成本结构）、
 > `doc/analysis/macro-analysis-framework.md`（E1–E4 理论框架）。

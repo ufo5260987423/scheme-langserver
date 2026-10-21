@@ -372,8 +372,10 @@ macro-derived bindings are synthesized onto the document. Route 2's
 self-built pipeline (`expanders/`: dispatch-matcher transcription, template
 instantiation, pretty-print/reparse, shallow-copy back-propagation, template
 replay) has been REMOVED; on any IR failure the call site silently gets no
-expansion-derived references (see ir-auto-route:stats / REPLAY_TRACE).
-SLSCHEME_IR_ROUTE=0 now means "no auto-resolution for the family".
+expansion-derived references (see ir-auto-route:stats / REPLAY_TRACE). NO
+opt-out gate -- the path is unconditional (the underlying Chez APIs are
+being upstreamed for documentation; chez-ir-available? remains as a
+graceful-degradation self-check).
 
 Env bootstrap (source-first): the workspace's own ufo-match copy is located
 via the call site's import resolution (then library-node tree, then

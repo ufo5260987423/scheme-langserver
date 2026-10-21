@@ -1,10 +1,10 @@
 #!chezscheme
 (library (scheme-langserver analysis identifier expander ir-auto-route)
-  ;; Controlled parallel phase for route 3 (doc/analysis/chez-sc-expand-records-switch.md
-  ;; §9): for ufo-match-family call sites, try Chez's own expander IR first and
-  ;; silently fall back to the route-2 rule on ANY failure. Everything is gated
-  ;; behind the SLSCHEME_IR_ROUTE environment variable: with the gate off this
-  ;; module is inert and route 2 behavior is bit-for-bit unchanged.
+  ;; IR auto-route (route 3; doc/analysis/ir-auto-route-walkthrough.md): for
+  ;; macro call sites dispatched by the router (ufo-match family, match-index-node),
+  ;; expand with Chez's own expander and synthesize references from the IR.
+  ;; Unconditional since 2026-10-21 -- the underlying Chez APIs are being
+  ;; upstreamed for documentation, so no opt-out gate remains.
   (export
     ir-auto-route:try-expand
     ir-auto-route:stats
@@ -45,14 +45,12 @@
 ;; for naive probes, and the `_` wildcard is rejected by ufo-match in every
 ;; mode). Real expansion consumes the keyword: no $top-level-value lookup,
 ;; and the failure thunk carries (quote match). The probe is '(match 1 [x x]).
-;Gate: ON by default since 2026-10-20 (single-thread canary dominance + 14
-;false-positive diagnoses eliminated + threaded soak 6/6 clean). Opt out with
-;SLSCHEME_IR_ROUTE=0 (or "off") -- e.g. while bisecting an analysis regression.
-(define private:gate-value (getenv "SLSCHEME_IR_ROUTE"))
-(define private:gate?
-  (not (and private:gate-value
-         (or (string=? private:gate-value "0")
-           (string=? private:gate-value "off")))))
+;NO GATE: the IR path is unconditional since 2026-10-21 (the user is
+;preparing an upstream PR to document the underlying Chez APIs -- sc-expand's
+;records? switch, #%$record-type-descriptor, the Lsrc IR -- at which point
+;the undocumented-access rationale for an opt-out disappears). The only
+;remaining guard is chez-ir-available?'s feature self-check, which degrades
+;to "no auto-resolution" on Chez builds lacking the APIs.
 (define private:env-mutex (make-mutex))
 (define private:env-source (box 'unset))  ; 'unset | 'interaction | (loaded . path) | 'unavailable
 
@@ -418,6 +416,6 @@
   ;; REPLAY_TRACE diagnostics carry the reason. root-file-node is accepted
   ;; for the rule-calling convention and unused.
   (lambda (root-file-node root-library-node document index-node)
-    (and private:gate? (chez-ir-available?)
+    (and (chez-ir-available?)
       (private:try root-library-node document index-node))))
 )
