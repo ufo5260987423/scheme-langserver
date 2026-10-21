@@ -454,7 +454,9 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   Chez-semantically not call sites, IR correctly declines them (route 2 used
   to over-analyze them; that was the +231 ms eager cost). Forms parse from
   the DOCUMENT TEXT (sfd over the string), so unsaved buffers are handled by
-  construction. Retirement plan: doc/design/route2-retirement-proposal.md
+  construction. Full mechanism walkthrough (per-stage code map, CN):
+  doc/analysis/ir-auto-route-walkthrough.md. Retirement plan:
+  doc/design/route2-retirement-proposal.md
   (Phase 1 done; no deployment gap -- compiled binaries work, see the
   Deployment note above).
   It is the ONLY project library starting
