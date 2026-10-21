@@ -356,133 +356,56 @@ The `identifier-reference` record has a mutable `usage-count` field (default 0).
 - **Do** increment it explicitly in `abstract-interpreter.sls` when `step` successfully resolves a leaf symbol (the `[else` branch of the top-level `cond`).
 - A post-phase `check-unused-imports` in `analysis/document-checker/unused-imports.sls` (called from `workspace.sls` after `step`) scans import clauses and reports imported references with `usage-count = 0` as `"Unused import: ..."` (severity 2 / Warning). Supports plain, `only`, `except`, `rename`, and `alias` imports. Unused local variables are checked separately by `check-unused-local-variables` in `analysis/document-checker/unused-local-variables.sls`.
 
-### Macro analysis architecture (2026-10 rework)
+### Macro analysis architecture (route 2 RETIRED 2026-10-21)
 
-Generic auto-expansion ("route 2") is production for the ufo-match family:
+Automatic macro resolution for the ufo-match family (match, match-next,
+match-one, match-check-ellipsis, match-two, match-check-identifier) is
+IR-ONLY: `analysis/identifier/ir-auto-route.sls` answers the router's family
+arm -- Chez's own expander (via the undocumented `(sc-expand x env #t)`
+switch, wrapped by `analysis/identifier/chez-ir.sls`) produces the parsed
+Lsrc IR with per-expression/reference/binding source locations, from which
+macro-derived bindings are synthesized onto the document. Route 2's
+self-built pipeline (`expanders/`: dispatch-matcher transcription, template
+instantiation, pretty-print/reparse, shallow-copy back-propagation, template
+replay) has been REMOVED; on any IR failure the call site silently gets no
+expansion-derived references (see ir-auto-route:stats / REPLAY_TRACE).
+SLSCHEME_IR_ROUTE=0 now means "no auto-resolution for the family".
 
-- `analysis/identifier/self-defined-rules/router.sls` dispatches eagerly: the
-  six ufo-match family macros (match, match-next, match-one,
-  match-check-ellipsis, match-two, match-check-identifier) expand fully at
-  analysis time (+~230 ms init on this repo). try/let1/define-case-class/
-  typed-lambda/include/resolve keep hand-written rules; `match-process` is the
-  fallback when no expander is available. The generic all-macros eager
-  fallback is OFF (unfiltered eager exceeds 5 minutes -- measured).
-- Expander lookup goes through `private:find-expander` (cycle-safe BFS with an
-  eq-seen set). Never use `root-ancestor` for this: it diverges on cyclic
-  identifier-reference parent chains.
-- `expanders/syntax-rules.sls`: clause selector and per-clause data compiled
-  once per macro definition; selector transcription memoized per
-  (macro, call-datum).
-- `expanders/pattern.sls`: template instantiation
-  (`expand->index-node-compound-list`) plus the retired single-pass matcher
-  (`pattern+index-node->bindings`, still covered by
-  `expanders/test-pattern.sps` as the reference implementation).
-- `expanders/dispatch-matcher.sls`: the PRODUCTION matcher -- a line-by-line
-  transcription of Chez `s/syntax.ss` `convert-pattern` + `$syntax-dispatch`
-  family onto index-node trees. Fidelity traps: `match` needs the
-  `((not r) #f)` guard (else tail failure becomes a dotted pair); each+
-  consumes fixed segments from the RIGHT; quoted forms carry no quote head
-  among index-node children (see `quoted-node?`/`quote-content-node`).
-  Chez rejects `(x ... y ... . t)` at definition time ("misplaced
-  ellipsis") -- never a runtime input.
-- `expanders/expansion-wrap.sls`: back-propagation on BOTH sides -- exports
-  to compound counterpart nodes, imports via an independent import pass
-  (root/unpaired shapes fall back to the macro call node). Pair lookup is
-  by IDENTITY (private:pair-find) -- an assoc/equal? lookup against a
-  dotted pair never matches a record and silently disabled the whole
-  mechanism until 2026-10-06 (TODO-15 P3). Copies
-  are deduped per (identifier type) at each anchor (23 -> 2 measured),
-  which also un-bloated template replay for match-shaped cascades
-  (rule e2e 193 -> 65ms). New references are marked
-  `identifier-reference-speculative?` (tentative-level knowledge).
-  Template storage is UNCONDITIONAL (fixed 2026-10-10): gating
-  `private:store-template!` on a root pair meant list-shaped template
-  instantiations -- the common case -- were never stored and replay never
-  fired; without a root pair the call node anchors path encoding and every
-  path degrades to #f (replay then attaches references at the call node,
-  sound but coarse). Measured: identical call-site datums collapse to
-  sub-ms on warm calls (cold ~83ms). Covered by
-  `tests/analysis/identifier/test-expansion-template-replay.sps`.
-- Workspace cache: expansion generators are re-attached after fasl load
-  (`private:reattach-expanders-after-cache-load!` in `workspace.sls`), so
-  cached workspaces keep route-2 functionality.
-- Docs: `doc/analysis/macro-analysis-framework.md` (theory, 28-paper
-  bibliography), `doc/analysis/macro-resolution-profile.md` (measured
-  costs), `doc/analysis/chez-sc-expand-records-switch.md` (undocumented
-  `(sc-expand x env #t)` switch: returns the compiler's parsed Lsrc IR with
-  per-expression/reference/binding source locations — the Chez-native
-  counterpart of Racket's syntax objects; usable as route-2 ground truth
-  or expander-doc fallback replacement).
+Env bootstrap (source-first): the workspace's own ufo-match copy is located
+via the call site's import resolution (then library-node tree, then
+CHEZSCHEMELIBDIRS), (load ...)ed, and expansions run in a fresh immutable
+env via an annotation-fabricated `(let () form #f)` wrapper (positions
+intact) with parameter growth on BOTH "unbound identifier" and "misplaced
+aux keyword" errors (chezscheme declares e.g. `except` auxiliary -- user
+functions by that name are opaqued, measured 2026-10-21). The interaction
+environment is only a last-resort fallback (non-deterministic: a
+transitively-visible ufo-try once shadowed a user `except` function).
+Probes must be two-sided (chez-ir-global-lookup? + chez-ir-contains-quoted-
+symbol?): interaction envs are LENIENT and expand unbound macros silently.
+Never probe with the `_` wildcard (ufo-match rejects it in every mode).
+
+Key tests: differential + IR suite below. Docs:
+`doc/analysis/ir-auto-route-walkthrough.md` (per-stage code map, CN),
+`doc/analysis/chez-sc-expand-records-switch.md` (the sc-expand switch),
+`doc/design/route2-retirement-proposal.md` (decision record).
 - Ground truth: `analysis/identifier/chez-ir.sls` wraps the switch (feature
-  self-check `chez-ir-available?`). Controlled parallel phase (route 3):
-  `analysis/identifier/ir-auto-route.sls` -- the router's ufo-match arm tries
-  Chez's own expander first and silently falls back to route 2; gated by the
-  SLSCHEME_IR_ROUTE env var (OFF = bit-for-bit route 2 behavior). Env
-  bootstrap (v2): interaction-environment fast path, else LOCATE the
-  workspace's own ufo-match source (library-node tree via walk-library, then
-  CHEZSCHEMELIBDIRS) and (load ...) it -- explicit load registers the library
-  and works in compiled binaries too (no host import needed, no version
-  skew); fresh immutable env expands via an annotation-fabricated let-wrapper
-  (inner defines OK, positions intact) + free-variable parameter growth on
-  "unbound identifier" errors. The load path is covered by
-  tests/analysis/identifier/test-ir-auto-route-load.sps (load + free-var
-  retry). Measured traps: expand the enclosing DEFINE, never the library
-  form; interaction envs are LENIENT (unbound match expands to
-  ($top-level-value (quote match)) with no error) so probes must verify REAL
-  macro engagement via chez-ir-global-lookup? + chez-ir-contains-quoted-symbol?;
-  never probe with the `_` wildcard (ufo-match rejects it in every mode). The
-  host process must import (ufo-match) only for the FAST PATH -- the load
-  fallback does not need it.
-  Deployment (corrected 2026-10-20; the earlier same-day "compiled binaries
-  keep route 2" conclusion was WRONG -- the env probe used the `[_ 1]`
-  wildcard, which ufo-match rejects in EVERY mode ("misplaced aux keyword"),
-  so the probe falsely reported unavailable in compiled binaries and silently
-  disabled the IR path there. sc-expand resolves compiled-in ufo-match macros
-  fine in compile-chez-program binaries -- measured; the probe is now
-  '(match 1 [x x])'. The run.ss (ufo-match) import is still required:
-  without it the macros are not compiled into the binary at all. Stats:
-  (ir-auto-route:stats) -> (hits fallbacks ms); miss reasons under
-  REPLAY_TRACE=1.
-  (bin/ir-route-canary.ss): on this repo (835 docs) IR mode hit 45 real call
-  sites and strictly dominated on diagnoses -- 14 "Unused local variable"
-  FALSE POSITIVES of route 2 (usage-count corruption from duplicate
-  references) absent in IR mode, zero new ones; refs -0.03%; wall time on par.
-  Default ON since 2026-10-20 (SLSCHEME_IR_ROUTE=0 opts out per process;
-  flip basis: canary dominance + 14 false-positive diagnoses eliminated +
-  threaded soak 6/6 + full match-family suite green under the default). The
-  ~256 repo fallbacks are all pseudo-call-sites inside macro templates --
-  Chez-semantically not call sites, IR correctly declines them (route 2 used
-  to over-analyze them; that was the +231 ms eager cost). Forms parse from
-  the DOCUMENT TEXT (sfd over the string), so unsaved buffers are handled by
-  construction. Full mechanism walkthrough (per-stage code map, CN):
-  doc/analysis/ir-auto-route-walkthrough.md. Retirement plan:
-  doc/design/route2-retirement-proposal.md
-  (Phase 1 done; no deployment gap -- compiled binaries work, see the
-  Deployment note above).
-  It is the ONLY project library starting
+  self-check `chez-ir-available?`). It is the ONLY project library starting
   with `#!chezscheme` (required for `#%$` kernel primitives; the directive
   must be the file's first line and immediately precede `(library ...)`,
   no comment lines between). Differential test:
   `tests/analysis/identifier/test-sc-expand-differential.sps` compares IR
-  `(name ref-bias binding-bias)` triples against route-2 resolution.
-  Pattern-variable anchoring was fixed the same day (expansion-wrap.sls
-  shallow-copy import fallback): pair compounds are scanned for a
-  call-site-tree leaf with the binding identifier (the pvar link exists
-  only at leaf pairs; bindings attach to interior scope nodes), and
-  scope visibility (insert at the macro call node) is separated from the
-  definition position (the reference's index-node = recovered pattern
-  position). Known remaining gap pinned in the test comment: duplicate
-  speculative references (resolution count 2 vs Chez's 1, TODO-15 P1/P2
-  multiplicity). Route-3 spike (Chez IR as route-2 replacement):
-  `tests/analysis/identifier/test-sc-expand-route3-spike.sps` -- 15/15 green,
-  pipeline ~11 ms vs route-2 cold call 228 ms; open questions for a full
-  switch are listed in doc/analysis/chez-sc-expand-records-switch.md §9.
-  Note: `prelex.source` slots hold ANNOTATED identifiers (unwrap once), while
-  `ref` maybe-src slots hold plain source objects.
-- Key tests: `test-match-cascade-auto-resolve.sps` (the comprehensive one),
-  `test-ellipsis-call-site.sps`,
-  `expanders/test-pattern.sps`.
-
+  `(name ref-bias binding-bias)` triples against analysis resolution (15/15).
+  Load-path + free-variable retry coverage:
+  `tests/analysis/identifier/test-ir-auto-route-load.sps`. Full mechanism
+  walkthrough (per-stage code map, CN): doc/analysis/ir-auto-route-walkthrough.md.
+  Retirement plan: doc/design/route2-retirement-proposal.md (Phase 1 done).
+  Deployment caveat: none -- script and compiled binaries both work via the
+  load path (measured); the host needs NO ufo-match import (run.ss dropped
+  it). Pattern-variable bindings anchor at pattern positions (Chez's own
+  attribution; the old route-2 call-node anchoring was a bug fixed in
+  f9d16fef). Known remaining: duplicate speculative references in ROUTE-2-
+  ERA artifacts are gone with the pipeline; resolution counts now match
+  Chez's exactly (single anchor).
 ### Pre-commit hook: never use `--no-verify`
 The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the protocol API test suite. **Do not bypass it with `git commit --no-verify`.** If the hook fails because tests are too slow or broken, fix the tests or the hook first, then commit normally.
 

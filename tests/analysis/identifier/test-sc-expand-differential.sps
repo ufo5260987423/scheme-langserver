@@ -20,7 +20,7 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 
-(test-begin "sc-expand differential: ground truth vs route-2 resolution")
+(test-begin "sc-expand differential: ground truth vs analysis resolution")
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential")]
       [consumer-path (string-append fixture "/consumer.scm.txt")]
       [annotated-toplevel (car (chez-ir-read-annotated-file consumer-path))]

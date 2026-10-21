@@ -1,6 +1,6 @@
 # match 宏自动解析全机制：源码逐环节走读
 
-> 范围：一个 ufo-match `match` 调用点从"被 step 遇到"到"IDE 功能可用"的完整生命周期，逐环节对应到具体模块与函数。覆盖 route 3（ir-auto-route，默认路径）与 route 2（expanders/ 管线，回退路径）的全部交接。
+> 范围：一个 ufo-match `match` 调用点从"被 step 遇到"到"IDE 功能可用"的完整生命周期，逐环节对应到具体模块与函数。route 2（expanders/ 自研管线）已于 2026-10-21 彻底退役，本文描述的 IR 路径是唯一通路；失败语义见 §9。
 > 前置阅读：`chez-sc-expand-records-switch.md`（`(sc-expand x env #t)` 开关的机制与发现历程）、`macro-analysis-framework.md`（E1–E4 理论框架）、`route2-retirement-proposal.md`（路线二退役提案，含证据汇总）。
 > 环境：Chez Scheme 10.4.1，2026-10-20 当日全部机制经测试与金丝雀实测。
 > 示例贯穿：fixture `tests/resources/workspace-fixtures/sc-expand-differential/consumer.scm.txt` 中 bias 131 的调用点 `(match input [(a b) (+ a b)] [('sym) 0] [(? number? n) n])`。
@@ -38,9 +38,8 @@ ir-auto-route:wrap-rule ────────────────── "
 之后：step 照常步进 → 叶子解析 → find-available-references-for
       → usage-count → definition / hover / references / 检查器
 
-失败：任意环节 guard 捕获 → stats 记账 miss → route2-rule
-      （expanders/ 管线：generator → dispatch-matcher → pattern → reparse
-        → step 分析生成代码 → expansion-wrap shallow-copy 回传）
+失败：任意环节 guard 捕获 → stats 记账 miss → 调用点无展开派生引用
+      （route 2 管线已于 2026-10-21 退役；回退 = 静默不分析）
 ```
 
 ## 1. 触发与分发 — `self-defined-rules/router.sls`
@@ -54,7 +53,7 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
     . ,target-identifier))
 ```
 
-挂上去的规则是**组合规则**：`ir-auto-route:wrap-rule` 包着 route-2 规则（`expansion-generator->rule` 的 lambda，来自 `expanders/expansion-wrap.sls`）。`private:find-expander` 沿引用祖先链做环安全 BFS 找生成器（不 diverge 于循环 parent 链）。
+挂上去的是 **IR-only 规则**：`(ir-auto-route:try-expand)`——route 2 退役后不再有任何包裹/回退（退役记录见 doc/design/route2-retirement-proposal.md）。
 
 ## 2. 组合规则入口 — `ir-auto-route.sls` `ir-auto-route:wrap-rule`
 
@@ -185,7 +184,7 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
 
 ## 9. 失败路径与可观测性
 
-`private:try` 整体包在 `guard` 中：任何失败 → `private:bump! (cons #f ms)` → 返回 `#f` → `wrap-rule` 调 route2-rule。route-2 管线（`expanders/`）：`syntax-rules.sls` 生成器工厂（子句选择器按宏定义编译一次，按调用点 datum 记忆化）→ `dispatch-matcher.sls`（Chez `$syntax-dispatch` 逐行转写）→ `pattern.sls` 模板实例化（pvar 绑回 index-node）→ pretty-print + reparse → step 分析整个展开树 → `expansion-wrap.sls` `shallow-copy` 双向回传（E4）+ 跨调用点模板 replay（TODO-10）。
+`private:try` 整体包在 `guard` 中：任何失败 → `private:bump! (cons #f ms)` → 返回 `#f` → **调用点静默得不到展开派生引用**（route 2 已于 2026-10-21 彻底退役，见 doc/design/route2-retirement-proposal.md）。这包括：`form-not-found`（宏模板内的伪调用点——Chez 语义下不是调用点，IR 正确地拒绝分析，route 2 时代曾过度分析它们）、env 不可用、sc-expand 报错等。
 
 可观测性三件套：
 
@@ -210,4 +209,4 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
 
 ## 11. 一句话总结
 
-**router 认出 match 并转交；ir-auto-route 备好 Chez 环境（三级引导）、让 Chez 展开（双模式）、把 IR 里的 (use, definition) 事实翻译成 identifier-reference 贴回文档（双角色合成）；chez-ir 承担与 Chez 未文档化 IR 对话的全部脏活（含探针真伪鉴定）；expanders/ 自研管线如今只是 guard 后面的静默候补。**
+**router 认出 match 并转交；ir-auto-route 备好 Chez 环境（源优先 + interaction 兜底）、让 Chez 展开（fresh env 的注解伪造 let 包装 + 两类阻塞标识符的参数化）、把 IR 里的 (use, definition) 事实翻译成 identifier-reference 贴回文档（双角色合成）；chez-ir 承担与 Chez 未文档化 IR 对话的全部脏活（含探针真伪鉴定）；route 2 的自研展开管线已彻底退役，失败即静默不分析。**

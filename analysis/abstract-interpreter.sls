@@ -8,8 +8,6 @@
 
     (scheme-langserver analysis util)
 
-    (scheme-langserver analysis identifier expanders syntax-rules)
-    (scheme-langserver analysis identifier expanders syntax-case)
 
     (scheme-langserver analysis identifier reference)
 
@@ -178,7 +176,7 @@
               (private-add-rule rules `((,define-process) . ,identifier))]
             [(and (equal? r '(define)) (or (private:top-env=? 'r7rs top) (private:top-env=? 's7 top)))
               (private-add-rule rules `((,define-r7rs-process) . ,identifier))]
-            [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process . ,define-syntax:attach-generator) . ,identifier))]
+            [(equal? r '(define-syntax)) (private-add-rule rules `((,define-syntax-process) . ,identifier))]
             [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
             [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
             [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
@@ -199,18 +197,18 @@
             [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
             [(equal? r '(let-values)) (private-add-rule rules `((,let-values-process) . ,identifier))]
             [(equal? r '(let*-values)) (private-add-rule rules `((,let*-values-process) . ,identifier))]
-            [(equal? r '(let-syntax)) (private-add-rule rules `((,let-syntax-process . ,let-syntax:attach-generator) . ,identifier))]
+            [(equal? r '(let-syntax)) (private-add-rule rules `((,let-syntax-process) . ,identifier))]
             [(equal? r '(letrec)) (private-add-rule rules `((,letrec-process) . ,identifier))]
             [(equal? r '(letrec*)) (private-add-rule rules `((,letrec*-process) . ,identifier))]
-            [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process . ,letrec-syntax:attach-generator) . ,identifier))]
+            [(equal? r '(letrec-syntax)) (private-add-rule rules `((,letrec-syntax-process) . ,identifier))]
             [(and (equal? r '(fluid-let)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-process) . ,identifier))]
             [(and (equal? r '(fluid-let-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,fluid-let-syntax-process) . ,identifier))]
 
             [(and (equal? r '(syntax-case)) (private:top-env=? 'r6rs top))
-              (private-add-rule rules `((,syntax-case-process . ,syntax-case->generator:map+expansion) . ,identifier))]
-            [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process . ,syntax-rules->generator:map+expansion) . ,identifier))]
+              (private-add-rule rules `((,syntax-case-process) . ,identifier))]
+            [(equal? r '(syntax-rules)) (private-add-rule rules `((,syntax-rules-process) . ,identifier))]
             [(and (equal? r '(identifier-syntax)) (private:top-env=? 'r6rs top))
               (private-add-rule rules `((,identifier-syntax-process) . ,identifier))]
             [(and (equal? r '(with-syntax)) (private:top-env=? 'r6rs top))

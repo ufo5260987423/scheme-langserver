@@ -1,6 +1,9 @@
 # 路线二（ufo-match 自动宏展开管线）退役提案
 
-> 状态：**提案 — Phase 1 已完成**（2026-10-20）。
+> 状态：**已执行完毕**（2026-10-21）。Phase 1（并行期）于 2026-10-20 完成；
+> Phase 2（router 简化）与 Phase 3（管线删除）于 2026-10-21 一并执行——
+> route 2 回退与自研展开管线已彻底移除，ufo-match 家族的自动宏解析
+> 全部走 ir-auto-route（IR 路径），失败即静默不分析。本章保留作为决策记录。
 > 依据文档：`doc/analysis/chez-sc-expand-records-switch.md`（机制与全部落地记录）、
 > `doc/analysis/macro-resolution-profile.md`（route 2 成本结构）、
 > `doc/analysis/macro-analysis-framework.md`（E1–E4 理论框架）。

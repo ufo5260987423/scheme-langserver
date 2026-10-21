@@ -52,8 +52,6 @@
     (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier expanders syntax-rules)
-    (scheme-langserver analysis identifier expanders syntax-case)
     (scheme-langserver analysis identifier rules define-syntax)
     (scheme-langserver analysis identifier rules library-import)
 
@@ -254,36 +252,8 @@
           (when (pair? pair)
             (hashtable-set! path->mtime-cache (car pair) (cdr pair))))
         (if (list? path->mtime-alist) path->mtime-alist '()))
-      (private:reattach-expanders-after-cache-load! workspace-instance)
       workspace-instance)))
 
-;Cache load restores the reference network without re-running the abstract interpreter, so expansion generators (which fasl-write cannot serialize) are
-;missing from every macro definition. Rebuild and re-attach them with the same procedures the interpreter registers as rules during a cold start:
-;bottom-up, so the syntax-rules/syntax-case builder runs before the enclosing define-syntax / let-syntax attach step.
-(define (private:reattach-expanders-after-cache-load! workspace-instance)
-  (let ([root-file-node (workspace-file-node workspace-instance)]
-      [root-library-node (workspace-library-node workspace-instance)])
-    (define (walk-node document node)
-      (for-each (lambda (child) (walk-node document child)) (index-node-children node))
-      (let ([expr (guard (e [else '()])
-                (annotation-stripped (index-node-datum/annotations node)))])
-        (when (and (list? expr) (not (null? expr)))
-          (case (car expr)
-            [(syntax-rules)
-              (syntax-rules->generator:map+expansion root-file-node root-library-node document node)]
-            [(syntax-case)
-              (syntax-case->generator:map+expansion root-file-node root-library-node document node)]
-            [(define-syntax)
-              (define-syntax:attach-generator root-file-node root-library-node document node)]
-            [(let-syntax letrec-syntax)
-              (syntax-binding:attach-generator root-file-node root-library-node document node)]
-            [else '()]))))
-    (let walk-file ([node root-file-node])
-      (when (file-node-folder? node)
-        (for-each walk-file (file-node-children node)))
-      (let ([document (file-node-document node)])
-        (when (document? document)
-          (for-each (lambda (top) (walk-node document top)) (document-index-node-list document)))))))
 
 (define (private:file-content-changed? path cached-text cached-mtime)
   ;;Fast path: if we have a cached mtime and it matches the disk, the file has not changed.  Avoid the expensive read-string + string=? fallback.

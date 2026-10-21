@@ -1,7 +1,6 @@
 (library (scheme-langserver analysis identifier rules let-syntax)
   (export 
-    let-syntax-process
-    let-syntax:attach-generator)
+    let-syntax-process)
   (import 
     (chezscheme) 
     (ufo-match-steer)
@@ -27,5 +26,4 @@
         identifier)]
     [else '()]))
 
-(define let-syntax:attach-generator syntax-binding:attach-generator)
 ) ; end library
