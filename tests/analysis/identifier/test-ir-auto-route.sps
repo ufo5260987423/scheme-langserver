@@ -22,7 +22,11 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 
-(test-begin "ir-auto-route: parallel Chez-IR path through the real workspace init")
+(define (private:test-log fmt . args)
+  (when (getenv "TEST_VERBOSE")
+    (apply format (cons #t (cons fmt args)))))
+
+(test-begin "ir-auto-route: Chez-IR path through the real workspace init")
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential")]
       [consumer-path (string-append fixture "/consumer.scm.txt")]
       [workspace-instance (init-workspace fixture 'txt 'r6rs #f #f)]
@@ -40,7 +44,7 @@
     (test-assert "chez-ir feature probes pass" (chez-ir-available?))
     (test-assert "IR path took the call site (hit recorded)"
       (>= (car stats) 1))
-    (format #t "  [ir-auto-route] stats hits=~a fallbacks=~a total-ms=~a~%"
+    (private:test-log "  [ir-auto-route] stats hits=~a fallbacks=~a total-ms=~a~%"
       (car stats) (cadr stats) (caddr stats))
 
     ;Every ground-truth use resolves at the ground-truth binding position,

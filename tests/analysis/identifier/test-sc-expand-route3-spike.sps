@@ -55,6 +55,10 @@
       gt)
     inserted))
 
+(define (private:test-log fmt . args)
+  (when (getenv "TEST_VERBOSE")
+    (apply format (cons #t (cons fmt args)))))
+
 (test-begin "route-3 spike: Chez IR reference synthesis for one match call site")
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential")]
       [consumer-path (string-append fixture "/consumer.scm.txt")]
@@ -123,7 +127,7 @@
       ;synthesis) must be far below route 2's measured cold-call cost (228 ms,
       ;doc/analysis/macro-resolution-profile.md). Replay-hot route 2 is ~1 ms;
       ;the spike needs no replay cache to be in that class.
-      (format #t "  [spike] pipeline ~a ms for ~a call-site refs (~a synthesized)~%"
+      (private:test-log "  [spike] pipeline ~a ms for ~a call-site refs (~a synthesized)~%"
         elapsed-ms (length gt) inserted)
       (test-assert "spike pipeline beats route 2 cold-call cost by an order of magnitude"
         (< elapsed-ms 50))))

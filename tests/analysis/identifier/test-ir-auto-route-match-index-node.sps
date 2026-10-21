@@ -25,6 +25,10 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 
+(define (private:test-log fmt . args)
+  (when (getenv "TEST_VERBOSE")
+    (apply format (cons #t (cons fmt args)))))
+
 (test-begin "ir-auto-route: match-index-node through the generalized IR path")
   (let* ([root (current-directory)]
       [target-path (string-append root "/analysis/identifier/rules/syntax-rules.sls")]
@@ -43,7 +47,7 @@
     (test-assert "ground truth has entries" (not (null? ground-truth)))
     (test-assert "match-index-node call site took the IR path"
       (>= (car stats) 1))
-    (format #t "  [steer] hits=~a fallbacks=~a env-source=~a gt=~a~%"
+    (private:test-log "  [steer] hits=~a fallbacks=~a env-source=~a gt=~a~%"
       (car stats) (cadr stats) env-source (length ground-truth))
 
     (for-each

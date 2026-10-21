@@ -38,6 +38,10 @@
           annotated-toplevel)])
     (chez-ir-call-site-refs (chez-ir-expand define-form) consumer-path)))
 
+(define (private:test-log fmt . args)
+  (when (getenv "TEST_VERBOSE")
+    (apply format (cons #t (cons fmt args)))))
+
 (test-begin "ir-auto-route threaded soak")
   (let ([fixture fixture]
       [consumer-path consumer-path]
@@ -64,7 +68,7 @@
           ground-truth)))
 
     (let ([stats (ir-auto-route:stats)])
-      (format #t "  [soak] ~a threaded iterations, ir-stats hits=~a fallbacks=~a ms=~a~%"
+      (private:test-log "  [soak] ~a threaded iterations, ir-stats hits=~a fallbacks=~a ms=~a~%"
         iterations (car stats) (cadr stats) (caddr stats))
       (test-assert "every iteration took the IR path exactly once for the call site"
         (>= (car stats) iterations))))

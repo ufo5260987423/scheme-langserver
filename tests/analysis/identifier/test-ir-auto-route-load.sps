@@ -39,6 +39,10 @@
           annotated-toplevel)])
     (chez-ir-call-site-refs (chez-ir-expand define-form) consumer-path)))
 
+(define (private:test-log fmt . args)
+  (when (getenv "TEST_VERBOSE")
+    (apply format (cons #t (cons fmt args)))))
+
 (test-begin "ir-auto-route load path: basic fixture")
   (let* ([workspace-instance (init-workspace fixture 'txt 'r6rs #f #f)]
       [document (file-node-document
@@ -52,7 +56,7 @@
       (and (pair? env-source) (eq? (car env-source) 'loaded)))
     (test-assert "IR path took the call site through the loaded env"
       (>= (car stats) 1))
-    (format #t "  [load-path] env-source=~a hits=~a fallbacks=~a~%"
+    (private:test-log "  [load-path] env-source=~a hits=~a fallbacks=~a~%"
       env-source (car stats) (cadr stats))
     (for-each
       (lambda (entry)
