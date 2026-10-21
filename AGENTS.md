@@ -358,9 +358,13 @@ The `identifier-reference` record has a mutable `usage-count` field (default 0).
 
 ### Macro analysis architecture (route 2 RETIRED 2026-10-21)
 
-Automatic macro resolution for the ufo-match family (match, match-next,
-match-one, match-check-ellipsis, match-two, match-check-identifier) is
-IR-ONLY: `analysis/identifier/expander/ir-auto-route.sls` answers the router's family
+Automatic macro resolution is IR-ONLY and macro-agnostic: the router
+attaches (ir-auto-route:try-expand) for the ufo-match family (match,
+match-next, match-one, match-check-ellipsis, match-two, match-check-
+identifier) AND for match-index-node (library (scheme-langserver
+virtual-file-system index-node)); ir-auto-route derives the head symbol
+and its library from each call site and bootstraps the env from the
+workspace's own copy of THAT library (per-source x per-library caching): `analysis/identifier/expander/ir-auto-route.sls` answers the router's family
 arm -- Chez's own expander (via the undocumented `(sc-expand x env #t)`
 switch, wrapped by `analysis/identifier/expander/chez-ir.sls`) produces the parsed
 Lsrc IR with per-expression/reference/binding source locations, from which

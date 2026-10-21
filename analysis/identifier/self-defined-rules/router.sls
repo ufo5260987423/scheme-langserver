@@ -50,20 +50,24 @@
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
-      ;Eager auto-expansion for the ufo-match macro family -- now IR-ONLY
-      ;(route 3, ir-auto-route; route 2's generator pipeline was retired
-      ;2026-10-21 per doc/design/route2-retirement-proposal.md). The family
-      ;gate stays: it selects which identifiers get the IR rule. The IR path
-      ;needs NO langserver-side expander -- Chez's own expander does the work,
-      ;resolving match against the env bootstrapped by ir-auto-route (host
-      ;import fast path, else workspace-library load). On ANY failure the call
-      ;site silently gets no expansion-derived references: see
-      ;ir-auto-route:stats / REPLAY_TRACE. SLSCHEME_IR_ROUTE=0 now means "no
-      ;auto-resolution for the family" (the old route-2 opt-out is gone with
-      ;the pipeline).
+      ;Eager auto-expansion -- now IR-ONLY (route 3, ir-auto-route; route 2's
+      ;generator pipeline was retired 2026-10-21 per
+      ;doc/design/route2-retirement-proposal.md). Two macro families:
+      ;ufo-match's six, and the langserver's own match-index-node from (scheme-langserver virtual-file-system index-node) (2026-10-21).
+      ;The IR path needs NO langserver-side expander -- Chez's own expander
+      ;does the work, resolving the head against the env bootstrapped by
+      ;ir-auto-route from the WORKSPACE'S OWN copy of the head's library
+      ;(per-call-site import resolution; source-first, deterministic). On ANY
+      ;failure the call site silently gets no expansion-derived references:
+      ;see ir-auto-route:stats / REPLAY_TRACE. SLSCHEME_IR_ROUTE=0 now means
+      ;"no auto-resolution for these macros" (the old route-2 opt-out is gone
+      ;with the pipeline).
       [(and (equal? library-identifiers '((ufo-match)))
           (find (lambda (e) (equal? expressions (list e)))
             '(match match-next match-one match-check-ellipsis match-two match-check-identifier)))
+        (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
+      [(and (equal? library-identifiers '((scheme-langserver virtual-file-system index-node)))
+          (equal? expressions '(match-index-node)))
         (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
       [else rules])))
 )

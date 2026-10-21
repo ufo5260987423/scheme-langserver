@@ -2,8 +2,9 @@
 
 > 范围：一个 ufo-match `match` 调用点从"被 step 遇到"到"IDE 功能可用"的完整生命周期，逐环节对应到具体模块与函数。**route 2（expanders/ 自研展开管线）已于 2026-10-21 彻底退役**（commit 0ac9f75c / 6067b65b，决策记录见 `doc/design/route2-retirement-proposal.md`），本文描述的 IR 路径是唯一通路：失败 = 调用点静默得不到展开派生引用。
 > 前置阅读：`chez-sc-expand-records-switch.md`（`(sc-expand x env #t)` 开关的机制与发现历程）。
-> 示例贯穿：fixture `tests/resources/workspace-fixtures/sc-expand-differential/consumer.scm.txt` 中 bias 131 的调用点 `(match input [(a b) (+ a b)] [('sym) 0] [(? number? n) n])`；金丝雀数字来自本仓库自分析（815 文档，25 命中 / 37 回退，回退全部是宏模板内的伪调用点）。
-> 最后更新：2026-10-21（route 2 退役后全面重写）。
+> 示例贯穿：fixture `tests/resources/workspace-fixtures/sc-expand-differential/consumer.scm.txt` 中 bias 131 的调用点 `(match input [(a b) (+ a b)] [('sym) 0] [(? number? n) n])`；金丝雀数字来自本仓库自分析（816 文档，110 命中 / 40 回退；回退几乎全是宏模板内的伪调用点）。
+> 机制自 2026-10-21 起**宏无关**：除 ufo-match 六宏族外，`match-index-node`（库 `(scheme-langserver virtual-file-system index-node)`）也走同一通路——头符号与其库从调用点推导，env 按"该库的副本"引导。
+> 最后更新：2026-10-21（route 2 退役 + match-index-node 泛化后全面重写）。
 
 ---
 
@@ -57,10 +58,15 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
   (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
 ```
 
+两条臂：
+
+1. **ufo-match 六宏族**（库 `(ufo-match)`）：match / match-next / match-one / match-check-ellipsis / match-two / match-check-identifier；
+2. **match-index-node**（库 `(scheme-langserver virtual-file-system index-node)`，2026-10-21 泛化加入）——langserver 自己的规则文件大量使用，加入后金丝雀命中从 25 涨到 110。
+
 与退役前的区别：
 
-- **不再需要 langserver 侧的 expander**（`private:find-expander` 已删）——IR 路径靠 Chez 自己的 expander 解析 `match`，family 门只负责"哪些标识符挂 IR 规则"；
-- **不再包裹 route-2 规则**。`SLSCHEME_IR_ROUTE=0` 的语义变为"该家族不做自动解析"（旧的 route-2 逃生门随管线一起消失）。
+- **不再需要 langserver 侧的 expander**（`private:find-expander` 已删）——IR 路径靠 Chez 自己的 expander 解析头符号，臂只负责"哪些标识符挂 IR 规则"；机制内部完全宏无关：`private:try` 从调用点推导头符号与库标识，`private:env` 按**该库**的副本引导（fresh env = `(chezscheme) + <头符号的库>`，缓存键 = 源路径 × 库）；
+- **不再包裹 route-2 规则**。`SLSCHEME_IR_ROUTE=0` 的语义变为"不做自动解析"（旧的 route-2 逃生门随管线一起消失）。
 
 ## 2. 规则入口 — `ir-auto-route:try-expand`
 
@@ -230,6 +236,7 @@ fresh env **不可变**（拒顶层 define、对自由标识符严格），因�
 | `tests/analysis/identifier/test-ir-auto-route-load.sps` | 3a+5：load 源定位、fresh env、let 包装、**双类重试**、单锚点（10 断言） |
 | `tests/analysis/identifier/test-sc-expand-route3-spike.sps` | 6+7 纯机制 + 性能门（<50 ms，实测 ~11 ms） |
 | `tests/robustness/robustness-ir-route-threaded.sps` | 全链并发安全（6 次 threaded init，25/25） |
+| `tests/analysis/identifier/test-ir-auto-route-match-index-node.sps` | 宏无关泛化：match-index-node 走完整 IR 链路（真实仓库 init，GT 11 项全中） |
 | `bin/ir-route-canary.ss` | 全仓端到端（命中/回退/引用数/诊断数；自分析本仓库） |
 | `tests/protocol/apis/test-{definition,references,document-symbol}.sps` | 8：IDE API 冒烟 |
 

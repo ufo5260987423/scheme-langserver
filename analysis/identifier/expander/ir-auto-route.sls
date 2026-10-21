@@ -83,38 +83,48 @@
         [(string=? (substring str i (+ i plen)) pat) #t]
         [else (loop (+ i 1))]))))
 
-(define (private:probe-in env)
+(define (private:probe-in env head-symbol)
   (guard (e [else #f])
-    (let ([ir (sc-expand '(match 1 [x x]) env #t)])
+    (let ([ir (sc-expand `(,head-symbol 1 [x x]) env #t)])
       (and (record? ir)
-        (not (chez-ir-global-lookup? ir "match"))
-        (chez-ir-contains-quoted-symbol? ir 'match)))))
+        ;negative: real expansion CONSUMES the keyword, so the lenient
+        ;($top-level-value 'head-symbol) shape must be absent -- the check
+        ;that works for every macro (recursive macros like match only recur
+        ;with OTHER keywords, e.g. match-next).
+        (not (chez-ir-global-lookup? ir (symbol->string head-symbol)))
+        ;positive: keep the strict marker for the match family (its failure
+        ;thunk carries (quote match)); for other macros the negative check
+        ;alone is the best available signal.
+        (or (not (eq? head-symbol 'match))
+          (chez-ir-contains-quoted-symbol? ir 'match))))))
 
-(define (private:probe-interaction)
-  (private:probe-in (interaction-environment)))
+(define (private:probe-interaction head-symbol)
+  (private:probe-in (interaction-environment) head-symbol))
 
-(define (private:fresh-env)
+(define (private:fresh-env library-identifier)
   (guard (e [else #f])
-    (environment '(chezscheme) '(ufo-match))))
+    (environment '(chezscheme) library-identifier)))
 
-(define (private:libdirs-source)
-  (let ([spec (getenv "CHEZSCHEMELIBDIRS")])
+(define (private:libdirs-source library-identifier)
+  (let ([spec (getenv "CHEZSCHEMELIBDIRS")]
+      [base (symbol->string (car (reverse library-identifier)))])
     (and spec
       (find file-exists?
         (apply append
           (map
             (lambda (dir)
-              (map (lambda (name) (string-append dir "/" name))
-                '("ufo-match.sls" "ufo-match.chezscheme.sls" "ufo-match.ss")))
+              (map (lambda (ext) (string-append dir "/" base ext))
+                '(".sls" ".chezscheme.sls" ".ss")))
             (private:split-on spec #\:)))))))
 
-(define (private:import-source document call-node)
-  ;;the ufo-match document THIS call site's `match` head resolves to -- the
-  ;;precise import target. Beats guessing among multiple (ufo-match) copies
-  ;;in one workspace (e.g. test fixtures of old variants): a workspace can
-  ;;contain several, and the consumer's import resolution knows the right one.
+(define (private:import-source document call-node head-symbol)
+  ;;the macro-library document THIS call site's head resolves to -- the
+  ;;precise import target. Beats guessing among multiple copies of the same
+  ;;library in one workspace (e.g. test fixtures of old variants): a
+  ;;workspace can contain several, and the consumer's import resolution
+  ;;knows the right one.
   (guard (e [else #f])
-    (let* ([refs (find-available-references-for document call-node 'match)]
+    (let* ([refs (find-available-references-for document call-node head-symbol)]
         [paths
           (filter
             (lambda (p) (and p (file-exists? p)))
@@ -127,14 +137,14 @@
               refs))])
       (and (not (null? paths)) (car paths)))))
 
-(define (private:find-source document call-node root-library-node)
-  (or (private:import-source document call-node)
+(define (private:find-source document call-node root-library-node head-symbol library-identifier)
+  (or (private:import-source document call-node head-symbol)
     (and (library-node? root-library-node)
-      (let ([node (walk-library '(ufo-match) root-library-node)])
+      (let ([node (walk-library library-identifier root-library-node)])
         (and (not (null? node))
           (find file-exists?
             (map file-node-path (library-node-file-nodes node))))))
-    (private:libdirs-source)))
+    (private:libdirs-source library-identifier)))
 
 ;Env cache: 'interaction -> env | 'failed; <source path> -> env | 'failed.
 ;Per-source caching matters when one server process analyzes several
@@ -142,33 +152,37 @@
 (define private:env-cache-ht (make-hashtable equal-hash equal?))  ; keys: 'interaction | source path string
 
 ;Bootstrap returns (env . mode), mode in (interaction | fresh).
-(define (private:bootstrap-interaction)
+(define (private:bootstrap-interaction head-symbol)
   (let ([fast (hashtable-ref private:env-cache-ht 'interaction 'unset)])
     (cond
       [(eq? fast 'unset)
-        (let ([env (and (private:probe-interaction) (interaction-environment))])
+        (let ([env (and (private:probe-interaction head-symbol) (interaction-environment))])
           (hashtable-set! private:env-cache-ht 'interaction (or env 'failed))
           (when env (set-box! private:env-source 'interaction))
           (and env (cons env 'interaction)))]
       [(eq? fast 'failed) #f]
       [else (cons fast 'interaction)])))
 
-(define (private:bootstrap-source document call-node root-library-node)
-  (let ([source (private:find-source document call-node root-library-node)])
+(define (private:bootstrap-source document call-node root-library-node head-symbol library-identifier)
+  (let ([source (private:find-source document call-node root-library-node head-symbol library-identifier)])
     (when (getenv "REPLAY_TRACE")
       (fprintf (console-output-port) "[ir-auto-route] bootstrap-source: ~a import=~a~%"
         source
-        (guard (e ['err]) (private:import-source document call-node))))
+        (guard (e ['err]) (private:import-source document call-node head-symbol))))
     (and source
-      (let ([cached (hashtable-ref private:env-cache-ht source 'unset)])
+      ;cache key pairs source WITH the library it must provide -- different
+      ;libraries from the same directory (ufo-match vs ufo-match-steer) get
+      ;distinct envs
+      (let* ([key (cons source library-identifier)]
+          [cached (hashtable-ref private:env-cache-ht key 'unset)])
         (cond
           [(eq? cached 'unset)
             (let ([env
                   (guard (e [else #f])
                     (load source)
-                    (let ([built (private:fresh-env)])
-                      (and built (private:probe-in built) built)))])
-              (hashtable-set! private:env-cache-ht source (or env 'failed))
+                    (let ([built (private:fresh-env library-identifier)])
+                      (and built (private:probe-in built head-symbol) built)))])
+              (hashtable-set! private:env-cache-ht key (or env 'failed))
               (set-box! private:env-source
                 (if env (cons 'loaded source) 'unavailable))
               (and env (cons env 'fresh)))]
@@ -262,17 +276,17 @@
             (raise e)))])
       (sc-expand (private:wrap-form form params) env #t))))
 
-(define (private:env document call-node root-library-node)
+(define (private:env document call-node root-library-node head-symbol library-identifier)
   (with-mutex private:env-mutex
-    ;SOURCE FIRST: the fresh env built from the workspace's own ufo-match
-    ;copy is deterministic -- it contains exactly (chezscheme) + (ufo-match),
-    ;so unrelated macros visible in the host interaction env (measured: a
-    ;transitively-visible ufo-try shadowed a user FUNCTION named `except`
-    ;with its auxiliary keyword and broke expansion of an unrelated define,
-    ;2026-10-21) can never leak in. The interaction env stays only as a
-    ;last-resort fallback when no source is locatable.
-    (or (private:bootstrap-source document call-node root-library-node)
-      (private:bootstrap-interaction))))
+    ;SOURCE FIRST: the fresh env built from the workspace's own macro copy
+    ;is deterministic -- it contains exactly (chezscheme) + <the head's
+    ;library>, so unrelated macros visible in the host interaction env
+    ;(measured: a transitively-visible ufo-try shadowed a user FUNCTION
+    ;named `except` with its auxiliary keyword and broke expansion of an
+    ;unrelated define, 2026-10-21) can never leak in. The interaction env
+    ;stays only as a last-resort fallback when no source is locatable.
+    (or (private:bootstrap-source document call-node root-library-node head-symbol library-identifier)
+      (private:bootstrap-interaction head-symbol))))
 
 ;; (env . mode) pair accessors: mode in (interaction | fresh)
 (define (private:env-mode env-pair) (cdr env-pair))
@@ -366,8 +380,18 @@
     inserted))
 
 (define (private:try root-library-node document call-node)
-  ;; Returns #t when the IR path handled the call site, #f to fall back.
-  (let ([env-pair (private:env document call-node root-library-node)])
+  ;; Returns #t when the IR path handled the call site, #f otherwise (the
+  ;; call site then gets no expansion-derived references).
+  ;; The head symbol and its library come from the call node itself -- the
+  ;; mechanism is macro-agnostic (ufo-match family, match-index-node, ...).
+  (let* ([head-symbol (index-node-expression (car (index-node-children call-node)))]
+      [head-refs (find-available-references-for document call-node head-symbol)]
+      [library-identifier
+        (and (not (null? head-refs))
+          (let ([lib (identifier-reference-library-identifier (car head-refs))])
+            (and (not (null? lib)) lib)))])
+    (and library-identifier
+      (let ([env-pair (private:env document call-node root-library-node head-symbol library-identifier)])
     (and env-pair
       (guard (e [else (when (getenv "REPLAY_TRACE") (fprintf (console-output-port) "[ir-auto-route] miss: ~a in ~a at-bias=~a~%" (call-with-string-output-port (lambda (p) (display-condition e p))) (document-uri document) (index-node-start call-node))) (private:bump! (cons #f 0)) #f])
         (let* ([path (uri->path (document-uri document))]
@@ -385,7 +409,7 @@
             [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])
           (if (positive? inserted)
             (begin (private:bump! (cons #t ms)) #t)
-            (begin (private:bump! (cons #f ms)) #f)))))))
+            (begin (private:bump! (cons #f ms)) #f)))))))))
 
 (define (ir-auto-route:try-expand)
   ;; The IR-only rule for the router's ufo-match arm (route 2 retired). On
