@@ -6,7 +6,7 @@
   ;; behind the SLSCHEME_IR_ROUTE environment variable: with the gate off this
   ;; module is inert and route 2 behavior is bit-for-bit unchanged.
   (export
-    ir-auto-route:wrap-rule
+    ir-auto-route:try-expand
     ir-auto-route:stats
     ir-auto-route:reset-stats!
     ir-auto-route:env-source)
@@ -188,20 +188,49 @@
               (substring message i j)
               (take (+ j 1))))]))))
 
-(define (private:unbound-identifier-from-message message)
-  ;;"...unbound identifier helper at char 33 of t.ss" -> 'helper, else #f.
-  ;;The identifier is the token immediately FOLLOWING the phrase -- messages
-  ;;continue with position info, so the LAST token would be the filename.
-  (let ([phrase "unbound identifier"]
-      [len (string-length message)])
-    (and (private:string-contains? message phrase)
-      (let find ([i 0])
-        (cond
-          [(> (+ i (string-length phrase)) len) #f]
-          [(string=? (substring message i (+ i (string-length phrase))) phrase)
-            (let ([token (private:token-after message (+ i (string-length phrase)))])
-              (and token (string->symbol token)))]
-          [else (find (+ i 1))])))))
+(define (private:find-substring str pat)
+  ;;first index of pat in str, or #f
+  (let ([slen (string-length str)]
+      [plen (string-length pat)])
+    (let loop ([i 0])
+      (cond
+        [(> (+ i plen) slen) #f]
+        [(string=? (substring str i (+ i plen)) pat) i]
+        [else (loop (+ i 1))]))))
+
+(define (private:expand-blocked-identifier-from-message message)
+  ;;Extract the identifier that blocked strict-env expansion, or #f. Two
+  ;;failure classes, both neutralized by binding the identifier as a wrapper
+  ;;parameter (opaquing it -- we only need the MATCH call's facts, not the
+  ;;surrounding define's):
+  ;;  "attempt to reference unbound identifier helper at char 33 ..." -> helper
+  ;;  "misplaced aux keyword (except c ...)" -> except   -- CHEZSCHEME ITSELF
+  ;;    declares some names (e.g. except) auxiliary keywords, so user code
+  ;;    using them as function names cannot be sc-expanded in ANY
+  ;;    chezscheme-containing env (measured 2026-10-21; previously masked by
+  ;;    an accidental shadow in one host's import surface).
+  ;;The token is read immediately AFTER the phrase (skipping "(" for the aux
+  ;;case) -- messages continue with position info, so the LAST token would be
+  ;;the filename.
+  (let ([len (string-length message)])
+    (define (token-after-phrase phrase skip-open-paren?)
+      (let ([i (private:find-substring message phrase)])
+        (and i
+          (let skip ([j (+ i (string-length phrase))])
+            (cond
+              [(>= j len) #f]
+              [(or (char=? (string-ref message j) #\space)
+                  (and skip-open-paren? (char=? (string-ref message j) #\()))
+                (skip (+ j 1))]
+              [else
+                (let take ([k j])
+                  (if (or (>= k len)
+                        (char=? (string-ref message k) #\space)
+                        (char=? (string-ref message k) #\())
+                    (string->symbol (substring message j k))
+                    (take (+ k 1))))])))))
+    (or (token-after-phrase "misplaced aux keyword" #t)
+      (token-after-phrase "unbound identifier" #f))))
 
 (define (private:wrap-form form extra-params)
   ;;(let () <form> #f) -- internal defines are accepted even in immutable envs
@@ -221,22 +250,29 @@
 (define (private:expand-fresh env form)
   ;;Fresh envs are strict about free identifiers (siblings defined elsewhere
   ;;in the user's library). Grow a (lambda (free ...) ...) parameter list
-  ;;driven by the "unbound identifier" errors, bounded at 8 attempts.
+  ;;driven by the "unbound identifier" errors, bounded at 64 attempts.
   (let loop ([params '()] [attempts 0])
     (guard (e [else
         (let ([unbound (and (condition? e)
-                        (private:unbound-identifier-from-message
+                        (private:expand-blocked-identifier-from-message
                           (call-with-string-output-port
                             (lambda (p) (display-condition e p)))))])
-          (if (and unbound (< attempts 8) (not (memq unbound params)))
+          (if (and unbound (< attempts 64) (not (memq unbound params)))
             (loop (cons unbound params) (+ attempts 1))
             (raise e)))])
       (sc-expand (private:wrap-form form params) env #t))))
 
 (define (private:env document call-node root-library-node)
   (with-mutex private:env-mutex
-    (or (private:bootstrap-interaction)
-      (private:bootstrap-source document call-node root-library-node))))
+    ;SOURCE FIRST: the fresh env built from the workspace's own ufo-match
+    ;copy is deterministic -- it contains exactly (chezscheme) + (ufo-match),
+    ;so unrelated macros visible in the host interaction env (measured: a
+    ;transitively-visible ufo-try shadowed a user FUNCTION named `except`
+    ;with its auxiliary keyword and broke expansion of an unrelated define,
+    ;2026-10-21) can never leak in. The interaction env stays only as a
+    ;last-resort fallback when no source is locatable.
+    (or (private:bootstrap-source document call-node root-library-node)
+      (private:bootstrap-interaction))))
 
 ;; (env . mode) pair accessors: mode in (interaction | fresh)
 (define (private:env-mode env-pair) (cdr env-pair))
@@ -333,7 +369,7 @@
   ;; Returns #t when the IR path handled the call site, #f to fall back.
   (let ([env-pair (private:env document call-node root-library-node)])
     (and env-pair
-      (guard (e [else (when (getenv "REPLAY_TRACE") (fprintf (console-output-port) "[ir-auto-route] miss: ~a at-bias=~a~%" (call-with-string-output-port (lambda (p) (display-condition e p))) (index-node-start call-node))) (private:bump! (cons #f 0)) #f])
+      (guard (e [else (when (getenv "REPLAY_TRACE") (fprintf (console-output-port) "[ir-auto-route] miss: ~a in ~a at-bias=~a~%" (call-with-string-output-port (lambda (p) (display-condition e p))) (document-uri document) (index-node-start call-node))) (private:bump! (cons #f 0)) #f])
         (let* ([path (uri->path (document-uri document))]
             [text (document-text document)]
             [forms (private:forms text path)]
@@ -351,13 +387,13 @@
             (begin (private:bump! (cons #t ms)) #t)
             (begin (private:bump! (cons #f ms)) #f)))))))
 
-(define (ir-auto-route:wrap-rule route2-rule)
-  ;; Wrap a route-2 rule procedure (the expansion-generator->rule lambda) so
-  ;; the IR path is attempted first when the gate is on. Silent on any IR
-  ;; failure: the route-2 rule runs exactly as before.
+(define (ir-auto-route:try-expand)
+  ;; The IR-only rule for the router's ufo-match arm (route 2 retired). On
+  ;; ANY failure -- gate off, feature probe failed, env unavailable, miss --
+  ;; the call site simply gets no expansion-derived references; the stats and
+  ;; REPLAY_TRACE diagnostics carry the reason. root-file-node is accepted
+  ;; for the rule-calling convention and unused.
   (lambda (root-file-node root-library-node document index-node)
-    (if (and private:gate? (chez-ir-available?))
-      (or (private:try root-library-node document index-node)
-        (route2-rule root-file-node root-library-node document index-node))
-      (route2-rule root-file-node root-library-node document index-node))))
+    (and private:gate? (chez-ir-available?)
+      (private:try root-library-node document index-node))))
 )
