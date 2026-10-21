@@ -8,8 +8,9 @@
 ;;   scheme --script bin/ir-route-canary.ss              # route 2 mode
 ;;   SLSCHEME_IR_ROUTE=1 scheme --script bin/ir-route-canary.ss   # IR mode
 (import (chezscheme)
-  (ufo-match)
-
+  ;deliberately NO (ufo-match): dogfood the v2 load fallback (workspace
+  ;library-node / CHEZSCHEMELIBDIRS locate + load) instead of the
+  ;interaction fast path.
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
 

@@ -417,10 +417,22 @@ Generic auto-expansion ("route 2") is production for the ufo-match family:
   self-check `chez-ir-available?`). Controlled parallel phase (route 3):
   `analysis/identifier/ir-auto-route.sls` -- the router's ufo-match arm tries
   Chez's own expander first and silently falls back to route 2; gated by the
-  SLSCHEME_IR_ROUTE env var (OFF = bit-for-bit route 2 behavior). Two measured
-  traps: expand the enclosing DEFINE, never the library form (library
-  expansion defers definitions to compile-time parts, runtime IR is empty);
-  the host process must import (ufo-match) or the IR path probes unavailable
+  SLSCHEME_IR_ROUTE env var (OFF = bit-for-bit route 2 behavior). Env
+  bootstrap (v2): interaction-environment fast path, else LOCATE the
+  workspace's own ufo-match source (library-node tree via walk-library, then
+  CHEZSCHEMELIBDIRS) and (load ...) it -- explicit load registers the library
+  and works in compiled binaries too (no host import needed, no version
+  skew); fresh immutable env expands via an annotation-fabricated let-wrapper
+  (inner defines OK, positions intact) + free-variable parameter growth on
+  "unbound identifier" errors. The load path is covered by
+  tests/analysis/identifier/test-ir-auto-route-load.sps (load + free-var
+  retry). Measured traps: expand the enclosing DEFINE, never the library
+  form; interaction envs are LENIENT (unbound match expands to
+  ($top-level-value (quote match)) with no error) so probes must verify REAL
+  macro engagement via chez-ir-global-lookup? + chez-ir-contains-quoted-symbol?;
+  never probe with the `_` wildcard (ufo-match rejects it in every mode). The
+  host process must import (ufo-match) only for the FAST PATH -- the load
+  fallback does not need it.
   Deployment (corrected 2026-10-20; the earlier same-day "compiled binaries
   keep route 2" conclusion was WRONG -- the env probe used the `[_ 1]`
   wildcard, which ufo-match rejects in EVERY mode ("misplaced aux keyword"),

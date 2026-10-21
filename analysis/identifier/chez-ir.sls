@@ -11,7 +11,9 @@
     chez-ir-find-form-containing
     chez-ir-find-define-containing
     chez-ir-expand
-    chez-ir-call-site-refs)
+    chez-ir-call-site-refs
+    chez-ir-global-lookup?
+    chez-ir-contains-quoted-symbol?)
   (import (chezscheme))
 
 ;;; chez-ir: extract ground-truth identifier resolution from Chez's own
@@ -209,6 +211,96 @@
 (define (private:source-bias src)
   (let ([s (private:source-object-of src)])
     (and s (source-object-bfp s))))
+
+(define (private:rtd-name-prefix? rtd prefix)
+  (let* ([name (symbol->string (record-type-name rtd))]
+      [len (string-length name)]
+      [plen (string-length prefix)])
+    (and (>= len plen) (string=? (substring name 0 plen) prefix))))
+
+(define (private:record-walk ir proc)
+  ;;proc: (record rtd) -> boolean; #t stops the walk with #t. Returns #f when
+  ;;the whole tree was visited without a #t.
+  (let ([seen (make-eq-hashtable)])
+    (define (visit o)
+      (cond
+        [(pair? o)
+          (or (visit (car o)) (visit (cdr o)))]
+        [(annotation? o)
+          ;annotations wrap IR subtrees (and carry the source positions) --
+          ;descend into the wrapped expression
+          (visit (annotation-expression o))]
+        [(record? o)
+          (if (eq-hashtable-ref seen o #f)
+            #f
+            (begin
+              (eq-hashtable-set! seen o #t)
+              (let ([rtd (guard (e [#t #f]) (#%$record-type-descriptor o))])
+                (if (not rtd)
+                  #f
+                  (or (proc o rtd)
+                    (let loop ([vals (private:field-refs o rtd)])
+                      (cond
+                        [(null? vals) #f]
+                        [(visit (car vals)) #t]
+                        [else (loop (cdr vals))])))))))]
+        [else #f]))
+    (visit ir)))
+
+(define (private:global-lookup-record? o rtd identifier-string)
+  ;;#t when record o is (<expr> ... ($top-level-value '<name>) ...) -- i.e. o
+  ;;CALLS the result of a top-level lookup. call fields are (preinfo e0 e1 ...)
+  ;;so the operator is the SECOND field.
+  (and (private:rtd-name-prefix? rtd "Lsrc:call")
+    (let ([vals (private:field-refs o rtd)])
+      (and (pair? vals) (pair? (cdr vals))
+        (let ([operator (cadr vals)])
+          (and (record? operator)
+            (let ([op-rtd (guard (e [#t #f]) (#%$record-type-descriptor operator))])
+              (and op-rtd
+                (private:rtd-name-prefix? op-rtd "Lsrc:call")
+                (private:global-lookup-operator? operator op-rtd identifier-string)))))))))
+
+(define (private:global-lookup-operator? operator op-rtd identifier-string)
+  ;;inner call fields: (preinfo (primref $top-level-value) ((quote name)) ...)
+  ;;the argument tail is stored as a single LIST field
+  (let ([op-vals (private:field-refs operator op-rtd)])
+    (and (pair? op-vals) (pair? (cdr op-vals)) (pair? (cddr op-vals))
+      (pair? (caddr op-vals))
+      (let ([head (cadr op-vals)]
+          [arg (car (caddr op-vals))])
+        (and (record? head) (record? arg)
+          (let ([head-rtd (guard (e [#t #f]) (#%$record-type-descriptor head))]
+              [arg-rtd (guard (e [#t #f]) (#%$record-type-descriptor arg))])
+            (and head-rtd arg-rtd
+              (eq? (record-type-name head-rtd) 'primref)
+              (private:rtd-name-prefix? arg-rtd "Lsrc:quote")
+              (private:global-lookup-parts? head-rtd head arg-rtd arg identifier-string))))))))
+
+(define (private:global-lookup-parts? head-rtd head arg-rtd arg identifier-string)
+  (let ([prim-name ((record-accessor head-rtd 0) head)]
+      [datum ((record-accessor arg-rtd 0) arg)])
+    (and (eq? prim-name '$top-level-value)
+      (symbol? datum)
+      (string=? (symbol->string datum) identifier-string))))
+
+(define (chez-ir-global-lookup? ir identifier-string)
+  ;;#t when ir contains ($top-level-value '<name>) -- i.e. the identifier was
+  ;;treated as an UNBOUND GLOBAL (interaction envs are lenient) rather than
+  ;;consumed by macro expansion. Chez marks such symbols specially
+  ;;(#{match *top*:match}), hence the name-STRING comparison.
+  (private:record-walk ir
+    (lambda (o rtd)
+      (private:global-lookup-record? o rtd identifier-string))))
+
+(define (chez-ir-contains-quoted-symbol? ir symbol)
+  ;;#t when ir contains (quote <the interned SYMBOL>). Positive confirmation
+  ;;that a probe expansion really engaged the match macro (its failure thunk
+  ;;carries (quote match)); complements chez-ir-global-lookup?.
+  (private:record-walk ir
+    (lambda (o rtd)
+      (and (private:rtd-name-prefix? rtd "Lsrc:quote")
+        (eq? ((record-accessor rtd 0) o) symbol)))))
 
 (define (chez-ir-call-site-refs ir path)
   ;; Walk the IR and collect every Lsrc:ref whose own source is in
