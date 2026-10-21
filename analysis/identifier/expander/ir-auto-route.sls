@@ -103,6 +103,46 @@
   (guard (e [else #f])
     (environment '(chezscheme) library-identifier)))
 
+(define (private:deep-strip o)
+  (let ([s (if (annotation? o) (annotation-stripped o) o)])
+    (if (pair? s)
+      (cons (private:deep-strip (car s)) (private:deep-strip (cdr s)))
+      s)))
+
+(define (private:doc-import-sets forms)
+  ;;the (import …) clause of the document's library form, as datum import
+  ;;sets -- exactly what the user's code compiles against. '() for script
+  ;;files or anything unusual. Including these in the expansion env gives
+  ;;auxiliary-keyword patterns their exact semantics (the user's ?/:_/**1
+  ;;share bindings with the macro's aux definitions) instead of the retry
+  ;;machinery opaquing them as plain pattern variables.
+  (guard (e [else '()])
+    (let* ([lib (find (lambda (f)
+                (let ([s (private:deep-strip f)])
+                  (and (pair? s) (eq? 'library (car s)))))
+              forms)]
+        [clause (and lib
+                (find (lambda (sub)
+                  (and (pair? sub) (eq? 'import (car sub))))
+                  (cdr (private:deep-strip lib))))])
+      (if clause (cdr clause) '()))))
+
+(define (private:build-env library-identifier import-sets workspace-root)
+  ;;EXACT semantics: chezscheme + the head's library + the document's own
+  ;;imports (head library deduped). The workspace root is prepended to
+  ;;library-directories so project-internal imports resolve; any failure
+  ;;(an un-loadable import) is caught by the caller's guard and falls back
+  ;;to the minimal env.
+  (guard (e [else #f])
+    (let ([sets (cons library-identifier
+                (filter (lambda (spec) (not (equal? spec library-identifier)))
+                  import-sets))])
+      (parameterize ([library-directories
+          (if (and workspace-root (file-directory? workspace-root))
+            (cons (cons workspace-root workspace-root) (library-directories))
+            (library-directories))])
+        (apply environment (cons '(chezscheme) sets))))))
+
 (define (private:libdirs-source library-identifier)
   (let ([spec (getenv "CHEZSCHEMELIBDIRS")]
       [base (symbol->string (car (reverse library-identifier)))])
@@ -161,24 +201,24 @@
       [(eq? fast 'failed) #f]
       [else (cons fast 'interaction)])))
 
-(define (private:bootstrap-source document call-node root-library-node head-symbol library-identifier)
+(define (private:bootstrap-source document call-node root-library-node import-sets workspace-root head-symbol library-identifier)
   (let ([source (private:find-source document call-node root-library-node head-symbol library-identifier)])
     (when (getenv "REPLAY_TRACE")
       (fprintf (console-output-port) "[ir-auto-route] bootstrap-source: ~a import=~a~%"
         source
         (guard (e ['err]) (private:import-source document call-node head-symbol))))
     (and source
-      ;cache key pairs source WITH the library it must provide -- different
-      ;libraries from the same directory (ufo-match vs ufo-match-steer) get
-      ;distinct envs
-      (let* ([key (cons source library-identifier)]
+      ;cache key: source x library x document imports -- env content depends
+      ;on all three
+      (let* ([key (list source library-identifier import-sets)]
           [cached (hashtable-ref private:env-cache-ht key 'unset)])
         (cond
           [(eq? cached 'unset)
             (let ([env
                   (guard (e [else #f])
                     (load source)
-                    (let ([built (private:fresh-env library-identifier)])
+                    (let ([built (or (private:build-env library-identifier import-sets workspace-root)
+                                    (private:fresh-env library-identifier))])
                       (and built (private:probe-in built head-symbol) built)))])
               (hashtable-set! private:env-cache-ht key (or env 'failed))
               (set-box! private:env-source
@@ -274,7 +314,7 @@
             (raise e)))])
       (sc-expand (private:wrap-form form params) env #t))))
 
-(define (private:env document call-node root-library-node head-symbol library-identifier)
+(define (private:env document call-node root-library-node import-sets workspace-root head-symbol library-identifier)
   (with-mutex private:env-mutex
     ;SOURCE FIRST: the fresh env built from the workspace's own macro copy
     ;is deterministic -- it contains exactly (chezscheme) + <the head's
@@ -283,7 +323,7 @@
     ;named `except` with its auxiliary keyword and broke expansion of an
     ;unrelated define, 2026-10-21) can never leak in. The interaction env
     ;stays only as a last-resort fallback when no source is locatable.
-    (or (private:bootstrap-source document call-node root-library-node head-symbol library-identifier)
+    (or (private:bootstrap-source document call-node root-library-node import-sets workspace-root head-symbol library-identifier)
       (private:bootstrap-interaction head-symbol))))
 
 ;; (env . mode) pair accessors: mode in (interaction | fresh)
@@ -377,7 +417,7 @@
       call-site-refs)
     inserted))
 
-(define (private:try root-library-node document call-node)
+(define (private:try root-file-node root-library-node document call-node)
   ;; Returns #t when the IR path handled the call site, #f otherwise (the
   ;; call site then gets no expansion-derived references).
   ;; The head symbol and its library come from the call node itself -- the
@@ -389,13 +429,15 @@
           (let ([lib (identifier-reference-library-identifier (car head-refs))])
             (and (not (null? lib)) lib)))])
     (and library-identifier
-      (let ([env-pair (private:env document call-node root-library-node head-symbol library-identifier)])
+      (let* ([path (uri->path (document-uri document))]
+          [text (document-text document)]
+          [forms (private:forms text path)]
+          [import-sets (private:doc-import-sets forms)]
+          [workspace-root (and root-file-node (file-node-path root-file-node))]
+          [env-pair (private:env document call-node root-library-node import-sets workspace-root head-symbol library-identifier)])
     (and env-pair
       (guard (e [else (when (getenv "REPLAY_TRACE") (fprintf (console-output-port) "[ir-auto-route] miss: ~a in ~a at-bias=~a~%" (call-with-string-output-port (lambda (p) (display-condition e p))) (document-uri document) (index-node-start call-node))) (private:bump! (cons #f 0)) #f])
-        (let* ([path (uri->path (document-uri document))]
-            [text (document-text document)]
-            [forms (private:forms text path)]
-            [form (chez-ir-find-define-containing forms (index-node-start call-node))]
+        (let* ([form (chez-ir-find-define-containing forms (index-node-start call-node))]
             [_ (or form (raise 'form-not-found))]
             [t0 (current-time 'time-monotonic)]
             [ir (if (eq? (private:env-mode env-pair) 'fresh)
@@ -417,5 +459,5 @@
   ;; for the rule-calling convention and unused.
   (lambda (root-file-node root-library-node document index-node)
     (and (chez-ir-available?)
-      (private:try root-library-node document index-node))))
+      (private:try root-file-node root-library-node document index-node))))
 )

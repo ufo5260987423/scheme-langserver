@@ -13,6 +13,7 @@
 
 (import
   (chezscheme)
+  (ufo-match-steer) ; GT expansion: aux keywords (? :_ **1) resolve as aux
   (scheme-langserver virtual-file-system index-node) ; GT expansion needs match-index-node
   (srfi :64 testing)
 

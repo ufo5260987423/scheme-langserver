@@ -380,7 +380,11 @@ graceful-degradation self-check).
 Env bootstrap (source-first): the workspace's own ufo-match copy is located
 via the call site's import resolution (then library-node tree, then
 CHEZSCHEMELIBDIRS), (load ...)ed, and expansions run in a fresh immutable
-env via an annotation-fabricated `(let () form #f)` wrapper (positions
+env -- (chezscheme) + the head's library + the DOCUMENT'S OWN imports
+(exact compile-time semantics incl. auxiliary keywords; falls back to the
+minimal pair when an import is not loadable; workspace root prepended to
+library-directories; cache keyed by source x library x import-clause) --
+expanding via an annotation-fabricated `(let () form #f)` wrapper (positions
 intact) with parameter growth on BOTH "unbound identifier" and "misplaced
 aux keyword" errors (chezscheme declares e.g. `except` auxiliary -- user
 functions by that name are opaqued, measured 2026-10-21). The interaction

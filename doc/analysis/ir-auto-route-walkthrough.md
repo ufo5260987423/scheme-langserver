@@ -65,7 +65,7 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
 
 与退役前的区别：
 
-- **不再需要 langserver 侧的 expander**（`private:find-expander` 已删）——IR 路径靠 Chez 自己的 expander 解析头符号，臂只负责"哪些标识符挂 IR 规则"；机制内部完全宏无关：`private:try` 从调用点推导头符号与库标识，`private:env` 按**该库**的副本引导（fresh env = `(chezscheme) + <头符号的库>`，缓存键 = 源路径 × 库）；
+- **不再需要 langserver 侧的 expander**（`private:find-expander` 已删）——IR 路径靠 Chez 自己的 expander 解析头符号，臂只负责"哪些标识符挂 IR 规则"；机制内部完全宏无关：`private:try` 从调用点推导头符号与库标识，`private:env` 按**该库**的副本引导（fresh env = `(chezscheme) + <头符号的库> + <文档自己的 imports>`，失败回退最小对；缓存键 = 源 × 库 × import 子句）；
 - **不再包裹 route-2 规则**。无任何 opt-out 门控——IR 路径无条件启用。
 
 ## 2. 规则入口 — `ir-auto-route:try-expand`
@@ -97,7 +97,14 @@ step（抽象解释器）步进文档树，遇复合节点时按头符号解析�
 
 ① 是精确性的关键：一个 workspace 可能有**多个 (ufo-match) 副本**（本仓库的测试 fixture 就装着旧版 Chicken 风格变体），`walk-library` 取第一个会拿错版本；`find-available-references-for document call-node 'match` 返回的头引用所指向的 document，才是**这个文件的 import 真正解析到的副本**（金丝雀实证：fixture 副本与 .akku 副本并存时，① 总能选对）。
 
-拿到源后 `(load source)`——显式 load 把库注册进 Chez 全局库管理器（脚本/编译二进制行为一致，compile-chez-program 探针实测），随后 `(environment '(chezscheme) '(ufo-match))` 构造 **fresh env** 并 `probe-in` 双向验证。**每个源路径一个缓存项**——一个 server 进程分析多个工作区、各有不同宏副本时互不干扰。
+拿到源后 `(load source)`——显式 load 把库注册进 Chez 全局库管理器（脚本/编译二进制行为一致，compile-chez-program 探针实测），随后**有序构造 fresh env**：
+
+```scheme
+a. (environment '(chezscheme) <头库> <文档自己的 imports…>)   ; 精确编译语义
+b. 回退：(environment '(chezscheme) <头库>)                   ; 最小可用
+```
+
+构造期间把 workspace 根目录临时 prepend 进 `library-directories`（项目内 import 可解析）；任一 import 加载失败 → 落回 b。包含文档 imports 的意义：**辅助关键字模式获得精确语义**——用户手写的 `?`/`:_`/`**1` 与宏定义处的 aux 同绑定，不再被重试机制不透明化（金丝雀实证：诊断数 1913→1907，GT 中 `(? …)` 自锚定伪条目消失）。`probe-in` 双向验证最终 env。**缓存键 = `(源路径 库 import子句)`**——一个 server 进程分析多个工作区、各有不同宏副本/不同 import 面时互不干扰。
 
 **为什么源优先于 interaction**（2026-10-21 实测定论，金丝雀 13 站点迁移案）：fresh env 只含 `(chezscheme) + (ufo-match)`，含义完全确定；而 interaction env 的内容随 **host 进程的 import 面**变化——曾发生某 host 的传递依赖意外遮蔽了 Chez 基环境的 `except` 辅助关键字，使同一份用户代码"有时能展开有时不能"。展开语义绝不能依赖这种偶然性。
 
