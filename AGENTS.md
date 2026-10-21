@@ -360,9 +360,9 @@ The `identifier-reference` record has a mutable `usage-count` field (default 0).
 
 Automatic macro resolution for the ufo-match family (match, match-next,
 match-one, match-check-ellipsis, match-two, match-check-identifier) is
-IR-ONLY: `analysis/identifier/ir-auto-route.sls` answers the router's family
+IR-ONLY: `analysis/identifier/expander/ir-auto-route.sls` answers the router's family
 arm -- Chez's own expander (via the undocumented `(sc-expand x env #t)`
-switch, wrapped by `analysis/identifier/chez-ir.sls`) produces the parsed
+switch, wrapped by `analysis/identifier/expander/chez-ir.sls`) produces the parsed
 Lsrc IR with per-expression/reference/binding source locations, from which
 macro-derived bindings are synthesized onto the document. Route 2's
 self-built pipeline (`expanders/`: dispatch-matcher transcription, template
@@ -388,7 +388,7 @@ Key tests: differential + IR suite below. Docs:
 `doc/analysis/ir-auto-route-walkthrough.md` (per-stage code map, CN),
 `doc/analysis/chez-sc-expand-records-switch.md` (the sc-expand switch),
 `doc/design/route2-retirement-proposal.md` (decision record).
-- Ground truth: `analysis/identifier/chez-ir.sls` wraps the switch (feature
+- Ground truth: `analysis/identifier/expander/chez-ir.sls` wraps the switch (feature
   self-check `chez-ir-available?`). It is the ONLY project library starting
   with `#!chezscheme` (required for `#%$` kernel primitives; the directive
   must be the file's first line and immediately precede `(library ...)`,

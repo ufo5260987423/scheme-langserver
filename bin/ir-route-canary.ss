@@ -14,7 +14,7 @@
   (scheme-langserver virtual-file-system file-node)
   (scheme-langserver virtual-file-system document)
 
-  (scheme-langserver analysis identifier ir-auto-route)
+  (scheme-langserver analysis identifier expander ir-auto-route)
   (scheme-langserver analysis workspace))
 
 (define (fold-documents proc init root-file-node)

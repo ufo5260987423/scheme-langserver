@@ -21,8 +21,8 @@
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
 
-  (scheme-langserver analysis identifier chez-ir)
-  (scheme-langserver analysis identifier ir-auto-route)
+  (scheme-langserver analysis identifier expander chez-ir)
+  (scheme-langserver analysis identifier expander ir-auto-route)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 

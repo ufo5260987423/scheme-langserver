@@ -13,7 +13,7 @@
     (scheme-langserver analysis dependency file-linkage)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier ir-auto-route)
+    (scheme-langserver analysis identifier expander ir-auto-route)
     (scheme-langserver analysis identifier rules begin)
 
     (scheme-langserver analysis identifier self-defined-rules srfi include-resolve)

@@ -1,5 +1,5 @@
 #!chezscheme
-(library (scheme-langserver analysis identifier chez-ir)
+(library (scheme-langserver analysis identifier expander chez-ir)
   ;; The #!chezscheme directive on the first line is required: this file
   ;; uses #%$ kernel primitives, which are rejected in #!r6rs mode, and
   ;; the directive must immediately precede the (library ...) form. No

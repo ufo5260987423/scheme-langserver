@@ -7,8 +7,8 @@
 > 依据文档：`doc/analysis/chez-sc-expand-records-switch.md`（机制与全部落地记录）、
 > `doc/analysis/macro-resolution-profile.md`（route 2 成本结构）、
 > `doc/analysis/macro-analysis-framework.md`（E1–E4 理论框架）。
-> 关键模块：`analysis/identifier/chez-ir.sls`（IR 提取）、
-> `analysis/identifier/ir-auto-route.sls`（并行路径）、
+> 关键模块：`analysis/identifier/expander/chez-ir.sls`（IR 提取）、
+> `analysis/identifier/expander/ir-auto-route.sls`（并行路径）、
 > `analysis/identifier/expanders/`（route 2 管线，退役对象）、
 > `analysis/identifier/self-defined-rules/router.sls`（分发点）。
 

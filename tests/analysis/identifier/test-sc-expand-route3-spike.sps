@@ -19,7 +19,7 @@
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
 
-  (scheme-langserver analysis identifier chez-ir)
+  (scheme-langserver analysis identifier expander chez-ir)
   (scheme-langserver analysis identifier reference))
 
 ;; Synthesize macro-derived binding references from Chez IR ground truth:

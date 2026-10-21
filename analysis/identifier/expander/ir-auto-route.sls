@@ -1,5 +1,5 @@
 #!chezscheme
-(library (scheme-langserver analysis identifier ir-auto-route)
+(library (scheme-langserver analysis identifier expander ir-auto-route)
   ;; Controlled parallel phase for route 3 (doc/analysis/chez-sc-expand-records-switch.md
   ;; §9): for ufo-match-family call sites, try Chez's own expander IR first and
   ;; silently fall back to the route-2 rule on ANY failure. Everything is gated
@@ -21,7 +21,7 @@
     (scheme-langserver virtual-file-system library-node)
 
     (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier chez-ir))
+    (scheme-langserver analysis identifier expander chez-ir))
 
 ;; Expansion environment, cached process-wide. Bootstrap order (v2,
 ;; 2026-10-20):
