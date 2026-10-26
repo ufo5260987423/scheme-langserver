@@ -4,7 +4,7 @@
 > 前置阅读：`chez-sc-expand-records-switch.md`（`(sc-expand x env #t)` 开关的机制与发现历程）。
 > 示例贯穿：fixture `tests/resources/workspace-fixtures/sc-expand-differential/consumer.scm.txt` 中 bias 131 的调用点 `(match input [(a b) (+ a b)] [('sym) 0] [(? number? n) n])`；金丝雀数字来自本仓库自分析（816 文档，110 命中 / 40 回退；回退几乎全是宏模板内的伪调用点）。
 > 机制自 2026-10-21 起**宏无关**：除 ufo-match 六宏族外，`match-index-node`（库 `(scheme-langserver virtual-file-system index-node)`）也走同一通路——头符号与其库从调用点推导，env 按"该库的副本"引导。
-> 最后更新：2026-10-21（route 2 退役 + match-index-node 泛化后全面重写）。
+> 最后更新：2026-10-26（per-clause 作用域 + 绑定驱动 use-less 合成，坑 19-21）。
 
 ---
 
@@ -36,9 +36,11 @@ ir-auto-route:try-expand ───────────────── 门
   │
   ├─► chez-ir-call-site-refs ───────────── IR 树遍历 → (name ref-bias binding-bias)
   │     （三分归属：调用点 / 宏定义文件 / 无；探针真伪鉴定谓词同此层）
+  │     chez-ir-call-site-bindings ─────── 绑定驱动补充（从未被使用的绑定也有源位置）
   │
   └─► private:synthesize! ──────────────── 合成 identifier-reference
-          宏派生过滤 + 去重 + 可见性/定义位置双角色分置 + speculative 标记
+          归组( name . binding-bias ) + per-clause 作用域（use 祖先校验+回退）
+          + 绑定驱动 use-less 合成 + 防重护栏 + speculative 标记
 
 之后：step 照常步进 → 叶子解析 → find-available-references-for
       → usage-count → definition / hover / references / 检查器
@@ -195,19 +197,20 @@ fresh env **不可变**（拒顶层 define、对自由标识符严格），因�
 ## 7. 合成引用 — `private:synthesize!`
 
 ```scheme
-(when (and macro-derived? (in-call-span? …))         ; 绑定位置落在调用点跨度内
-  (unless (hashtable-ref seen (list name binding-bias) #f)
-    (let* ([picked (pick-index-node-from … binding-bias)]
-        [anchor (if (index-node? picked) picked call-node)]
-        [ref (make-identifier-reference name document anchor call-node '() 'variable '() '())])
-      (identifier-reference-speculative?-set! ref #t)
-      (index-node-references-export-to-other-node-set! anchor (append … `(,ref)))        ; 定义位置
-      (index-node-references-import-in-this-node-set! call-node (sort … (cons ref …)))))) ; 作用域可见性
+;; 预分组：按 (name . binding-bias) 归组，收集全部 use-bias
+(let* ([child (find (lambda (c) (span 含 binding-bias)) (index-node-children call-node))]
+    [scope (if (and child (for-all (λ(u) (span 含 u)) uses)) child call-node)])
+  (unless (anchor 已有同名 export)              ; 普通规则已注册的绑定（内层 lambda 形参）不重复合成
+    (挂 export 到 anchor（定义位置）)
+    (插 import 到 scope)))                      ; 作用域可见性
 ```
 
+- **归组**：entry 按 `(name . binding-bias)` 归组，每组**一个**引用——route 2 时代同节点插入会产生双份候选，归组后消除；
+- **per-clause 作用域**：import 插在"调用节点中 span 含 binding-bias 的直接子节点"（对 match 即所属子句），且必须是该组全部 use 的祖先，否则回退调用节点——兄弟子句互不可见（`[(a b) ...] [(a b c) ...]` 里 c 对子句1不可见），scrutinee 天然排除，嵌套 match 外层变量在内层仍可见；
+- **绑定驱动补充**（2026-10-26）：`chez-ir-call-site-bindings` 收集 IR 里源位置在本文件的 prelex 绑定（含从未被使用的——use 驱动的 `call-site-refs` 永远看不到它们；实测未使用 prelex 在 sc-expand IR 里存活且 source 指向 pattern 位置），merge 成 `(name #f binding-bias)` entry 后同管线合成——`(match input [(a b) a])` 的 body 也能补出 b；
+- **防重护栏**：anchor 已有同名 export 则跳过（普通规则注册的绑定不重复合成）；
 - **宏派生判定**：绑定在调用点跨度内才算宏产物；`input` 的绑定（120，lambda 形参）在跨度外 → 跳过（普通规则已注册，天然排除）；
-- **去重**：按 `(name . binding-bias)`；
-- **双角色分置**：插入点在**宏调用节点**（所有 use 的祖先，保证可解析——插到锚点会让兄弟 use 解析归零，实测）；引用的 `index-node` = 恢复出的绑定位置（goto-def 目标）；同时挂到锚点的 exports（既有 IDE 功能与测试探的附着面）；
+- **双角色分置不变**：引用的 `index-node` = 绑定位置（goto-def 目标）；插入点在所属子句（所有 use 的祖先，保证可解析）；同时挂 anchor 的 exports；
 - 与 route 2 时代的本质区别：**零重复引用**（route 2 的 pair 回传会产生重复 speculative 引用，曾损坏 usage-count 造成 14 条 "Unused local variable" 误报；IR 路径单锚点，金丝雀诊断数历史最低）。
 
 ## 8. 命中之后：引用"上班"
@@ -242,6 +245,7 @@ fresh env **不可变**（拒顶层 define、对自由标识符严格），因�
 | `tests/analysis/identifier/test-ir-auto-route.sps` | 1–8 全链（真实 workspace init） |
 | `tests/analysis/identifier/test-ir-auto-route-load.sps` | 3a+5：load 源定位、fresh env、let 包装、**双类重试**、单锚点（10 断言） |
 | `tests/analysis/identifier/test-sc-expand-route3-spike.sps` | 6+7 纯机制 + 性能门（<50 ms，实测 ~11 ms） |
+| `tests/analysis/identifier/test-ir-auto-route-clause-scope.sps` | per-clause 作用域 + use-less 绑定（跨子句泄漏/双份候选/未使用绑定补全，8 断言） |
 | `tests/robustness/robustness-ir-route-threaded.sps` | 全链并发安全（6 次 threaded init，25/25） |
 | `tests/analysis/identifier/test-ir-auto-route-match-index-node.sps` | 宏无关泛化：match-index-node 走完整 IR 链路（真实仓库 init，GT 11 项全中） |
 | `bin/ir-route-canary.ss` | 全仓端到端（命中/回退/引用数/诊断数；自分析本仓库） |
@@ -271,7 +275,10 @@ fresh env **不可变**（拒顶层 define、对自由标识符严格），因�
 16. env 缓存按源分键且用 `equal-hash`（`string-hash` 表塞 `'interaction` 符号键每次抛异常，被 step 的 try/except 吞成诊断噪音）。
 17. miss 追踪禁用 `condition-irritants`（对无 &irritants 条件抛异常）。
 18. host 进程**无需** import `(ufo-match)`（`run.ss` 已移除）——load 路径自给自足。
+19. **use 驱动提取的盲区**（2026-10-26）：从未被使用的模式变量（`(match input [(a b) a])` 的 b）不产生 Lsrc:ref，use 驱动收集永远看不见它——补全候选缺失。实测未使用 prelex 在 IR 里存活且 source 指向 pattern 位置，故用 `chez-ir-call-site-bindings` 做绑定驱动补充（merge 为 ref-bias=#f 的 entry）。
+20. **跨子句泄漏与双份候选**（2026-10-26）：统一插调用节点作用域导致兄弟子句互见、同名变量双份（子句1 body 补全出 `(a a)`）。修复 = 归组 + 插入点下沉到 binding-bias 所属直接子句 + use 祖先校验回退。教训：候选列表出现同名双份 = 同层 import 列表混入了两个绑定。
+21. **测试 bias 计算的陷阱**：模式 b 的 " b) " 与 body `(+ a b)]` 的 " b)" 只差一个尾部空格，nth 搜索会抓错（调试时 b 的锚点 199 被指为 155，实为测试辅助函数抓到了 body b）。fixture 搜索串要带足够上下文。
 
 ## 12. 一句话总结
 
-**router 认出六宏族并转交 `try-expand`；ir-auto-route 以"源优先"引导出确定性的 Chez 环境（工作区自己的宏副本，load 注册 + fresh env）、用注解伪造的 let 包装 + 双类阻塞标识符参数化让 Chez 展开（位置零损耗）、把 IR 里的 (use, definition) 事实按双角色合成 identifier-reference 贴回文档；chez-ir 承担与 Chez 未文档化 IR 对话的全部脏活（含探针真伪鉴定）；失败即静默不分析——route 2 的自研展开管线已成为历史。**
+**router 认出六宏族并转交 `try-expand`；ir-auto-route 以"源优先"引导出确定性的 Chez 环境（工作区自己的宏副本，load 注册 + fresh env）、用注解伪造的 let 包装 + 双类阻塞标识符参数化让 Chez 展开（位置零损耗）、把 IR 里的 (use, definition) 事实按 (name . binding-bias) 归组、以 per-clause 作用域（use 祖先校验 + 回退）+ 绑定驱动 use-less 补充合成 identifier-reference 贴回文档；chez-ir 承担与 Chez 未文档化 IR 对话的全部脏活（含探针真伪鉴定）；失败即静默不分析——route 2 的自研展开管线已成为历史。**

@@ -378,43 +378,107 @@
           (+ (cadr s) (if (car hits-ms) 0 1))
           (+ (caddr s) (cdr hits-ms)))))))
 
+(define (private:merge-use-less-bindings refs bindings)
+  ;;refs:     ((name ref-bias binding-bias) ...) -- use-driven
+  ;;bindings: ((name binding-bias) ...)          -- binding-driven
+  ;;Add a (name #f binding-bias) entry for every binding no use entry
+  ;;covers, so never-used macro-derived bindings (an unused match pattern
+  ;;variable) still materialize into references and show up in completion.
+  (let ([covered (make-hashtable equal-hash equal?)])
+    (for-each
+      (lambda (entry)
+        (let ([binding-bias (caddr entry)])
+          (when binding-bias
+            (hashtable-set! covered (cons (car entry) binding-bias) #t))))
+      refs)
+    (let loop ([bs bindings]
+        [acc '()])
+      (cond
+        [(null? bs) (append refs (reverse acc))]
+        [(hashtable-ref covered (cons (caar bs) (cadar bs)) #f)
+          (loop (cdr bs) acc)]
+        [else
+          (loop (cdr bs)
+            (cons (list (caar bs) #f (cadar bs)) acc))]))))
+
 (define (private:synthesize! call-site-refs document call-node)
-  ;; Materialize macro-derived bindings from IR ground truth, mimicking the
-  ;; route-2 attachment surface: the reference resolves from the macro call
-  ;; node (ancestor of every use) AND is exported at the anchor node, like
-  ;; let-bindings (regist-as-identifier-reference). Only bindings INSIDE the
-  ;; call span are macro-derived; ordinary bindings (lambda params) already
-  ;; exist via the normal rules. Returns the number of synthesized references.
-  (let ([seen (make-hashtable equal-hash equal?)]
+  ;; Materialize macro-derived bindings from IR ground truth. Entries are
+  ;; grouped by (name . binding-bias); each group becomes ONE reference,
+  ;; exported at the binding-position anchor (the goto-definition target)
+  ;; and imported at the NARROWEST scope that is an ancestor of every use:
+  ;; the direct child of the call node containing the binding (for
+  ;; clause-shaped macros, the clause itself), falling back to the call
+  ;; node. Per-clause scoping keeps sibling-clause variables out of each
+  ;; other's bodies (match's c in [(a b) ...] [(a b c) ...] is invisible
+  ;; in the first clause) and one reference per group removes the duplicate
+  ;; candidates the shared call-node scope produced. Use-less entries
+  ;; (ref-bias #f) synthesize bindings that are never referenced. A group
+  ;; whose anchor already exports the same identifier is skipped: the
+  ;; normal identifier rules registered that binding (e.g. a lambda
+  ;; parameter inside the clause body), so synthesizing would duplicate it.
+  ;; Only bindings INSIDE the call span are macro-derived. Returns the
+  ;; number of synthesized references.
+  (let* ([groups (make-hashtable equal-hash equal?)]
+      [group-keys '()]
       [inserted 0])
     (for-each
       (lambda (entry)
-        (let* ([name (car entry)]
+        (let ([name (car entry)]
             [ref-bias (cadr entry)]
-            [binding-bias (caddr entry)]
-            [macro-derived?
-              (and binding-bias
-                (>= binding-bias (index-node-start call-node))
-                (< binding-bias (index-node-end call-node)))])
-          ;ref-bias also must be at/inside the call: entry came from this
-          ;call site's form, but nested forms can contribute refs -- the call
-          ;span filter keeps each synthesis attached to its own call node.
-          (when (and macro-derived?
-                  (>= ref-bias (index-node-start call-node))
-                  (< ref-bias (index-node-end call-node)))
-            (unless (hashtable-ref seen (list name binding-bias) #f)
-              (hashtable-set! seen (list name binding-bias) #t)
-              (let* ([picked (pick-index-node-from (document-index-node-list document) binding-bias)]
-                  [anchor (if (index-node? picked) picked call-node)]
-                  [ref (make-identifier-reference name document anchor call-node '() 'variable '() '())])
-                (identifier-reference-speculative?-set! ref #t)
-                (index-node-references-export-to-other-node-set! anchor
-                  (append (index-node-references-export-to-other-node anchor) `(,ref)))
-                (index-node-references-import-in-this-node-set! call-node
-                  (sort-identifier-references
-                    (cons ref (index-node-references-import-in-this-node call-node))))
-                (set! inserted (+ inserted 1)))))))
+            [binding-bias (caddr entry)])
+          ;the binding must live inside THIS call site's span (nested forms
+          ;contribute refs of their own; the span filter keeps each
+          ;synthesis attached to its own call node); uses outside the span
+          ;are dropped, preserving the per-entry filter of the old loop
+          (when (and binding-bias
+                  (>= binding-bias (index-node-start call-node))
+                  (< binding-bias (index-node-end call-node))
+                  (or (not ref-bias)
+                    (and (>= ref-bias (index-node-start call-node))
+                      (< ref-bias (index-node-end call-node)))))
+            (let ([key (cons name binding-bias)])
+              (let ([uses (hashtable-ref groups key #f)])
+                (if uses
+                  (when ref-bias (set-cdr! uses (cons ref-bias (cdr uses))))
+                  (begin
+                    (hashtable-set! groups key (cons #f (if ref-bias `(,ref-bias) '())))
+                    (set! group-keys (cons key group-keys)))))))))
       call-site-refs)
+    (for-each
+      (lambda (key)
+        (let* ([name (car key)]
+            [binding-bias (cdr key)]
+            [uses (cdr (hashtable-ref groups key #f))]
+            [picked (pick-index-node-from (document-index-node-list document) binding-bias)]
+            [anchor (if (index-node? picked) picked call-node)]
+            ;scope: the direct child of the call node whose span contains
+            ;the binding AND every use (for a clause-shaped macro this is
+            ;the clause, so sibling clauses never see the variable); any
+            ;violation falls back to the call node, which is an ancestor of
+            ;every in-span use by construction
+            [child (find (lambda (c)
+                           (and (<= (index-node-start c) binding-bias)
+                             (< binding-bias (index-node-end c))))
+                     (index-node-children call-node))]
+            [scope (if (and child
+                           (for-all (lambda (u)
+                                      (and (<= (index-node-start child) u)
+                                        (< u (index-node-end child))))
+                                    uses))
+                     child
+                     call-node)])
+          (unless (find (lambda (r)
+                          (eq? name (identifier-reference-identifier r)))
+                  (index-node-references-export-to-other-node anchor))
+            (let ([ref (make-identifier-reference name document anchor call-node '() 'variable '() '())])
+              (identifier-reference-speculative?-set! ref #t)
+              (index-node-references-export-to-other-node-set! anchor
+                (append (index-node-references-export-to-other-node anchor) `(,ref)))
+              (index-node-references-import-in-this-node-set! scope
+                (sort-identifier-references
+                  (cons ref (index-node-references-import-in-this-node scope))))
+              (set! inserted (+ inserted 1))))))
+      (reverse group-keys))
     inserted))
 
 (define (private:try root-file-node root-library-node document call-node)
@@ -443,7 +507,9 @@
             [ir (if (eq? (private:env-mode env-pair) 'fresh)
                   (private:expand-fresh (car env-pair) form)
                   (chez-ir-expand form (car env-pair)))]
-            [refs (chez-ir-call-site-refs ir path)]
+            [refs (private:merge-use-less-bindings
+                    (chez-ir-call-site-refs ir path)
+                    (chez-ir-call-site-bindings ir path))]
             [inserted (private:synthesize! refs document call-node)]
             [t1 (current-time 'time-monotonic)]
             [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])

@@ -1,0 +1,9 @@
+(library (ir-clause-scope-consumer)
+  (export classify)
+  (import (chezscheme) (ufo-match))
+
+  (define (classify input)
+    (match input
+      [(a b) (+ a b)]
+      [(a b c) (+ a (+ b c))]
+      [(a b) a])))

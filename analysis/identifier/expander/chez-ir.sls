@@ -12,6 +12,7 @@
     chez-ir-find-define-containing
     chez-ir-expand
     chez-ir-call-site-refs
+    chez-ir-call-site-bindings
     chez-ir-global-lookup?
     chez-ir-contains-quoted-symbol?)
   (import (chezscheme))
@@ -354,5 +355,33 @@
           (walk o)]
         [else (void)]))
     (walk-any ir)
+    (reverse result)))
+
+(define (chez-ir-call-site-bindings ir path)
+  ;; Binding-driven complement of chez-ir-call-site-refs: walk the IR and
+  ;; collect every prelex BINDING whose source is in `path`. A never-used
+  ;; binding (e.g. an unused match pattern variable) produces no Lsrc:ref,
+  ;; so the use-driven collector alone can never see it; the unused prelex
+  ;; survives in the sc-expand IR (measured: prelex.source still points at
+  ;; the pattern position). Macro-generated temporaries carry no source and
+  ;; template-introduced bindings point at the macro definition file, so
+  ;; the path check excludes both.
+  ;; Returns a de-duplicated list of (name binding-bias).
+  (let ([seen-keys (make-hashtable equal-hash equal?)]
+      [result '()])
+    (private:record-walk ir
+      (lambda (o rtd)
+        (let ([prelex-rtd (private:ancestor-rtd rtd 'prelex)])
+          (when prelex-rtd
+            (let ([src ((record-accessor prelex-rtd 2) o)])
+              (when (private:source-in-path? src path)
+                (let* ([name (guard (e [#t '?])
+                              ((record-accessor prelex-rtd 0) o))]
+                    [bias (private:source-bias src)]
+                    [key (cons name bias)])
+                  (unless (hashtable-ref seen-keys key #f)
+                    (hashtable-set! seen-keys key #t)
+                    (set! result (cons `(,name ,bias) result))))))))
+          #f))
     (reverse result)))
 )
