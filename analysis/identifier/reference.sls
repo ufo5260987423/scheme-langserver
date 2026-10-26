@@ -22,8 +22,6 @@
     identifier-reference-index-node
     identifier-reference-initialization-index-node
     identifier-reference-top-environment
-    identifier-reference-syntax-expander
-    identifier-reference-syntax-expander-set!
     identifier-reference-usage-count
     identifier-reference-usage-count-set!
     identifier-reference-speculative?
@@ -64,7 +62,6 @@
     ;;NOTE: it must be index-node's type expression collection, because of case-lambda
     (mutable type-expressions)
     (mutable top-environment)
-    (mutable syntax-expander)
     (mutable usage-count)
     ;#t when this reference was back-propagated from a macro expansion (tentative-level knowledge, cf. Culpepper 2010): consumers that need
     ;definite bindings should treat these with suspicion
@@ -73,9 +70,9 @@
     (lambda (new)
       (case-lambda
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() #f 0 #f)]
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions '() 0 #f)]
         [(identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment)
-          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment #f 0 #f)]))))
+          (new identifier document index-node initialization-index-node library-identifier type parents type-expressions top-environment 0 #f)]))))
 
 (define (meta? identifier) (not (null? (identifier-reference-top-environment identifier))))
 (define (meta-for? document index-node identifier)

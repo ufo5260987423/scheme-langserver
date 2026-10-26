@@ -126,58 +126,6 @@
     (document-diagnoses-set! (file-node-document file-node) '()))
   (for-each private:clear-file-node-diagnoses (file-node-children file-node)))
 
-(define (private:clear-non-serializable-fields! workspace)
-  ;;Walk the reachable object graph and clear fields that contain procedures, which Chez fasl-write cannot serialize.  Currently this covers:
-  ;;- index-node expansion-generator (procedure) - identifier-reference syntax-expander (procedure)
-  (let ([seen (make-eq-hashtable)])
-    (define (visit obj)
-      (when (and (or (pair? obj) (vector? obj) (box? obj) (hashtable? obj) (record? obj))
-                 (not (hashtable-ref seen obj #f)))
-        (hashtable-set! seen obj #t)
-        (cond
-          [(index-node? obj)
-           (index-node-expansion-generator-set! obj '())
-           (visit (index-node-children obj))
-           (visit (index-node-excluded-references obj))
-           (visit (index-node-references-import-in-this-node obj))
-           (visit (index-node-references-export-to-other-node obj))
-           (visit (index-node-substitution-list obj))
-           (visit (index-node-import-file-nodes obj))
-           (visit (index-node-datum/annotations obj))]
-          [(identifier-reference? obj)
-           (identifier-reference-syntax-expander-set! obj #f)
-           (visit (identifier-reference-parents obj))
-           (visit (identifier-reference-type-expressions obj))
-           (visit (identifier-reference-index-node obj))
-           (visit (identifier-reference-initialization-index-node obj))]
-          [(document? obj)
-           (visit (document-index-node-list obj))
-           (visit (document-ordered-reference-list obj))]
-          [(file-node? obj)
-           (unless (file-node-folder? obj)
-             (visit (file-node-document obj)))
-           (visit (file-node-children obj))]
-          [(pair? obj)
-           (visit (car obj))
-           (visit (cdr obj))]
-          [(vector? obj)
-           (do ([i 0 (+ i 1)]) [(= i (vector-length obj))]
-             (visit (vector-ref obj i)))]
-          [(box? obj)
-           (visit (unbox obj))]
-          [(hashtable? obj)
-           (let-values ([(keys vals) (hashtable-entries obj)])
-             (visit keys)
-             (visit vals))]
-          [(record? obj)
-           (let* ([rtd (record-rtd obj)]
-                  [names (record-type-field-names rtd)])
-             (do ([i 0 (+ i 1)]) [(= i (vector-length names))]
-               (visit ((record-accessor rtd i) obj))))])))
-    (visit (workspace-file-node workspace))
-    (visit (workspace-library-node workspace))
-    (visit (workspace-file-linkage workspace))))
-
 (define (private:path->id-map->alist path->id-map)
   (let-values ([(keys values) (hashtable-entries path->id-map)])
     (let loop ([i 0] [result '()])
@@ -213,8 +161,8 @@
 
 (define (private:prepare-workspace-payload workspace)
   ;;1. Diagnoses are now persisted so that clients can receive them immediately after loading the cache without re-running the full analysis.
-  ;;2. Clear procedure-valued fields that Chez fasl-write cannot serialize
-  (private:clear-non-serializable-fields! workspace)
+  ;;2. (removed 2026-10-21) procedure-valued fields no longer exist -- the
+  ;;generator/expander machinery was retired with route 2.
   ;; 3. Clear workspace undiagnosed-paths; it will be repopulated after load.
   (workspace-undiagnosed-paths-set! workspace '())
   ;;4. Convert file-linkage path->id-map (equal-hashtable, not FASL-serializable) to an alist and store it separately in the payload.

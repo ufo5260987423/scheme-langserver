@@ -37,8 +37,6 @@
     index-node-substitution-list-set!
     index-node-import-file-nodes
     index-node-import-file-nodes-set!
-    index-node-expansion-generator
-    index-node-expansion-generator-set!
 
     extend-index-node-substitution-list 
 
@@ -102,12 +100,11 @@
     (mutable references-import-in-this-node)
     (mutable excluded-references)
     (mutable substitution-list)
-    (mutable import-file-nodes)
-    (mutable expansion-generator))
+    (mutable import-file-nodes))
   (protocol
     (lambda (new)
       (lambda (parent start end datum/annotations shared-reference children references-export-to-other-node references-import-in-this-node excluded-references)
-        (new parent start end datum/annotations shared-reference #f children references-export-to-other-node references-import-in-this-node excluded-references '() '() '())))))
+        (new parent start end datum/annotations shared-reference #f children references-export-to-other-node references-import-in-this-node excluded-references '() '())))))
 
 ; The uuid is generated lazily: creating one eagerly for every index-node
 ; made uuid.sls ~8% of workspace-init profile counts, while the value is
