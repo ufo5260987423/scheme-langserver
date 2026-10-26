@@ -360,9 +360,11 @@ inferScope 算法：
 
 ### 4.3 跨文档解析：expander-doc fallback = 隐式相位的 ad-hoc 实现
 
-`private:find-available-references-for` [实现: abstract-interpreter.sls:273-312] 与 `private:find-expander-doc-for-node` [:263-271]：当节点位于某次宏展开内部时，符号解析 fallback 到 **expander 所在文档**（宏定义文件）的引用表。类型推断侧有一份同构复制 [实现: type/substitutions/generator.sls:164-192]，且类型替换的规则分派显式排除 `'parameter`/`'syntax-parameter` 引用 [实现: generator.sls:156-162]（pattern 变量不进类型替换）。
+> **已退役（2026-10-26 清理）**：`private:find-available-references-for`（abstract-interpreter.sls 与 type/substitutions/generator.sls 的同构拷贝）与 `private:find-expander-doc-for-node` 已随 route 2 一并删除——`expanded+callee-list` 参数在生产入口恒为 `'()`，expander-doc fallback 分支自 route 2 退役（2026-10-21）起即不可达，是退役清单的漏网项。跨文档解析现在由 IR 路径（route 3，见 `ir-auto-route-walkthrough.md`）整体接管：Chez 原生展开 + IR 事实合成，不再需要文档级近似。
 
-理论上这对应"宏定义体的标识符在定义点词法环境中解析"——但实现是**文档级**而非**展开期环境级**的近似（真正的 `env: label → binding` 是瞬时的，见框架要素 E1 的注释；这正是 Racket `identifier-binding` 与 Chez 的差距）。
+~~`private:find-available-references-for` [实现: abstract-interpreter.sls:273-312] 与 `private:find-expander-doc-for-node` [:263-271]：当节点位于某次宏展开内部时，符号解析 fallback 到 **expander 所在文档**（宏定义文件）的引用表。类型推断侧有一份同构复制 [实现: type/substitutions/generator.sls:164-192]，且类型替换的规则分派显式排除 `'parameter`/`'syntax-parameter` 引用 [实现: generator.sls:156-162]（pattern 变量不进类型替换）。~~
+
+历史上这对应"宏定义体的标识符在定义点词法环境中解析"——但实现是**文档级**而非**展开期环境级**的近似（真正的 `env: label → binding` 是瞬时的，见框架要素 E1 的注释；这正是 Racket `identifier-binding` 与 Chez 的差距）。
 
 ### 4.4 两路线对比的理论重述
 

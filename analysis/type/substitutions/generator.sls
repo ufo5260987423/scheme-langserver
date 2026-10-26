@@ -30,13 +30,13 @@
 
 (define (construct-substitutions-for document)
   (for-each
-    (lambda (index-node) (step document index-node '()))
+    (lambda (index-node) (step document index-node))
     (document-index-node-list document)))
 
 ; document index-node allow-unquote? quoted?
-(define step 
-  (case-lambda 
-    [(current-document current-index-node expanded+callee-list)
+(define step
+  (case-lambda
+    [(current-document current-index-node)
       (match-index-node current-index-node
         [(and (? index-node-quote? :_) (head . :_))
           (extend-index-node-substitution-list current-index-node head)
@@ -44,18 +44,18 @@
         ;#'(1 2 3) is a syntax not a list
         [(? index-node-syntax? :_) '()]
         [(and (? index-node-quasiquote? :_) (head . rest))
-          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+          (let ([available-identifiers (find-available-references-for current-document current-index-node)])
             (extend-index-node-substitution-list current-index-node head)
             (for-each
               (lambda (current)
-                (step current-document current available-identifiers 'quasiquoted expanded+callee-list))
+                (step current-document current available-identifiers 'quasiquoted))
               (cons head rest)))]
         [(and (? index-node-quasisyntax? :_) (head . rest))
-          (let ([available-identifiers (private:find-available-references-for expanded+callee-list current-document current-index-node)])
+          (let ([available-identifiers (find-available-references-for current-document current-index-node)])
             (extend-index-node-substitution-list current-index-node head)
             (for-each
               (lambda (current)
-                (step current-document current available-identifiers 'quasisyntax expanded+callee-list))
+                (step current-document current available-identifiers 'quasisyntax))
               (cons head rest)))]
 
         [(head . rest)
@@ -64,7 +64,7 @@
                 (cond 
                   [(symbol? head-expression)
                     (establish-available-rules-from 
-                      (private:find-available-references-for expanded+callee-list current-document current-index-node head-expression))]
+                      (find-available-references-for current-document current-index-node head-expression))]
                   [else '()])])
             (if (symbol? head-expression)
               (try 
@@ -81,9 +81,9 @@
                   [else (raise c)]))
               ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
-            (try 
+            (try
               (for-each
-                (lambda (child-index-node) (step current-document child-index-node expanded+callee-list))
+                (lambda (child-index-node) (step current-document child-index-node))
                 (cons head rest))
               (except c 
                 [(condition? c) 
@@ -94,21 +94,21 @@
                   '()]
                 [else (raise c)])))]
         [else (trivial-process current-document current-index-node)])]
-      [(current-document current-index-node available-identifiers quasi-quoted-syntaxed expanded+callee-list)
+      [(current-document current-index-node available-identifiers quasi-quoted-syntaxed)
         (match-index-node current-index-node
           [(and (? (lambda (_) (eq? quasi-quoted-syntaxed 'quasiquoted)) :_)
              (or (? index-node-unquote? :_) (? index-node-unquote-splicing? :_)))
             (for-each
-              (lambda (current) (step current-document current expanded+callee-list))
+              (lambda (current) (step current-document current))
               (index-node-children current-index-node))]
           [(and (? (lambda (_) (eq? quasi-quoted-syntaxed 'quasisyntaxed)) :_)
              (or (? index-node-unsyntax? :_) (? index-node-unsyntax-splicing? :_)))
             (for-each
-              (lambda (current) (step current-document current expanded+callee-list))
+              (lambda (current) (step current-document current))
               (index-node-children current-index-node))]
           [(head . rest)
             (for-each
-              (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed expanded+callee-list))
+              (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed))
               (cons head rest))]
           [else '()])]))
 
@@ -158,35 +158,11 @@
         (not 
           (or 
             (eq? 'parameter (identifier-reference-type identifier))
-            (eq? 'syntax-parameter (identifier-reference-type identifier)))))
+            (eq? 'syntax-parameter (identifier-reference-type identifier))
+            ;speculative references (IR-synthesized macro-derived bindings,
+            ;e.g. match pattern variables) never denote procedures or
+            ;special forms -- in head position they sit inside macro
+            ;patterns, which must not be typed as applications
+            (identifier-reference-speculative? identifier))))
       identifier-list)))
-
-(define private:find-available-references-for 
-  (case-lambda 
-    [(expanded+callee-list current-document current-index-node)
-      (let ([result (assq current-index-node expanded+callee-list)])
-        (if result 
-          (let* ([is-new-format (list? result)]
-              [callee-node (if is-new-format (cadr result) (cdr result))]
-              [expander-doc (if is-new-format (caddr result) #f)]
-              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node)])
-            (if (null? callee-result)
-              (if expander-doc
-                (find-available-references-for expander-doc current-index-node)
-                '())
-              callee-result))
-          (find-available-references-for current-document current-index-node)))]
-    [(expanded+callee-list current-document current-index-node expression)
-      (let ([result (assq current-index-node expanded+callee-list)])
-        (if result 
-          (let* ([is-new-format (list? result)]
-              [callee-node (if is-new-format (cadr result) (cdr result))]
-              [expander-doc (if is-new-format (caddr result) #f)]
-              [callee-result (private:find-available-references-for expanded+callee-list current-document callee-node expression)])
-            (if (null? callee-result)
-              (if expander-doc
-                (find-available-references-for expander-doc current-index-node expression)
-                '())
-              callee-result))
-          (find-available-references-for current-document current-index-node expression)))]))
 )

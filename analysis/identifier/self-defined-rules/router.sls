@@ -25,7 +25,7 @@
 
 (define (route&add
   rules target-identifier
-  file-linkage identifier-list current-document expanded+callee-list memory
+  file-linkage identifier-list current-document
   add-rule-procedure step)
   (let* ([top (root-ancestor target-identifier)]
         [expressions (map identifier-reference-identifier top)]
@@ -39,7 +39,7 @@
               (include-resolve-process root-file-node root-library-node document index-node
                 (lambda (current-document)
                   (file-linkage-set! file-linkage (uri->path (document-uri document)) (uri->path (document-uri current-document)))
-                  (step root-file-node root-library-node file-linkage current-document expanded+callee-list memory))))])
+                  (step root-file-node root-library-node file-linkage current-document))))])
           (add-rule-procedure rules `((,target-lambda) . ,target-identifier)))]
       [(and (equal? library-identifiers '((ufo-try))) (equal? expressions '(try)))
         (add-rule-procedure rules `((,try-process) . ,target-identifier))]
