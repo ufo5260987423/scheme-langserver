@@ -375,7 +375,57 @@ replay) has been REMOVED; on any IR failure the call site silently gets no
 expansion-derived references (see ir-auto-route:stats / REPLAY_TRACE). NO
 opt-out gate -- the path is unconditional (the underlying Chez APIs are
 being upstreamed for documentation; chez-ir-available? remains as a
-graceful-degradation self-check).
+graceful-degradation self-check). MACRO TYPE INFERENCE (2026-10-27, third and final architecture):
+EXPANSION-DRIVEN, mimicking the identifier side. The type router's GENERIC
+macro arm (any syntax-variable head; ufo-try keeps a hand rule) dispatches
+to type:expand-and-infer (analysis/type/substitutions/macro-expansion.sls):
+Chez expands the call site; chez-ir->annotated-sexp rebuilds the FULLY
+ANNOTATED sexp tree from the IR (the default $uncprep output carries no
+annotations -- measured); single-clause case-lambda applications,
+INCLUDING through let/letrec-bound names (Chez lifts clause lambdas), are
+beta-reduced to LETs (the type system types formals only via lets, never
+via application); a VIRTUAL index-node document is built with make-index-
+node directly (init-index-node's reader-data assumptions silently drop
+reconstructed subtrees -- measured); the virtual document INHERITS the
+caller's document-ordered-reference-list (every name in the expansion was
+resolvable in the caller's compile env by construction, and the caller's
+identifier pass already filled that table with real metadata -- replaces
+an earlier hand-seeding layer that caused eight impedance-class bugs);
+before the generator runs, private:register-bindings! registers ONE
+reference per local binder (let/let*/letrec/letrec* binding symbols and
+case-lambda formals, type 'variable/'parameter, index-node = the binder
+itself) on the binding form's import list -- mirroring what the
+identifier side's lambda/let rules do in real documents; without it the
+first use position (e.g. the w in (car w)) resolves to nothing and the
+value-flow chain dies (measured); the REAL generator runs over the
+expansion; and the inferred substitutions map back to the call site by
+source position. generator.sls
+now isolates each child step in its own try (one raising child used to
+silently starve all later siblings -- a production bug). Two earlier
+architectures were removed after honest evaluation: an IR flow language
+(strictly weaker re-implementation of the generator -- the extractor
+survives only as a differential-test oracle) and hand-written macro-family
+rules. Known boundary: the value-flow chain now closes END-TO-END --
+type:recursive-interpret-result-list resolves pattern variable a to char?
+(measured 2026-10-27; b's cadr chain stays at substitution level, which
+is the DSL's own cross-node template application, not this mechanism);
+(? pred) refinement is out of scope per the seam criterion. See walkthrough
+section 7.1. ENTRY POINT: the TYPE self-defined-rules router has a
+GENERIC macro arm -- any define-syntax-headed call site (head's
+root-ancestor type is 'syntax-variable) is routed to an injected
+(type:expand-and-infer construct-substitutions-for root-library-node
+document call-node) during the type pass (injected by generator.sls to
+break the cycle generator -> router -> macro-expansion -> generator;
+rnrs-meta-rules.sls is never modified, only read). The identifier pass
+does NOT attach types. construct-substitutions-for takes an optional second
+root-library-node argument. chez-ir-call-site-type-flows survives only as a
+differential-test oracle (test-macro-rules-vs-ir.sps). The hand-written
+type-side match rule (self-defined-rules/ufo-match/match.sls, the
+(? pred id) approximation) was RETIRED the same day: expansion-driven
+inference covers every pattern shape and any user macro, and the type
+router's only remaining specific arm is ufo-try (a control-flow form, not
+a binder). See walkthrough section 7.1 and
+tests/analysis/type/substitutions/test-ir-type-flow.sps.
 
 Env bootstrap (source-first): the workspace's own ufo-match copy is located
 via the call site's import resolution (then library-node tree, then

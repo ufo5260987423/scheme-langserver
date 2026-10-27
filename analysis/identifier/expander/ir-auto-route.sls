@@ -9,7 +9,11 @@
     ir-auto-route:try-expand
     ir-auto-route:stats
     ir-auto-route:reset-stats!
-    ir-auto-route:env-source)
+    ir-auto-route:env-source
+    ir-auto-route:call-site-flows
+    ir-auto-route:expand-call-site
+    ir-auto-route:type-stats
+    ir-auto-route:reset-type-stats!)
   (import
     (chezscheme)
 
@@ -362,11 +366,30 @@
 (define private:stats-mutex (make-mutex))
 (define private:stats (box '(0 0 0)))
 
+(define (ir-auto-route:type-stats)
+  ;;(type-flow hits type-flow misses total milliseconds), mutex-guarded
+  (with-mutex private:type-stats-mutex (unbox private:type-stats)))
+
+(define (ir-auto-route:reset-type-stats!)
+  (with-mutex private:type-stats-mutex (set-box! private:type-stats (list 0 0 0))))
+
 (define (ir-auto-route:stats)
   (with-mutex private:stats-mutex (unbox private:stats)))
 
 (define (ir-auto-route:reset-stats!)
   (with-mutex private:stats-mutex (set-box! private:stats '(0 0 0))))
+
+(define private:type-stats (box (list 0 0 0)))
+(define private:type-stats-mutex (make-mutex))
+
+(define (private:bump-type! hits-ms)
+  (with-mutex private:type-stats-mutex
+    (let ([s (unbox private:type-stats)])
+      (set-box! private:type-stats
+        (list
+          (+ (car s) (if (car hits-ms) 1 0))
+          (+ (cadr s) (if (car hits-ms) 0 1))
+          (+ (caddr s) (cdr hits-ms)))))))
 
 (define (private:bump! hits-ms)
   ;hits-ms: (hit? . milliseconds)
@@ -516,6 +539,87 @@
           (if (positive? inserted)
             (begin (private:bump! (cons #t ms)) #t)
             (begin (private:bump! (cons #f ms)) #f)))))))))
+
+(define (ir-auto-route:expand-call-site root-library-node document call-node)
+  ;;Expand the macro call site with Chez's own expander and return the
+  ;;RECONSTRUCTED annotated s-expression of the enclosing define form
+  ;;(chez-ir->annotated-sexp restores the positions $uncprep strips). This
+  ;;is the TYPE side's window into the expansion: the type generator runs
+  ;;over the reconstructed tree and results map back by source position.
+  ;;Any failure = #f with a type-stats miss (see REPLAY_TRACE).
+  (let* ([head-symbol (index-node-expression (car (index-node-children call-node)))]
+      [head-refs (find-available-references-for document call-node head-symbol)]
+      [library-identifier
+        (and (not (null? head-refs))
+          (let ([lib (identifier-reference-library-identifier (car head-refs))])
+            (and (not (null? lib)) lib)))])
+    (and library-identifier
+      (let ([path (uri->path (document-uri document))])
+        (guard (e [else
+                  (when (getenv "REPLAY_TRACE")
+                    (fprintf (console-output-port) "[ir-auto-route] expand-call-site miss: ~a in ~a at-bias=~a~%"
+                      (call-with-string-output-port (lambda (p) (display-condition e p)))
+                      (document-uri document) (index-node-start call-node)))
+                  (private:bump-type! (cons #f 0))
+                  #f])
+          (let* ([text (document-text document)]
+              [forms (private:forms text path)]
+              [import-sets (private:doc-import-sets forms)]
+              [env-pair (private:env document call-node root-library-node import-sets #f head-symbol library-identifier)])
+            (and env-pair
+              (let* ([form (chez-ir-find-define-containing forms (index-node-start call-node))]
+                  [_ (or form (raise 'form-not-found))]
+                  [t0 (current-time 'time-monotonic)]
+                  [ir (if (eq? (private:env-mode env-pair) 'fresh)
+                        (private:expand-fresh (car env-pair) form)
+                        (chez-ir-expand form (car env-pair)))]
+                  [rebuilt (chez-ir->annotated-sexp ir)]
+                  [t1 (current-time 'time-monotonic)]
+                  [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])
+                (private:bump-type! (cons #t ms))
+                rebuilt))))))))
+
+(define (ir-auto-route:call-site-flows root-library-node document call-node)
+  ;;Type-flow EXTRACTION service. NOT on any production path: the type
+  ;;side types macros with generator rules over source syntax (type
+  ;;router family arms). This entry survives as the DIFFERENTIAL-TEST
+  ;;ORACLE for those rules -- its facts are true by construction (Chez's
+  ;;own expansion), so tests can assert the hand-written rules cover what
+  ;;the IR proves is bound. Returns ((binding-bias . flow) ...),
+  ;;vocabulary-neutral positional facts, or #f on any failure (with a
+  ;;type-stats miss; see REPLAY_TRACE). root-library-node may be #f
+  ;;(source location falls back to the import target / libdirs scan).
+  (let* ([head-symbol (index-node-expression (car (index-node-children call-node)))]
+      [head-refs (find-available-references-for document call-node head-symbol)]
+      [library-identifier
+        (and (not (null? head-refs))
+          (let ([lib (identifier-reference-library-identifier (car head-refs))])
+            (and (not (null? lib)) lib)))])
+    (and library-identifier
+      (let ([path (uri->path (document-uri document))])
+        (guard (e [else
+                  (when (getenv "REPLAY_TRACE")
+                    (fprintf (console-output-port) "[ir-auto-route] type-flow miss: ~a in ~a at-bias=~a~%"
+                      (call-with-string-output-port (lambda (p) (display-condition e p)))
+                      (document-uri document) (index-node-start call-node)))
+                  (private:bump-type! (cons #f 0))
+                  #f])
+          (let* ([text (document-text document)]
+              [forms (private:forms text path)]
+              [import-sets (private:doc-import-sets forms)]
+              [env-pair (private:env document call-node root-library-node import-sets #f head-symbol library-identifier)])
+            (and env-pair
+              (let* ([form (chez-ir-find-define-containing forms (index-node-start call-node))]
+                  [_ (or form (raise 'form-not-found))]
+                  [t0 (current-time 'time-monotonic)]
+                  [ir (if (eq? (private:env-mode env-pair) 'fresh)
+                        (private:expand-fresh (car env-pair) form)
+                        (chez-ir-expand form (car env-pair)))]
+                  [flows (chez-ir-call-site-type-flows ir path)]
+                  [t1 (current-time 'time-monotonic)]
+                  [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])
+              (private:bump-type! (cons (pair? flows) ms))
+              flows))))))))
 
 (define (ir-auto-route:try-expand)
   ;; The IR-only rule for the router's ufo-match arm (route 2 retired). On

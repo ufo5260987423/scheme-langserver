@@ -13,6 +13,8 @@
     chez-ir-expand
     chez-ir-call-site-refs
     chez-ir-call-site-bindings
+    chez-ir-call-site-type-flows
+    chez-ir->annotated-sexp
     chez-ir-global-lookup?
     chez-ir-contains-quoted-symbol?)
   (import (chezscheme))
@@ -383,5 +385,465 @@
                     (hashtable-set! seen-keys key #t)
                     (set! result (cons `(,name ,bias) result))))))))
           #f))
+    (reverse result)))
+
+(define (chez-ir->annotated-sexp ir)
+  ;;Reconstruct a readable ANNOTATED s-expression tree from the parsed
+  ;;Lsrc IR (the undocumented records?=#t output). This is a source-
+  ;;restoring counterpart of $uncprep: structure per record type, source
+  ;;positions re-attached from preinfo.src / ref maybe-src / prelex.source,
+  ;;primrefs reduced to their names, prelexes to theirs (user identifiers
+  ;;keep their original names). Used to feed Chez's own macro EXPANSIONS
+  ;;to the langserver's type generator: the default (records?=#f) expand
+  ;;output carries NO annotations (measured: $uncprep strips every one),
+  ;;so positions must come from the IR. Unknown shapes degrade to (void).
+  ;;
+  ;;Every reconstructed node is wrapped in an annotation whose source is
+  ;;real when known and a shared dummy otherwise: the index-node builder
+  ;;requires every node to carry a source object (measured) and drops non-
+  ;;annotation children. Single-clause case-lambda applications are beta-
+  ;;reduced into LETs -- including applications through let/letrec-bound
+  ;;names (Chez lifts clause lambdas; measured) -- because the type
+  ;;generator's let rule surfaces the binding-to-init value flow that
+  ;;case-lambda application does not.
+  (define dummy-sfd
+    (make-source-file-descriptor "<macro-expansion>"
+      (open-bytevector-input-port #vu8())))
+  (define (mk-ann src sexpr)
+    (make-annotation sexpr
+      (or (and src (private:source-object-of src))
+          (make-source-object dummy-sfd 0 0))
+      sexpr))
+  (define (preinfo-src o rtd)
+    (guard (e [#t #f])
+      ((record-accessor (private:ancestor-rtd rtd 'preinfo) 0) o)))
+  (define (unwrap-ann o)
+    (if (annotation? o) (annotation-expression o) o))
+  (define (rtd-of o)
+    (and (record? o) (guard (e [#t #f]) (#%$record-type-descriptor o))))
+  (define (prelex-name px)
+    (guard (e [#t '?])
+      ((record-accessor (private:ancestor-rtd (rtd-of px) 'prelex) 0) px)))
+  (define (prelex-src px)
+    (guard (e [#t #f])
+      ((record-accessor (private:ancestor-rtd (rtd-of px) 'prelex) 2) px)))
+  (define (case-lambda-record? o)
+    (let ([rtd (rtd-of (unwrap-ann o))])
+      (and rtd (private:rtd-name-prefix? rtd "Lsrc:case-lambda"))))
+  (define (rebuild-atom x)
+    (let ([x0 (unwrap-ann x)])
+      (cond
+        [(not (record? x0)) (if (annotation? x) x (mk-ann #f x0))]
+        [(private:ancestor-rtd (rtd-of x0) 'prelex)
+          (mk-ann (prelex-src x0) (prelex-name x0))]
+        [(eq? (record-type-name (rtd-of x0)) 'primref)
+          (mk-ann #f (or (find symbol? (private:field-refs x0 (rtd-of x0))) 'void))]
+        [else (mk-ann #f 'void)])))
+  (define (rebuild o env)
+    (let ([o0 (unwrap-ann o)])
+      (cond
+        ;;bare values must stay annotated: the tree builder drops non-
+        ;;annotation children; an already-annotated input passes through
+        [(not (record? o0))
+          (if (annotation? o) o (mk-ann #f o0))]
+        [else
+          (let ([rtd (rtd-of o0)])
+            (cond
+              [(not rtd) (mk-ann #f '(void))]
+              [(private:rtd-name-prefix? rtd "Lsrc:call")
+                (rebuild-call o0 rtd env)]
+              [(private:rtd-name-prefix? rtd "Lsrc:ref")
+                (let* ([vals (private:field-refs o0 rtd)]
+                    [atom (rebuild-atom (cadr vals))])
+                  ;;rebuild-atom may already return an annotation (chi wraps
+                  ;;prelexes in annotations); re-wrapping nests annotations
+                  ;;and the builder then makes a childless shell whose inner
+                  ;;symbol never becomes a node (measured: the w reference
+                  ;;in (car w) -- the type chain died there)
+                  (if (and (annotation? atom)
+                          (not (equal? (annotation-source atom)
+                                (and (car vals)
+                                  (private:source-object-of (car vals))))))
+                    atom
+                    (mk-ann (car vals) atom)))]
+              [(private:rtd-name-prefix? rtd "Lsrc:set!")
+                (let ([vals (private:field-refs o0 rtd)])
+                  (mk-ann (car vals)
+                    (list (mk-ann #f 'set!)
+                      (rebuild-atom (cadr vals))
+                      (rebuild (caddr vals) env))))]
+              [(private:rtd-name-prefix? rtd "Lsrc:quote")
+                (mk-ann #f
+                  (list 'quote (guard (e [#f]) ((record-accessor rtd 0) o0))))]
+              [(private:rtd-name-prefix? rtd "Lsrc:if")
+                (let ([vals (private:field-refs o0 rtd)])
+                  (mk-ann (preinfo-src o0 rtd)
+                    (list (mk-ann #f 'if)
+                      (rebuild (car vals) env)
+                      (rebuild (cadr vals) env)
+                      (rebuild (caddr vals) env))))]
+              [(private:rtd-name-prefix? rtd "Lsrc:seq")
+                (let ([vals (private:field-refs o0 rtd)])
+                  (mk-ann (preinfo-src o0 rtd)
+                    (cons (mk-ann #f 'begin)
+                      (map (lambda (v) (rebuild v env)) vals))))]
+              [(private:rtd-name-prefix? rtd "Lsrc:case-lambda")
+                (rebuild-case-lambda o0 rtd env)]
+              [(private:rtd-name-prefix? rtd "Lsrc:letrec")
+                (rebuild-letrec o0 rtd env)]
+              [(eq? (record-type-name rtd) 'primref)
+                (mk-ann (preinfo-src o0 rtd)
+                  (or (find symbol? (private:field-refs o0 rtd)) 'void))]
+              [(private:ancestor-rtd rtd 'prelex)
+                (mk-ann (preinfo-src o0 rtd) (prelex-name o0))]
+              [else (mk-ann #f '(void))]))])))
+  (define beta-stats-direct 0)
+  (define beta-stats-via 0)
+  (define beta-stats-via-miss 0)
+  (define (rebuild-call o rtd env)
+    (let* ([vals (private:field-refs o rtd)]
+        [src (preinfo-src o rtd)]
+        [op (cadr vals)]
+        [args (caddr vals)]
+        [op0 (unwrap-ann op)]
+        [direct
+          (and (case-lambda-record? op0)
+            (let ([r (beta-reduce src op0 args env)])
+              (when r (set! beta-stats-direct (+ beta-stats-direct 1)))
+              r))]
+        [via-name
+          (and (not direct)
+            (let ([op-rtd (rtd-of op0)])
+              (and op-rtd
+                ;;look THROUGH a ref record to the prelex it names
+                (let* ([px
+                        (if (private:rtd-name-prefix? op-rtd "Lsrc:ref")
+                          (unwrap-ann
+                            (cadr (private:field-refs op0 op-rtd)))
+                          op0)]
+                    [px-rtd (rtd-of px)])
+                  (and px-rtd
+                    (private:ancestor-rtd px-rtd 'prelex)
+                    (let ([target (eq-hashtable-ref env px #f)])
+                      (if target
+                        (let ([r (beta-reduce src target args (make-eq-hashtable))])
+                          (when r (set! beta-stats-via (+ beta-stats-via 1)))
+                          r)
+                        (begin
+                          (set! beta-stats-via-miss (+ beta-stats-via-miss 1))
+                          #f))))))))])
+      (or direct
+        via-name
+        (mk-ann src
+          (cons (rebuild op env)
+            (map (lambda (a) (rebuild a env)) args))))))
+  (define (beta-reduce src op args inner-env)
+    ;;an application of a case-lambda (inline or through a name) becomes
+    ;;a LET whose bindings are the selected clause's formals paired with
+    ;;the arguments -- arity-based clause selection, like a real
+    ;;application. Clause lambdas may be MULTI-clause (measured: ufo-
+    ;;match generates them), so the single-clause restriction is lifted.
+    (let* ([op-rtd (rtd-of op)]
+        [op-vals (and op-rtd (private:field-refs op op-rtd))]
+        [clauses (and op-vals (cadr op-vals))]
+        [matching
+          (and (list? clauses)
+            (filter
+              (lambda (clause)
+                (let ([c-rtd (rtd-of clause)])
+                  (and c-rtd
+                    (let* ([c-vals (private:field-refs clause c-rtd)]
+                        [formals (map rebuild-atom (car c-vals))])
+                      (and (list? formals)
+                        (= (length formals) (length args))
+                        (for-all
+                          (lambda (f) (symbol? (unwrap-ann f)))
+                          formals))))))
+              clauses))])
+      (if (= 1 (length matching))
+        (let* ([clause (car matching)]
+            [c-rtd (rtd-of clause)]
+            [c-vals (private:field-refs clause c-rtd)]
+            [formals (map rebuild-atom (car c-vals))]
+            [formal-prelexes (car c-vals)]
+            ;;the beta-let's own bindings feed the body's name
+            ;;resolution: a binding whose init is a case-lambda makes
+            ;;the name applicable (Chez lifts clause lambdas through
+            ;;several such lets -- measured)
+            [body-env (make-eq-hashtable)])
+          (vector-for-each
+            (lambda (k)
+              (eq-hashtable-set! body-env k (eq-hashtable-ref inner-env k #f)))
+            (hashtable-keys inner-env))
+          (for-each
+            (lambda (px a)
+              (let ([a0 (unwrap-ann a)])
+                (when (case-lambda-record? a0)
+                  (eq-hashtable-set! body-env (unwrap-ann px) a0))))
+            formal-prelexes args)
+          (mk-ann src
+            (list (mk-ann #f 'let)
+              (mk-ann #f
+                (map (lambda (f a)
+                       (mk-ann #f (list f (rebuild a inner-env))))
+                  formals args))
+              (rebuild (caddr c-vals) body-env))))
+        #f)))
+  (define (rebuild-case-lambda o rtd env)
+    (let ([vals (private:field-refs o rtd)])
+      (mk-ann (preinfo-src o rtd)
+        (cons (mk-ann #f 'case-lambda)
+          (map
+            (lambda (clause)
+              (let ([c-rtd (rtd-of clause)])
+                (mk-ann #f
+                  (if c-rtd
+                    (let ([c-vals (private:field-refs clause c-rtd)])
+                      (list (mk-ann #f (map rebuild-atom (car c-vals)))
+                        (rebuild (caddr c-vals) env)))
+                    '(args (void))))))
+            (cadr vals))))))
+  (define (rebuild-letrec o rtd env)
+    (let* ([vals (private:field-refs o rtd)]
+        [xs (car vals)]
+        [es (cadr vals)]
+        [body (caddr vals)]
+        [child-env (make-eq-hashtable)])
+      (vector-for-each
+        (lambda (k) (eq-hashtable-set! child-env k (eq-hashtable-ref env k #f)))
+        (hashtable-keys env))
+      ;;lambda-valued bindings are visible to the body through their
+      ;;names (clause lambdas are applied via refs -- see rebuild-call)
+      (for-each
+        (lambda (x e)
+          (let ([e0 (unwrap-ann e)])
+            (when (case-lambda-record? e0)
+              (eq-hashtable-set! child-env (unwrap-ann x) e0))))
+        xs es)
+      (mk-ann (preinfo-src o rtd)
+        (list (mk-ann #f 'letrec)
+          (mk-ann #f
+            (map (lambda (x e)
+                   (mk-ann #f (list (rebuild-atom x) (rebuild e env))))
+              xs es))
+          (rebuild body child-env)))))
+  (let ([result (rebuild ir (make-eq-hashtable))])
+    (when (getenv "EXPAND_DEBUG")
+      (format #t "[rebuild] beta direct=~a via=~a via-miss=~a~%"
+        beta-stats-direct beta-stats-via beta-stats-via-miss))
+    result))
+
+(define (private:cxr->steps op)
+  ;;cadr -> (car cdr) etc, OUTERMOST first (c[a[d]r]: left-to-right
+  ;;letters, a=car d=cdr). #f for non-cxr symbols.
+  (let ([s (symbol->string op)])
+    (if (and (>= (string-length s) 3)
+          (char=? (string-ref s 0) #\c)
+          (char=? (string-ref s (- (string-length s) 1)) #\r))
+      (let ([middle (substring s 1 (- (string-length s) 1))])
+        (if (and (positive? (string-length middle))
+              (for-all (lambda (ch) (memv ch '(#\a #\d))) (string->list middle)))
+          (map (lambda (ch) (if (char=? ch #\a) 'car 'cdr))
+            (string->list middle))
+          #f))
+      #f)))
+
+(define (private:preinfo-src preinfo)
+  ;;preinfo records carry the expression source in field 0 (preinfo =
+  ;;(src sexpr), parent of preinfo-lambda/preinfo-call)
+  (let ([rtd (and (record? preinfo)
+              (guard (e [#t #f]) (#%$record-type-descriptor preinfo)))])
+    (and rtd
+      (let ([p-rtd (private:ancestor-rtd rtd 'preinfo)])
+        (and p-rtd
+          ((record-accessor p-rtd 0) preinfo))))))
+
+(define (chez-ir-call-site-type-flows ir path)
+  ;; TYPE-FLOW ground truth for macro call sites. ufo-match-style macros
+  ;; expand into cascades of case-lambda applications (failure-continuation
+  ;; chaining): pattern variables are CLAUSE FORMALS, fed positionally by
+  ;; accessor chains (car/cdr/...) over temporaries that bottom out at the
+  ;; scrutinee. This walker recovers that flow WITHOUT any pattern-syntax
+  ;; knowledge -- any syntax-case macro whose expansion binds user
+  ;; identifiers through case-lambda/letrec applications gets typed.
+  ;;
+  ;; Returns ((binding-bias . flow) ...), one per user-source binding:
+  ;;   flow = (ref . bias)       the argument is verbatim user code at
+  ;;                             `bias` (typically the scrutinee)
+  ;;   flow = (chain op . flow)  (op argument), op in {car, cdr}; cxr
+  ;;                             accessors are decomposed (cadr ->
+  ;;                             (chain car (chain cdr ...)))
+  ;; Bindings whose arguments do not resolve to user code (macro-internal
+  ;; computations) are omitted.
+  (let ([bindings (make-eq-hashtable)]
+      [binding-order '()]
+      [resolved (make-eq-hashtable)]
+      [resolving (make-eq-hashtable)]
+      [result '()])
+    (define (unwrap o) (if (annotation? o) (unwrap (annotation-expression o)) o))
+    (define (prelex-rtd-of px)
+      (private:ancestor-rtd (guard (e [#t #f]) (#%$record-type-descriptor px)) 'prelex))
+    (define (add-binding! lhs rhs)
+      (when (and (record? lhs)
+              (prelex-rtd-of lhs)
+              (not (eq-hashtable-ref bindings lhs #f)))
+        (eq-hashtable-set! bindings lhs rhs)
+        (set! binding-order (cons (cons lhs rhs) binding-order))))
+    (define (resolve-prelex px)
+      (let ([hit (eq-hashtable-ref resolved px 'missing)])
+        (cond
+          [(not (eq? hit 'missing)) hit]
+          [(eq-hashtable-ref resolving px #f) #f]
+          [else
+            (eq-hashtable-set! resolving px #t)
+            (let* ([prelex-rtd (prelex-rtd-of px)]
+                [src ((record-accessor prelex-rtd 2) px)]
+                [flow
+                  (if (private:source-in-path? src path)
+                    (let ([b (private:source-bias src)])
+                      (and b `(ref . ,b)))
+                    (let ([rhs (eq-hashtable-ref bindings px #f)])
+                      (and rhs (resolve-expr rhs))))])
+              (eq-hashtable-set! resolved px flow)
+              flow)])))
+    (define (resolve-expr o)
+      (let ([o (unwrap o)])
+        (cond
+          [(record? o)
+            (let ([rtd (guard (e [#t #f]) (#%$record-type-descriptor o))])
+              (cond
+                [(not rtd) #f]
+                [(private:rtd-name-prefix? rtd "Lsrc:ref")
+                  (let* ([vals (private:field-refs o rtd)]
+                      [x (unwrap (cadr vals))])
+                    (if (and (record? x) (prelex-rtd-of x))
+                      (resolve-prelex x)
+                      #f))]
+                [(private:rtd-name-prefix? rtd "Lsrc:call")
+                  (let* ([vals (private:field-refs o rtd)]
+                      [op (unwrap (cadr vals))]
+                      [args (caddr vals)]
+                      [op-rtd (and (record? op)
+                                (guard (e [#t #f]) (#%$record-type-descriptor op)))]
+                      [op-name (and op-rtd
+                                 (eq? (record-type-name op-rtd) 'primref)
+                                 (find symbol? (private:field-refs op op-rtd)))])
+                    (cond
+                      ;;(car x)/(cadr x)/... accessor chain over the base
+                      [(and (symbol? op-name)
+                          (private:cxr->steps op-name)
+                          (pair? args)
+                          (null? (cdr args)))
+                        (let ([base (resolve-expr (car args))])
+                          (and base
+                            (fold-left
+                              (lambda (flow step) `(chain ,step . ,flow))
+                              base
+                              (private:cxr->steps op-name))))]
+                      ;;driver/cascader application (case-lambda operator):
+                      ;;the threaded value is among the arguments -- when
+                      ;;exactly one resolves, that IS the flow (the outermost
+                      ;;driver passes the scrutinee itself)
+                      [(and op-rtd (private:rtd-name-prefix? op-rtd "Lsrc:case-lambda"))
+                        (let ([flows (filter values (map resolve-expr args))])
+                          (cond
+                            [(= 1 (length flows)) (car flows)]
+                            ;;the value the driver threads is verbatim user
+                            ;;code whose expansion carried no source (e.g. a
+                            ;;(list 1 2) scrutinee): anchor at the call
+                            ;;site's scrutinee argument, filled in by the
+                            ;;caller (the 'base marker)
+                            [(null? flows) 'base]
+                            [else #f]))]
+                      ;;any other verbatim call (a (list 1 2) scrutinee, a user
+                      ;;(f x) application, ...) is its own flow base
+                      [(and (pair? vals)
+                          (private:source-in-path? (private:preinfo-src (car vals)) path))
+                        (let ([b (private:source-bias (private:preinfo-src (car vals)))])
+                          (and b `(ref . ,b)))]
+                      ;;no own source (template reconstruction of verbatim
+                      ;;user code): anchor at the call-site scrutinee
+                      [else 'base]))]
+                [else
+                  (cond
+                    ;;function/definition forms are NOT value flows: their
+                    ;;"source" is the enclosing binding form (measured: a
+                    ;;define's case-lambda rhs resolves to (ref . 0), the
+                    ;;define keyword itself -- noise substitutions)
+                    [(private:rtd-name-prefix? rtd "Lsrc:case-lambda") #f]
+                    [(private:rtd-name-prefix? rtd "Lsrc:lambda") #f]
+                    ;;verbatim user code with its own source (typically the
+                    ;;scrutinee): anchored at that source position
+                    [(and (pair? (private:field-refs o rtd))
+                        (let ([src0 (private:preinfo-src (car (private:field-refs o rtd)))])
+                          (and src0 (private:source-in-path? src0 path))))
+                      (let ([b (private:source-bias
+                                (private:preinfo-src (car (private:field-refs o rtd))))])
+                        (and b `(ref . ,b)))]
+                    ;;a literal scrutinee ('sym, 5, ...): quotes carry no
+                    ;;source even when user-written -- anchor at the
+                    ;;call-site scrutinee argument (the 'base marker)
+                    [(private:rtd-name-prefix? rtd "Lsrc:quote") 'base]
+                    [else 'base])]))]
+          [else #f])))
+    ;; pass 1: collect raw bindings (prelex -> rhs expression)
+    (private:record-walk ir
+      (lambda (o rtd)
+        (cond
+          [(private:rtd-name-prefix? rtd "Lsrc:letrec")
+            ;; fields (x* e* body): parallel lists, zip positionally
+            (let ([vals (private:field-refs o rtd)])
+              (when (and (pair? vals) (pair? (cdr vals)))
+                (let ([xs (car vals)] [es (cadr vals)])
+                  (when (and (list? xs) (list? es))
+                    (for-each add-binding! xs es)))))
+            #f]
+          [(private:rtd-name-prefix? rtd "Lsrc:call")
+            ;; operator case-lambda -> clause formals fed by the args
+            (let ([vals (private:field-refs o rtd)])
+              (when (and (pair? vals) (pair? (cdr vals)) (pair? (cddr vals)))
+                (let ([op (unwrap (cadr vals))]
+                    [args (caddr vals)])
+                  (when (and (record? op)
+                          (let ([op-rtd (guard (e [#t #f]) (#%$record-type-descriptor op))])
+                            (and op-rtd (private:rtd-name-prefix? op-rtd "Lsrc:case-lambda"))))
+                    (let ([op-rtd (#%$record-type-descriptor op)])
+                      ;; case-lambda fields (preinfo cl): cl = clause list;
+                      ;; clause fields (x* interface body)
+                      (let ([clauses (let ([op-vals (private:field-refs op op-rtd)])
+                                      (and (pair? op-vals) (pair? (cdr op-vals))
+                                        (cadr op-vals)))])
+                        (when (list? clauses)
+                          (for-each
+                            (lambda (clause)
+                              (let ([c-rtd (and (record? clause)
+                                             (guard (e [#t #f]) (#%$record-type-descriptor clause)))])
+                                (when c-rtd
+                                  (let ([c-vals (private:field-refs clause c-rtd)])
+                                    (when (and (pair? c-vals) (list? (car c-vals)))
+                                      (let ([formals (car c-vals)])
+                                        ;; proper formals only: a dotted
+                                        ;; rest-arg pair stops the zip
+                                        (let loop ([fs formals] [as args])
+                                          (when (and (pair? fs) (pair? as))
+                                            (add-binding! (unwrap (car fs)) (car as))
+                                            (loop (cdr fs) (cdr as))))))))))
+                            clauses))))))))
+            #f]
+          [else #f])))
+    ;; pass 2: resolve and emit user-source bindings
+    (for-each
+      (lambda (entry)
+        (let* ([lhs (car entry)]
+            [rhs (cdr entry)]
+            [prelex-rtd (prelex-rtd-of lhs)])
+          (when prelex-rtd
+            (let ([src ((record-accessor prelex-rtd 2) lhs)])
+              (when (private:source-in-path? src path)
+                (let* ([bias (private:source-bias src)]
+                    [flow (resolve-expr rhs)])
+                  (when (and bias flow)
+                    (set! result (cons (cons bias flow) result)))))))))
+      binding-order)
     (reverse result)))
 )

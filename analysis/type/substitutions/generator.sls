@@ -26,17 +26,29 @@
     (scheme-langserver analysis type substitutions rules unless)
     (scheme-langserver analysis type substitutions util)
 
+    (scheme-langserver analysis type substitutions macro-expansion)
     (scheme-langserver analysis type substitutions self-defined-rules router))
 
-(define (construct-substitutions-for document)
-  (for-each
-    (lambda (index-node) (step document index-node))
-    (document-index-node-list document)))
+(define construct-substitutions-for
+  (case-lambda
+    [(document)
+      (construct-substitutions-for document #f)]
+    [(document root-library-node)
+      ;;root-library-node reaches the macro type-inference arm (see
+      ;;establish-available-rules-from): it locates the workspace's own
+      ;;copies of macro libraries for the expansion env bootstrap.
+      (for-each
+        (lambda (index-node)
+          (step document index-node root-library-node
+            (lambda (infer-root-library-node infer-document infer-node)
+              (type:expand-and-infer construct-substitutions-for
+                infer-root-library-node infer-document infer-node))))
+        (document-index-node-list document))]))
 
 ; document index-node allow-unquote? quoted?
 (define step
   (case-lambda
-    [(current-document current-index-node)
+    [(current-document current-index-node root-library-node macro-infer)
       (match-index-node current-index-node
         [(and (? index-node-quote? :_) (head . :_))
           (extend-index-node-substitution-list current-index-node head)
@@ -48,23 +60,32 @@
             (extend-index-node-substitution-list current-index-node head)
             (for-each
               (lambda (current)
-                (step current-document current available-identifiers 'quasiquoted))
+                (step current-document current available-identifiers 'quasiquoted root-library-node macro-infer))
               (cons head rest)))]
         [(and (? index-node-quasisyntax? :_) (head . rest))
           (let ([available-identifiers (find-available-references-for current-document current-index-node)])
             (extend-index-node-substitution-list current-index-node head)
             (for-each
               (lambda (current)
-                (step current-document current available-identifiers 'quasisyntax))
+                (step current-document current available-identifiers 'quasisyntax root-library-node macro-infer))
               (cons head rest)))]
 
         [(head . rest)
+          (when (getenv "EXPAND_DEBUG")
+            (let ([a (index-node-datum/annotations current-index-node)])
+              (when (and (annotation? a) (source-object? (annotation-source a))
+                      (= 9610 (source-object-bfp (annotation-source a))))
+                (format #t "[target] bias=9610 head-symbol?=~a head-expr=~a children=~a~%"
+                  (index-node-symbol? head)
+                  (index-node-expression head)
+                  (length (index-node-children current-index-node))))))
           (let* ([head-expression (index-node-expression head)]
               [target-rules
                 (cond 
                   [(symbol? head-expression)
                     (establish-available-rules-from 
-                      (find-available-references-for current-document current-index-node head-expression))]
+                      (find-available-references-for current-document current-index-node head-expression)
+                      root-library-node macro-infer)]
                   [else '()])])
             (if (symbol? head-expression)
               (try 
@@ -72,43 +93,49 @@
                   (lambda (current) ((car (cdr current)) current-document current-index-node))
                   target-rules)
                 (except c
-                  [(condition? c) 
-                    (append-new-diagnoses current-document 
-                      `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 
-                        ,(string-append "Type rule warning: " (condition-message c)) 
+                  [(condition? c)
+                    (append-new-diagnoses current-document
+                      `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2
+                        ,(string-append "Type rule warning: " (condition-message c))
                         "type" "type-rule-warning"))
                     '()]
                   [else (raise c)]))
               ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
-            (try
-              (for-each
-                (lambda (child-index-node) (step current-document child-index-node))
-                (cons head rest))
-              (except c 
-                [(condition? c) 
-                  (append-new-diagnoses current-document 
-                    `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2 
-                      ,(string-append "Type inference warning: " (condition-message c)) 
-                      "type" "type-inference-warning"))
-                  '()]
-                [else (raise c)])))]
+            ;;per-child isolation: a condition in ONE child must not
+            ;;starve its later siblings of analysis (measured: the macro-
+            ;;expansion virtual tree has nodes whose trivial processing
+            ;;raises, and the whole subtree after them silently went
+            ;;untyped -- one diagnosis, no types)
+            (for-each
+              (lambda (child-index-node)
+                (try
+                  (step current-document child-index-node root-library-node macro-infer)
+                  (except c
+                    [(condition? c)
+                      (append-new-diagnoses current-document
+                        `(,(index-node-start child-index-node) ,(index-node-end child-index-node) 2
+                          ,(string-append "Type inference warning: " (condition-message c))
+                          "type" "type-inference-warning"))
+                      '()]
+                    [else (raise c)])))
+              (cons head rest)))]
         [else (trivial-process current-document current-index-node)])]
-      [(current-document current-index-node available-identifiers quasi-quoted-syntaxed)
+      [(current-document current-index-node available-identifiers quasi-quoted-syntaxed root-library-node macro-infer)
         (match-index-node current-index-node
           [(and (? (lambda (_) (eq? quasi-quoted-syntaxed 'quasiquoted)) :_)
              (or (? index-node-unquote? :_) (? index-node-unquote-splicing? :_)))
             (for-each
-              (lambda (current) (step current-document current))
+              (lambda (current) (step current-document current root-library-node macro-infer))
               (index-node-children current-index-node))]
           [(and (? (lambda (_) (eq? quasi-quoted-syntaxed 'quasisyntaxed)) :_)
              (or (? index-node-unsyntax? :_) (? index-node-unsyntax-splicing? :_)))
             (for-each
-              (lambda (current) (step current-document current))
+              (lambda (current) (step current-document current root-library-node macro-infer))
               (index-node-children current-index-node))]
           [(head . rest)
             (for-each
-              (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed))
+              (lambda (current) (step current-document current available-identifiers quasi-quoted-syntaxed root-library-node macro-infer))
               (cons head rest))]
           [else '()])]))
 
@@ -119,7 +146,7 @@
   (merge private-rule-compare? origin 
     `((,(cdr target-rule) . ,(car target-rule)))))
 
-(define (establish-available-rules-from identifier-list)
+(define (establish-available-rules-from identifier-list root-library-node macro-infer)
   (fold-left 
     (lambda (rules identifier)
       (let* ([top (root-ancestor identifier)]
@@ -151,7 +178,7 @@
               [(equal? r '(begin)) (private-add-rule rules `((,begin-process) . ,identifier))]
 
               [else (private-add-rule rules `((,do-nothing) . ,identifier))])
-            (route&add rules identifier private-add-rule)))))
+            (route&add rules identifier root-library-node macro-infer private-add-rule)))))
     '()
     (filter 
       (lambda (identifier) 

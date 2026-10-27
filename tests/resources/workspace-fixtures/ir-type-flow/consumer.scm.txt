@@ -1,0 +1,9 @@
+(library (ir-type-flow-consumer)
+  (export classify)
+  (import (chezscheme) (ufo-match))
+
+  (define (classify)
+    (match (string->list "ab")
+      [(a b) (+ a b)]
+      [('sym) 0]
+      [(? char? n) n])))

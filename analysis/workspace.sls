@@ -477,7 +477,7 @@
     ; (pretty-print 'test1)
     (if (workspace-type-inference? workspace-instance)
       (try
-        (construct-substitutions-for document)
+        (construct-substitutions-for document (workspace-library-node workspace-instance))
         (except c
           [(or (string? c) (symbol? c))
             (append-new-diagnoses document `(0 0 2 ,(string-append "Type inference warning: " (if (string? c) c (symbol->string c))) "type" "type-inference-warning"))

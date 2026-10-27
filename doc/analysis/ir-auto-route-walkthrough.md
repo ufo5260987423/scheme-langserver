@@ -41,6 +41,9 @@ ir-auto-route:try-expand ───────────────── 门
   └─► private:synthesize! ──────────────── 合成 identifier-reference
           归组( name . binding-bias ) + per-clause 作用域（use 祖先校验+回退）
           + 绑定驱动 use-less 合成 + 防重护栏 + speculative 标记
+          ※ 类型侧不在此路径 —— type router 泛化宏臂 → macro-expansion.sls
+            （Chez 展开 → 重建注解树 → 虚拟文档 → generator 处理 → 回传）；
+            chez-ir-call-site-type-flows 仅任差分测试 oracle
 
 之后：step 照常步进 → 叶子解析 → find-available-references-for
       → usage-count → definition / hover / references / 检查器
@@ -212,6 +215,25 @@ fresh env **不可变**（拒顶层 define、对自由标识符严格），因�
 - **宏派生判定**：绑定在调用点跨度内才算宏产物；`input` 的绑定（120，lambda 形参）在跨度外 → 跳过（普通规则已注册，天然排除）；
 - **双角色分置不变**：引用的 `index-node` = 绑定位置（goto-def 目标）；插入点在所属子句（所有 use 的祖先，保证可解析）；同时挂 anchor 的 exports；
 - 与 route 2 时代的本质区别：**零重复引用**（route 2 的 pair 回传会产生重复 speculative 引用，曾损坏 usage-count 造成 14 条 "Unused local variable" 误报；IR 路径单锚点，金丝雀诊断数历史最低）。
+
+### 7.1 类型推断 —— 展开式驱动（2026-10-27 最终形态，第三轮架构）
+
+**生产路径：type router 泛化宏臂 → `type:expand-and-infer`（`analysis/type/substitutions/macro-expansion.sls`）**，模仿标识符侧的自动宏解析：
+
+1. **展开**：`ir-auto-route:call-site-flows` 同款 env 引导 + `sc-expand`；
+2. **重建**：`chez-ir->annotated-sexp` 把 IR 记录重建为**全量注解 s 表达式树**（默认 $uncprep 输出剥光注解，实测——位置必须从 preinfo.src/ref maybe-src/prelex.source 恢复；未知形状降级 (void)）；**单子句 case-lambda 应用（含经 let/letrec 绑定的名字应用——Chez 会提升子句 lambda）按 arity 选子句 β 归约为 let**，因为该类型系统对形参只在返回点解释、永不落到形参节点，let 规则的"绑定↔初值"是唯一的值流通道；
+3. **虚拟文档**：`private:build-index-tree` 用 `make-index-node` 自建树（**不用 init-index-node**——那是为读取器产物设计的，过滤/合成/去重三环节对重建数据静默丢子树，实测）。每个节点带真实或 dummy 源（构建器要求每个节点有源对象，实测）；**引用上下文直接继承 callee 文档的 ordered-reference-list**（展开式里每个名字按构造在调用方编译环境可解析，调用方 identifier pass 已把带真实元数据——含 type-expressions——的引用填进该表，find-available 沿父链走到天花板自然落入），取代早期手造种子层（每符号一枚引用、9 参构造器错位、自引用守卫等八个阻抗类 bug 全是那一层引入的，实测教训档案见代码注释）；
+3b. **局部绑定注册**：`private:register-bindings!` 在跑 generator 前为虚拟树的 let/let*/letrec/letrec* 绑定符与 case-lambda 形参各建一枚引用（type='variable'/'parameter'，index-node 与 initialization-index-node 都指 binder 节点本身）挂到绑定形式的 import 列表——与标识符侧 lambda/let 规则在真实文档里做的事一致。没有这一步，use 位置（如 `(car w)` 里的 w）沿父链找不到 binder，值流链死在第一环（实测）；注册后 use 经 trivial-process 的 local 分支挂上 binder 指针，let 规则的绑定↔初值双向链接随之贯通；
+4. **generator 处理**：注入式调用 construct-substitutions-for（解环 generator→router→本模块）；**子节点逐个隔离 try**（一个子节点 raise condition 曾把后续兄弟的整棵子树分析静默清零，只留一条诊断——生产级 bug，已修）；
+5. **回传**：虚拟树里源位置属于调用点跨度的节点，其替换项按 bias 拷回真实文档节点；虚拟文档按真实文档键保留（替换项里的虚拟节点指针惰性解释需要）。
+
+**实测**：`(match (string->list "ab") [(a b) (+ a b)] ...)` 的 a/b/n 各获得值流替换项（虚拟树节点指针）；back-prop 20+ 条目/调用点；**`type:recursive-interpret-result-list` 下 a 完整解析到 char?**——值流链 a ← (car w) ← w ← (cdr v) ← v ← (string->list "ab") ← (inner:list? char? ...) 全环贯通（2026-10-27 实测，这是"最后一环"的闭环证据）。
+
+**历史弯路（三轮架构的教训档案）**：① IR flow 语言（chez-ir-call-site-type-flows + 翻译层）——能力真子集复刻 generator，已拆，提取器转任差分 oracle；② 手写宏族规则（源语法 pattern 走查）——能工作但违背宏无关初衷，已被本方案取代（删除）；③ 本轮的 vfs 构建器阻抗类（全量注解/头符号包装/dummy 源/9 参构造器/自引用守卫/去重种子/兄弟清零）全部写进代码注释。
+
+**已知边界（诚实清单）**：a 已到 char? 级；b 经变参尾链（cadr 由 car/cdr 模板复合）只断言到替换项级——复合模板的跨节点套用是 DSL 自己的事，不再属于本机制；`(? pred)` 的谓词精化不在本机制范围（守卫语义属源语法可见信息，按接缝判据归规则层）。
+
+测试：`tests/analysis/type/substitutions/test-ir-type-flow.sps`（机制级断言 + **递归解释到 char? 的闭环断言**）+ `test-macro-rules-vs-ir.sps`（oracle 差分）。
 
 ## 8. 命中之后：引用"上班"
 
