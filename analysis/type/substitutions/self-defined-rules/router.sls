@@ -22,9 +22,6 @@
       ;;semantics. try above keeps its hand rule (a control-flow form).
       [(find (lambda (t) (eq? 'syntax-variable t))
               (map identifier-reference-type top))
-        (display "[type-router] generic arm: ")
-        (display expressions)
-        (newline)
         (add-rule-procedure
           rules
           `((,(lambda (document index-node)

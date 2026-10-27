@@ -71,14 +71,6 @@
               (cons head rest)))]
 
         [(head . rest)
-          (when (getenv "EXPAND_DEBUG")
-            (let ([a (index-node-datum/annotations current-index-node)])
-              (when (and (annotation? a) (source-object? (annotation-source a))
-                      (= 9610 (source-object-bfp (annotation-source a))))
-                (format #t "[target] bias=9610 head-symbol?=~a head-expr=~a children=~a~%"
-                  (index-node-symbol? head)
-                  (index-node-expression head)
-                  (length (index-node-children current-index-node))))))
           (let* ([head-expression (index-node-expression head)]
               [target-rules
                 (cond 
