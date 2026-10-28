@@ -15,6 +15,7 @@
     chez-ir-call-site-bindings
     chez-ir-call-site-type-flows
     chez-ir->annotated-sexp
+    chez-ir-rebuild-budget
     chez-ir-global-lookup?
     chez-ir-contains-quoted-symbol?)
   (import (chezscheme))
@@ -387,6 +388,18 @@
           #f))
     (reverse result)))
 
+;;;Rebuild node budget for chez-ir->annotated-sexp: #f = unlimited
+;;;(identifier side, oracle); otherwise a MUTABLE PAIR (count . limit)
+;;;owned by the caller. rebuild() increments per IR node visited and
+;;;raises 'expansion-too-large past the limit -- the type side sets this
+;;;to abort PATHOLOGICAL expansions EARLY (measured 2026-10-28: one
+;;;match-index-node call inside root-ancestor expands to 3.5 MILLION
+;;;core-form nodes; counting after the build still grows the Chez heap
+;;;by GBs per occurrence, so the cap must fire DURING the rebuild).
+;;;A parameter (not a global counter) keeps concurrent rebuilds on
+;;;worker threads independent.
+(define chez-ir-rebuild-budget (make-parameter #f))
+
 (define (chez-ir->annotated-sexp ir)
   ;;Reconstruct a readable ANNOTATED s-expression tree from the parsed
   ;;Lsrc IR (the undocumented records?=#t output). This is a source-
@@ -440,6 +453,14 @@
           (mk-ann #f (or (find symbol? (private:field-refs x0 (rtd-of x0))) 'void))]
         [else (mk-ann #f 'void)])))
   (define (rebuild o env)
+    ;;budget check FIRST: the caller's limit aborts pathological
+    ;;expansions while the tree is still small (see
+    ;;chez-ir-rebuild-budget); the raise unwinds to the caller's guard
+    (let ([b (chez-ir-rebuild-budget)])
+      (when b
+        (set-car! b (+ (car b) 1))
+        (when (> (car b) (cdr b))
+          (raise 'expansion-too-large))))
     (let ([o0 (unwrap-ann o)])
       (cond
         ;;bare values must stay annotated: the tree builder drops non-

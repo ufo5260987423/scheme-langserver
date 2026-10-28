@@ -10,6 +10,7 @@
     (scheme-langserver virtual-file-system document)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier expander chez-ir)
     (scheme-langserver analysis identifier expander ir-auto-route))
 
 ;;; Macro type inference BY EXPANSION, mimicking the identifier side's
@@ -242,6 +243,21 @@
       (lambda (child) (private:register-bindings! virtual-document child))
       children)))
 
+(define private:max-expansion-nodes 100000)
+;;Rebuilt-IR-node budget for ONE expansion (enforced DURING the rebuild
+;;via chez-ir-rebuild-budget, so a pathological expansion aborts while
+;;its tree is still small -- counting after the build still grows the
+;;Chez heap by GBs per occurrence). Measured 2026-10-28 on this repo:
+;;ONE match-index-node call inside root-ancestor (reference.sls)
+;;expands to 3.5 MILLION core-form nodes -- the steer is a recursive
+;;macro cascade and its full expansion is a combinatorial inlined
+;;matcher; typing such a tree costs seconds and ~GB for zero
+;;user-visible value. Real user-code expansions measure in the
+;;hundreds-to-tens-of-thousands of nodes (fixture consumer: 505); the
+;;budget sits ~30x above that and 35x below the pathology. Over-budget
+;;raises unwind to expand-call-site's guard, which negatively caches
+;;the call site, so refreshes skip it for free.
+
 (define (type:expand-and-infer run-generator root-library-node document call-node)
   ;;TYPE-side entry for the type router's generic macro arm: expand, run
   ;;the generator over the expansion, return the results to the call
@@ -258,7 +274,13 @@
   ;;recurse without bound
   (if (hashtable-ref private:virtual-documents document #f)
     #f
-    (let ([expanded (ir-auto-route:expand-call-site root-library-node document call-node)])
+    ;;the rebuild budget aborts pathological expansions DURING the
+    ;;rebuild (see private:max-expansion-nodes); the raise unwinds to
+    ;;expand-call-site's guard, which records the call site in the
+    ;;negative cache -- refreshes then skip it for free
+    (let ([expanded
+            (parameterize ([chez-ir-rebuild-budget (cons 0 private:max-expansion-nodes)])
+              (ir-auto-route:expand-call-site root-library-node document call-node))])
     (and expanded
       (guard (e [else
                 (when (getenv "EXPAND_DEBUG")

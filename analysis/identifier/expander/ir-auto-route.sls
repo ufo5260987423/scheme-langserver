@@ -361,6 +361,60 @@
           (hashtable-set! private:forms-cache text parsed)
           parsed)))))
 
+;;doc-import-sets cache: same text-keyed + bounded policy as forms. The
+;;sets are a pure function of the document text, and the deep-strip walk
+;;cost ~0.2ms PER MACRO CALL SITE (measured: ~70% of a failing expansion
+;;attempt; with thousands of call sites in vendored .akku libraries this
+;;alone made the type pass the whole-repo bottleneck)
+(define private:import-sets-cache (make-hashtable string-hash string=?))
+(define private:import-sets-mutex (make-mutex))
+
+(define (private:doc-import-sets-cached text forms)
+  (with-mutex private:import-sets-mutex
+    (when (> (hashtable-size private:import-sets-cache) 64)
+      (hashtable-clear! private:import-sets-cache))
+    (let ([cached (hashtable-ref private:import-sets-cache text #f)])
+      (or cached
+        (let ([sets (private:doc-import-sets forms)])
+          (hashtable-set! private:import-sets-cache text sets)
+          sets)))))
+
+;;negative cache for expand-call-site: call sites that cannot expand (no
+;;enclosing define, or dead env bootstrap) skip the whole attempt on
+;;repeat. Keyed by document + bias with TEXT-IDENTITY invalidation (the
+;;didChange path mutates the document in place, so an unchecked entry
+;;would outlive its text); success deletes the entry because env
+;;availability can change without the user text changing (the macro
+;;library itself may be edited). Mutex-guarded: threaded init runs the
+;;type pass on worker threads and unsynchronized eq-hashtable writes are
+;;the documented bucket-corruption hazard.
+(define private:negative-cache (make-eq-hashtable))
+(define private:negative-cache-mutex (make-mutex))
+
+(define (private:negative? document bias)
+  (with-mutex private:negative-cache-mutex
+    (let ([entry (hashtable-ref private:negative-cache document #f)])
+      (and entry
+        (eq? (document-text document) (car entry))
+        (hashtable-contains? (cdr entry) bias)))))
+
+(define (private:negative! document bias)
+  (with-mutex private:negative-cache-mutex
+    (let* ([text (document-text document)]
+        [entry (hashtable-ref private:negative-cache document #f)]
+        [ht (if (and entry (eq? text (car entry)))
+              (cdr entry)
+              (let ([ht (make-eq-hashtable)])
+                (hashtable-set! private:negative-cache document (cons text ht))
+                ht))])
+      (hashtable-set! ht bias #t))))
+
+(define (private:unnegative! document bias)
+  (with-mutex private:negative-cache-mutex
+    (let ([entry (hashtable-ref private:negative-cache document #f)])
+      (when (and entry (eq? (document-text document) (car entry)))
+        (hashtable-delete! (cdr entry) bias)))))
+
 ;; stats: (hits fallback-total-ms hits-total-ms). Mutex-guarded: threaded step
 ;; invokes rules from worker threads.
 (define private:stats-mutex (make-mutex))
@@ -519,7 +573,7 @@
       (let* ([path (uri->path (document-uri document))]
           [text (document-text document)]
           [forms (private:forms text path)]
-          [import-sets (private:doc-import-sets forms)]
+          [import-sets (private:doc-import-sets-cached text forms)]
           [workspace-root (and root-file-node (file-node-path root-file-node))]
           [env-pair (private:env document call-node root-library-node import-sets workspace-root head-symbol library-identifier)])
     (and env-pair
@@ -547,37 +601,49 @@
   ;;is the TYPE side's window into the expansion: the type generator runs
   ;;over the reconstructed tree and results map back by source position.
   ;;Any failure = #f with a type-stats miss (see REPLAY_TRACE).
-  (let* ([head-symbol (index-node-expression (car (index-node-children call-node)))]
-      [head-refs (find-available-references-for document call-node head-symbol)]
-      [library-identifier
-        (and (not (null? head-refs))
-          (let ([lib (identifier-reference-library-identifier (car head-refs))])
-            (and (not (null? lib)) lib)))])
-    (and library-identifier
-      (let ([path (uri->path (document-uri document))])
-        (guard (e [else
-                  (when (getenv "REPLAY_TRACE")
-                    (fprintf (console-output-port) "[ir-auto-route] expand-call-site miss: ~a in ~a at-bias=~a~%"
-                      (call-with-string-output-port (lambda (p) (display-condition e p)))
-                      (document-uri document) (index-node-start call-node)))
-                  (private:bump-type! (cons #f 0))
-                  #f])
-          (let* ([text (document-text document)]
-              [forms (private:forms text path)]
-              [import-sets (private:doc-import-sets forms)]
-              [env-pair (private:env document call-node root-library-node import-sets #f head-symbol library-identifier)])
-            (and env-pair
-              (let* ([form (chez-ir-find-define-containing forms (index-node-start call-node))]
+  ;;Order matters: the enclosing-define lookup runs BEFORE the env
+  ;;bootstrap because most call sites cannot expand at all (measured:
+  ;;define-auxiliary-keyways bodies, internal macro calls inside
+  ;;define-syntax/lets across vendored libraries -- thousands of them),
+  ;;and find-define-containing is the cheapest deterministic reject.
+  (let ([bias (index-node-start call-node)])
+    (and (not (private:negative? document bias))
+      (let* ([head-symbol (index-node-expression (car (index-node-children call-node)))]
+          [head-refs (find-available-references-for document call-node head-symbol)]
+          [library-identifier
+            (and (not (null? head-refs))
+              (let ([lib (identifier-reference-library-identifier (car head-refs))])
+                (and (not (null? lib)) lib)))])
+        (and library-identifier
+          (let ([path (uri->path (document-uri document))])
+            (guard (e [else
+                      (private:negative! document bias)
+                      (when (getenv "REPLAY_TRACE")
+                        (fprintf (console-output-port) "[ir-auto-route] expand-call-site miss: ~a in ~a at-bias=~a~%"
+                          (call-with-string-output-port (lambda (p) (display-condition e p)))
+                          (document-uri document) (index-node-start call-node)))
+                      (private:bump-type! (cons #f 0))
+                      #f])
+              (let* ([text (document-text document)]
+                  [forms (private:forms text path)]
+                  [form (chez-ir-find-define-containing forms bias)]
                   [_ (or form (raise 'form-not-found))]
-                  [t0 (current-time 'time-monotonic)]
-                  [ir (if (eq? (private:env-mode env-pair) 'fresh)
-                        (private:expand-fresh (car env-pair) form)
-                        (chez-ir-expand form (car env-pair)))]
-                  [rebuilt (chez-ir->annotated-sexp ir)]
-                  [t1 (current-time 'time-monotonic)]
-                  [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])
-                (private:bump-type! (cons #t ms))
-                rebuilt))))))))
+                  [import-sets (private:doc-import-sets-cached text forms)]
+                  [env-pair (private:env document call-node root-library-node import-sets #f head-symbol library-identifier)])
+                (if env-pair
+                  (let* ([t0 (current-time 'time-monotonic)]
+                      [ir (if (eq? (private:env-mode env-pair) 'fresh)
+                            (private:expand-fresh (car env-pair) form)
+                            (chez-ir-expand form (car env-pair)))]
+                      [rebuilt (chez-ir->annotated-sexp ir)]
+                      [t1 (current-time 'time-monotonic)]
+                      [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])
+                    (private:unnegative! document bias)
+                    (private:bump-type! (cons #t ms))
+                    rebuilt)
+                  (begin
+                    (private:negative! document bias)
+                    #f))))))))))
 
 (define (ir-auto-route:call-site-flows root-library-node document call-node)
   ;;Type-flow EXTRACTION service. NOT on any production path: the type
@@ -606,7 +672,7 @@
                   #f])
           (let* ([text (document-text document)]
               [forms (private:forms text path)]
-              [import-sets (private:doc-import-sets forms)]
+              [import-sets (private:doc-import-sets-cached text forms)]
               [env-pair (private:env document call-node root-library-node import-sets #f head-symbol library-identifier)])
             (and env-pair
               (let* ([form (chez-ir-find-define-containing forms (index-node-start call-node))]
