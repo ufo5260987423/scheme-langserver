@@ -184,8 +184,10 @@ macro arm**：head 的 root-ancestor 类型为 `syntax-variable` 的调用点一
 
 ## 5. 已识别的优化候选（未实施）
 
-1. `chez-ir-call-site-refs` / `call-site-bindings` / `type-flows` 各自
-   独立 walk 一遍 IR，三次遍历可合并；
+1. ~~`chez-ir-call-site-refs` / `call-site-bindings` / `type-flows` 各自
+   独立 walk 一遍 IR，三次遍历可合并~~（已做 2026-10-28：refs+bindings
+   合并为单次遍历的 `chez-ir-call-site-facts`，旧接口保留为投影；
+   type-flows 为测试 oracle 不动）；
 2. ~~`private:find-source` 里手工实现的字符串函数~~（已清理 2026-10-28：
    死代码 `private:string-contains?` / `private:token-after` 删除，
    `private:find-substring` 换 srfi :13 `string-contains`，
