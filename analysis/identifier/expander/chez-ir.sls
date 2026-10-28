@@ -427,6 +427,28 @@
           (eq-hashtable-set! private:rebuild-tag-cache rtd tag)
           tag)))))
 
+;;hoisted from chez-ir->annotated-sexp's internal defines (lightweight
+;;refactor): stateless shape helpers shared by the rebuild cluster and
+;;the walkers. private:prelex-name already lives at file level (facts
+;;walker); its guard behavior matches the old internal copy.
+(define (private:unwrap-ann o)
+  ;;ONE annotation layer off (contrast the type-flows walker's multi-layer
+  ;;unwrap, which is deliberately left internal to that function)
+  (if (annotation? o) (annotation-expression o) o))
+
+(define (private:rtd-of o)
+  (and (record? o) (guard (e [#t #f]) (#%$record-type-descriptor o))))
+
+(define (private:case-lambda-record? o)
+  (let ([rtd (private:rtd-of (private:unwrap-ann o))])
+    (and rtd (private:rtd-name-prefix? rtd "Lsrc:case-lambda"))))
+
+(define (private:prelex-src px)
+  ;;raw source slot of a prelex (private:prelex-binding-bias projects the
+  ;;bias out of the same slot; both guard to #f)
+  (guard (e [#t #f])
+    ((record-accessor (private:ancestor-rtd (private:rtd-of px) 'prelex) 2) px)))
+
 (define (chez-ir->annotated-sexp ir)
   ;;Reconstruct a readable ANNOTATED s-expression tree from the parsed
   ;;Lsrc IR (the undocumented records?=#t output). This is a source-
@@ -454,27 +476,14 @@
       (or (and src (private:source-object-of src))
           (make-source-object dummy-sfd 0 0))
       sexpr))
-  (define (unwrap-ann o)
-    (if (annotation? o) (annotation-expression o) o))
-  (define (rtd-of o)
-    (and (record? o) (guard (e [#t #f]) (#%$record-type-descriptor o))))
-  (define (prelex-name px)
-    (guard (e [#t '?])
-      ((record-accessor (private:ancestor-rtd (rtd-of px) 'prelex) 0) px)))
-  (define (prelex-src px)
-    (guard (e [#t #f])
-      ((record-accessor (private:ancestor-rtd (rtd-of px) 'prelex) 2) px)))
-  (define (case-lambda-record? o)
-    (let ([rtd (rtd-of (unwrap-ann o))])
-      (and rtd (private:rtd-name-prefix? rtd "Lsrc:case-lambda"))))
   (define (rebuild-atom x)
-    (let ([x0 (unwrap-ann x)])
+    (let ([x0 (private:unwrap-ann x)])
       (cond
         [(not (record? x0)) (if (annotation? x) x (mk-ann #f x0))]
-        [(private:ancestor-rtd (rtd-of x0) 'prelex)
-          (mk-ann (prelex-src x0) (prelex-name x0))]
-        [(eq? (record-type-name (rtd-of x0)) 'primref)
-          (mk-ann #f (or (find symbol? (private:field-refs x0 (rtd-of x0))) 'void))]
+        [(private:ancestor-rtd (private:rtd-of x0) 'prelex)
+          (mk-ann (private:prelex-src x0) (private:prelex-name x0))]
+        [(eq? (record-type-name (private:rtd-of x0)) 'primref)
+          (mk-ann #f (or (find symbol? (private:field-refs x0 (private:rtd-of x0))) 'void))]
         [else (mk-ann #f 'void)])))
   (define (rebuild o env)
     ;;budget check FIRST: the caller's limit aborts pathological
@@ -485,14 +494,14 @@
         (set-car! b (+ (car b) 1))
         (when (> (car b) (cdr b))
           (raise 'expansion-too-large))))
-    (let ([o0 (unwrap-ann o)])
+    (let ([o0 (private:unwrap-ann o)])
       (cond
         ;;bare values must stay annotated: the tree builder drops non-
         ;;annotation children; an already-annotated input passes through
         [(not (record? o0))
           (if (annotation? o) o (mk-ann #f o0))]
         [else
-          (let ([rtd (rtd-of o0)])
+          (let ([rtd (private:rtd-of o0)])
             (if (not rtd)
               (mk-ann #f '(void))
               (case (private:rebuild-tag rtd)
@@ -541,7 +550,7 @@
                 (mk-ann (private:preinfo-src o0)
                   (or (find symbol? (private:field-refs o0 rtd)) 'void))]
                 [(prelex)
-                (mk-ann (private:preinfo-src o0) (prelex-name o0))]
+                (mk-ann (private:preinfo-src o0) (private:prelex-name o0))]
                 [else (mk-ann #f '(void))])))]
             ;;closes rebuild's outer cond, let-o0 and let-b
             ;;closes let-o0 and the rebuild define (outer cond closed above)
@@ -554,23 +563,23 @@
         [src (private:preinfo-src o)]
         [op (cadr vals)]
         [args (caddr vals)]
-        [op0 (unwrap-ann op)]
+        [op0 (private:unwrap-ann op)]
         [direct
-          (and (case-lambda-record? op0)
+          (and (private:case-lambda-record? op0)
             (let ([r (beta-reduce src op0 args env)])
               (when r (set! beta-stats-direct (+ beta-stats-direct 1)))
               r))]
         [via-name
           (and (not direct)
-            (let ([op-rtd (rtd-of op0)])
+            (let ([op-rtd (private:rtd-of op0)])
               (and op-rtd
                 ;;look THROUGH a ref record to the prelex it names
                 (let* ([px
                         (if (private:rtd-name-prefix? op-rtd "Lsrc:ref")
-                          (unwrap-ann
+                          (private:unwrap-ann
                             (cadr (private:field-refs op0 op-rtd)))
                           op0)]
-                    [px-rtd (rtd-of px)])
+                    [px-rtd (private:rtd-of px)])
                   (and px-rtd
                     (private:ancestor-rtd px-rtd 'prelex)
                     (let ([target (eq-hashtable-ref env px #f)])
@@ -592,26 +601,26 @@
     ;;the arguments -- arity-based clause selection, like a real
     ;;application. Clause lambdas may be MULTI-clause (measured: ufo-
     ;;match generates them), so the single-clause restriction is lifted.
-    (let* ([op-rtd (rtd-of op)]
+    (let* ([op-rtd (private:rtd-of op)]
         [op-vals (and op-rtd (private:field-refs op op-rtd))]
         [clauses (and op-vals (cadr op-vals))]
         [matching
           (and (list? clauses)
             (filter
               (lambda (clause)
-                (let ([c-rtd (rtd-of clause)])
+                (let ([c-rtd (private:rtd-of clause)])
                   (and c-rtd
                     (let* ([c-vals (private:field-refs clause c-rtd)]
                         [formals (map rebuild-atom (car c-vals))])
                       (and (list? formals)
                         (= (length formals) (length args))
                         (for-all
-                          (lambda (f) (symbol? (unwrap-ann f)))
+                          (lambda (f) (symbol? (private:unwrap-ann f)))
                           formals))))))
               clauses))])
       (if (= 1 (length matching))
         (let* ([clause (car matching)]
-            [c-rtd (rtd-of clause)]
+            [c-rtd (private:rtd-of clause)]
             [c-vals (private:field-refs clause c-rtd)]
             [formals (map rebuild-atom (car c-vals))]
             [formal-prelexes (car c-vals)]
@@ -626,9 +635,9 @@
             (hashtable-keys inner-env))
           (for-each
             (lambda (px a)
-              (let ([a0 (unwrap-ann a)])
-                (when (case-lambda-record? a0)
-                  (eq-hashtable-set! body-env (unwrap-ann px) a0))))
+              (let ([a0 (private:unwrap-ann a)])
+                (when (private:case-lambda-record? a0)
+                  (eq-hashtable-set! body-env (private:unwrap-ann px) a0))))
             formal-prelexes args)
           (mk-ann src
             (list (mk-ann #f 'let)
@@ -644,7 +653,7 @@
         (cons (mk-ann #f 'case-lambda)
           (map
             (lambda (clause)
-              (let ([c-rtd (rtd-of clause)])
+              (let ([c-rtd (private:rtd-of clause)])
                 (mk-ann #f
                   (if c-rtd
                     (let ([c-vals (private:field-refs clause c-rtd)])
@@ -665,9 +674,9 @@
       ;;names (clause lambdas are applied via refs -- see rebuild-call)
       (for-each
         (lambda (x e)
-          (let ([e0 (unwrap-ann e)])
-            (when (case-lambda-record? e0)
-              (eq-hashtable-set! child-env (unwrap-ann x) e0))))
+          (let ([e0 (private:unwrap-ann e)])
+            (when (private:case-lambda-record? e0)
+              (eq-hashtable-set! child-env (private:unwrap-ann x) e0))))
         xs es)
       (mk-ann (private:preinfo-src o)
         (list (mk-ann #f 'letrec)
