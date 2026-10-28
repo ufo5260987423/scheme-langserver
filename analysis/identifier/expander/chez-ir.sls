@@ -786,11 +786,15 @@
                                 (guard (e [#t #f]) (#%$record-type-descriptor op)))]
                       [op-name (and op-rtd
                                  (eq? (record-type-name op-rtd) 'primref)
-                                 (find symbol? (private:field-refs op op-rtd)))])
+                                 (find symbol? (private:field-refs op op-rtd)))]
+                      ;;computed ONCE -- the old guard/body pair evaluated
+                      ;;cxr->steps twice per accessor call (short-circuit:
+                      ;;op-name may be #f or a non-symbol)
+                      [steps (and (symbol? op-name)
+                               (private:cxr->steps op-name))])
                     (cond
                       ;;(car x)/(cadr x)/... accessor chain over the base
-                      [(and (symbol? op-name)
-                          (private:cxr->steps op-name)
+                      [(and steps
                           (pair? args)
                           (null? (cdr args)))
                         (let ([base (resolve-expr (car args))])
@@ -798,7 +802,7 @@
                             (fold-left
                               (lambda (flow step) `(chain ,step . ,flow))
                               base
-                              (private:cxr->steps op-name))))]
+                              steps)))]
                       ;;driver/cascader application (case-lambda operator):
                       ;;the threaded value is among the arguments -- when
                       ;;exactly one resolves, that IS the flow (the outermost
