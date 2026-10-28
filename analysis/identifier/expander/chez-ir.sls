@@ -8,9 +8,9 @@
     chez-ir-available?
     chez-ir-read-annotated-file
     chez-ir-find-annotated-form
-    chez-ir-find-form-containing
     chez-ir-find-define-containing
     chez-ir-expand
+    chez-ir-call-site-facts
     chez-ir-call-site-refs
     chez-ir-call-site-bindings
     chez-ir-call-site-type-flows
@@ -39,16 +39,28 @@
 (define-record-type private:probe
   (fields a))
 
+;; Probe result is process-lifetime constant -- memoize so per-call-site
+;; rule invocations (ir-auto-route:try-expand) do not re-run sc-expand.
+;; Concurrent first calls may both probe; the probe is idempotent and the
+;; box converges on the same value.
+(define private:available-cache (box 'unset))
+
 (define (chez-ir-available?)
   ;; Two probes: the 3-arity sc-expand (argument-count errors are
   ;; catchable), and #%$record-type-descriptor on a user record.
-  (and (guard (e [#t #f])
-         (sc-expand '(quote x) (interaction-environment) #t)
-         #t)
-    (guard (e [#t #f])
-      (eq? 'private:probe
-        (record-type-name (#%$record-type-descriptor (make-private:probe 1))))
-      #t)))
+  (let ([cached (unbox private:available-cache)])
+    (if (not (eq? cached 'unset))
+      cached
+      (let ([result
+          (and (guard (e [#t #f])
+                 (sc-expand '(quote x) (interaction-environment) #t)
+                 #t)
+            (guard (e [#t #f])
+              (eq? 'private:probe
+                (record-type-name (#%$record-type-descriptor (make-private:probe 1))))
+              #t))])
+        (set-box! private:available-cache result)
+        result))))
 
 (define (chez-ir-read-annotated-file path)
   ;; Read all top-level forms with annotations. The bfp protocol of
@@ -90,28 +102,6 @@
               o
               (let ([here (search (car o))])
                 (if here here (search (cdr o))))))]))))
-
-(define (chez-ir-find-form-containing annotated-forms bias)
-  ;; The annotated top-level form whose source span contains bias, choosing
-  ;; the smallest span when forms nest (they should not at top level, but be
-  ;; defensive). Returns #f when no form contains the position.
-  (let ([hits
-      (filter
-        (lambda (form)
-          (and (annotation? form)
-            (let ([src (annotation-source form)])
-              (and (source-object? src)
-                (<= (source-object-bfp src) bias)
-                (>= (source-object-efp src) bias)))))
-        annotated-forms)])
-    (if (null? hits)
-      #f
-      (car (sort (lambda (f1 f2)
-            (< (- (source-object-efp (annotation-source f1))
-                 (source-object-bfp (annotation-source f1)))
-              (- (source-object-efp (annotation-source f2))
-                (source-object-bfp (annotation-source f2)))))
-          hits)))))
 
 (define (chez-ir-find-define-containing annotated bias)
   ;; Smallest (define ...) form whose source span contains bias, descending by
@@ -179,22 +169,35 @@
       [(eq? (record-type-name rtd) name) rtd]
       [else (loop (record-type-parent rtd))])))
 
-(define (private:name-prefix? rtd prefix)
-  (let* ([name (symbol->string (record-type-name rtd))]
-      [len (string-length name)]
-      [plen (string-length prefix)])
-    (and (>= len plen)
-      (string=? (substring name 0 plen) prefix))))
+;;accessor-vector memo: an rtd is immutable, so the memoized vector is
+;;deterministic content; the mutex is the bucket-corruption guard (threaded
+;;init runs these walkers on worker threads -- cf. the b2fc5b41 weak-ht
+;;incident in AGENTS.md).
+(define private:accessor-mutex (make-mutex))
+(define private:accessor-cache (make-eq-hashtable))
+
+(define (private:accessors-of rtd)
+  (with-mutex private:accessor-mutex
+    (let ([cached (eq-hashtable-ref private:accessor-cache rtd #f)])
+      (or cached
+        (let* ([n (vector-length (record-type-field-names rtd))]
+            [v (make-vector n)])
+          (let loop ([i 0])
+            (when (fx< i n)
+              (vector-set! v i (record-accessor rtd i))
+              (loop (fx+ i 1))))
+          (eq-hashtable-set! private:accessor-cache rtd v)
+          v)))))
 
 (define (private:field-refs o rtd)
   ;; All field values of a record, guarded (some fields may be
   ;; unreadable in exotic cases; result is discarded anyway).
-  (let ([n (vector-length (record-type-field-names rtd))])
+  (let ([accessors (private:accessors-of rtd)])
     (let loop ([i 0] [acc '()])
-      (if (fx= i n)
+      (if (fx= i (vector-length accessors))
         (reverse acc)
         (loop (fx+ i 1)
-          (cons (guard (e [#t #f]) ((record-accessor rtd i) o)) acc))))))
+          (cons (guard (e [#t #f]) ((vector-ref accessors i) o)) acc))))))
 
 ;; A source slot in the IR is either a plain source object (ref/set!
 ;; maybe-src) or an annotated identifier (prelex source), the latter
@@ -306,87 +309,82 @@
       (and (private:rtd-name-prefix? rtd "Lsrc:quote")
         (eq? ((record-accessor rtd 0) o) symbol)))))
 
-(define (chez-ir-call-site-refs ir path)
-  ;; Walk the IR and collect every Lsrc:ref whose own source is in
-  ;; `path` (i.e. code copied verbatim from the call site, as opposed
-  ;; to macro-introduced code whose source is the macro definition
-  ;; file or #f).
-  ;; Returns a list of (name ref-bias binding-bias|#f):
-  ;;   name        - the referenced variable's display name
-  ;;   ref-bias    - character offset of this reference
-  ;;   binding-bias- offset where the referenced prelex is bound, or #f
-  ;;                 when the binding is macro-introduced (no source)
-  (let ([seen (make-eq-hashtable)]
-      [result '()])
-    (define (emit! name ref-bias binding-bias)
-      (set! result (cons (list name ref-bias binding-bias) result)))
-    (define (prelex-name prelex)
-      (guard (e [#t '?])
-        ((record-accessor (private:ancestor-rtd (#%$record-type-descriptor prelex) 'prelex) 0) prelex)))
-    (define (prelex-binding-bias prelex)
-      (guard (e [#t #f])
-        (let* ([rtd (#%$record-type-descriptor prelex)]
-            [prelex-rtd (private:ancestor-rtd rtd 'prelex)])
-          (and prelex-rtd
-            (private:source-bias ((record-accessor prelex-rtd 2) prelex))))))
-    (define (walk o)
-      (when (record? o)
-        (unless (eq-hashtable-ref seen o #f)
-          (eq-hashtable-set! seen o #t)
-          (let ([rtd (#%$record-type-descriptor o)])
-            (cond
-              [(and (private:name-prefix? rtd "Lsrc:ref")
-                  (guard (e [#t #f])
-                    (equal? '#(maybe-src x) (record-type-field-names rtd))))
-               ;; fields: (maybe-src x)
-               (let* ([vals (private:field-refs o rtd)]
-                      [src (car vals)]
-                      [prelex (cadr vals)])
-                 (when (private:source-in-path? src path)
-                   (emit! (prelex-name prelex)
-                     (private:source-bias src)
-                     (prelex-binding-bias prelex)))
-                 (for-each walk-any vals))]
-              [else
-                (for-each walk-any (private:field-refs o rtd))])))))
-    (define (walk-any o)
-      (cond
-        [(pair? o)
-          (walk-any (car o))
-          (walk-any (cdr o))]
-        [(and (record? o) (not (annotation? o)))
-          (walk o)]
-        [else (void)]))
-    (walk-any ir)
-    (reverse result)))
+(define (private:prelex-name prelex)
+  (guard (e [#t '?])
+    ((record-accessor (private:ancestor-rtd (#%$record-type-descriptor prelex) 'prelex) 0) prelex)))
 
-(define (chez-ir-call-site-bindings ir path)
-  ;; Binding-driven complement of chez-ir-call-site-refs: walk the IR and
-  ;; collect every prelex BINDING whose source is in `path`. A never-used
-  ;; binding (e.g. an unused match pattern variable) produces no Lsrc:ref,
-  ;; so the use-driven collector alone can never see it; the unused prelex
-  ;; survives in the sc-expand IR (measured: prelex.source still points at
-  ;; the pattern position). Macro-generated temporaries carry no source and
-  ;; template-introduced bindings point at the macro definition file, so
-  ;; the path check excludes both.
-  ;; Returns a de-duplicated list of (name binding-bias).
-  (let ([seen-keys (make-hashtable equal-hash equal?)]
-      [result '()])
+(define (private:prelex-binding-bias prelex)
+  (guard (e [#t #f])
+    (let* ([rtd (#%$record-type-descriptor prelex)]
+        [prelex-rtd (private:ancestor-rtd rtd 'prelex)])
+      (and prelex-rtd
+        (private:source-bias ((record-accessor prelex-rtd 2) prelex))))))
+
+(define (chez-ir-call-site-facts ir path)
+  ;; ONE walk collecting BOTH use-driven refs and binding-driven bindings;
+  ;; chez-ir-call-site-refs / -bindings below are projections kept for
+  ;; existing callers. The walk descends annotation wrappers (record-walk
+  ;; semantics -- the old standalone bindings walker did; the old refs
+  ;; walker skipped them, a blind spot subsumed here): the emit conditions
+  ;; are unchanged, so no previously-collected fact moves, and anything
+  ;; extra is still span-filtered downstream.
+  ;; Returns (values refs bindings):
+  ;;   refs     - ((name ref-bias binding-bias|#f) ...)  every Lsrc:ref
+  ;;              whose own source is in `path` (code copied verbatim from
+  ;;              the call site, as opposed to macro-introduced code whose
+  ;;              source is the macro definition file or #f);
+  ;;              binding-bias is #f when the binding is macro-introduced
+  ;;   bindings - ((name binding-bias) ...), de-duplicated; covers
+  ;;              never-used bindings (an unused match pattern variable
+  ;;              produces no Lsrc:ref -- the prelex still survives in the
+  ;;              IR with source at the pattern position; measured).
+  ;;              Macro-generated temporaries carry no source and
+  ;;              template-introduced bindings point at the macro
+  ;;              definition file, so the path check excludes both.
+  (let ([refs '()]
+      [bindings '()]
+      [seen-binding-keys (make-hashtable equal-hash equal?)])
     (private:record-walk ir
       (lambda (o rtd)
-        (let ([prelex-rtd (private:ancestor-rtd rtd 'prelex)])
-          (when prelex-rtd
-            (let ([src ((record-accessor prelex-rtd 2) o)])
-              (when (private:source-in-path? src path)
-                (let* ([name (guard (e [#t '?])
-                              ((record-accessor prelex-rtd 0) o))]
-                    [bias (private:source-bias src)]
-                    [key (cons name bias)])
-                  (unless (hashtable-ref seen-keys key #f)
-                    (hashtable-set! seen-keys key #t)
-                    (set! result (cons `(,name ,bias) result))))))))
-          #f))
-    (reverse result)))
+        (cond
+          [(and (private:rtd-name-prefix? rtd "Lsrc:ref")
+              (guard (e [#t #f])
+                (equal? '#(maybe-src x) (record-type-field-names rtd))))
+           ;; fields: (maybe-src x)
+           (let* ([vals (private:field-refs o rtd)]
+                  [src (car vals)]
+                  [prelex (cadr vals)])
+             (when (private:source-in-path? src path)
+               (set! refs
+                 (cons (list (private:prelex-name prelex)
+                         (private:source-bias src)
+                         (private:prelex-binding-bias prelex))
+                   refs)))
+             #f)]
+          [else
+            (let ([prelex-rtd (private:ancestor-rtd rtd 'prelex)])
+              (when prelex-rtd
+                (let ([src ((record-accessor prelex-rtd 2) o)])
+                  (when (private:source-in-path? src path)
+                    (let* ([name (guard (e [#t '?])
+                                  ((record-accessor prelex-rtd 0) o))]
+                        [bias (private:source-bias src)]
+                        [key (cons name bias)])
+                      (unless (hashtable-ref seen-binding-keys key #f)
+                        (hashtable-set! seen-binding-keys key #t)
+                        (set! bindings (cons `(,name ,bias) bindings)))))))
+              #f)])))
+    (values (reverse refs) (reverse bindings))))
+
+(define (chez-ir-call-site-refs ir path)
+  ;;use-driven projection of chez-ir-call-site-facts
+  (let-values ([(refs _) (chez-ir-call-site-facts ir path)])
+    refs))
+
+(define (chez-ir-call-site-bindings ir path)
+  ;;binding-driven projection of chez-ir-call-site-facts
+  (let-values ([(_ bindings) (chez-ir-call-site-facts ir path)])
+    bindings))
 
 ;;;Rebuild node budget for chez-ir->annotated-sexp: #f = unlimited
 ;;;(identifier side, oracle); otherwise a MUTABLE PAIR (count . limit)
@@ -399,6 +397,35 @@
 ;;;A parameter (not a global counter) keeps concurrent rebuilds on
 ;;;worker threads independent.
 (define chez-ir-rebuild-budget (make-parameter #f))
+
+;rebuild dispatch-tag memo: an rtd is immutable, so the tag is
+;deterministic content; the mutex is the bucket-corruption guard (see
+;private:accessors-of).
+(define private:rebuild-tag-mutex (make-mutex))
+(define private:rebuild-tag-cache (make-eq-hashtable))
+
+(define (private:rebuild-tag rtd)
+  ;;tag precedence mirrors the rebuild cond chain this replaces; the Lsrc:
+  ;;prefixes are mutually exclusive record families and primref / prelex are
+  ;;disjoint from all of them, so the order only documents intent
+  (with-mutex private:rebuild-tag-mutex
+    (let ([cached (eq-hashtable-ref private:rebuild-tag-cache rtd #f)])
+      (or cached
+        (let ([tag
+            (cond
+              [(private:rtd-name-prefix? rtd "Lsrc:call") 'call]
+              [(private:rtd-name-prefix? rtd "Lsrc:ref") 'ref]
+              [(private:rtd-name-prefix? rtd "Lsrc:set!") 'set!]
+              [(private:rtd-name-prefix? rtd "Lsrc:quote") 'quote]
+              [(private:rtd-name-prefix? rtd "Lsrc:if") 'if]
+              [(private:rtd-name-prefix? rtd "Lsrc:seq") 'seq]
+              [(private:rtd-name-prefix? rtd "Lsrc:case-lambda") 'case-lambda]
+              [(private:rtd-name-prefix? rtd "Lsrc:letrec") 'letrec]
+              [(eq? (record-type-name rtd) 'primref) 'primref]
+              [(private:ancestor-rtd rtd 'prelex) 'prelex]
+              [else 'unknown])])
+          (eq-hashtable-set! private:rebuild-tag-cache rtd tag)
+          tag)))))
 
 (define (chez-ir->annotated-sexp ir)
   ;;Reconstruct a readable ANNOTATED s-expression tree from the parsed
@@ -427,9 +454,6 @@
       (or (and src (private:source-object-of src))
           (make-source-object dummy-sfd 0 0))
       sexpr))
-  (define (preinfo-src o rtd)
-    (guard (e [#t #f])
-      ((record-accessor (private:ancestor-rtd rtd 'preinfo) 0) o)))
   (define (unwrap-ann o)
     (if (annotation? o) (annotation-expression o) o))
   (define (rtd-of o)
@@ -469,11 +493,12 @@
           (if (annotation? o) o (mk-ann #f o0))]
         [else
           (let ([rtd (rtd-of o0)])
-            (cond
-              [(not rtd) (mk-ann #f '(void))]
-              [(private:rtd-name-prefix? rtd "Lsrc:call")
+            (if (not rtd)
+              (mk-ann #f '(void))
+              (case (private:rebuild-tag rtd)
+                [(call)
                 (rebuild-call o0 rtd env)]
-              [(private:rtd-name-prefix? rtd "Lsrc:ref")
+                [(ref)
                 (let* ([vals (private:field-refs o0 rtd)]
                     [atom (rebuild-atom (cadr vals))])
                   ;;rebuild-atom may already return an annotation (chi wraps
@@ -487,43 +512,46 @@
                                   (private:source-object-of (car vals))))))
                     atom
                     (mk-ann (car vals) atom)))]
-              [(private:rtd-name-prefix? rtd "Lsrc:set!")
+                [(set!)
                 (let ([vals (private:field-refs o0 rtd)])
                   (mk-ann (car vals)
                     (list (mk-ann #f 'set!)
                       (rebuild-atom (cadr vals))
                       (rebuild (caddr vals) env))))]
-              [(private:rtd-name-prefix? rtd "Lsrc:quote")
+                [(quote)
                 (mk-ann #f
                   (list 'quote (guard (e [#f]) ((record-accessor rtd 0) o0))))]
-              [(private:rtd-name-prefix? rtd "Lsrc:if")
+                [(if)
                 (let ([vals (private:field-refs o0 rtd)])
-                  (mk-ann (preinfo-src o0 rtd)
+                  (mk-ann (private:preinfo-src o0)
                     (list (mk-ann #f 'if)
                       (rebuild (car vals) env)
                       (rebuild (cadr vals) env)
                       (rebuild (caddr vals) env))))]
-              [(private:rtd-name-prefix? rtd "Lsrc:seq")
+                [(seq)
                 (let ([vals (private:field-refs o0 rtd)])
-                  (mk-ann (preinfo-src o0 rtd)
+                  (mk-ann (private:preinfo-src o0)
                     (cons (mk-ann #f 'begin)
                       (map (lambda (v) (rebuild v env)) vals))))]
-              [(private:rtd-name-prefix? rtd "Lsrc:case-lambda")
+                [(case-lambda)
                 (rebuild-case-lambda o0 rtd env)]
-              [(private:rtd-name-prefix? rtd "Lsrc:letrec")
+                [(letrec)
                 (rebuild-letrec o0 rtd env)]
-              [(eq? (record-type-name rtd) 'primref)
-                (mk-ann (preinfo-src o0 rtd)
+                [(primref)
+                (mk-ann (private:preinfo-src o0)
                   (or (find symbol? (private:field-refs o0 rtd)) 'void))]
-              [(private:ancestor-rtd rtd 'prelex)
-                (mk-ann (preinfo-src o0 rtd) (prelex-name o0))]
-              [else (mk-ann #f '(void))]))])))
+                [(prelex)
+                (mk-ann (private:preinfo-src o0) (prelex-name o0))]
+                [else (mk-ann #f '(void))])))]
+            ;;closes rebuild's outer cond, let-o0 and let-b
+            ;;closes let-o0 and the rebuild define (outer cond closed above)
+            )))
   (define beta-stats-direct 0)
   (define beta-stats-via 0)
   (define beta-stats-via-miss 0)
   (define (rebuild-call o rtd env)
     (let* ([vals (private:field-refs o rtd)]
-        [src (preinfo-src o rtd)]
+        [src (private:preinfo-src o)]
         [op (cadr vals)]
         [args (caddr vals)]
         [op0 (unwrap-ann op)]
@@ -612,7 +640,7 @@
         #f)))
   (define (rebuild-case-lambda o rtd env)
     (let ([vals (private:field-refs o rtd)])
-      (mk-ann (preinfo-src o rtd)
+      (mk-ann (private:preinfo-src o)
         (cons (mk-ann #f 'case-lambda)
           (map
             (lambda (clause)
@@ -641,7 +669,7 @@
             (when (case-lambda-record? e0)
               (eq-hashtable-set! child-env (unwrap-ann x) e0))))
         xs es)
-      (mk-ann (preinfo-src o rtd)
+      (mk-ann (private:preinfo-src o)
         (list (mk-ann #f 'letrec)
           (mk-ann #f
             (map (lambda (x e)
@@ -677,7 +705,8 @@
     (and rtd
       (let ([p-rtd (private:ancestor-rtd rtd 'preinfo)])
         (and p-rtd
-          ((record-accessor p-rtd 0) preinfo))))))
+          (guard (e [#t #f])
+            ((record-accessor p-rtd 0) preinfo)))))))
 
 (define (chez-ir-call-site-type-flows ir path)
   ;; TYPE-FLOW ground truth for macro call sites. ufo-match-style macros

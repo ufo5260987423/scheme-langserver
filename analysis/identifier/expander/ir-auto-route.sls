@@ -587,9 +587,8 @@
             [ir (if (eq? (private:env-mode env-pair) 'fresh)
                   (private:expand-fresh (car env-pair) form)
                   (chez-ir-expand form (car env-pair)))]
-            [refs (private:merge-use-less-bindings
-                    (chez-ir-call-site-refs ir path)
-                    (chez-ir-call-site-bindings ir path))]
+            [refs (let-values ([(r b) (chez-ir-call-site-facts ir path)])
+                    (private:merge-use-less-bindings r b))]
             [inserted (private:synthesize! refs document call-node)]
             [t1 (current-time 'time-monotonic)]
             [ms (/ (time-nanosecond (time-difference t1 t0)) 1000000.0)])
