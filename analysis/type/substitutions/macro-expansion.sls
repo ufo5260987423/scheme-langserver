@@ -1,5 +1,6 @@
 (library (scheme-langserver analysis type substitutions macro-expansion)
-  (export type:expand-and-infer)
+  (export type:expand-and-infer
+    type:expansion-retention-info)
   (import
     (chezscheme)
 
@@ -30,18 +31,60 @@
 ;;; INJECTED by generator.sls: importing it here would close the cycle
 ;;; generator -> router -> this module -> generator.
 ;;;
-;;; Virtual documents are retained for the session: back-propagated
-;;; substitution entries may hold node pointers into the virtual tree,
-;;; and interpretation is lazy and in-process (type substitutions are
-;;; recomputed per init, never cached).
+;;; Back-propagated substitution entries may hold node pointers into the
+;;; virtual tree, and interpretation is lazy and in-process (type
+;;; substitutions are recomputed per init, never cached), so each virtual
+;;; document must outlive the pass that produced it. Retention is
+;;; therefore BOUNDED, not append-only: one virtual document per (real
+;;; document, call-site span), REPLACE on re-derivation. Before this the
+;;; table grew by one full virtual tree per refresh per call site
+;;; (measured: +505 nodes each, GC-proof) because didChange mutates the
+;;; document in place (document-text-set!, workspace.sls) and an entry
+;;; keyed by the document object never expired. Invalidation is
+;;; text-identity: the per-document entry pins the text object it was
+;;; derived from; a text swap drops every stale span's virtual tree from
+;;; BOTH tables. did-close needs no hook: documents stay in the file
+;;; tree, so total retention is bounded by live documents x their macro
+;;; call sites.
 
 (define private:retention (make-eq-hashtable))
+;;;real document -> (text-object . span-ht); span-ht: (start . end) ->
+;;;virtual document
 (define private:virtual-documents (make-eq-hashtable))
 
-(define (private:retain! real-document virtual-document)
-  (hashtable-set! private:retention real-document
-    (cons virtual-document
-      (hashtable-ref private:retention real-document '()))))
+(define (private:drop-virtual! virtual-document)
+  (hashtable-delete! private:virtual-documents virtual-document))
+
+(define (type:expansion-retention-info)
+  ;;observability for the bounded-retention invariant (used by the
+  ;;memory-regression measurement): ((real-docs . n) (virtual-docs . n)
+  ;;(span-entries . n)); virtual-docs must equal span-entries and stay
+  ;;flat across refreshes
+  (let ([span-total 0])
+    (let-values ([(keys entries) (hashtable-entries private:retention)])
+      (vector-for-each
+        (lambda (entry) (set! span-total (+ span-total (hashtable-size (cdr entry)))))
+        entries))
+    `((real-docs . ,(hashtable-size private:retention))
+      (virtual-docs . ,(hashtable-size private:virtual-documents))
+      (span-entries . ,span-total))))
+
+(define (private:retain! real-document call-start call-end virtual-document)
+  (let* ([text (document-text real-document)]
+      [entry (hashtable-ref private:retention real-document #f)]
+      [span-ht
+        (if (and entry (eq? text (car entry)))
+          (cdr entry)
+          (begin
+            (when entry
+              (vector-for-each private:drop-virtual! (hashtable-values (cdr entry))))
+            (let ([ht (make-hashtable equal-hash equal?)])
+              (hashtable-set! private:retention real-document (cons text ht))
+              ht)))])
+    (let ([previous (hashtable-ref span-ht (cons call-start call-end) #f)])
+      (when previous
+        (private:drop-virtual! previous))
+      (hashtable-set! span-ht (cons call-start call-end) virtual-document))))
 
 (define (private:copy-substitutions! virtual-node real-document path start end)
   ;;copy substitutions of expansion nodes that carry the call site's own
@@ -264,7 +307,7 @@
             [start (index-node-start call-node)]
             [end (index-node-end call-node)]
             [copied (private:back-propagate! virtual-root document path start end)])
-          (private:retain! document virtual-document)
+          (private:retain! document start end virtual-document)
           (when (getenv "EXPAND_DEBUG")
             (format #t "[macro-expansion] virtual diagnoses: ~a~%"
               (length (document-diagnoses virtual-document)))
