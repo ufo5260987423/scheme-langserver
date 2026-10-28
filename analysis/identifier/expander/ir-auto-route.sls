@@ -16,6 +16,7 @@
     ir-auto-route:reset-type-stats!)
   (import
     (chezscheme)
+    (only (srfi :13 strings) string-contains string-index)
 
     (scheme-langserver util path)
 
@@ -61,29 +62,16 @@
 (define (ir-auto-route:env-source)
   (with-mutex private:env-mutex (unbox private:env-source)))
 
-(define (private:string-index str ch)
-  (let loop ([i 0])
-    (cond
-      [(= i (string-length str)) #f]
-      [(char=? (string-ref str i) ch) i]
-      [else (loop (+ i 1))])))
-
+;;split-on keeps its own name (SRFI-13 has no string-split), but delegates
+;;the search to SRFI-13's string-index (a char criterion is a drop-in for
+;;the old private:string-index).
 (define (private:split-on str ch)
   (let loop ([s str] [acc '()])
-    (let ([idx (private:string-index s ch)])
+    (let ([idx (string-index s ch)])
       (if idx
         (loop (substring s (+ idx 1) (string-length s))
           (cons (substring s 0 idx) acc))
         (reverse (cons s acc))))))
-
-(define (private:string-contains? str pat)
-  (let ([slen (string-length str)]
-      [plen (string-length pat)])
-    (let loop ([i 0])
-      (cond
-        [(> (+ i plen) slen) #f]
-        [(string=? (substring str i (+ i plen)) pat) #t]
-        [else (loop (+ i 1))]))))
 
 (define (private:probe-in env head-symbol)
   (guard (e [else #f])
@@ -231,29 +219,6 @@
           [(eq? cached 'failed) #f]
           [else (cons cached 'fresh)])))))
 
-(define (private:token-after message start)
-  ;;first whitespace-delimited token at/after start, or #f
-  (let ([len (string-length message)])
-    (let skip ([i start])
-      (cond
-        [(>= i len) #f]
-        [(char=? (string-ref message i) #\space) (skip (+ i 1))]
-        [else
-          (let take ([j i])
-            (if (or (>= j len) (char=? (string-ref message j) #\space))
-              (substring message i j)
-              (take (+ j 1))))]))))
-
-(define (private:find-substring str pat)
-  ;;first index of pat in str, or #f
-  (let ([slen (string-length str)]
-      [plen (string-length pat)])
-    (let loop ([i 0])
-      (cond
-        [(> (+ i plen) slen) #f]
-        [(string=? (substring str i (+ i plen)) pat) i]
-        [else (loop (+ i 1))]))))
-
 (define (private:expand-blocked-identifier-from-message message)
   ;;Extract the identifier that blocked strict-env expansion, or #f. Two
   ;;failure classes, both neutralized by binding the identifier as a wrapper
@@ -270,7 +235,7 @@
   ;;the filename.
   (let ([len (string-length message)])
     (define (token-after-phrase phrase skip-open-paren?)
-      (let ([i (private:find-substring message phrase)])
+      (let ([i (string-contains message phrase)])
         (and i
           (let skip ([j (+ i (string-length phrase))])
             (cond
