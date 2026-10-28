@@ -409,7 +409,15 @@ rules. Known boundary: the value-flow chain now closes END-TO-END --
 type:recursive-interpret-result-list resolves pattern variable a to char?
 (measured 2026-10-27; b's cadr chain stays at substitution level, which
 is the DSL's own cross-node template application, not this mechanism);
-(? pred) refinement is out of scope per the seam criterion. See walkthrough
+(? pred) refinement is out of scope per the seam criterion. RESOURCE
+CONTROLS (2026-10-28, measured on this repo): doc-import-sets is cached
+by document text; unexpandable call sites are negatively cached
+(document + bias, text-identity invalidation, success-eviction) so
+refreshes skip them for free; and chez-ir-rebuild-budget aborts
+PATHOLOGICAL expansions DURING the rebuild (one match-index-node call
+in root-ancestor expands to 3.5 MILLION nodes -- the budget must fire
+early, counting after the build still grew the heap by GBs). Whole repo
++ type inference: 474 ms init, 471 MB peak (was OOM at 12 GB). See walkthrough
 section 7.1. ENTRY POINT: the TYPE self-defined-rules router has a
 GENERIC macro arm -- any define-syntax-headed call site (head's
 root-ancestor type is 'syntax-variable) is routed to an injected
@@ -479,7 +487,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 
 | Location | Issue | Impact |
 |----------|-------|--------|
-| `scheme-langserver` (general) | Cold initialization exceeds common LSP client timeouts (~38 s single-thread, ~48 s with type-inference). With a valid workspace cache this drops to ~2 s (after recent mtime-based consistency-check optimization), but the first run on a fresh machine / after cache invalidation can time out clients such as the MCP Bridge (30 s). | **High** — first-time user experience |
+| `scheme-langserver` (general) | Cold initialization exceeds common LSP client timeouts (~38 s single-thread; type-inference add-on used to add ~48 s and OOM on macro-dense workspaces). Type-inference arm is now ~370 ms whole-repo after the 2026-10-28 caches + expansion budget (see the perf commit). With a valid workspace cache this drops to ~2 s (after recent mtime-based consistency-check optimization), but the first run on a fresh machine / after cache invalidation can time out clients such as the MCP Bridge (30 s). | **High** — first-time user experience |
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `analysis/identifier/rules/library-import.sls` | `alias` modifier does not add refs when used inside a `(library ...)` form (script-level `import-process` works fine) | Low — `alias` is rare in library headers |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
