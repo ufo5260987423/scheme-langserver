@@ -2,13 +2,16 @@
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright (c) 2026 WANG Zheng
 ;; SPDX-License-Identifier: MIT
-;; Differential guard: the hand-written match-family type rule
-;; (self-defined-rules/ufo-match/match.sls) vs the IR flow extractor
-;; (ir-auto-route:call-site-flows), which is true by construction. Every
-;; binding the IR says a pattern variable occupies MUST receive at least
-;; one substitution from the family rule -- this is the drift insurance
-;; for hand-written pattern semantics (the retired match-process died by
-;; silently drifting from the macro's real behavior).
+;; Differential guard: the expansion-driven production type inference
+;; (type:expand-and-infer via ir-auto-route:expand-call-site) vs the IR
+;; flow extractor (ir-auto-route:call-site-flows), which is true by
+;; construction. Every binding the IR says a pattern variable occupies
+;; MUST receive at least one substitution from the production path --
+;; this is the drift insurance against silently dropped bindings in the
+;; rebuild/virtual-document glue (the production bug class that killed
+;; the type chain on the w reference in (car w)). The original guarded
+;; the hand-written match-family rule, retired 2026-10-27; the test now
+;; guards its replacement architecture.
 #!r6rs
 
 (import
@@ -35,7 +38,7 @@
         [(string=? (substring text i (+ i l)) sub) (loop (+ i 1) (+ k 1))]
         [else (loop (+ i 1) k)]))))
 
-(test-begin "match-family rule coverage vs IR flow ground truth")
+(test-begin "expansion-driven inference coverage vs IR flow ground truth")
   (let* ([workspace-instance (init-workspace fixture 'txt 'r6rs #f #t)]
       [root-library-node (workspace-library-node workspace-instance)]
       [document (file-node-document
@@ -45,7 +48,7 @@
       [match-node (pick-index-node-from index-node-list (nth-bias text "(match " 0))]
       ;; the IR ground truth (oracle only -- no production caller)
       [flows (ir-auto-route:call-site-flows root-library-node document match-node)]
-      ;; every IR flow binding must have been typed by the family rule
+      ;; every IR flow binding must have been typed by the production pass
       [uncovered
         (filter
           (lambda (flow)
@@ -55,7 +58,7 @@
                 (null? (index-node-substitution-list node)))))
           flows)])
     (test-assert "IR flow extractor produced ground truth" (pair? flows))
-    (test-assert "every IR-reported pattern binding is typed by the family rule"
+    (test-assert "every IR-reported pattern binding is typed by the production pass"
       (null? uncovered)))
 (test-end)
 
