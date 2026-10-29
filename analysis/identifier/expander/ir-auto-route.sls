@@ -83,6 +83,11 @@
         (reverse (cons s acc))))))
 
 (define (private:probe-in env head-symbol)
+  ;;Probe that expansion in `env` really engages the head macro. The probe
+  ;;form is ufo-match-shaped -- adequate for the match family (and any macro
+  ;;accepting literals/vectors), but arbitrary macros may reject it; since
+  ;;the 2026-10-29 generic arm it is ADVISORY at the bootstrap-source call
+  ;;site and strict only for the interaction fallback.
   (guard (e [else #f])
     (let ([ir (sc-expand `(,head-symbol 1 [x x]) env #t)])
       (and (record? ir)
@@ -220,7 +225,23 @@
                     (load source)
                     (let ([built (or (private:build-env library-identifier import-sets workspace-root)
                                     (private:fresh-env library-identifier))])
-                      (and built (private:probe-in built head-symbol) built)))])
+                      (and built
+                        (begin
+                          ;ADVISORY probe: private:probe-in uses a
+                          ;ufo-match-shaped probe form that arbitrary macros
+                          ;need not accept (the 2026-10-29 generic arm reaches
+                          ;macros with any syntax). With a source-bootstrapped
+                          ;env the head is bound BY CONSTRUCTION (load +
+                          ;environment succeeded), so a probe failure must not
+                          ;reject the env; the real expansion remains the
+                          ;arbiter (miss -> negative cache). The interaction
+                          ;fallback keeps the strict two-sided probe -- that
+                          ;is where lenient false-positives bit (2026-10-21).
+                          (unless (private:probe-in built head-symbol)
+                            (when (getenv "REPLAY_TRACE")
+                              (fprintf (console-output-port) "[ir-auto-route] advisory probe miss: ~a in ~a~%"
+                                head-symbol source)))
+                          built))))])
               (hashtable-set! private:env-cache-ht key (or env 'failed))
               (set-box! private:env-source
                 (if env (cons 'loaded source) 'unavailable))
@@ -557,6 +578,13 @@
       (reverse group-keys))
     inserted))
 
+;Rebuilt-IR-node budget for ONE expansion on the IDENTIFIER side, enforced
+;in chez-ir-call-site-facts' record-walk via chez-ir-rebuild-budget (the
+;broad macro arm of 2026-10-29 exposes the walk to arbitrary user macros;
+;the type side's cap in macro-expansion.sls guards the REBUILD, this one
+;guards the WALK). Keep the two limits in sync.
+(define private:max-expansion-nodes 100000)
+
 (define (private:try root-file-node root-library-node document call-node)
   ;; Returns #t when the IR path handled the call site, #f otherwise (the
   ;; call site then gets no expansion-derived references).
@@ -580,9 +608,10 @@
         (let* ([form (chez-ir-find-define-containing forms (index-node-start call-node))]
             [_ (or form (raise 'form-not-found))]
             [t0 (current-time 'time-monotonic)]
-            [ir (if (eq? (private:env-mode env-pair) 'fresh)
-                  (private:expand-fresh (car env-pair) form)
-                  (chez-ir-expand form (car env-pair)))]
+            [ir (parameterize ([chez-ir-rebuild-budget (cons 0 private:max-expansion-nodes)])
+                  (if (eq? (private:env-mode env-pair) 'fresh)
+                    (private:expand-fresh (car env-pair) form)
+                    (chez-ir-expand form (car env-pair))))]
             [refs (let-values ([(r b) (chez-ir-call-site-facts ir path)])
                     (private:merge-use-less-bindings r b))]
             [inserted (private:synthesize! refs document call-node)]

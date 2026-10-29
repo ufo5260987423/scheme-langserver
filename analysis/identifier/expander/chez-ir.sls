@@ -227,32 +227,42 @@
 
 (define (private:record-walk ir proc)
   ;;proc: (record rtd) -> boolean; #t stops the walk with #t. Returns #f when
-  ;;the whole tree was visited without a #t.
-  (let ([seen (make-eq-hashtable)])
-    (define (visit o)
-      (cond
-        [(pair? o)
-          (or (visit (car o)) (visit (cdr o)))]
-        [(annotation? o)
-          ;annotations wrap IR subtrees (and carry the source positions) --
-          ;descend into the wrapped expression
-          (visit (annotation-expression o))]
-        [(record? o)
-          (if (eq-hashtable-ref seen o #f)
-            #f
-            (begin
-              (eq-hashtable-set! seen o #t)
-              (let ([rtd (guard (e [#t #f]) (#%$record-type-descriptor o))])
-                (if (not rtd)
-                  #f
-                  (or (proc o rtd)
-                    (let loop ([vals (private:field-refs o rtd)])
-                      (cond
-                        [(null? vals) #f]
-                        [(visit (car vals)) #t]
-                        [else (loop (cdr vals))])))))))]
-        [else #f]))
-    (visit ir)))
+  ;;the whole tree was visited without a #t. When chez-ir-rebuild-budget is
+  ;;set (identifier side, 2026-10-29: the broad macro arm exposes walkers to
+  ;;arbitrary user macros), the counter fires DURING the walk -- aborting a
+  ;;pathological expansion's traversal, not just its reconstruction.
+  (let ([budget (chez-ir-rebuild-budget)])
+    (define (burn!)
+      (when budget
+        (set-car! budget (+ (car budget) 1))
+        (when (> (car budget) (cdr budget))
+          (raise 'expansion-too-large))))
+    (let ([seen (make-eq-hashtable)])
+      (define (visit o)
+        (burn!)
+        (cond
+          [(pair? o)
+            (or (visit (car o)) (visit (cdr o)))]
+          [(annotation? o)
+            ;annotations wrap IR subtrees (and carry the source positions) --
+            ;descend into the wrapped expression
+            (visit (annotation-expression o))]
+          [(record? o)
+            (if (eq-hashtable-ref seen o #f)
+              #f
+              (begin
+                (eq-hashtable-set! seen o #t)
+                (let ([rtd (guard (e [#t #f]) (#%$record-type-descriptor o))])
+                  (if (not rtd)
+                    #f
+                    (or (proc o rtd)
+                      (let loop ([vals (private:field-refs o rtd)])
+                        (cond
+                          [(null? vals) #f]
+                          [(visit (car vals)) #t]
+                          [else (loop (cdr vals))])))))))]
+          [else #f]))
+      (visit ir))))
 
 (define (private:global-lookup-record? o rtd identifier-string)
   ;;#t when record o is (<expr> ... ($top-level-value '<name>) ...) -- i.e. o

@@ -50,25 +50,21 @@
       [(and (equal? library-identifiers '((liii base))) (equal? expressions '(typed-lambda)))
         (add-rule-procedure rules `((,typed-lambda-process) . ,target-identifier))]
 
-      ;Eager auto-expansion -- now IR-ONLY (route 3, ir-auto-route; route 2's
-      ;generator pipeline was retired 2026-10-21 per
-      ;doc/design/route2-retirement-proposal.md). Two macro families:
-      ;ufo-match's six, and the langserver's own match-index-node from (scheme-langserver virtual-file-system index-node) (2026-10-21).
-      ;The IR path needs NO langserver-side expander -- Chez's own expander
-      ;does the work, resolving the head against the env bootstrapped by
-      ;ir-auto-route from the WORKSPACE'S OWN copy of the head's library
-      ;(per-call-site import resolution; source-first, deterministic). On ANY
-      ;failure the call site silently gets no expansion-derived references:
-      ;see ir-auto-route:stats / REPLAY_TRACE. OPT-IN since 2026-10-29: the
-      ;whole mechanism is gated by the ir-auto-route:enabled? parameter
-      ;(default off; run.ss -a enable), and the only remaining self-check is
-      ;chez-ir-available? on Chez builds lacking the undocumented APIs.
-      [(and (equal? library-identifiers '((ufo-match)))
-          (find (lambda (e) (equal? expressions (list e)))
-            '(match match-next match-one match-check-ellipsis match-two match-check-identifier)))
-        (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
-      [(and (equal? library-identifiers '((scheme-langserver virtual-file-system index-node)))
-          (equal? expressions '(match-index-node)))
+      ;Generic arm -- ANY define-syntax-headed call site whose head resolved
+      ;to a library (root-ancestor carries a non-empty library-identifier),
+      ;not just the ufo-match family / match-index-node: the IR path is
+      ;macro-agnostic (head symbol + library come from the call site itself,
+      ;the env is bootstrapped from the workspace's own copy of THAT
+      ;library), so the two retired family arms (2026-10-29) were the last
+      ;family-specific holdouts. OPT-IN via ir-auto-route:enabled?
+      ;(default off; run.ss -a enable). Hand rules above keep priority (the
+      ;include arm has file-linkage side effects, ufo-try/goldfish carry
+      ;semantics beyond reference synthesis). Unresolvable heads (empty
+      ;library-identifier, e.g. script-level or let-syntax-bound macros)
+      ;fall through silently, as before.
+      [(and (find (lambda (t) (eq? 'syntax-variable t))
+              (map identifier-reference-type top))
+         (find (lambda (lib) (not (null? lib))) library-identifiers))
         (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
       [else rules])))
 )

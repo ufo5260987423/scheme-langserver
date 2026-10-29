@@ -1,6 +1,7 @@
 # Project-level configuration for the scheme-langserver MCP bridge.
-# Single-thread mode: measured fastest at init on this repo (~50 ms cold vs
-# ~0.55-0.95 s multi-thread, 2026-10-29). The persisted workspace cache is
+# Single-thread mode: measured fastest at init on this repo (load ~2-3)
+# compared to multi-thread; absolute startup is dominated by Chez boot +
+# image load (~4 s) plus workspace init. The persisted workspace cache is
 # kept for instant diagnostics after restart, not for init speed -- a warm
 # cache load (~300 ms) currently costs more than a cold init.
 

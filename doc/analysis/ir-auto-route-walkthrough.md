@@ -52,7 +52,7 @@ step (abstract-interpreter.sls)
   (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
 ```
 
-`ir-auto-route:try-expand` 返回一个零参数调用的 rule 工厂 thunk `(lambda (root-file-node root-library-node document index-node) ...)`， 符合 rule 调用约定；这个 rule 对**每一个宏调用点**执行一次。 路由器里两条臂：ufo-match 六宏族（库 `(ufo-match)`：match / match-next / match-one / match-check-ellipsis / match-two / match-check-identifier）， 以及 match-index-node（库 `(scheme-langserver virtual-file-system index-node)`， 2026-10-21 泛化加入）。历史对照：route 2 时代需要 langserver 侧 expander（`private:find-expander` 已删）且路由臂会包裹 route-2 规则； OPT-IN：整条机制（标识符侧 + 类型侧）自 2026-10-29 起由 `ir-auto-route:enabled?` 参数门控（默认关闭，`run.ss -a enable` 打开；init-server 的 auto-expand? 参数在线程池创建前设置，fork 的 worker 自动继承）；机制内部完全宏无关。
+`ir-auto-route:try-expand` 返回一个零参数调用的 rule 工厂 thunk `(lambda (root-file-node root-library-node document index-node) ...)`， 符合 rule 调用约定；这个 rule 对**每一个宏调用点**执行一次。 路由器里现在是**一条通用臂**（2026-10-29 起）：任何 root-ancestor 带非空 library-identifier 且类型为 `syntax-variable` 的 head 一律挂 try-expand——机制本来就宏无关（head 符号与库来自调用点自身，env 从工作区自有的那份宏源码引导），早先的 ufo-match 六宏族臂和 match-index-node 臂只是最先验证的两个家族，已被通用臂覆盖删除；include/resolve、ufo-try、goldfish 三个手写臂仍排在通用臂之前（有副作用/额外语义）。通用臂还暴露了一个探针缺陷并随之修复：`private:probe-in` 用 ufo-match 形状的探针 `(head 1 [x x])`，任意宏可能拒绝该形状——对 source 引导的 env，head 按构造已绑定（load + environment 成功），探针失败降为**建议性**（REPLAY_TRACE 可见），真正裁决交给实际展开（miss → 负缓存）；interaction 兜底保持双向严格探针（宽松假阳性只在那里真实发生过）。历史对照：route 2 时代需要 langserver 侧 expander（`private:find-expander` 已删）且路由臂会包裹 route-2 规则； OPT-IN：整条机制（标识符侧 + 类型侧）自 2026-10-29 起由 `ir-auto-route:enabled?` 参数门控（默认关闭，`run.ss -a enable` 打开；init-server 的 auto-expand? 参数在线程池创建前设置，fork 的 worker 自动继承）；机制内部完全宏无关。
 
 ## 1. ir-auto-route.sls —— 编排层（688 行）
 
@@ -177,7 +177,7 @@ fresh env 不可变、对自由标识符严格，直接 sc-expand 用户 define 
 
 ## 3. 类型侧的同源入口（expansion-driven，2026-10-27 第三轮最终架构）
 
-类型侧不走 identifier router 的 ufo-match 臂，而是 `analysis/type/substitutions/self-defined-rules/router.sls` 的 **generic macro arm**：head 的 root-ancestor 类型为 `syntax-variable` 的调用点一律挂上 `(macro-infer root-library-node document index-node)`，即 `type:expand-and-infer`（`analysis/type/substitutions/macro-expansion.sls`）， 内部调 `ir-auto-route:expand-call-site`：同一份 forms/env/展开，但 §1⑦ 换成 `chez-ir->annotated-sexp` 重建树，让真实生成器在虚拟文档上跑， 结果按源位置映射回调用点。
+类型侧不走 identifier router 的宏臂（两侧同受 `ir-auto-route:enabled?` 门控），而是 `analysis/type/substitutions/self-defined-rules/router.sls` 的 **generic macro arm**：head 的 root-ancestor 类型为 `syntax-variable` 的调用点一律挂上 `(macro-infer root-library-node document index-node)`，即 `type:expand-and-infer`（`analysis/type/substitutions/macro-expansion.sls`）， 内部调 `ir-auto-route:expand-call-site`：同一份 forms/env/展开，但 §1⑦ 换成 `chez-ir->annotated-sexp` 重建树，让真实生成器在虚拟文档上跑， 结果按源位置映射回调用点。
 
 `expand-call-site` 的负缓存顺序有讲究：**先查负缓存 → head refs → find-define（最便宜的确定性拒绝）→ env 引导 → 展开**，因为绝大多数 调用点根本扩不了（vendored 库里 define-syntax 内部的几千个宏调用）， 把便宜的拒绝放前面。负缓存按文档 + bias 键，以 text 一致性失效、 成功驱逐（success-eviction）。
 

@@ -358,13 +358,18 @@ The `identifier-reference` record has a mutable `usage-count` field (default 0).
 
 ### Macro analysis architecture (route 2 RETIRED 2026-10-21)
 
-Automatic macro resolution is IR-ONLY and macro-agnostic: the router
-attaches (ir-auto-route:try-expand) for the ufo-match family (match,
-match-next, match-one, match-check-ellipsis, match-two, match-check-
-identifier) AND for match-index-node (library (scheme-langserver
-virtual-file-system index-node)); ir-auto-route derives the head symbol
-and its library from each call site and bootstraps the env from the
-workspace's own copy of THAT library (per-source x per-library caching): `analysis/identifier/expander/ir-auto-route.sls` answers the router's family
+Automatic macro resolution is IR-ONLY and macro-agnostic: the identifier
+router attaches (ir-auto-route:try-expand) through ONE GENERIC arm (since
+2026-10-29) -- any define-syntax-headed call site whose root-ancestor carries
+a non-empty library-identifier -- subsuming the retired ufo-match-family and
+match-index-node arms (the mechanism never needed family knowledge: it
+derives the head symbol and its library from each call site and bootstraps
+the env from the workspace's own copy of THAT library, per-source x
+per-library caching); hand rules (include/resolve, ufo-try, goldfish) keep
+priority. One probe consequence: private:probe-in's ufo-match-shaped probe is
+ADVISORY for source-bootstrapped envs (arbitrary macros may reject the probe
+shape; the head is bound by construction after load + environment) and strict
+only for the interaction fallback. `analysis/identifier/expander/ir-auto-route.sls` answers the router's generic
 arm -- Chez's own expander (via the undocumented `(sc-expand x env #t)`
 switch, wrapped by `analysis/identifier/expander/chez-ir.sls`) produces the parsed
 Lsrc IR with per-expression/reference/binding source locations, from which
@@ -490,7 +495,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 
 | Location | Issue | Impact |
 |----------|-------|--------|
-| `scheme-langserver` (general) | ~~Cold initialization exceeds common LSP client timeouts (~38 s single-thread; type-inference add-on used to add ~48 s and OOM on macro-dense workspaces).~~ **Resolved**: re-measured 2026-10-29 on this repo (820 files) — cold init with full identifier analysis is ~50 ms single-thread, ~300 ms with type inference; peak RSS ~830 MB. See §11 for the measurement table. Residual risk: workspaces far larger than this repo, or a cold machine still compiling `.so` files, can be slower — measure before assuming. | **Resolved** (2026-10) — keep an eye on very large workspaces |
+| `scheme-langserver` (general) | ~~Cold initialization exceeds common LSP client timeouts (~38 s single-thread; type-inference add-on used to add ~48 s and OOM on macro-dense workspaces).~~ **Resolved**: the eager-analysis-era cold start is gone; 2026-10-29 measurements on this repo (820 files, load ~2–3): full LSP handshake ~8 s with macro resolution off, ~18 s with it on (image load + init; see §11 — an earlier 50 ms figure was a timer-starvation artifact). Peak RSS ~830 MB. Residual risk: the gate-on server-mode overhead (+10 s) is GC pressure not yet investigated, and workspaces far larger than this repo can be slower — measure before assuming. | **Resolved with caveats** (2026-10) — investigate the macro-GC interaction; watch very large workspaces |
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `analysis/identifier/rules/library-import.sls` | `alias` modifier does not add refs when used inside a `(library ...)` form (script-level `import-process` works fine) | Low — `alias` is rare in library headers |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
@@ -611,26 +616,32 @@ Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstr
 
 ### Current implementation (`kimi` branch)
 
-> **Re-measured 2026-10-29** (8 cores, warm `.so` cache, this repo as the
-> fixture: 820 files incl. Akku deps, 128 project `.sls`). The numbers below
-> supersede the pre-2026-10-28 table, which described the eager-analysis era.
+> **Re-measured 2026-10-29, afternoon, system load ~2–3** (8 cores, warm
+> `.so` cache, this repo as the fixture: 820 files incl. Akku deps, 128
+> project `.sls`). **Caveat: an earlier set of numbers recorded this morning
+> (50 ms init etc.) turned out to be timer-starvation artifacts** — Chez's
+> `time-monotonic` is serviced by a timer thread, and CPU-saturated runaway
+> processes on the same machine froze it mid-measurement. Treat all
+> single-digit-millisecond figures from loaded machines with suspicion; under
+> load these numbers degrade roughly 2–20x.
 
 | Scenario | Measured |
 |----------|----------|
-| `init-workspace` single-thread, incl. full identifier analysis of all 820 files | **~50 ms** |
-| same + type inference | ~300 ms |
-| `init-workspace` multi-thread | ~0.55–0.95 s (threaded-map sync overhead dominates at 18 batches; MT is a net loss at init) |
+| `init-workspace` ST, full identifier analysis, macro resolution OFF | ~0.1–0.2 s |
+| same, macro resolution ON (broad arm, 199 call sites on this repo) | ~0.3–0.4 s |
+| same + type inference | ~0.2–0.7 s (high variance) |
+| Full LSP handshake (process start → initialize response → exit), macro OFF | ~8 s wall (~2 s Chez boot + ~2 s image load + init) |
+| Full LSP handshake, macro ON | ~18 s wall — the +10 s over script mode suggests GC pressure from 199 sc-expands against the 40 MB image; not yet investigated |
 | Single-file re-analysis (didOpen-equivalent) | 25–50 ms |
-| Full re-analysis, all configurations | 0.3–1 s |
 | Peak RSS (full analysis + MT + type inference) | ~830 MB |
 | Cache save | ~0.6 s → 25 MB `workspace.fasl` |
-| Cache load (warm) | ~300 ms (25 MB `fasl-read` + per-file mtime consistency check) |
+| Cache load (warm) | ~300 ms (25 MB `fasl-read` + per-file mtime consistency check) — still slower than a cold init for this repo |
 
 **Consequence: the cache is currently a net loss at init.** Loading it costs
-~300 ms while a cold init costs ~50 ms — six times slower — because the cached
-payload holds the *unanalyzed* VFS (references are deliberately not persisted
-across versions; see the stale-diagnosis trap below) and the mtime sweep over
-820 files dominates the load. The cache remains justified only for diagnostics
+~300 ms while a cold init costs ~100–200 ms because the cached payload holds
+the *unanalyzed* VFS (references are deliberately not persisted across
+versions; see the stale-diagnosis trap below) and the mtime sweep over 820
+files dominates the load. The cache remains justified only for diagnostics
 persistence and for pathological workspaces where cold init genuinely exceeds
 it; measure before enabling `cache-path`.
 
