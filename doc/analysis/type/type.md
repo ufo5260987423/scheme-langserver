@@ -106,7 +106,7 @@ The dispatcher distinguishes five coarse shapes:
 | `procedure`, `variable`, `getter`, `setter`, `predicator`, `constructor` | `application-process` |
 | `meta` + symbol `define` | `define-process` |
 | `meta` + symbol `lambda` | `lambda-process` |
-| `meta` + symbol `let` / `let*` / `letrec` / `letrec*` | `let-process` / `let*-process` / `letrec-process` |
+| `meta` + symbol `let` / `let*` / `letrec` / `letrec*` | `let-process` / `let*-process` (`let*.sls` covers `letrec`/`letrec*`) |
 | `meta` + symbol `if` | `if-process` |
 | `meta` + symbol `cond` | `cond-process` |
 | `meta` + symbol `case-lambda` | `case-lambda-process` |
@@ -208,7 +208,7 @@ For `(lambda (p₁ p₂ …) body)`:
 
 Because `body` and each `pᵢ` are themselves `index-node`s, the type remains symbolic until interpretation.
 
-### 4.4 `let.sls` / `letrec.sls` – Binding Forms
+### 4.4 `let.sls` / `let*.sls` – Binding Forms
 
 `let` is treated as syntactic sugar for lambda application:
 
@@ -225,7 +225,7 @@ The rule therefore:
 
 Named let receives additional handling: the loop identifier is given a function type constructed from the binding parameters and the body, exactly like `lambda`.
 
-`letrec-process` is almost identical to `let-process`; the key difference is that the loop identifier is not present, so no extra lambda wrapper is built.
+`let*-process` additionally covers `letrec`/`letrec*` (the standalone `letrec.sls` was removed and its dispatch unified into `let*.sls`); the key difference from plain `let` is that the loop identifier is not present, so no extra lambda wrapper is built.
 
 ### 4.5 `if.sls` – Conditional
 
@@ -290,12 +290,16 @@ The type of a `begin` form is the type of its last expression:
 (extend-index-node-substitution-list index-node (car (reverse (index-node-children index-node))))
 ```
 
-### 4.11 Self-Defined Rules (`ufo-match`, `ufo-try`)
+### 4.11 Self-Defined Rules & Macro Call Sites (`ufo-try`, generic macro arm)
 
-The router in `self-defined-rules/router.sls` allows external libraries to register custom rules. Currently supported:
+The router in `self-defined-rules/router.sls` has two arms today:
 
-- **`ufo-match`** – `match-process` recognizes `(? pred var)` patterns and attaches all available predicate identifiers (symbols ending in `?`) to the pattern variable.
-- **`ufo-try`** – `try-process` attaches union types for exception clauses.
+- **`ufo-try`** – `try-process` keeps a hand-written rule because `try` is a control-flow form, not a binder pattern; it attaches union types for exception clauses.
+- **Generic macro arm** – any call site whose head resolves to a `define-syntax` macro (root-ancestor type `syntax-variable`) is routed to `(macro-infer root-library-node document call-node)`, i.e. `type:expand-and-infer` in `analysis/type/substitutions/macro-expansion.sls`. `run-generator` (the generator's own `construct-substitutions-for`) is injected by `generator.sls` to break the import cycle generator → router → macro-expansion → generator.
+
+  The expansion-driven pipeline: Chez expands the enclosing define (via `ir-auto-route:expand-call-site`, the same forms/env machinery as the identifier side) → the annotated expansion is rebuilt into a virtual index-node document that inherits the caller's reference table → the real generator runs over it → substitutions are copied back onto the original call site's nodes by source position. No hand-written pattern knowledge; macro-agnostic by construction. A per-expansion node budget (`private:max-expansion-nodes = 100000`) aborts pathological expansions during the rebuild, and unexpandable call sites are negatively cached per document + text identity.
+
+  > History: the earlier hand-written `ufo-match` rule > (`self-defined-rules/ufo-match/match.sls`) and the IR flow-language > extractor were retired on 2026-10-27 in favour of this architecture. > The IR flow extractor survives as the differential-test oracle > (`tests/analysis/type/substitutions/test-macro-rules-vs-ir.sps`). > Mechanism walkthrough: `doc/analysis/ir-auto-route-walkthrough.md`.
 
 ---
 
@@ -944,7 +948,9 @@ A standalone benchmark runner was added at `bin/benchmark-type-inference.ss`. It
 - `type:interpret-result-list` on specific functions (`binary-search`, `natural-order-compare`, `assq-ref`)
 - End-to-end API latency (`hover`)
 
-Key baseline numbers (before any optimization):
+> **Baseline note (2026-10-29):** all numbers in §10.3 are the 2026-06 pre-optimization baseline (single-function `binary-search cl` measurements). After the 2026-10-28 resource-control work (macro-expansion caches, expansion budget, walker memoization), whole-repo init **with** type inference measures ~474 ms / 471 MB peak. The attempt-by-attempt failure records below remain valid as methodology; the baseline table does not describe the current system.
+
+Key baseline numbers (2026-06, before any optimization):
 
 | Benchmark | Real | Results |
 |-----------|------|---------|
@@ -1015,10 +1021,10 @@ Based on the above attempts, the following interventions are known to have real,
 | Memoization (`type:interpret`) | ❌ Reverted | Negative (pollutes shared `env`) |
 | Memoization (`type:interpret-result-list`) | ❌ Reverted | ~0% (blocked by `memory` truncation) |
 
-The remaining bottleneck is the **depth-10 expansion of highly branching recursive functions**. The most promising fixes not yet attempted are:
+The remaining bottleneck is the **depth-10 expansion of highly branching recursive functions**. The mitigations and their status:
 
-1. **Lower `PRIVATE-MAX-DEPTH`** (e.g. from 10 → 3–4) — trivial one-line change.
-2. **Result-size budget** — hard cap the number of items in `env.result-list` (e.g. 1,000) and truncate to `something?`.
+1. **Lower `PRIVATE-MAX-DEPTH`** — not taken; kept at 10.
+2. **Result-size budget** — ✅ **implemented** (`PRIVATE-MAX-RESULTS = 500` in `interpreter.sls`; see `doc/analysis/type/evaluation-report.md` for the tuning data).
 3. **Cache `type:partially-solved?`** — the cartesian-product pruner calls this predicate for every element on every tier; memoizing it would avoid repeated tree traversals.
 4. **Global visited set** — replace (or augment) chain-based `memory` with a per-top-level-call hash set so that cross-function recursion (`binary-search` ↔ `private-collect`) is detected regardless of call path.
 
@@ -1035,15 +1041,17 @@ The remaining bottleneck is the **depth-10 expansion of highly branching recursi
 | `analysis/type/substitutions/rules/application.sls` | Vanilla function application. |
 | `analysis/type/substitutions/rules/lambda.sls` | Lambda abstraction types. |
 | `analysis/type/substitutions/rules/let.sls` | `let`, `let*`, named `let`. |
-| `analysis/type/substitutions/rules/letrec.sls` | `letrec`, `letrec*`. |
+| `analysis/type/substitutions/rules/let*.sls` | `let*`, `letrec`, `letrec*` (named-let dispatch unified here; standalone `letrec.sls` removed). |
 | `analysis/type/substitutions/rules/if.sls` | Conditional union types. |
 | `analysis/type/substitutions/rules/define.sls` | `define` for variables and procedures. |
 | `analysis/type/substitutions/rules/case-lambda.sls` | Overloaded arities. |
 | `analysis/type/substitutions/rules/record.sls` | `define-record-type` types. |
 | `analysis/type/substitutions/rules/cond.sls` | Multi-branch conditional. |
 | `analysis/type/substitutions/rules/begin.sls` | Sequencing. |
-| `analysis/type/substitutions/self-defined-rules/router.sls` | Extensible rule dispatcher. |
-| `analysis/type/substitutions/self-defined-rules/ufo-match/match.sls` | `ufo-match` pattern support. |
+| `analysis/type/substitutions/rules/unless.sls` | `unless` (negated conditional). |
+| `analysis/type/substitutions/rules/define*.sls` / `lambda*.sls` | S7 `define*` / `lambda*`. |
+| `analysis/type/substitutions/self-defined-rules/router.sls` | Extensible rule dispatcher (`ufo-try` arm + generic macro arm). |
+| `analysis/type/substitutions/macro-expansion.sls` | Expansion-driven macro type inference (`type:expand-and-infer`; §4.11). |
 | `analysis/type/domain-specific-language/interpreter.sls` | `type:interpret`, `type:->?`, macro expander, Cartesian-product pruner. |
 | `analysis/type/domain-specific-language/inner-type-checker.sls` | Predicates: `inner:trivial?`, `inner:lambda?`, `inner:macro?`, `inner:executable?`, `inner:?->pair`. |
 | `analysis/type/domain-specific-language/syntax-candy.sls` | `candy:matchable?`, `candy:match-left`, `candy:match-right`, segment-based DP matcher. |

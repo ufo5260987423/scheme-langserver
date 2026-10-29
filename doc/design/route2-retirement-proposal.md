@@ -8,7 +8,7 @@
 > 门控已移除——上游正推进将 `(sc-expand x env #t)`、`#%$record-type-descriptor`、
 > Lsrc IR 文档化，未文档化不再是保留逃生门的理由。文中提及门控的段落均为历史记录。
 > 依据文档：`doc/analysis/chez-sc-expand-records-switch.md`（机制与全部落地记录）、
-> `doc/analysis/macro-resolution-profile.md`（route 2 成本结构）、
+> `doc/design/macro-resolution-profile.md`（route 2 成本结构，历史档案）、
 > `doc/analysis/macro-analysis-framework.md`（E1–E4 理论框架）。
 > 关键模块：`analysis/identifier/expander/chez-ir.sls`（IR 提取）、
 > `analysis/identifier/expander/ir-auto-route.sls`（并行路径）、

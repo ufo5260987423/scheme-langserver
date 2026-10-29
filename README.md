@@ -195,7 +195,7 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 12. [Macro resolution notes](./doc/analysis/identifier.md) — debugging notes for macro identifier capture
 13. [Syntax candy DSL](./doc/analysis/type/domain-specific-language/syntax-candy.md) — pattern matcher for type-rule authoring
 14. [Record type inference analysis](./doc/analysis/type/record-inference.md) — `define-record-type` in the type system
-15. [Type inference benchmark](./doc/analysis/type/benchmark.md) — performance measurement methodology
+15. [Type inference performance field notes](./doc/analysis/type/type.md#103-performance-optimization-attempts-field-notes) — benchmark methodology and dead-end records
 16. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
 
 ## License

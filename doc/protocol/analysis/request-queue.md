@@ -2,7 +2,7 @@
 
 In **multi-threaded mode**, scheme-langserver uses a single-consumer request queue to process LSP requests serially, and leverages Chez Scheme's **engine** mechanism to assign preemptible time slices (ticks) to each task. This balances long-running analysis (such as type inference) with document consistency.
 
-> **Note**: The "peephole optimization merging didChange" strategy mentioned in the old document no longer exists in the current implementation. The current queue uses a model of **strict serial execution + task deduplication/cancellation**.
+> **Note**: An older essay on synchronization (tape-computer analogy, reader-writer-lock discussion, peephole `didChange` merging) was removed on 2026-10-29; the merging strategy it described never shipped in this form. A resolved multi-thread incident investigation (threaded-map exception hang) survives as Appendix A below.
 
 ---
 
@@ -194,41 +194,56 @@ If the server does not run in multi-threaded mode (`thread-pool` is `#f`), then 
 | Document sync protection | `didOpen`/`didChange`/`didClose` are infinitely recharged in `expire`, ensuring they are never interrupted |
 | Timeout purpose | Mainly interrupts long-running computation such as type inference, not ordinary requests |
 | Lock layering | `request-queue-mutex` guards queue metadata; `workspace-mutex` guards workspace mutation and teardown |
-## How dose Scheme-langserver synchronizing?
+---
 
-Indexing is responsible for the core features of scheme-langserver, and multi-threads play the most important role speeding it up. Although according to the official guide book [csug 9.5](https://cisco.github.io/ChezScheme/csug9.5), Chez Scheme provided a thread-system: 
-> With the exception of locks, locked increment, and locked decrement, the features of the thread system are implemented on top of the Posix thread system (pthreads) on non-Windows-based system and directly using the Windows API on Windows-based systems.  Consult the appropriate documentation on your system for basic details of thread creation and interaction.
+## Appendix A. Resolved incident: multi-thread silent hang (threaded-map exception propagation)
 
-This is especially exhausting, because in practice, the synchronizing mechanism is not only for runtime controlled with the control structures, but also for program coding by the design of APIs. "Unfortunately", Scheme and many other Lisp dialects have extreme flexible control structures. For this cause, corresponding open-source implementation is truly rare. For example, you can hardly find any reader-writer-lock implementation in Scheme as in C++ for you may not even know which process in your program is locked.
+> Investigation record, concluded. **Fix (option A below) was implemented in `analysis/workspace.sls` (`init-references` wraps the `threaded-map` lambda in `try`/`except`)**; the related `request-queue-pop` tail-recursion bug (queue corruption producing phantom "queue is empty" / `cdr: () is not a pair` crashes) was fixed 2026-09-23, and the pool worker was further hardened with an escape guard that logs and survives runtime-level errors (2026-09-25).
 
+### A.1 Symptom
 
-As like tape computer, a non-parallel mechanism view is that this machine rolls the tape in and out. With a `loop` program, the rolling trick may stop until the tape has been drilled enough holes for pre-defined conditions. This whole ahead-back process is called a continuation, and many Lisp programmers just coding with this so-called "continuation-passing style". Apparently, they're supposed to write static codes (maybe on a tape's former part, lol) and dynamically produce more other codes (maybe on the last tape's latter part). And this truly raise parallel model a big problem: how these tapes communicate? Can we avoid twists and knots? Especially for `call/cc`, it would act like harshly drag a tape from a running machine and stick it into another machine if it involved some competitive data in different threads.
-![Tape Computer](../../figure/tape-computer.png "Tape Computer")
+From production logs: `read-message` keeps receiving client requests (up to `shutdown`), while `send-message` stops entirely after some request id. The process neither exits nor spins CPU — a **worker thread permanently blocked**, not a main-loop crash.
 
-This document will describe what Scheme-langserver did with [request-queue.sls](../../../protocol/analysis/request-queue.sls).
+### A.2 Falsified hypothesis: workspace-mutex self-deadlock
 
-### What does Scheme-langserver hope synchronizing to do?
-1. To analyze static codes parallel, for rules catching identifiers.
-2. To respond API requests sequentially. 
-3. Schedule requests and optimize API responses. As [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) and [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#messageOrdering) said, many times we may cancel some requests with editor or by some API semantic definition. A peephole optimization should be applied. This is specifically useful for [LunarVim](https://www.lunarvim.org/) and some other editors' document synchronizing, for they always produce several `TextDocument/didChange` reducible requests.
+Initial theory: `init-references` holds `workspace-mutex`; ticks run out mid-batch; `expire` re-acquires `workspace-mutex` → self-deadlock if `with-mutex` were non-reentrant.
 
-### What mechanism dose Scheme-langserver implement?
-Scheme-langserver is supposed to receive requests sequentially but response parallelly. This means all edit operations are mostly about read and write index. And apparently, every write operations occurred sequential with such read interleaving. In addition, multi-threads should be involved at tiller data nodes(like [index-node.sls](../../../virtual-file-system/index-node.sls)). And the following mechanisms are what we're using:
-1. Thread pool with [ufo-thread-pool](https://github.com/ufo5260987423/ufo-thread-pool);
-2. Threaded functions with [ufo-threaded-functions](https://github.com/ufo5260987423/ufo-threaded-function);
+**Disproven by experiment**: Chez Scheme's `mutex-acquire`/`with-mutex` ARE reentrant for the owning thread.
 
-### Why doesn't Scheme-langserver Use Reader-writer-lock?
-As everyone known, reader-writer lock perform following properties. And these make it unlike the other 3 mechanisms, it should be carefully handled to avoid nested locking and many other things.
+```scheme
+(let ([m (make-mutex)])
+  (with-mutex m
+    (with-mutex m
+      (display "nested acquire succeeds\n"))))
+; => "nested acquire succeeds"
+```
 
-| Status     | Read Request | Write Request |
-|------------|--------------|---------------|
-| None       | Permit       | Permit        |
-| Has Reader | Permit       | Block         |
-| Has Writer | Block        | Block         |
+`expire` re-entering `workspace-mutex` on the same thread blocks nothing. (See AGENTS.md "Known Issues" for the retained caveat that `expire`'s mutex take is intent-correct but does not wait for sub-threads.)
 
-Someone supposes scheme-language that [workspace.sls](../../../analysis/workspace.sls) and [document.sls](../../../virtual-file-system/document.sls) provide `with-(workspace/document/documents)-(read/write)` syntax to assure above reader-writer-lock's properties. A common situation here is that APIs like `textDocument/didChange` and `textDocument/completion` may not disturb with each other in [scheme-langserver.sls](../../../scheme-langserver.sls), but they may conflict in [document.sls](../../../virtual-file-system/document.sls) and the situation is much more difficult and exceed the ability of reader-writer-lock.
+### A.3 Root cause: threaded-map exception propagation
 
-Because reader-writer-lock actually suppose that requests should be response parallelly as in many web APPs. It's not trivial, as [this page](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#dollarRequests) indicated.
+`.akku` 的 `ufo-threaded-function` 的 `optional-wrapper` runs the job as:
 
-### Parallel Identifier Catching
-With [file-linkage.sls](../../../analysis/dependency/file-linkage.sls), identifier catching is divided into several batches. This means in [workspace.sls](../../../analysis/workspace.sls), `threaded-map` can easily speed up working.
+```scheme
+(let ((value (apply proc args)))
+  (with-mutex (optional-mutex optional)
+    (optional-value-set! optional value)
+    (optional-finished?-set! optional #t)
+    (condition-broadcast (optional-condition optional))))
+```
+
+There is **no exception guard around `(apply proc args)`**. If `proc` (here `private-init-references`) raises or loops forever:
+
+1. the child-thread exception goes uncaught;
+2. `optional-finished?` is never set, `condition-broadcast` never fires;
+3. the parent's `de-optional` waits on the condition **forever** — `condition-wait` sleeps and consumes no engine ticks, so `expire` never fires either;
+4. `threaded-map` hangs, `workspace-mutex` stays held, both pool workers exhaust, and every subsequent request blocks → client sees `send-message` stop while `read-message` continues.
+
+### A.4 The fix and the long-term direction
+
+- **Implemented (option A, minimal)**: wrap the `threaded-map` lambda body in `try`/`except` at the call site (`analysis/workspace.sls`); on exception, record an "Analysis error" diagnosis on the document and return normally so `optional-finished?` is set and `workspace-mutex` is released. No external-library change.
+- **Not implemented (option B, architectural)**: shrink `workspace-mutex` to the serial pre-phase only and give each document its own mutex for per-document concurrency. Larger change, needs a race audit; parked as the long-term direction.
+
+### A.5 Why workspace-mutex cannot simply be removed
+
+It isolates document-sync writes (`did-change` mutating text/index-nodes/diagnoses) from background analysis (`step`, `clear-references-for`, `private-init-references`) so the workspace is never observed half-updated; releasing it before `threaded-map` would let `did-change` swap a document's `index-node-list` under a running `step` (a crash class fixed before in `c752796`).

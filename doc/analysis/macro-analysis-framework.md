@@ -324,6 +324,8 @@ inferScope 算法：
 
 **结论**：手写路线在理论上是**精确解**（无近似、无回传损耗），其代价是 each-宏族的劳动，且 soundness 无机械保证（取决于规则作者）。
 
+> **注记（2026-10-29）**：本节及以下映射引用的 route 2 实现（`analysis/identifier/expanders/`）已于 2026-10-21 退役删除，映射保留作理论参照；现行机制（IR 自动路由，同一理论坐标下的第三轮实现）见 [ir-auto-route-walkthrough.md](./ir-auto-route-walkthrough.md)。
+
 ### 4.2 路线二（实验性，已停用）：通用自动展开 = 极点 2 的实例
 
 数据流：`define-syntax:attach-generator`（E2 定义期）→ `router.sls` 调度（被注释）→ `expansion-generator->rule`（E1+E3 调用期）→ `private:shallow-copy`（E4 回传）。
@@ -487,4 +489,4 @@ expander-doc fallback 是文档级近似。若要语义精确，需要 scope-set
 
 ---
 
-以上 28 条文献的本地副本已归档至 [`macro-papers/`](./macro-papers/README.md)（28/28 已下载，含逐篇中文归纳与版本备注；#24 为手动从 ACM 下载，自动下载被 Cloudflare 拦截）。
+以上 28 条文献的本地副本曾归档至 `macro-papers/`（28/28 已下载，含逐篇中文归纳与版本备注；#24 为手动从 ACM 下载，自动下载被 Cloudflare 拦截）。**该目录不随仓库分发**（体积原因），如需调阅请从各文献的官方渠道获取。

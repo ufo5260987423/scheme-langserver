@@ -18,7 +18,7 @@
     (else #f)))
 ```
 
-有效值只有三个符号：
+CLI 值到内部符号的映射如下：
 
 | CLI 值 | 内部符号 | 说明 |
 |--------|----------|------|
@@ -26,6 +26,7 @@
 | `r7rs` | `'r7rs` | R7RS 语义。 |
 | `s7`   | `'s7`   | S7 Scheme 语义。 |
 | `goldfish` | `'s7` | Goldfish 基于 S7，因此内部统一用 `'s7`。 |
+| `fluent` | `'fluent` | Ansys Fluent 内嵌的 Petite Chez Scheme（`init-document` 中映射到 `'(fluent)` meta 库）。 |
 
 解析后的值存入 options hashtable，最后作为第 6 个参数传给 `init-server`：
 

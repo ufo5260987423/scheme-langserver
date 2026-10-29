@@ -21,8 +21,8 @@ type, or record layout changes, and falls back to a cold start. Because Chez
 FASL is platform-specific, do not share the cache file across machines or Chez
 versions. When only a few files change, the server performs an incremental
 refresh. Typical speedups range from ~20x on small fixtures to ~30–50x on
-larger projects. See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8
-and [AGENTS.md](./AGENTS.md) §11 for details.
+larger projects. See [doc/analysis/workspace.md](./analysis/workspace.md) §8
+and [AGENTS.md](../AGENTS.md) ("Common Traps & Debugging" — workspace cache) for details.
 
 ### File Filter
 

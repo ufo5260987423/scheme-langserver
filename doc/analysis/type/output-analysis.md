@@ -171,4 +171,4 @@ type:		(something? <- (inner:list? something? something? something? ) )
 | `(scheme-langserver analysis type domain-specific-language interpreter)` | 类型系统自身，自举测试 |
 | `(scheme-langserver util binary-search)` | 已知表现差的递归/索引算术案例 |
 
-完整评估结果见 [`benchmark.md`](benchmark.md) 和 [`evaluation-report.md`](evaluation-report.md) 。
+完整评估结果见 [`type.md` §10.3](type.md)（基准方法论与优化尝试记录）和 [`evaluation-report.md`](evaluation-report.md)。

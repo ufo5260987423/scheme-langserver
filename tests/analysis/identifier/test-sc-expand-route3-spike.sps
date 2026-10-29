@@ -125,7 +125,7 @@
 
       ;Performance gate: the whole replacement pipeline (sc-expand + IR walk +
       ;synthesis) must be far below route 2's measured cold-call cost (228 ms,
-      ;doc/analysis/macro-resolution-profile.md). Replay-hot route 2 is ~1 ms;
+      ;doc/design/macro-resolution-profile.md). Replay-hot route 2 is ~1 ms;
       ;the spike needs no replay cache to be in that class.
       (private:test-log "  [spike] pipeline ~a ms for ~a call-site refs (~a synthesized)~%"
         elapsed-ms (length gt) inserted)

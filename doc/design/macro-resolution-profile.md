@@ -1,8 +1,9 @@
 # 自动宏解析（路线二）match 宏展开性能 Profile
 
-> 范围：一次完整 `match` 宏调用点（5 子句）经 `expansion-generator->rule` 驱动的端到端级联——generator → 模板实例化 → 重解析 → 配对 → step（抽象解释器分析生成代码）→ shallow-copy 回传，含 memory cap 15 内层宏的完整递归。
-> 方法：对 `expansion-wrap.sls` 内部组件（generator 调用 / step / shallow-copy / store-template / flush-inserts / sync-to-parent）挂 `current-time` 计时器逐段累计（临时插桩，测量后已还原，不影响任何数字的代码路径）。真实 ufo-match 家族 6 宏，工作区为本项目自身（128 个 .sls）。
-> 日期：2026-10-10（同日修订：修复了模板存储的 root-pair 门槛——见 §2 与 §3，端到端数字为修复前测量；修复后相同调用点的重复展开坍缩到亚毫秒级）。本文只描述当前代码的开销结构；更早的 profile 与优化迭代记录见 git 历史。
+> **历史档案（2026-10-29 归档）**：本文测量的对象——route 2 宏展开管线 （`expansion-generator->rule`、`expansion-wrap.sls`、memory cap 15）——已于 2026-10-21 退役删除（决策记录见本目录 route2-retirement-proposal.md）， 现行机制为 IR 自动路由（见 doc/analysis/ir-auto-route-walkthrough.md）。 所有"ms/调用点"数字属于旧架构基线，仅作存档；仍有效的部分是 **测量方法论**（排他 vs 嵌套累计的口径陷阱、计时器把 GC 记到活跃帧）与 §1.4–§1.7 的同时代 init 优化史（vfs O(n²) 修复、MT 哈希表桶损坏事故、 load-process cheap-reject）。2026-10-28 性能 commit 后整库 init 474 ms / 峰值 471 MB，与本文基线相差约两个数量级。
+
+
+> 范围：一次完整 `match` 宏调用点（5 子句）经 `expansion-generator->rule` 驱动的端到端级联——generator → 模板实例化 → 重解析 → 配对 → step（抽象解释器分析生成代码）→ shallow-copy 回传，含 memory cap 15 内层宏的完整递归。 方法：对 `expansion-wrap.sls` 内部组件（generator 调用 / step / shallow-copy / store-template / flush-inserts / sync-to-parent）挂 `current-time` 计时器逐段累计（临时插桩，测量后已还原，不影响任何数字的代码路径）。真实 ufo-match 家族 6 宏，工作区为本项目自身（128 个 .sls）。 日期：2026-10-10（同日修订：修复了模板存储的 root-pair 门槛——见 §2 与 §3，端到端数字为修复前测量；修复后相同调用点的重复展开坍缩到亚毫秒级）。本文只描述当前代码的开销结构；更早的 profile 与优化迭代记录见 git 历史。
 
 ---
 
@@ -288,3 +289,23 @@ test-match-cascade-auto-resolve 14 全绿。
 ## 4. 测试盲区
 
 级联正确性由 `test-match-cascade-auto-resolve.sps`（14 断言）等 9 个测试锚定；模板存储/重放通路由 `test-expansion-template-replay.sps`（5 断言：list 根模板入库、#f path 降级语义、二次调用引用不丢）覆盖。本 profile 覆盖性能结构。
+
+---
+
+## 附录：性能优化文献综述的结论存档（原 optimization-literature.md，2026-10-29 拆散归档）
+
+> 原文完成于 2026-10-11，把当时的 profile 症状映射到 RAG / salsa / demand-driven / sets-of-scopes 等文献解法，并进行过两次实验。原文随 route 2 退役一并删除，此处 只存档"不要走回头路"级别的结论；文献书目见 doc/analysis/macro-analysis-framework.md。
+
+### 节点级引用缓存：已证伪（2026-10-11）
+
+按 RAG/salsa 思路实现的全链签名验证缓存（`(node, identifier) → refs` + 父链身份 签名）实测**命中率 0.037%**（532,722 次查找仅 197 次命中），墙钟不降反升 （签名构建的分配使 GC 1.4 s → 2.3 s），已完整撤回。根因：级联期间 back-propagation 持续重建节点链上的 import/excluded/export 列表，节点级"链不变"条件在级联主导的 流量下几乎永不成立。**教训：属性缓存假设属性在计算间稳定；若分析管线高频重建 节点链，缓存的正确落点是需求侧（demand）而非缓存侧。** 该实验的宏观背景 （route-2 级联 churn）已随管线删除消失，但"先验证链稳定性再谈缓存"的方法论仍然 有效。
+
+### 按需级联（lazy cascade）：奖池不足，暂缓（2026-10-11）
+
+match 调用点全部延迟展开的实测天花板为 init 省 ~1.4 s / 9%，配不上生产化成本 （全协议触发点 + didOpen 强制 + 诊断顺序），已撤回。连带修正：嵌套累计口径会严重 高估级联份额——53 万次节点访问的主体是普通 Scheme 代码的常规分析。**若未来重启 按需分析，先用量测确认奖池。**
+
+### 仍然有效的方向（与 route 2 无关）
+
+- workspace FASL 缓存即 Kythe/LSIF 预计算索引模式的实现；改进点在于索引新鲜度 与一致性检查成本（mtime 一致性检查已是该方向的工程实践，2026-06 已落地）。
+- rust-analyzer 的 "from-scratch parsing is fast enough"：解析不值得增量化 （实测解析仅占 init 4%），增量性应全部放在查询/产物层。
+- 细粒度 didChange 失效（salsa 式 revision / durability firewall： `.akku/lib` 依赖的派生数据标记高耐久）作为独立长期立项。

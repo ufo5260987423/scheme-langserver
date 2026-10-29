@@ -1,9 +1,10 @@
 # Incremental Workspace Cache Design
 
-> Status: design document, not yet implemented.
+> Status: design document, **not implemented as of 2026-10-29**.
 >
-> Last updated after measuring actual save/relink costs on the
-> scheme-langserver project itself.
+> The measurements below are from mid-2026 (cold init ~38 s era). After the 2026-10-28 performance work (walker memoization, single-pass IR walks, expansion budget), whole-repo init with type inference measures ~474 ms / 471 MB peak and the mtime-based cache consistency check made cache hits ~instant — the cost structure this document attacks has changed by roughly two orders of magnitude. The design arguments (why full relink is infeasible, what FASL cannot serialize) remain valid; whether the split cache is still worth building is an open question.
+>
+> Last updated after measuring actual save/relink costs on the scheme-langserver project itself.
 
 ## 1. Background and Problem
 

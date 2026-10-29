@@ -61,10 +61,7 @@
 
 ## 关键工具函数
 
-- `(find-define-by-name root-node 'symbol)` — 从 AST 中按名称查找 `define` 节点
-- `(define-node->name-node define-node)` — 提取 define 中的名称子节点
-- `(document+bias->position-list document bias)` — 将 bias 转为 `[line character]` 列表
-- `(index-node-start node)` / `(index-node-end node)` — 获取节点的源码偏移量
+AST 搜索辅助函数（`find-define-by-name`、`define-node->name-node`、`document+bias->position-list` 等 8 个 helper）的完整 API 参考见 [doc/util/test.md](../util/test.md)，此处不再重复维护清单。
 
 ## 发现的陷阱
 
@@ -90,9 +87,11 @@ Chez Scheme 中 `(member x lst eq?)` 虽然可以工作，但编译器会发出�
 
 这两个 handler 返回的 range 对应的是**标识符名称节点**的精确位置（如 `binary-search` 这个词的 start/end），而不是整个 `define` 表单的范围。
 
-### type inference 崩溃
+### type inference 崩溃（历史记录，2026-06；宏类型推断重写后未再复现）
 
-对 `util/binary-search.sls` 开启 type inference 时，`hover` 会触发崩溃：
+> 2026-10-27 宏类型推断已重写为 expansion-driven 架构（`analysis/type/substitutions/macro-expansion.sls`），下述崩溃未再复现。如重现请开 issue。
+
+2026-06 时对 `util/binary-search.sls` 开启 type inference，`hover` 会触发崩溃：
 
 ```
 Exception in filter: ((((...) . d3) . d4) . #[#{identifier-reference ...}])

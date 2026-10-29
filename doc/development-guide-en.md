@@ -1,5 +1,7 @@
 # Scheme-langserver Development Guide
 
+> [中文版](./development-guide.md)
+
 This manual aims to guide developers on how to add new language support for Scheme-langserver through `top-environment`, which supports specific language environments (e.g., `R6/7RS`, `S7`). Among these, `R6/7RS` are two standards, while `S7` is an implementation of `R7RS`. These language environments determine various parsing rules at the lexical, syntactic, and grammatical levels, as well as which standard libraries will be loaded. Notably, Scheme language environments often use macros to define how users declare variables and reference libraries, which provides developers with considerable flexibility to add new standards, dialects, and implementations. For users familiar with REPL (Read-Evaluate-Print Loop), this can be likened to a switch that configures the current REPL environment. Its purpose is to inform Scheme-langserver which Scheme language environment should be used to parse code, load libraries, and match rules in the current project. In the REPL, user-entered expressions are parsed and executed based on the libraries and rules of the current environment. Similarly, `top-environment` serves as Scheme-langserver's "environment configuration," ensuring that the language server can accurately simulate a context conforming to the specified standard when processing code.
 
 By reading this manual, you can learn how to implement features such as `goto-definition` and `auto-complete` for new language support and master testing methods for the entire lifecycle. The code structure involved in these implementations is as follows:
@@ -152,7 +154,7 @@ bash test.sh
 
 ### Log Debugging Tool
 
-During the actual operation of the langserver, unexpected errors may occur. To address this, Scheme-langserver provides a log debugging tool that helps developers read log files and reproduce operational scenarios, facilitating debugging and analysis of server behavior. This tool can parse log content, generate input streams compliant with the LSP protocol, and simulate the interaction between the client and server, thereby effectively identifying and resolving issues. This section briefly introduces how to use the log debugging tool for log debugging. For detailed information, refer to `doc/how-to-debug.md`.
+During the actual operation of the langserver, unexpected errors may occur. To address this, Scheme-langserver provides a log debugging tool that helps developers read log files and reproduce operational scenarios, facilitating debugging and analysis of server behavior. This tool can parse log content, generate input streams compliant with the LSP protocol, and simulate the interaction between the client and server, thereby effectively identifying and resolving issues. This section briefly introduces how to use the log debugging tool for log debugging. For detailed information, refer to `doc/testing/debugging.md`.
 
 Developers can use the log debugging tool by running the test script (`log-debug.sps`). The script automatically reads the log file, generates an input stream, and initializes a server instance. Upon test completion, the tool outputs the test results, including the server's response status and details of the log reproduction.
 

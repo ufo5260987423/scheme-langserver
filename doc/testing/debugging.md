@@ -228,24 +228,21 @@ If the single-threaded replay **does not** reproduce the bug, switch to the mult
 
 ### 8. Shutdown / exit handling
 
-> **Status:** Fixed in the `kimi` branch.
+> **Status:** Fixed 2026-09-25 (and reworked since; this section rewritten 2026-10-29 to match the current implementation).
 
-The server's shutdown/exit lifecycle now complies with the LSP specification.
+The server's shutdown/exit lifecycle complies with the LSP specification, and — unlike the first fix for this bug — `shutdown`/`exit` are handled **on the main thread, not via the request queue**:
 
 | Message | Type | Server behaviour (current) |
 |---------|------|---------------------------|
-| `shutdown` | **Request** (requires response) | Sets `server-shutdown?` to `#t` and sends a `null` result response. |
-| `exit` | **Notification** (no response) | Terminates the Chez process with exit code **0** if `shutdown` was received earlier, otherwise **1**. |
-| Any request after `shutdown` | — | Returns `InvalidRequest` (`-32600`) except for `exit`, which terminates the process. |
+| `shutdown` | **Request** (requires response) | Handled directly in the main I/O loop: sets `server-shutdown?` to `#t`, replies immediately with a `null` result. |
+| `exit` | **Notification** (no response) | Handled directly in the main I/O loop: drains the request queue (bounded at 5 s, so a dead consumer cannot hang it), saves the workspace cache if configured, then terminates the process with exit code **0** if `shutdown` was received earlier, otherwise **1**. |
+| Any request after `shutdown` | — | Returns `InvalidRequest` (`-32600`) except for `exit`. |
 | `initialize` after `shutdown` | — | Rejected with `InvalidRequest`. |
 
-Key fixes applied to `scheme-langserver.sls`:
-1. Removed the special `shutdown`/`exit` branch in the main I/O loop; both messages now flow through the normal request processor.
-2. `process-request` handles `shutdown` inside the `case method` dispatch: it sets the flag and sends `(success-response id 'null)`.
-3. `process-request` handles `exit` with `(exit (if (server-shutdown? server-instance) 0 1))`.
-4. Post-shutdown guard now rejects **all** methods except `exit` with `InvalidRequest` (previously it exempted `initialize` and used the wrong error code `server-not-initialized`).
+Key points in `scheme-langserver.sls`:
+1. Why the main thread: the earlier fix routed `exit` through the queue, but in multi-threaded mode `(exit)` on a pool worker only terminates that worker thread — the main thread stayed blocked on `stdin` and the process never died (each client shutdown burned a 120 s timeout). Handling both messages in the main loop avoids the queue round-trip entirely.
+2. The queue drain before exit is **bounded** (5 s): a stuck consumer cannot hang the shutdown.
+3. `private:save-workspace-cache-if-any` takes `workspace-mutex` so the cache save is serialized with in-flight worker analysis.
+4. The consumer loop also guards each pop+process with a `guard` that logs and survives runtime-level escapes, so one poisoned task cannot starve the rest of the queue (2026-09-25 hardening).
 
-#### Impact on the replay scripts
-
-- **Single-threaded (`log-debug.sps`)** — if the log contains `shutdown`, the server will send the required response and then continue until EOF. `server-shutdown?` will be `#t` at the end.
-- **Multi-threaded (`parallel-log-debug.sps`)** — the consumer thread exits when `server-shutdown?` is `#t` **and** the request queue is empty. Because `shutdown` now produces a response, the queue drains correctly and the test finishes reliably.
+Regression coverage: multi-thread variants of tests 2/4/5 in `tests/integration/test-shutdown-exit.sps`.

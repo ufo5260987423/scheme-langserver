@@ -38,11 +38,12 @@ All operations on a workspace fall into one of three categories:
     (immutable file-filter)      ; file-filter configuration: symbol, extension list, or predicate
     (immutable threaded?)        ; enable parallel analysis?
     (immutable type-inference?)  ; enable type inference?
-    (immutable top-environment)  ; 'r6rs | 'r7rs | 's7 | 'goldfish
-    (mutable undiagnosed-paths)))
+    (immutable top-environment)  ; 'r6rs | 'r7rs | 's7 | 'goldfish | 'fluent
+    (mutable undiagnosed-paths)
+    (mutable path->mtime-cache)))  ; path -> (seconds . nanoseconds), for cache consistency checks
 ```
 
-The protocol creates the mutex automatically when `threaded?` is true. The three mutable fields (`file-node`, `library-node`, `file-linkage`) are replaced wholesale during a full refresh, while `undiagnosed-paths` is appended to incrementally.
+The protocol creates the mutex automatically when `threaded?` is true. The three mutable fields (`file-node`, `library-node`, `file-linkage`) are replaced wholesale during a full refresh, while `undiagnosed-paths` is appended to incrementally. `path->mtime-cache` is populated at cache-save time and consulted at load (see §8).
 
 ---
 
@@ -119,7 +120,7 @@ The root library node is created automatically; children are attached by `make-l
 
 ### 3.5 `init-file-linkage`
 
-Builds the dependency graph. See `doc/file-linkage.md` for details. The result is an adjacency matrix plus bidirectional path↔id maps.
+Builds the dependency graph. See `doc/analysis/dependency/file-linkage.md` for details. The result is an adjacency matrix plus bidirectional path↔id maps.
 
 ### 3.6 `init-references`
 
@@ -343,16 +344,10 @@ The body of `did-change` mutates document text, re-parses, and rebuilds the inde
 
 ### 7.6 Relationship to `request-queue-mutex`
 
-The project deliberately maintains **two separate locks**:
-
-| Lock | Protected resource | Held during |
-|------|-------------------|-------------|
-| `request-queue-mutex` | `queue` (slib queue) and `tickal-task-list` | `push`, `pop`, `remove:from-request-tickal-task-list` |
-| `workspace-mutex` | Workspace mutable state (document, index-node, linkage, library-node) | `init-references` entire batch (serial pre-phase + `threaded-map`), `didChange`, `expire` callback |
-
-Once a worker thread dequeues a task, `request-queue-pop` returns a thunk and **releases the queue mutex before the thunk is invoked**. The actual execution of `request-processor` (and the engine that wraps it) runs **outside** the queue mutex. This prevents a slow request from starving the I/O thread or the timer thread.
-
-`workspace-mutex` is acquired only when the thunk actually touches workspace state.
+The canonical two-lock table (protected resources, hold scopes, and why the
+dequeued thunk runs outside the queue mutex) is maintained in
+[doc/protocol/analysis/request-queue.md §7](../protocol/analysis/request-queue.md);
+it is not duplicated here to keep the two documents from drifting apart.
 
 ### 7.7 Single-threaded fallback
 
@@ -413,9 +408,7 @@ machines.
 
 ### Cache consistency on load
 
-When `init-workspace` is called with a `cache-path`, it first loads the FASL
-payload and then compares every cached `document-text` with the current disk
-contents. The comparison produces three sets:
+When `init-workspace` is called with a `cache-path`, it first loads the FASL payload and then runs a consistency check against the disk. The fast path compares per-file **mtimes** (`path->mtime-cache`, saved with the payload); only when an mtime mismatch is found (or is unreadable) does it fall back to reading the file and comparing text. The comparison produces three sets:
 
 - **Changed files**: present in both cache and disk, but content differs.
 - **Deleted files**: present in cache but missing on disk.

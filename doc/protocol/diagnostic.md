@@ -615,102 +615,12 @@ the same diagnostics are still available in-memory.
 
 ---
 
-## 5. Known bugs
+## 5. Known bugs (all fixed 2026-06-24; one-line records)
 
-### Bug 1 (Fixed): Stale diagnostics are never cleared on the client
-
-**Location**: `protocol/apis/document-diagnostic.sls`, inside
-`unpublish-diagnostics->list`.
-
-**Problem**: the function filtered out documents whose `document-diagnoses` was
-empty:
-
-```scheme
-(filter 
-  (lambda (d) (not (null? (document-diagnoses d))))
-  ...)
-```
-
-When a user fixes an error (e.g. corrects a misspelled library import), the
-server re-analyses the file, clears `document-diagnoses`, and places the path in
-`undiagnosed-paths`.  On the next timer tick `publish-diagnostics` runs, but
-because the document now has zero diagnoses, it is dropped from the publish
-list.  The client **never receives an update** for that document, so the old
-diagnostic remains visible forever.
-
-**Trigger scenario**:
-1. Open a file with `(import (nonexistent-lib))`.
-2. Server publishes `"Fail to find library:nonexistent-lib"`.
-3. User fixes the import to a real library name.
-4. Server re-analyses → `document-diagnoses` becomes `'()`.
-5. `publish-diagnostics` sends nothing for this document.
-6. Client still shows the old error.
-
-**Fix**: remove the `(not (null? (document-diagnoses d)))` filter.  An empty
-`diagnostics` array in `textDocument/publishDiagnostics` is the LSP-compliant
-way to tell the client to clear diagnostics for that document.
-
----
-
-### Bug 2 (Fixed): `walk-file` returning `'()` causes a crash
-
-**Location**: `protocol/apis/document-diagnostic.sls`, inside
-`unpublish-diagnostics->list`.
-
-**Problem**: `walk-file` returns `'()` when a path no longer exists in the
-virtual file system (e.g. the file was deleted after the path was added to
-`undiagnosed-paths`).  The old code chained:
-
-```scheme
-(map file-node-document
-  (map (lambda (s) (walk-file ... s)) ...))
-```
-
-`file-node-document` was called on `'()`, which is not a `file-node` record,
-raising a type error and crashing the server.
-
-**Trigger scenario**:
-1. File `a.scm` is opened → path added to `undiagnosed-paths`.
-2. File `a.scm` is deleted externally.
-3. Timer fires → `publish-diagnostics` tries to walk the stale path → **crash**.
-
-**Fix**: guard each `walk-file` result and skip `'()` before calling
-`file-node-document`.
-
----
-
-### Bug 3 (Fixed): `undiagnosed-paths` is not cleared if publication fails
-
-**Location**: `protocol/apis/document-diagnostic.sls`.
-
-The reset `(workspace-undiagnosed-paths-set! workspace '())` happens **after**
-`result` is fully computed.  If an exception inside the traversal aborts
-execution, control never reaches the `set!`.  The stale paths remain in
-`undiagnosed-paths`.
-
-**Consequences**:
-- On the next timer tick, the same paths are processed again.
-- If the failure was caused by a deleted file, the server may crash-loop.
-
-**Fix**: snapshot `undiagnosed-paths` into a local variable and clear the
-workspace field *before* starting the traversal.  Even if an exception aborts
-the fold, the paths have already been removed from the accumulator.
-
----
-
-### Bug 4 (Fixed): Same crash in pull diagnostics (`textDocument/diagnostic`)
-
-**Location**: `protocol/apis/document-diagnostic.sls` and seven other API files.
-
-**Problem**: the exact pattern (`walk-file` + `substring` fallback +
-`file-node-document`) was copy-pasted into **eight** API files:
-`hover`, `definition`, `completion`, `document-symbol`, `document-highlight`,
-`formatting`, `references`, and `document-diagnostic`.  If both `walk-file`
-calls returned `'()`, `file-node-document` crashed.
-
-**Fix**: extracted the pattern into a shared helper `resolve-uri->file-node`
-in `virtual-file-system/file-node.sls`.  It guards against `'()` before
-returning, and all eight API files now use it.
+- **Bug 1 — stale diagnostics never cleared**: `unpublish-diagnostics->list` filtered out documents with empty `document-diagnoses`, so fixing the last error never reached the client. Fix: drop the filter; an empty `publishDiagnostics` array is the LSP-compliant clear signal.
+- **Bug 2 — `walk-file` -> `'()` crash**: deleted files left stale paths in `undiagnosed-paths`; `file-node-document` was called on `'()`. Fix: guard the result before use.
+- **Bug 3 — `undiagnosed-paths` not cleared on publication failure**: the reset happened after traversal, so an exception left stale paths and crash-looped. Fix: clear the workspace field *before* traversing a snapshot.
+- **Bug 4 — same crash pattern copy-pasted into 8 API files**: extracted the shared `resolve-uri->file-node` helper in `virtual-file-system/file-node.sls`.
 
 ---
 

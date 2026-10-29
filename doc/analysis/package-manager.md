@@ -67,9 +67,11 @@ This meant that exported identifiers such as `string-prefix?` could not be resol
 
 `include-resolve-process` now walks up to the nearest enclosing `(library ...)` or `(define-library ...)` node before attaching references.
 
-### 2.3 Known limitation: `uri-is-path?`
+### 2.3 Known limitation: `uri-is-path?` (SUPERSEDED 2026-10-27)
 
-Even with the filter and attachment fixes, `uri-is-path?` in `(scheme-langserver util path)` is still inferred as:
+> **Superseded**: macro type inference shipped 2026-10-27 as the expansion-driven architecture (`analysis/type/substitutions/macro-expansion.sls`); the type inferrer **does** expand macros now. Whether `uri-is-path?` reaches `boolean?` under the new architecture needs re-measuring. The paragraphs below are the 2026-06 architectural limitation record, kept for history.
+
+Even with the filter and attachment fixes, `uri-is-path?` in `(scheme-langserver util path)` was inferred as:
 
 ```text
 (something? <- (inner:list? something?))
@@ -82,7 +84,7 @@ Source:
   (string-prefix? str "file://"))
 ```
 
-Reason: `string-prefix?` is implemented via `let-string-start+end2` and other macros inside `srfi-13.scm`. The current type-inference subsystem does **not** expand macros when inferring types, so the predicate nature of `string-prefix?` is lost. This is considered a known architectural limitation rather than a bug.
+Reason (as of 2026-06): `string-prefix?` is implemented via `let-string-start+end2` and other macros inside `srfi-13.scm`, and the then-current type-inference subsystem did **not** expand macros when inferring types, so the predicate nature of `string-prefix?` was lost. This was considered a known architectural limitation rather than a bug (see superseded note above).
 
 ---
 

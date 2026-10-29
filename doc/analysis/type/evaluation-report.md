@@ -226,9 +226,11 @@
 
 ## 7. 已知限制说明
 
+> **勘误（2026-10-27）**：本节描述的架构限制已被移除——宏类型推断于 2026-10-27 落地为 expansion-driven 架构（`analysis/type/substitutions/macro-expansion.sls`， 见 doc/analysis/ir-auto-route-walkthrough.md §7.1），类型推断**会**展开宏。 `uri-is-path?` 经宏展开后能否推断出 `boolean?` 需要按新架构复测；本节其余 内容保留作 2026-06 时点的历史记录。
+
 - `uri-is-path?` 在 `(scheme-langserver util path)` 中仍被推断为 `(something? <- (inner:list? something?))`，而不是 `boolean?`。
-- 原因是其依赖的 `string-prefix?` 在 `srfi-13.scm` 中通过 `let-string-start+end2` 等宏实现，而**当前类型推断子系统未将宏展开引入类型推断**。
-- 按项目决策，**不通过显式 SRFI-13 类型签名绕过该限制**，因此该现象属于当前架构下的合理限制。
+- 原因是其依赖的 `string-prefix?` 在 `srfi-13.scm` 中通过 `let-string-start+end2` 等宏实现，而~~当前类型推断子系统未将宏展开引入类型推断~~（2026-10-27 起已引入，见上方勘误）。
+- 按项目决策，**不通过显式 SRFI-13 类型签名绕过该限制**，因此该现象属于当时架构下的合理限制。
 
 ---
 
