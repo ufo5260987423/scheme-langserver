@@ -232,7 +232,7 @@
             [else rules])
           (route&add
             rules identifier
-            file-linkage identifier-list current-document
+            file-linkage
             private-add-rule step))))
     '()
     (filter

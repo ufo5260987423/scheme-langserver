@@ -25,7 +25,7 @@
 
 (define (route&add
   rules target-identifier
-  file-linkage identifier-list current-document
+  file-linkage
   add-rule-procedure step)
   (let* ([top (root-ancestor target-identifier)]
         [expressions (map identifier-reference-identifier top)]

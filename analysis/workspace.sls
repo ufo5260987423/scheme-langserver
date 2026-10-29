@@ -51,8 +51,6 @@
 
     (scheme-langserver analysis dependency file-linkage)
 
-    (scheme-langserver analysis identifier reference)
-    (scheme-langserver analysis identifier rules define-syntax)
     (scheme-langserver analysis identifier rules library-import)
 
     (scheme-langserver analysis document-checker unused-imports)
