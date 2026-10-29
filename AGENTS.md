@@ -369,7 +369,21 @@ per-library caching); hand rules (include/resolve, ufo-try, goldfish) keep
 priority. One probe consequence: private:probe-in's ufo-match-shaped probe is
 ADVISORY for source-bootstrapped envs (arbitrary macros may reject the probe
 shape; the head is bound by construction after load + environment) and strict
-only for the interaction fallback. `analysis/identifier/expander/ir-auto-route.sls` answers the router's generic
+only for the interaction fallback. BOOTSTRAP ORDER MATTERS (2026-10-29, the
+goto-definition-on-name-node bug): an ALREADY-REGISTERED library must never
+be (load)ed again -- a second load of the same source re-registers a
+conflicting Chez compilation instance and every subsequent cross-instance
+call raises "compiled program requires a different compilation instance".
+This bit exactly when the macro's home library was one the analyzer itself
+imports: (scheme-langserver virtual-file-system index-node) is imported by
+every identifier rule, so every match-index-node call site triggered the
+double load, the exception was swallowed by the try guard, the call site
+landed in the negative cache, and NO pattern-variable references were ever
+synthesized. bootstrap-source therefore builds the env with (environment ...)
+FIRST (which reuses a registered library) and only falls back to (load
+source) + retry when the library is not locatable on the current
+library-directories (the compiled-binary / version-skew case). Regression:
+tests/analysis/identifier/test-ir-auto-route-no-double-load.sps. `analysis/identifier/expander/ir-auto-route.sls` answers the router's generic
 arm -- Chez's own expander (via the undocumented `(sc-expand x env #t)`
 switch, wrapped by `analysis/identifier/expander/chez-ir.sls`) produces the parsed
 Lsrc IR with per-expression/reference/binding source locations, from which

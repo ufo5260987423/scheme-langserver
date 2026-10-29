@@ -220,12 +220,29 @@
           [cached (hashtable-ref private:env-cache-ht key 'unset)])
         (cond
           [(eq? cached 'unset)
+            ;ALREADY-REGISTERED LIBRARIES MUST NOT BE (load)ed AGAIN: a
+            ;second load of the same source re-registers a NEW compilation
+            ;instance and every subsequent cross-instance call raises
+            ;"compiled program requires a different compilation instance"
+            ;(measured 2026-10-29 with virtual-file-system/index-node.sls --
+            ;it poisoned the whole analysis pass, silently negative-caching
+            ;every later macro call site). (environment ...) reuses a
+            ;registered library without reloading, so build the env FIRST
+            ;and only fall back to (load source) + retry when the library
+            ;is not locatable on the current library-directories (the
+            ;compiled-binary / version-skew case the load was originally
+            ;for).
             (let ([env
-                  (guard (e [else #f])
-                    (load source)
-                    (let ([built (or (private:build-env library-identifier import-sets workspace-root)
-                                    (private:fresh-env library-identifier))])
-                      (and built
+                    (let ([built (private:build-env library-identifier import-sets workspace-root)])
+                      (or built
+                        (guard (e [else #f])
+                          (load source)
+                          (or (private:build-env library-identifier import-sets workspace-root)
+                              (private:fresh-env library-identifier)))))])
+              (when (and env (getenv "REPLAY_TRACE"))
+                (fprintf (console-output-port) "[ir-auto-route] env ready: ~a~%" source))
+              (let ([env
+                      (and env
                         (begin
                           ;ADVISORY probe: private:probe-in uses a
                           ;ufo-match-shaped probe form that arbitrary macros
@@ -237,15 +254,15 @@
                           ;arbiter (miss -> negative cache). The interaction
                           ;fallback keeps the strict two-sided probe -- that
                           ;is where lenient false-positives bit (2026-10-21).
-                          (unless (private:probe-in built head-symbol)
+                          (unless (private:probe-in env head-symbol)
                             (when (getenv "REPLAY_TRACE")
                               (fprintf (console-output-port) "[ir-auto-route] advisory probe miss: ~a in ~a~%"
                                 head-symbol source)))
-                          built))))])
-              (hashtable-set! private:env-cache-ht key (or env 'failed))
-              (set-box! private:env-source
-                (if env (cons 'loaded source) 'unavailable))
-              (and env (cons env 'fresh)))]
+                          env))])
+                (hashtable-set! private:env-cache-ht key (or env 'failed))
+                (set-box! private:env-source
+                  (if env (cons 'loaded source) 'unavailable))
+                (and env (cons env 'fresh))))]
           [(eq? cached 'failed) #f]
           [else (cons cached 'fresh)])))))
 
