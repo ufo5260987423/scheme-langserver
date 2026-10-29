@@ -276,7 +276,7 @@
   ;;in the user's library). Grow a (lambda (free ...) ...) parameter list
   ;;driven by the "unbound identifier" errors, bounded at 64 attempts.
   ;;Each attempt re-sc-expands the WHOLE wrapped form, so the retry count
-  ;;is the cost multiplier (EXPAND_DEBUG prints per-call retries).
+  ;;is the cost multiplier.
   ;;
   ;;PARAMS MEMO: the discovered params are keyed by (form identity x env
   ;;identity) -- the forms cache returns the SAME annotated form objects
@@ -289,36 +289,23 @@
   ;;same free identifiers). Mutex-guarded: threaded init runs these on
   ;;worker threads.
   (define (attempt params)
-    (let ([t0 (current-time 'time-monotonic)])
-      (let ([ir (sc-expand (private:wrap-form form params) env #t)])
-        (values ir
-          (/ (time-nanosecond (time-difference (current-time 'time-monotonic) t0))
-            1000000.0)))))
-  (define (report attempts params ms-total ms)
-    (when (getenv "EXPAND_DEBUG")
-      (format #t "[expand-fresh] retries=~a params=~a ms=~,1f~%"
-        attempts (length params) (+ ms-total ms))))
+    (sc-expand (private:wrap-form form params) env #t))
   (let ([cached (with-mutex private:fresh-params-cache-mutex
                   (hashtable-ref private:fresh-params-cache form #f))])
     (if (and cached (eq? (car cached) env))
-      (let-values ([(ir ms) (attempt (cdr cached))])
-        (when (getenv "EXPAND_DEBUG")
-          (format #t "[expand-fresh] params-cache-hit params=~a ms=~,1f~%"
-            (length (cdr cached)) ms))
-        ir)
-      (let loop ([params '()] [attempts 0] [ms-total 0.0])
+      (attempt (cdr cached))
+      (let loop ([params '()] [attempts 0])
         (guard (e [else
             (let ([unbound (and (condition? e)
                             (private:expand-blocked-identifier-from-message
                               (call-with-string-output-port
                                 (lambda (p) (display-condition e p)))))])
               (if (and unbound (< attempts 64) (not (memq unbound params)))
-                (loop (cons unbound params) (+ attempts 1) ms-total)
+                (loop (cons unbound params) (+ attempts 1))
                 (raise e)))])
-          (let-values ([(ir ms) (attempt params)])
+          (let ([ir (attempt params)])
             (with-mutex private:fresh-params-cache-mutex
               (hashtable-set! private:fresh-params-cache form (cons env (reverse params))))
-            (report attempts (reverse params) ms-total ms)
             ir))))))
 
 (define (private:env document call-node root-library-node import-sets workspace-root head-symbol library-identifier)

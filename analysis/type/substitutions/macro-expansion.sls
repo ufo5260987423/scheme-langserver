@@ -97,9 +97,6 @@
               (and (source-object? src)
                 (string=? path (source-file-descriptor-path (source-object-sfd src))))))
       (let ([bias (source-object-bfp (annotation-source ann))])
-        (when (getenv "EXPAND_DEBUG")
-          (format #t "[bp] bias=~a subs=~a span=~a-~a~%"
-            bias (length (index-node-substitution-list virtual-node)) start end))
         (if (and (>= bias start) (< bias end))
           (let* ([subs (index-node-substitution-list virtual-node)]
               [real-node (pick-index-node-from
@@ -114,20 +111,8 @@
           0))
       0)))
 
-(define private:bp-stats (make-eq-hashtable))
-(define (private:bp-stat! key)
-  (hashtable-set! private:bp-stats key (+ 1 (hashtable-ref private:bp-stats key 0))))
-
 (define (private:back-propagate! virtual-node real-document path start end)
   ;;recursively copy; returns the total number of entries copied
-  (private:bp-stat! 'nodes)
-  (let ([ann (index-node-datum/annotations virtual-node)])
-    (cond
-      [(not (annotation? ann)) (private:bp-stat! 'not-annotation)]
-      [(not (source-object? (annotation-source ann))) (private:bp-stat! 'no-source)]
-      [(not (string=? path (source-file-descriptor-path (source-object-sfd (annotation-source ann)))))
-        (private:bp-stat! 'path-mismatch)]
-      [else (private:bp-stat! 'path-hit)]))
   (let ([here (private:copy-substitutions! virtual-node real-document path start end)])
     (+ here
       (apply +
@@ -160,22 +145,6 @@
             ;;node, exactly like the reader's quoted content
             [else (loop (cdr es) acc)]))))
     node))
-
-(define (private:count-symbol-at root symbol bias)
-  (let ([count 0])
-    (let walk ([n root])
-      (when (and (index-node-symbol? n)
-              (eq? symbol (index-node-expression n)))
-        (let ([a (index-node-datum/annotations n)])
-          (when (and (annotation? a) (source-object? (annotation-source a))
-                  (= bias (source-object-bfp (annotation-source a))))
-            (set! count (+ count 1)))))
-      (for-each walk (index-node-children n)))
-    count))
-
-(define (take-some2 ls n)
-  (let loop ([ls ls] [acc '()] [k 0])
-    (if (or (null? ls) (= k n)) (reverse acc) (loop (cdr ls) (cons (car ls) acc) (+ k 1)))))
 
 (define (private:node-head node)
   (let ([a (index-node-datum/annotations node)])
@@ -263,12 +232,6 @@
   ;;the generator over the expansion, return the results to the call
   ;;site. Returns the number of substitution entries back-propagated, or
   ;;#f on any failure (silent no-analysis, per the IR route's semantics).
-  (when (and (getenv "EXPAND_DEBUG") (not (hashtable-ref private:virtual-documents document #f)))
-    (let* ([uri (document-uri document)]
-        [len (string-length uri)]
-        [from (max 0 (- len 30))])
-      (format #t "[macro-expansion] enter at-bias=~a doc=~a~%"
-        (index-node-start call-node) (substring uri from len))))
   ;;never re-expand inside a virtual expansion document: the arm fires
   ;;there too (expansions contain further macro calls), which would
   ;;recurse without bound
@@ -282,13 +245,7 @@
             (parameterize ([chez-ir-rebuild-budget (cons 0 private:max-expansion-nodes)])
               (ir-auto-route:expand-call-site root-library-node document call-node))])
     (and expanded
-      (guard (e [else
-                (when (getenv "EXPAND_DEBUG")
-                  (format #t "[macro-expansion] FAIL: ~a~%"
-                    (guard (c [#t (format "~a" e)])
-                      (call-with-string-output-port
-                        (lambda (p) (display-condition e p))))))
-                #f])
+      (guard (e [else #f])
         (let* ([path (uri->path (document-uri document))]
             ;;the virtual document INHERITS the caller's reference table:
             ;;every name the expansion uses was resolvable in the caller's
@@ -319,33 +276,9 @@
             [_ (hashtable-set! private:virtual-documents virtual-document #t)]
             [_ (private:register-bindings! virtual-document virtual-root)]
             [_ (run-generator virtual-document)]
-            [_ (when (getenv "EXPAND_DEBUG")
-    (let ([typed 0])
-      (let walk ([n virtual-root])
-        (when (pair? (index-node-substitution-list n))
-          (set! typed (+ typed 1)))
-        (for-each walk (index-node-children n)))
-      (format #t "[macro-expansion] typed nodes: ~a~%" typed)))]
             [start (index-node-start call-node)]
             [end (index-node-end call-node)]
             [copied (private:back-propagate! virtual-root document path start end)])
           (private:retain! document start end virtual-document)
-          (when (getenv "EXPAND_DEBUG")
-            (format #t "[macro-expansion] virtual diagnoses: ~a~%"
-              (length (document-diagnoses virtual-document)))
-            (for-each
-              (lambda (d) (format #t "  vdiag: ~a @~a-~a~%" (list-ref d 3) (list-ref d 0) (list-ref d 1)))
-              (take-some2 (document-diagnoses virtual-document) 5)))
-          (when (getenv "EXPAND_DEBUG")
-            (format #t "[macro-expansion] built=~a a@150=~a b@152=~a~%"
-              (let count ([n virtual-root] [c 0])
-                (fold-left (lambda (acc ch) (count ch acc))
-                  (+ c 1) (index-node-children n)))
-              (private:count-symbol-at virtual-root 'a 150)
-              (private:count-symbol-at virtual-root 'b 152))
-            (format #t "[macro-expansion] span=~a-~a back-propagated=~a stats=~a~%"
-              start end copied
-              (map (lambda (k) (cons k (hashtable-ref private:bp-stats k 0)))
-                '(nodes not-annotation no-source path-mismatch path-hit))))
           copied))))))
 )

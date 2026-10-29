@@ -555,9 +555,6 @@
             ;;closes rebuild's outer cond, let-o0 and let-b
             ;;closes let-o0 and the rebuild define (outer cond closed above)
             )))
-  (define beta-stats-direct 0)
-  (define beta-stats-via 0)
-  (define beta-stats-via-miss 0)
   (define (rebuild-call o rtd env)
     (let* ([vals (private:field-refs o rtd)]
         [src (private:preinfo-src o)]
@@ -566,9 +563,7 @@
         [op0 (private:unwrap-ann op)]
         [direct
           (and (private:case-lambda-record? op0)
-            (let ([r (beta-reduce src op0 args env)])
-              (when r (set! beta-stats-direct (+ beta-stats-direct 1)))
-              r))]
+            (beta-reduce src op0 args env))]
         [via-name
           (and (not direct)
             (let ([op-rtd (private:rtd-of op0)])
@@ -584,12 +579,8 @@
                     (private:ancestor-rtd px-rtd 'prelex)
                     (let ([target (eq-hashtable-ref env px #f)])
                       (if target
-                        (let ([r (beta-reduce src target args (make-eq-hashtable))])
-                          (when r (set! beta-stats-via (+ beta-stats-via 1)))
-                          r)
-                        (begin
-                          (set! beta-stats-via-miss (+ beta-stats-via-miss 1))
-                          #f))))))))])
+                        (beta-reduce src target args (make-eq-hashtable))
+                        #f)))))))])
       (or direct
         via-name
         (mk-ann src
@@ -685,11 +676,7 @@
                    (mk-ann #f (list (rebuild-atom x) (rebuild e env))))
               xs es))
           (rebuild body child-env)))))
-  (let ([result (rebuild ir (make-eq-hashtable))])
-    (when (getenv "EXPAND_DEBUG")
-      (format #t "[rebuild] beta direct=~a via=~a via-miss=~a~%"
-        beta-stats-direct beta-stats-via beta-stats-via-miss))
-    result))
+  (rebuild ir (make-eq-hashtable)))
 
 (define (private:cxr->steps op)
   ;;cadr -> (car cdr) etc, OUTERMOST first (c[a[d]r]: left-to-right
