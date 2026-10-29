@@ -19,7 +19,12 @@
   (scheme-langserver virtual-file-system index-node)
   (scheme-langserver virtual-file-system document)
 
-  (scheme-langserver analysis workspace))
+  (scheme-langserver analysis workspace)
+  (scheme-langserver analysis identifier expander ir-auto-route))
+
+;; automatic macro resolution is opt-in since 2026-10-29 (default off);
+;; this test exercises the mechanism, so turn it on.
+(ir-auto-route:enabled? #t)
 
 (define fixture
   (string-append (current-directory) "/tests/resources/workspace-fixtures/ir-clause-scope"))

@@ -232,6 +232,10 @@
   ;;the generator over the expansion, return the results to the call
   ;;site. Returns the number of substitution entries back-propagated, or
   ;;#f on any failure (silent no-analysis, per the IR route's semantics).
+  ;;The whole mechanism is OPT-IN (ir-auto-route:enabled?, default #f):
+  ;;when the switch is off the generic arm is a silent no-op.
+  (if (not (ir-auto-route:enabled?))
+    #f
   ;;never re-expand inside a virtual expansion document: the arm fires
   ;;there too (expansions contain further macro calls), which would
   ;;recurse without bound
@@ -280,5 +284,5 @@
             [end (index-node-end call-node)]
             [copied (private:back-propagate! virtual-root document path start end)])
           (private:retain! document start end virtual-document)
-          copied))))))
+          copied)))))))
 )

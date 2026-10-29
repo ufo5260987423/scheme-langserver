@@ -52,7 +52,7 @@ step (abstract-interpreter.sls)
   (add-rule-procedure rules `((,(ir-auto-route:try-expand)) . ,target-identifier))]
 ```
 
-`ir-auto-route:try-expand` 返回一个零参数调用的 rule 工厂 thunk `(lambda (root-file-node root-library-node document index-node) ...)`， 符合 rule 调用约定；这个 rule 对**每一个宏调用点**执行一次。 路由器里两条臂：ufo-match 六宏族（库 `(ufo-match)`：match / match-next / match-one / match-check-ellipsis / match-two / match-check-identifier）， 以及 match-index-node（库 `(scheme-langserver virtual-file-system index-node)`， 2026-10-21 泛化加入）。历史对照：route 2 时代需要 langserver 侧 expander（`private:find-expander` 已删）且路由臂会包裹 route-2 规则； IR 路径无任何 opt-out 门控，机制内部完全宏无关。
+`ir-auto-route:try-expand` 返回一个零参数调用的 rule 工厂 thunk `(lambda (root-file-node root-library-node document index-node) ...)`， 符合 rule 调用约定；这个 rule 对**每一个宏调用点**执行一次。 路由器里两条臂：ufo-match 六宏族（库 `(ufo-match)`：match / match-next / match-one / match-check-ellipsis / match-two / match-check-identifier）， 以及 match-index-node（库 `(scheme-langserver virtual-file-system index-node)`， 2026-10-21 泛化加入）。历史对照：route 2 时代需要 langserver 侧 expander（`private:find-expander` 已删）且路由臂会包裹 route-2 规则； OPT-IN：整条机制（标识符侧 + 类型侧）自 2026-10-29 起由 `ir-auto-route:enabled?` 参数门控（默认关闭，`run.ss -a enable` 打开；init-server 的 auto-expand? 参数在线程池创建前设置，fork 的 worker 自动继承）；机制内部完全宏无关。
 
 ## 1. ir-auto-route.sls —— 编排层（688 行）
 

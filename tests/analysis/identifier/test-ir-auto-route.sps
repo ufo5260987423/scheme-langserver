@@ -22,6 +22,10 @@
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis workspace))
 
+;; automatic macro resolution is opt-in since 2026-10-29 (default off);
+;; this test exercises the mechanism, so turn it on.
+(ir-auto-route:enabled? #t)
+
 (define (private:test-log fmt . args)
   (when (getenv "TEST_VERBOSE")
     (apply format (cons #t (cons fmt args)))))

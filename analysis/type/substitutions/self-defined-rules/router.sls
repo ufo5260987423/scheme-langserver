@@ -20,6 +20,8 @@
       ;;and the inferred substitutions map back to the call site by
       ;;source position -- macro-agnostic, no hand-written pattern
       ;;semantics. try above keeps its hand rule (a control-flow form).
+      ;;OPT-IN since 2026-10-29: the arm is a silent no-op unless
+      ;;(ir-auto-route:enabled?) is set (run.ss -a enable).
       [(find (lambda (t) (eq? 'syntax-variable t))
               (map identifier-reference-type top))
         (add-rule-procedure

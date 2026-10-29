@@ -6,6 +6,7 @@
   ;; Unconditional since 2026-10-21 -- the underlying Chez APIs are being
   ;; upstreamed for documentation, so no opt-out gate remains.
   (export
+    ir-auto-route:enabled?
     ir-auto-route:try-expand
     ir-auto-route:stats
     ir-auto-route:reset-stats!
@@ -56,6 +57,14 @@
 ;the undocumented-access rationale for an opt-out disappears). The only
 ;remaining guard is chez-ir-available?'s feature self-check, which degrades
 ;to "no auto-resolution" on Chez builds lacking the APIs.
+;OPT-IN SINCE 2026-10-29: the whole mechanism (identifier-side auto-route AND
+;type-side macro inference) sits behind the ir-auto-route:enabled? parameter,
+;DEFAULT #f (off). run.ss -a/--auto-expand enable turns it on; init-server's
+;optional auto-expand? argument sets the parameter before the thread pool is
+;created (forked workers inherit it). Tests and log-replay scripts that
+;exercise the mechanism set the parameter explicitly.
+(define ir-auto-route:enabled? (make-parameter #f))
+
 (define private:env-mutex (make-mutex))
 (define private:env-source (box 'unset))  ; 'unset | 'interaction | (loaded . path) | 'unavailable
 
@@ -683,6 +692,7 @@
   ;; REPLAY_TRACE diagnostics carry the reason. root-file-node is accepted
   ;; for the rule-calling convention and unused.
   (lambda (root-file-node root-library-node document index-node)
-    (and (chez-ir-available?)
+    (and (ir-auto-route:enabled?)
+      (chez-ir-available?)
       (private:try root-file-node root-library-node document index-node))))
 )

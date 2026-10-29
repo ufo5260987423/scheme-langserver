@@ -9,7 +9,12 @@
   (srfi :64 testing) 
   (scheme-langserver) 
   (scheme-langserver protocol server) 
-  (scheme-langserver util io) )
+  (scheme-langserver util io)
+  (scheme-langserver analysis identifier expander ir-auto-route) )
+
+;; automatic macro resolution is opt-in since 2026-10-29 (default off);
+;; these replays reproduce logs captured while it was on.
+(ir-auto-route:enabled? #t)
 
 (define (process result target)
   `(,@result 

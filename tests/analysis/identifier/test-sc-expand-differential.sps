@@ -18,7 +18,12 @@
 
   (scheme-langserver analysis identifier expander chez-ir)
   (scheme-langserver analysis identifier reference)
-  (scheme-langserver analysis workspace))
+  (scheme-langserver analysis workspace)
+  (scheme-langserver analysis identifier expander ir-auto-route))
+
+;; automatic macro resolution is opt-in since 2026-10-29 (default off);
+;; this test exercises the mechanism, so turn it on.
+(ir-auto-route:enabled? #t)
 
 (test-begin "sc-expand differential: ground truth vs analysis resolution")
   (let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/sc-expand-differential")]

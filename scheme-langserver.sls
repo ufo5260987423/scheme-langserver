@@ -8,6 +8,7 @@
     (ufo-timer)
 
     (scheme-langserver analysis workspace)
+    (scheme-langserver analysis identifier expander ir-auto-route)
     (scheme-langserver analysis package-manager file-filter)
 
     (scheme-langserver protocol error-code)
@@ -246,6 +247,12 @@
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path)
           (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path 'akku)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter)
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter #f)]
+        [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter auto-expand?)
+          ;Opt-in automatic macro resolution (IR auto-route + macro type
+          ;inference): set BEFORE the thread pool spawns so forked workers
+          ;inherit the parameter. Defaults off; run.ss -a enable turns it on.
+          (ir-auto-route:enabled? auto-expand?)
           ;The thread-pool size just limits how many threads to process requests;
           (let* ([thread-pool (if (and enable-multi-thread? (threaded?)) (init-thread-pool 2 #t) #f)]
               [request-queue (if (and enable-multi-thread? (threaded?)) (make-request-queue) #f)]

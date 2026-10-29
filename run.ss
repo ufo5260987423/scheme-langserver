@@ -21,6 +21,9 @@ Options:
 
   -t, --type-inference          Enable type inference. (default: enable)
 
+  -a, --auto-expand             Enable automatic macro resolution (IR auto-route
+                                + macro type inference). (default: disable)
+
   -c, --cache-path              Directory to read/write workspace FASL cache. (default: disabled)
 
   -p, --package-manager         Package manager preset: akku (default) or txt.
@@ -65,6 +68,7 @@ Example Usage:
 (define default-log-path "./.scheme-langserver.log")
 (define default-multi-thread #t)
 (define default-type-inference #t)
+(define default-auto-expand #f)
 (define default-top-environment 'r6rs)
 (define default-cache-path #f)
 (define default-package-manager 'akku)
@@ -107,6 +111,7 @@ Example Usage:
     (hashtable-set! ht "log-path" default-log-path)
     (hashtable-set! ht "multi-thread" default-multi-thread)
     (hashtable-set! ht "type-inference" default-type-inference)
+    (hashtable-set! ht "auto-expand" default-auto-expand)
     (hashtable-set! ht "top-environment" default-top-environment)
     (hashtable-set! ht "cache-path" default-cache-path)
     (hashtable-set! ht "file-filter" '())
@@ -128,6 +133,7 @@ Example Usage:
 
 (define multi-thread-proc (boolean-option-proc "multi-thread"))
 (define type-inference-proc (boolean-option-proc "type-inference"))
+(define auto-expand-proc (boolean-option-proc "auto-expand"))
 
 (define (cache-path-proc option name arg seeds)
   (hashtable-set! seeds "cache-path" arg)
@@ -200,6 +206,8 @@ Example Usage:
            multi-thread-proc)
     (option '(#\t "type-inference") #t #f
            type-inference-proc)
+    (option '(#\a "auto-expand") #t #f
+           auto-expand-proc)
     (option '(#\e "top-environment") #t #f
            top-environment-proc)
     (option '(#\c "cache-path") #t #f
@@ -235,4 +243,5 @@ Example Usage:
     (hashtable-ref args "cache-path" default-cache-path)
     (private:resolve-file-filter
       (hashtable-ref args "package-manager" #f)
-      (private:normalize-file-filter (hashtable-ref args "file-filter" '())))))
+      (private:normalize-file-filter (hashtable-ref args "file-filter" '())))
+    (hashtable-ref args "auto-expand" default-auto-expand)))

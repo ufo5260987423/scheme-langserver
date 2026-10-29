@@ -97,6 +97,9 @@ vim.api.nvim_create_autocmd('FileType', {
         '-m enable',
         --disable type inference, because it's on very early stage.
         '-t disable',
+        --enable automatic macro resolution (IR auto-route + macro type
+        --inference); off by default.
+        '-a enable',
         --optional: persist workspace analysis cache for faster restart
         --'--cache-path', '~/.cache/scheme-langserver',
       },

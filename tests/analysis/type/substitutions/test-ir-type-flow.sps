@@ -24,7 +24,12 @@
 
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier meta)
-  (scheme-langserver analysis type domain-specific-language interpreter))
+  (scheme-langserver analysis type domain-specific-language interpreter)
+  (scheme-langserver analysis identifier expander ir-auto-route))
+
+;; automatic macro resolution is opt-in since 2026-10-29 (default off);
+;; this test exercises the mechanism, so turn it on.
+(ir-auto-route:enabled? #t)
 
 (define fixture
   (string-append (current-directory) "/tests/resources/workspace-fixtures/ir-type-flow"))

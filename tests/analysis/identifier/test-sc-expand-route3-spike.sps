@@ -20,7 +20,12 @@
   (scheme-langserver virtual-file-system document)
 
   (scheme-langserver analysis identifier expander chez-ir)
-  (scheme-langserver analysis identifier reference))
+  (scheme-langserver analysis identifier reference)
+  (scheme-langserver analysis identifier expander ir-auto-route))
+
+;; automatic macro resolution is opt-in since 2026-10-29 (default off);
+;; this test exercises the mechanism, so turn it on.
+(ir-auto-route:enabled? #t)
 
 ;; Synthesize macro-derived binding references from Chez IR ground truth:
 ;; one reference per (identifier binding-bias), inserted into the macro call
