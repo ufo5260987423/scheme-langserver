@@ -247,7 +247,11 @@
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path)
           (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path 'akku)]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter)
-          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter #f)]
+          ;INHERIT the current switch instead of forcing off: callers that
+          ;opted in via the ir-auto-route:enabled? parameter (tests, log
+          ;replays) keep their choice; only an explicit 9th argument
+          ;overrides (run.ss -a/--auto-expand).
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter (ir-auto-route:enabled?))]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter auto-expand?)
           ;Opt-in automatic macro resolution (IR auto-route + macro type
           ;inference): set BEFORE the thread pool spawns so forked workers

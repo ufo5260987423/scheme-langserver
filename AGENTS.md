@@ -397,7 +397,11 @@ parameter (default off; `run.ss -a enable` or init-server's optional
 `auto-expand?` arg turns it on, set before the thread pool spawns so forked
 workers inherit it); chez-ir-available? remains as a graceful-degradation
 self-check. Tests/replay scripts that exercise the mechanism set the parameter
-explicitly. MACRO TYPE INFERENCE (2026-10-27, third and final architecture):
+explicitly. init-server arities SHORTER than the 9-argument form INHERIT the
+parameter's current value instead of forcing it off (2026-10-29 fix: the old
+`#f` default clobbered the parameter that tests/replays had just set, and the
+gate silently disabled itself mid-replay -- the replayed goto-definition
+returned empty with zero ir-auto-route attempts recorded). MACRO TYPE INFERENCE (2026-10-27, third and final architecture):
 EXPANSION-DRIVEN, mimicking the identifier side. The type router's GENERIC
 macro arm (any syntax-variable head; ufo-try keeps a hand rule) dispatches
 to type:expand-and-infer (analysis/type/substitutions/macro-expansion.sls):
