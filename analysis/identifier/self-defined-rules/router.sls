@@ -6,7 +6,6 @@
     (scheme-langserver util path)
 
     (scheme-langserver virtual-file-system document)
-    (scheme-langserver virtual-file-system index-node)
 
     (scheme-langserver analysis util)
 

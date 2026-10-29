@@ -118,12 +118,12 @@ Example Usage:
     (hashtable-set! ht "package-manager" #f)
     ht))
 
-(define (log-path-proc option name arg seeds)
+(define (log-path-proc _option _name arg seeds)
   (hashtable-set! seeds "log-path" arg)
   seeds)
 
 (define (boolean-option-proc key)
-  (lambda (option name arg seeds)
+  (lambda (_option _name arg seeds)
     (cond
       [(string-ci=? arg "enable")
         (hashtable-set! seeds key #t)]
@@ -135,7 +135,7 @@ Example Usage:
 (define type-inference-proc (boolean-option-proc "type-inference"))
 (define auto-expand-proc (boolean-option-proc "auto-expand"))
 
-(define (cache-path-proc option name arg seeds)
+(define (cache-path-proc _option _name arg seeds)
   (hashtable-set! seeds "cache-path" arg)
   seeds)
 
@@ -145,7 +145,7 @@ Example Usage:
     [(string-ci=? str "txt") 'txt]
     [else #f]))
 
-(define (package-manager-proc option name arg seeds)
+(define (package-manager-proc _option _name arg seeds)
   (let ([val (package-manager-parse arg)])
     (if val
       (begin
@@ -166,7 +166,7 @@ Example Usage:
 (define (file-filter-parse str)
   (map private:ensure-leading-dot (private:split-string str #\,)))
 
-(define (file-filter-proc option name arg seeds)
+(define (file-filter-proc _option _name arg seeds)
   (hashtable-set! seeds "file-filter"
     (append (hashtable-ref seeds "file-filter" '()) (file-filter-parse arg)))
   seeds)
@@ -180,7 +180,7 @@ Example Usage:
     ((string-ci=? str "fluent") 'fluent)
     (else #f)))
 
-(define (top-environment-proc option name arg seeds)
+(define (top-environment-proc _option _name arg seeds)
   (let ((val (top-environment-parse arg)))
     (if val
       (begin
@@ -193,11 +193,11 @@ Example Usage:
 (define options
   (list
    (option '(#\h "help") #f #f
-           (lambda (opt name arg seeds)
+           (lambda (_opt _name _arg _seeds)
              (display-help)
              (exit 0)))
    (option '(#\v "version") #f #f
-           (lambda (opt name arg seeds)
+           (lambda (_opt _name _arg _seeds)
              (format (current-output-port) "scheme-langserver ~a\n" version)
              (exit 0)))
     (option '(#\l "log-path") #t #f
@@ -221,11 +221,11 @@ Example Usage:
         (args-fold
           (command-line-arguments)
           options
-          (lambda (opt name arg seeds)
+          (lambda (_opt name _arg _seeds)
             (format (current-error-port) "Unrecognized option: ~a\n" name)
             (display-help)
             (exit 1))
-          (lambda (operand seeds)
+          (lambda (_operand seeds)
             seeds)
           (make-default-options))])
   (init-server
