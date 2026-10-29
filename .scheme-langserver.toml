@@ -1,7 +1,8 @@
 # Project-level configuration for the scheme-langserver MCP bridge.
-# The scheme-langserver project itself cannot cold-start reliably with
-# multi-thread enable within the bridge's 30-second timeout, so we use
-# single-thread mode plus a persisted workspace cache.
+# Single-thread mode: measured fastest at init on this repo (~50 ms cold vs
+# ~0.55-0.95 s multi-thread, 2026-10-29). The persisted workspace cache is
+# kept for instant diagnostics after restart, not for init speed -- a warm
+# cache load (~300 ms) currently costs more than a cold init.
 
 langserver_path = "/home/ufo/Documents/workspace/scheme-langserver/run-mcp-cache.sh"
 multi_thread = "disable"

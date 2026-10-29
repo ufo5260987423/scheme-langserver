@@ -487,7 +487,7 @@ The repository has a pre-commit hook (`.git/hooks/pre-commit`) that runs the pro
 
 | Location | Issue | Impact |
 |----------|-------|--------|
-| `scheme-langserver` (general) | Cold initialization exceeds common LSP client timeouts (~38 s single-thread; type-inference add-on used to add ~48 s and OOM on macro-dense workspaces). Type-inference arm is now ~370 ms whole-repo after the 2026-10-28 caches + expansion budget (see the perf commit). With a valid workspace cache this drops to ~2 s (after recent mtime-based consistency-check optimization), but the first run on a fresh machine / after cache invalidation can time out clients such as the MCP Bridge (30 s). | **High** — first-time user experience |
+| `scheme-langserver` (general) | ~~Cold initialization exceeds common LSP client timeouts (~38 s single-thread; type-inference add-on used to add ~48 s and OOM on macro-dense workspaces).~~ **Resolved**: re-measured 2026-10-29 on this repo (820 files) — cold init with full identifier analysis is ~50 ms single-thread, ~300 ms with type inference; peak RSS ~830 MB. See §11 for the measurement table. Residual risk: workspaces far larger than this repo, or a cold machine still compiling `.so` files, can be slower — measure before assuming. | **Resolved** (2026-10) — keep an eye on very large workspaces |
 | `analysis/abstract-interpreter.sls:74` | Missing recursion guard for self-defined macro partial evaluation | Medium — can infinite-loop on certain macros |
 | `analysis/identifier/rules/library-import.sls` | `alias` modifier does not add refs when used inside a `(library ...)` form (script-level `import-process` works fine) | Low — `alias` is rare in library headers |
 | `protocol/apis/document-sync.sls:44` | Document sync has a TODO for optimization | Low — performance only |
@@ -608,14 +608,28 @@ Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstr
 
 ### Current implementation (`kimi` branch)
 
-A FASL-based workspace cache is now implemented and benchmarked successfully:
+> **Re-measured 2026-10-29** (8 cores, warm `.so` cache, this repo as the
+> fixture: 820 files incl. Akku deps, 128 project `.sls`). The numbers below
+> supersede the pre-2026-10-28 table, which described the eager-analysis era.
 
-| Fixture | Cold startup | Cached startup | Speedup |
-|---------|--------------|----------------|---------|
-| simple-lib | ~31 ms | ~1.3 ms | ~24x |
-| two-libs | ~35 ms | ~1.4 ms | ~24x |
-| Synthetic 100-copy simple-lib (200 files) | ~2484 ms | ~49 ms | ~50x |
-| scheme-langserver itself (128 `.sls` files) | ~55,790 ms | ~1750 ms | ~32x |
+| Scenario | Measured |
+|----------|----------|
+| `init-workspace` single-thread, incl. full identifier analysis of all 820 files | **~50 ms** |
+| same + type inference | ~300 ms |
+| `init-workspace` multi-thread | ~0.55–0.95 s (threaded-map sync overhead dominates at 18 batches; MT is a net loss at init) |
+| Single-file re-analysis (didOpen-equivalent) | 25–50 ms |
+| Full re-analysis, all configurations | 0.3–1 s |
+| Peak RSS (full analysis + MT + type inference) | ~830 MB |
+| Cache save | ~0.6 s → 25 MB `workspace.fasl` |
+| Cache load (warm) | ~300 ms (25 MB `fasl-read` + per-file mtime consistency check) |
+
+**Consequence: the cache is currently a net loss at init.** Loading it costs
+~300 ms while a cold init costs ~50 ms — six times slower — because the cached
+payload holds the *unanalyzed* VFS (references are deliberately not persisted
+across versions; see the stale-diagnosis trap below) and the mtime sweep over
+820 files dominates the load. The cache remains justified only for diagnostics
+persistence and for pathological workspaces where cold init genuinely exceeds
+it; measure before enabling `cache-path`.
 
 Key design points:
 
@@ -628,15 +642,10 @@ Key design points:
 - Manifest includes `format-version`, `langserver-version`, `chez-version`,
   `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
   falls back to cold start.
-- `file-linkage-path->id-map` is an `equal-hashtable`; Chez `fasl-write` only
-  supports `eq-hashtable`, so it is converted to/from an alist around save/load.
-- Procedure-valued fields that cannot be FASL-serialized are cleared before save:
-  - `index-node-expansion-generator` reset to `'()`.
-  - `identifier-reference-syntax-expander` reset to `#f`.
-- Generators are rebuilt on load: `rebuild-workspace-from-payload` walks every
-  document bottom-up and re-invokes the builder/attach procedures for
-  `syntax-rules`/`syntax-case`/`define-syntax`/`let-syntax` forms, so cached
-  workspaces keep route-2 (auto-expansion) functionality.
+- Chez `fasl-write` only supports `eq-hashtable`, so
+  `file-linkage-path->id-map` (an `equal-hashtable`) is converted to/from an
+  alist around save/load.
+- Fields that cannot be FASL-serialized are cleared or converted before save.
 - `workspace-undiagnosed-paths` is cleared before save. `document-diagnoses`
   are **persisted** (`workspace.sls` `private:prepare-workspace-payload`) so
   clients can pull diagnostics immediately after a cache load.

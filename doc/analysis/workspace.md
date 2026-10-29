@@ -360,6 +360,13 @@ When `threaded?` is `#f`, `(workspace-mutex workspace)` is `'()`. Every call sit
 
 ### Current implementation (`kimi` branch)
 
+> **Measured 2026-10-29** (this repo, 820 files): cold `init-workspace` with
+> full identifier analysis takes ~50 ms (ST) / ~300 ms (+TI), while a warm
+> cache load takes ~300 ms — dominated by the 25 MB `fasl-read` plus the
+> per-file mtime consistency sweep. The cache is therefore a net loss at init
+> for workspaces of this size and currently justifies itself mainly through
+> persisted diagnostics. See AGENTS.md §11 for the full table.
+
 A FASL-based workspace cache is implemented and enabled via the `--cache-path`
 CLI option. It persists the full workspace object graph (`file-node` tree,
 `library-node` tree, documents, `identifier-reference` network, and
