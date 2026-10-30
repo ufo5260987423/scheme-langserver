@@ -1,5 +1,27 @@
 # Release History
 
+## 2.1.11
+Macro release: automatic macro resolution rebuilt on Chez's own expander IR, macro-aware type inference, and a fix that makes macro expansion work in compiled binaries.
+
+### What's new in 2.1.11
+- **Macro resolution (identifier analysis)**:
+  - The self-built macro expander pipeline ("route 2") is retired. Automatic macro resolution is now IR-only and macro-agnostic: the router arms Chez's own expander (`sc-expand`, via the undocumented records switch) at every macro call site, extracts bindings/references from the resulting Lsrc IR, and synthesizes them onto the document. This covers the `ufo-match` family, `match-index-node`, and — through a new generic arm — every macro resolvable via library imports, including user-defined macros.
+  - Expansion environments bootstrap with exact compile-time semantics: the call site's own imports are honored, workspace libraries are loaded only as a fallback (never double-loading an already-registered library), and two-sided probes (global-lookup + quoted-symbol containment) guard against lenient interaction-environment false positives.
+  - Pattern-variable bindings are now anchored at pattern positions (Chez's own attribution), and each `case-lambda`/syntax clause gets its own scope.
+  - New opt-in switch `-a` / `--auto-expand` (also an `init-server` argument and a config-file key); default off.
+- **Type inference**:
+  - Macro type inference is expansion-driven, mirroring the identifier side: Chez expands the call site, the expansion is rebuilt as a fully annotated s-expression (single-clause `case-lambda` applications beta-reduced to `let`s), interpreted in a bounded virtual document that inherits the caller's reference table, and the results map back by source position. The value-flow chain now closes end-to-end through pattern variables.
+  - Resource controls make whole-repo type inference feasible: import-set caching per document text, negative caching of unexpandable call sites, per-call-site expansion retention bounds, and a rebuild budget that aborts pathological expansions during construction (one `match-index-node` call site in this repo expands to 3.5 M nodes). Whole repo + type inference: 474 ms init, 471 MB peak (previously OOM at 12 GB).
+- **Bug fixes**:
+  - Compiled binaries could never expand macros whose home library is compiled into the binary itself (practically `virtual-file-system/index-node`, i.e. every `match-index-node` call site when the server analyzes its own sources): runtime `(environment ...)` reports "library not found" and the `(load source)` fallback registers a second compilation instance that poisons all subsequent cross-instance calls. Fixed by embedding compile-time-resolved environments for such libraries (`private:embedded-self-lib-envs`).
+  - `init-server`'s shorter arities no longer drop the auto-expand setting when delegating.
+  - The ~38 s cold-initialization issue is resolved: the root cause was ~3200 macro-expansion attempts during init, mostly on pathological macros in test fixtures; caches and budgets above remove the blow-up (measured: LSP handshake ~8 s without macro parsing, ~18 s with, on this repo).
+- **Performance**:
+  - Memoized `chez-ir` walkers (available? self-check, accessors of record types), merged the references/bindings walks into a single traversal, and compute `cxr->steps` once per walk.
+- **Internal**:
+  - Reorganized `doc/` (31 files, −3094 lines): deleted outdated documents, merged duplicates, archived route-2 history; added a full IR auto-route mechanism walkthrough.
+  - Removed the EXPAND_DEBUG instrumentation layer and route-2 dead code; cleaned plugin-reported diagnostics and unused imports.
+
 ## 2.1.10
 Bug-fix release hardening the tokenizer against whole-workspace `initialize` failures, plus a new top environment.
 

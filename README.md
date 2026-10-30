@@ -91,6 +91,7 @@ cache.
 For troubleshooting tips, see [debugging.md](./doc/testing/debugging.md).
 
 ## Release
+2.1.11 — Macro release: automatic macro resolution is rebuilt on Chez's own expander IR (route-2 pipeline retired), now covering `match-index-node` and any library-resolved user macro, opt-in via `-a`/`--auto-expand`; macro-aware type inference with resource controls makes whole-repo type inference feasible (was OOM); macro expansion in compiled binaries fixed; the ~38 s cold-start issue resolved.
 2.1.10 — Bug-fix release hardening the tokenizer: files with content after `#!eof` and files whose first datum is not a parenthesized form no longer fail the whole workspace initialize; adds the Fluent Scheme top environment.
 Active development is focused on bug fixes, performance profiling, and expanding the type inference system.
 
