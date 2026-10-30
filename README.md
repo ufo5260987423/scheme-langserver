@@ -111,7 +111,7 @@ See [doc/release-history.md](./doc/release-history.md) for older releases.
 ![Find document symbols with telescope.nvim](./doc/figure/document-symbol.png "find document symbols with telescope.nvim")
 8. **Workspace symbol search** (`workspace/symbol`).
 9. Catching local identifier bindings in `define-syntax`, `let-syntax`, and other macro forms via hand-written rules.
-10. **Automatic macro resolution** (experimental). The generic expander for `syntax-rules`, `syntax-case`, `let-syntax`, and `letrec-syntax`—plus multi-layer macro cascade propagation—is functionally correct but **not enabled in production** because it is too slow for real-world projects (it triggers heavy macro expansion and cross-document reference back-propagation for every macro use site). The routing code in `analysis/identifier/self-defined-rules/router.sls` currently falls back to hand-written rules such as `match-process` for `ufo-match`. If you are interested in pushing this research forward—e.g. via lazy expansion, incremental caching, or selective rule generation—contributions and discussions are very welcome!
+10. **Automatic macro resolution** (opt-in via `-a` / `--auto-expand`). Macro call sites are expanded by Chez's own expander and the resulting IR is mined for bindings and references — macro-agnostic, covering the `ufo-match` family, `match-index-node`, and any library-resolved user macro. Paired with expansion-driven macro type inference that closes the value-flow chain through pattern variables. See the [mechanism walkthrough](./doc/analysis/ir-auto-route-walkthrough.md).
 11. Cross-platform parallel indexing.
 12. Custom source-code annotator compatible with `.sps` files.
 13. Peephole optimization for API requests using suspendable tasks.
@@ -174,7 +174,7 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 
 ### Core Analysis
 1. [Catching identifier bindings](./doc/analysis/identifier.md) — how the abstract interpreter resolves `define`, `lambda`, `let`, `define-record-type`, etc.
-2. [Macro auto-resolution](./doc/analysis/identifier.md) — generic `syntax-rules` expansion vs hand-written rules
+2. [Macro auto-resolution](./doc/analysis/ir-auto-route-walkthrough.md) — how macro call sites are expanded by Chez's expander and mined for bindings/references (per-stage code map)
 3. [Type system & inference](./doc/analysis/type/type.md) — complete type-inference pipeline and DSL
 4. [Workspace lifecycle](./doc/analysis/workspace.md) — initialization, incremental updates, and refresh batches
 5. [File dependency graph](./doc/analysis/dependency/file-linkage.md) — topological sorting and linkage matrix
@@ -189,15 +189,15 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 10. [AGENTS.md](./AGENTS.md) — build steps, testing conventions, coding style, and common traps for contributors
 
 ### User Guides
-16. [Fluent Scheme support](./doc/fluent-scheme.en.md) — using Magic Scheme + scheme-langserver for Ansys Fluent Scheme development in VS Code ([中文版](./doc/fluent-scheme.md))
+11. [Fluent Scheme support](./doc/fluent-scheme.en.md) — using Magic Scheme + scheme-langserver for Ansys Fluent Scheme development in VS Code ([中文版](./doc/fluent-scheme.md))
 
 ### Research & Experiments
-11. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme
-12. [Macro resolution notes](./doc/analysis/identifier.md) — debugging notes for macro identifier capture
-13. [Syntax candy DSL](./doc/analysis/type/domain-specific-language/syntax-candy.md) — pattern matcher for type-rule authoring
-14. [Record type inference analysis](./doc/analysis/type/record-inference.md) — `define-record-type` in the type system
-15. [Type inference performance field notes](./doc/analysis/type/type.md#103-performance-optimization-attempts-field-notes) — benchmark methodology and dead-end records
-16. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
+12. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme
+13. [Macro analysis framework](./doc/analysis/macro-analysis-framework.md) — theoretical coordinates of the macro-analysis mechanisms (with the retired route-2 pipeline as reference)
+14. [Syntax candy DSL](./doc/analysis/type/domain-specific-language/syntax-candy.md) — pattern matcher for type-rule authoring
+15. [Record type inference analysis](./doc/analysis/type/record-inference.md) — `define-record-type` in the type system
+16. [Type inference performance field notes](./doc/analysis/type/type.md#103-performance-optimization-attempts-field-notes) — benchmark methodology and dead-end records
+17. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
 
 ## License
 [MIT](./LICENSE)
