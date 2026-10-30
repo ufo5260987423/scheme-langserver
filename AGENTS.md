@@ -681,6 +681,7 @@ Key design points:
 - `workspace-undiagnosed-paths` is cleared before save. `document-diagnoses`
   are **persisted** (`workspace.sls` `private:prepare-workspace-payload`) so
   clients can pull diagnostics immediately after a cache load.
+- **Trap: stale REFERENCES (not just diagnoses) after a same-commit rebuild.** The cache manifest's version check uses `git describe`; a binary rebuilt from a *dirty tree at the same commit* produces the identical version string, so a cache saved by the pre-fix binary is accepted verbatim, mtimes match, no refresh runs, and every macro-derived (speculative) reference is silently missing -- observed in the wild 2026-10-30: goto-definition on `name-node` returned empty in VSCode while the no-cache replay of the same session answered correctly; `.vscode/scheme-langserver.cache` had been saved by the pre-fix binary and was re-saved (poisoned again) at shutdown. Remedy: `rm -rf <cache-dir>` after rebuilding the server binary; a healthy cache rebuilds on the next run.
 - **Trap: stale diagnoses after a rule-code fix.** Diagnoses are persisted
   together with file mtimes recorded *at save time*. If the langserver's own
   rule files (e.g. `analysis/identifier/**`) are fixed *after* a long-running
