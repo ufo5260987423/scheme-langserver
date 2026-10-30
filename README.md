@@ -48,14 +48,21 @@ machines or Chez versions**. When only a few files have changed since the cache
 was saved, the server performs an incremental refresh and preserves the analysis
 results for unchanged files.
 
-Typical speedups:
+Typical numbers (measured 2026-10-30, min of 3 runs, identifier analysis only,
+macro resolution off):
 
 | Fixture | Cold startup | Cached startup | Speedup |
 |---------|--------------|----------------|---------|
-| simple-lib | ~31 ms | ~1.3 ms | ~24x |
-| Synthetic 200-file fixture | ~2484 ms | ~49 ms | ~50x |
-| scheme-langserver itself (128 `.sls` files) | ~55,790 ms | ~1750 ms | ~32x |
-| scheme-langserver, one file changed | ~58,846 ms | ~1900 ms | ~31x |
+| simple-lib (2 files) | ~3 ms | ~2 ms | ~1.5x |
+| Synthetic 100 independent simple-lib copies (200 files) | ~407 ms | ~49 ms | ~8x |
+| scheme-langserver itself | ~0.1–0.4 s | ~300 ms | ~break-even |
+
+Since the 2026-10 analysis caches (import-set caching, negative caching of
+unexpandable call sites, expansion budgets), cold initialization is fast enough
+that the cache is close to break-even at init for small workspaces — the FASL
+read plus the per-file mtime sweep costs about as much as re-analysis. It still
+pays off on larger workspaces and through persisted diagnostics, which are
+republished immediately after a cache load without re-diagnosing files.
 
 See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
 [AGENTS.md](./AGENTS.md) §11 for implementation details.
