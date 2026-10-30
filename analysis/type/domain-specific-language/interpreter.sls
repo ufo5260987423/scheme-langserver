@@ -77,10 +77,6 @@
         [(equal? left right) #t]
         [(equal? left 'something?) #f]
         [(equal? right 'something?) #t]
-        [(and (identifier-reference? left) (inner:record? right)) 
-          (equal? left (cadr right))]
-        [(and (inner:record? right) (identifier-reference? right)) 
-          (equal? right (cadr left))]
         [(and (identifier-reference? left) (identifier-reference? right)) 
           (and (not (null? (identifier-reference-parents right)))
             (or (contain? (identifier-reference-parents right) left)

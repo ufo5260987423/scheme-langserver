@@ -7,10 +7,6 @@
     inner:lambda-param
     inner:lambda-return
 
-    inner:record?
-    inner:record-properties
-    inner:record-predicator
-
     inner:list?
     inner:list-content
 
@@ -57,7 +53,6 @@
     [(inner:pair? expression) #t]
     [(inner:lambda? expression) #t]
     [(inner:macro? expression) #t]
-    [(inner:record? expression) #t]
     [(inner:executable? expression) #t]
     [else #f]))
 
@@ -79,13 +74,9 @@
         [(equal? expression 'something?) #f]
         [(equal? expression 'inner:void?) #f]
         [(equal? expression '<-) #f]
-        [(equal? expression '<-record-ref) #f]
-        [(equal? expression '<-record-set!) #f]
-        [(equal? expression '<-record-constructor) #f]
         [(equal? expression 'inner:list?) #f]
         [(equal? expression 'inner:pair?) #f]
         [(equal? expression 'inner:vector?) #f]
-        [(equal? expression 'inner:record?) #f]
         [else #t])]
     [else #f]))
 
@@ -120,21 +111,6 @@
         #f
         body)]
     [else #f]))
-
-(define (inner:record? body)
-  (match body
-    [('inner:record? (? identifier-reference? predicator) ('inner:pair? (? identifier-reference? ref) (? inner:trivial? type-value)) ...) #t]
-    [else #f]))
-
-(define (inner:record-properties body)
-  (if (inner:record? body)
-    (cddr body)
-    '()))
-
-(define (inner:record-predicator body)
-  (if (inner:record? body)
-    (cadr body)
-    '()))
 
 (define (inner:lambda? body)
   (match body
