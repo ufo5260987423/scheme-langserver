@@ -105,6 +105,37 @@
 (define (private:probe-interaction head-symbol)
   (private:probe-in (interaction-environment) head-symbol))
 
+;COMPILE-TIME EMBEDDED ENVS (2026-10-30, the compiled-binary escape hatch):
+;compile-chez-program evaluates a TOP-LEVEL literal (environment ...) at
+;COMPILE time -- where the libraries are resolvable -- and embeds the
+;environment object into the binary. At RUNTIME, (environment ...) cannot see
+;compiled-in libraries ("library not found") and (load source) would register
+;a SECOND compilation instance, poisoning every cross-instance call. So:
+;  1. User / Akku-dependency macro libraries: located at runtime or via the
+;     load fallback; poison-free. They NEVER need an entry here.
+;  2. Libraries compiled INTO the binary itself -- practically
+;     (scheme-langserver virtual-file-system index-node), whose bindings every
+;     identifier rule imports: (environment) AND (load) both fail. These are
+;     the only libraries this list exists for.
+;Chez exposes no way to enumerate compiled-in libraries at runtime, so the set
+;is a compile-time literal (like an export list). Lambda-nested (environment)
+;calls are NOT compile-time-resolved (prog/prog2 probes), hence top-level;
+;unresolvable entries are dropped by filter cdr.
+
+(define private:embedded-self-lib-envs
+  (filter cdr
+    (list
+      (cons '(scheme-langserver virtual-file-system index-node)
+        (guard (e [#f])
+          (environment '(chezscheme) '(scheme-langserver virtual-file-system index-node)))))))
+
+(define (private:embedded-env-for library-identifier)
+  ;exact-match lookup in the compile-time-embedded table; #f when the
+  ;library is not compiled into the binary (the normal user-macro case)
+  (let ([hit (find (lambda (entry) (equal? (car entry) library-identifier))
+                private:embedded-self-lib-envs)])
+    (and hit (cdr hit))))
+
 (define (private:fresh-env library-identifier)
   (guard (e [else #f])
     (environment '(chezscheme) library-identifier)))
@@ -235,6 +266,13 @@
             (let ([env
                     (let ([built (private:build-env library-identifier import-sets workspace-root)])
                       (or built
+                        ;compiled-binary path (2026-10-30): runtime
+                        ;(environment ...) cannot see compiled-in libraries
+                        ;and (load source) would poison the process with a
+                        ;second compilation instance -- the compile-time-
+                        ;embedded envs (exact library match) are the escape
+                        ;hatch; user macro libraries never reach this arm.
+                        (private:embedded-env-for library-identifier)
                         (guard (e [else #f])
                           (load source)
                           (or (private:build-env library-identifier import-sets workspace-root)
