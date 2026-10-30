@@ -150,7 +150,7 @@
 
 (define (inner:vector? body)
   (match body
-    [('inner:vector? inner:list? item ...) 
+    [('inner:vector? item ...) 
       (fold-left 
         (lambda (left right)
           (and left (inner:trivial? right)))
