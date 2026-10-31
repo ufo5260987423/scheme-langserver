@@ -205,6 +205,7 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 15. [Record type inference analysis](./doc/analysis/type/record-inference.md) — `define-record-type` in the type system
 16. [Type inference performance field notes](./doc/analysis/type/type.md#103-performance-optimization-attempts-field-notes) — benchmark methodology and dead-end records
 17. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
+18. [Type inference precedents](./doc/analysis/type/type-inference-precedents.md) — external theory survey (success typing, occurrence typing, conditional types, semantic subtyping) with adoption roadmap for the type-rule DSL
 
 ## License
 [MIT](./LICENSE)

@@ -1,0 +1,8 @@
+(library (narrow-demo lib)
+  (export f)
+  (import (rnrs))
+  (define (f flag)
+    (let ([v (if flag 42 "hello")])
+      (if (number? v)
+        v
+        v))))

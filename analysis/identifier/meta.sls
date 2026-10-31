@@ -185,18 +185,8 @@ scheme-base scheme-case-lambda scheme-char scheme-complex
 scheme-cxr scheme-eval scheme-file scheme-inexact scheme-lazy 
 scheme-load scheme-process-context scheme-read scheme-repl 
 scheme-time scheme-write scheme-r5rs s7 fluent))
-  ;numeric tower
-  (fold-left 
-    (lambda (parent identifier-reference)
-        (identifier-reference-parents-set! identifier-reference (list parent))
-        identifier-reference)
-    (find (lambda (identifier-reference) (equal? 'fixnum? (identifier-reference-identifier identifier-reference))) chezscheme)
-    (map 
-        (lambda (procedure-name) 
-          (find 
-              (lambda (identifier-reference) 
-                (equal? procedure-name (identifier-reference-identifier identifier-reference))) chezscheme)) 
-        '(bignum? integer? cflonum? flonum? rational? real? complex? number?))))
+)
+
 
 (define (construct-type-expression-with-meta expression)
   (if (not initialized?)

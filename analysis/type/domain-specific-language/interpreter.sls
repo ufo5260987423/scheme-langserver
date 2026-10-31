@@ -32,6 +32,7 @@
 
     (scheme-langserver analysis identifier reference)
 
+    (scheme-langserver analysis type semantic-subtyping semtype)
     (scheme-langserver analysis type domain-specific-language inner-type-checker)
     (scheme-langserver analysis type domain-specific-language syntax-candy))
 
@@ -77,6 +78,11 @@
         [(equal? left right) #t]
         [(equal? left 'something?) #f]
         [(equal? right 'something?) #t]
+        ;route-4 switch: set-theoretic judgment when both sides convert.
+        ;Undetermined sides (index-nodes, templates with unresolved
+        ;components) fall through to the legacy structural paths below.
+        [(and (sem:convert left) (sem:convert right))
+          (sem:subtype? (sem:convert left) (sem:convert right))]
         [(and (identifier-reference? left) (identifier-reference? right)) 
           (and (not (null? (identifier-reference-parents right)))
             (or (contain? (identifier-reference-parents right) left)
