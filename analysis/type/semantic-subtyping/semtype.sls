@@ -2,6 +2,7 @@
   (export
     make-sem:type sem:type? sem:type-base sem:type-pair sem:type-arrow sem:type-vector
     sem:convert sem:base-symbols
+    sem:clear-memos!
     sem:subtype? sem:equivalent?
     sem:union sem:intersect sem:diff sem:complement sem:is-empty?
     sem:universe sem:empty
@@ -29,9 +30,10 @@
 ;  depth budget: exhaustion returns "inhabited" (optimistic over-
 ;  approximation, Dialyzer depth-k style -- may miss an emptiness, never
 ;  asserts a false positive).
-;- The arrow sort is a two-point lattice for now: #f (empty) / 'ALL (the
-;  whole function sort), enough for complement to stay total. Phase 3
-;  replaces it with real arrow clauses (approximate dom/cod rule first).
+;- The arrow sort carries real clauses (lambda conversion lands there);
+;  emptiness uses the full Thm 2.17 subset-splitting rule, memoized per
+;  thread. A two-point #f/'ALL sentinel remains only for complement
+;  totality at the sort level.
 ;
 ;Bit semantics: each PRIVATE-BASE-LEAVES predicate owns one bit; compound
 ;predicates expand to the union of their leaf bits (numeric tower).
@@ -78,6 +80,37 @@
       (complex? . ,(mask-of '(fixnum? bignum? ratnum? flonum? cflonum?)))
       (number? . ,(mask-of '(fixnum? bignum? ratnum? flonum? cflonum?))))))
 
+;per-thread memos (AGENTS.md hazard: parameters are inherited across
+;fork-thread, so the cell is tagged with the thread id and rebuilt on
+;mismatch -- the reference.sls:94 pattern). Two layers:
+;- convert-cache: predicate tree (equal?-keyed) -> sem:type, so repeated
+;  judgments over the same DSL trees share sem:type identities;
+;- empty-memo: sem:type identity (eq?-keyed) -> ((depth . result)...),
+;  so the is-empty? recursion never recomputes a shard query.
+(define private:convert-cache-cell (make-thread-parameter #f))
+(define private:empty-memo-cell (make-thread-parameter #f))
+
+(define (private:cell-table cell-name make)
+  (let ([cell (cell-name)])
+    (if (and (pair? cell) (eqv? (car cell) (get-thread-id)))
+      (cdr cell)
+      (let ([fresh (cons (get-thread-id) (make))])
+        (cell-name fresh)
+        (cdr fresh)))))
+
+(define (private:convert-cache)
+  (private:cell-table private:convert-cache-cell
+    (lambda () (make-hashtable equal-hash equal?))))
+
+(define (private:empty-memo)
+  (private:cell-table private:empty-memo-cell
+    (lambda () (make-eq-hashtable))))
+
+(define (sem:clear-memos!)
+  (private:convert-cache-cell #f)
+  (private:empty-memo-cell #f)
+  (void))
+
 (define-record-type sem:type
   (fields
     (immutable base)     ; fixnum bitset over base sorts (union of the sort)
@@ -118,8 +151,20 @@
 
 ;returns a sem:type, or #f for "undetermined" (something?, unknown
 ;symbols, unsupported shapes). subtype? treats #f as permissive,
-;preserving the DSL's current lenient behavior.
+;preserving the DSL's current lenient behavior. Memoized per thread on
+;the input tree so repeated judgments share sem:type identities (which
+;the eq?-keyed empty-memo below relies on).
 (define sem:convert
+  (case-lambda
+    [(expression)
+      (let ([cached (hashtable-ref (private:convert-cache) expression 'PRIVATE-MISS)])
+        (if (eq? cached 'PRIVATE-MISS)
+          (let ([result (private:convert expression)])
+            (hashtable-set! (private:convert-cache) expression result)
+            result)
+          cached))]))
+
+(define private:convert
   (case-lambda
     [(expression)
       (cond
@@ -308,10 +353,18 @@
   (case-lambda
     [(t) (sem:is-empty? t 8)]
     [(t depth)
-      (and (zero? (sem:type-base t))
-        (private-pair-shard-empty? (sem:type-pair t) depth)
-        (private-arrow-shard-empty? (sem:type-arrow t) depth)
-        (private-vector-shard-empty? (sem:type-vector t) depth))]))
+      (let* ([memo (private:empty-memo)]
+          [entries (hashtable-ref memo t '())]
+          [hit (assv depth entries)])
+        (if hit
+          (cdr hit)
+          (let ([result
+                  (and (zero? (sem:type-base t))
+                    (private-pair-shard-empty? (sem:type-pair t) depth)
+                    (private-arrow-shard-empty? (sem:type-arrow t) depth)
+                    (private-vector-shard-empty? (sem:type-vector t) depth))])
+            (hashtable-set! memo t (cons (cons depth result) entries))
+            result)))]))
 
 (define (private-powerset xs)
   (if (null? xs)
@@ -373,11 +426,13 @@
         [neg (fold-left sem:union (sem:empty) (cdr clause))])
       (sem:is-empty? (sem:diff pos neg) (- depth 1)))))
 
-;arrow sort. CONSERVATIVE single-rule approximation (Kent tutorial §2.1,
-;the Flow/TS choice): a clause (P,N) is empty only if some single positive
-;a∈P already subtypes some n∈N -- sound because ∩P ⊆ a for every a∈P, but
-;misses cases where only the combination subtypes. The full Thm 2.17
-;subset-splitting upgrade slot is left open on purpose.
+;arrow sort, FULL Thm 2.17 (Frisch LICS'02 / Castagna primer Step 4):
+;a clause (P,N) is empty iff for SOME negative arrow n = t'→s' in N:
+;  dom(n) <: ∨dom(P)   -- n's domain covers every positive domain, and
+;  for EVERY P'⊆P:  dom(n) <: ∨dom(P')  ∨  ∩cod(P∖P') <: cod(n)
+;The subset split is the completeness the old conservative single rule
+;gave up: a combination of positive arrows may subtype n even when no
+;single one does. Recursive checks inherit the depth budget.
 (define (private-arrow-shard-empty? shard depth)
   (or (not shard)
     (null? shard)
@@ -392,20 +447,34 @@
       (and (not (null? N))
         (exists
           (lambda (n)
-            (exists
-              (lambda (a) (private-single-arrow-subtype? a n depth))
-              P))
+            (let ([n-dom (vector-ref n 0)]
+                [n-cod (vector-ref n 1)])
+              (and (private-subtype-at? n-dom (private-dom-union P) depth)
+                (for-all
+                  (lambda (P-sub)
+                    (or (private-subtype-at? n-dom (private-dom-union P-sub) depth)
+                      (private-subtype-at?
+                        (private-cod-intersection (private-set-difference P P-sub))
+                        n-cod
+                        depth)))
+                  (private-powerset P)))))
           N)))))
 
-;single-arrow rule: dom contravariant, cod covariant, dom non-empty
-(define (private-single-arrow-subtype? a n depth)
-  (let ([a-dom (vector-ref a 0)]
-      [a-cod (vector-ref a 1)]
-      [n-dom (vector-ref n 0)]
-      [n-cod (vector-ref n 1)])
-    (and (sem:subtype? n-dom a-dom)
-      (sem:subtype? a-cod n-cod)
-      (not (sem:is-empty? n-dom (- depth 1))))))
+(define (private-subtype-at? s t depth)
+  (or (not s) (not t)
+    (sem:is-empty? (sem:diff s t) (- depth 1))))
+
+(define (private-dom-union arrows)
+  (fold-left
+    (lambda (acc a) (sem:union acc (vector-ref a 0)))
+    (sem:empty)
+    arrows))
+
+(define (private-cod-intersection arrows)
+  (fold-left
+    (lambda (acc a) (sem:intersect acc (vector-ref a 1)))
+    (sem:universe)
+    arrows))
 
 ;; ---------------------------------------------------------------------
 ;; judgments

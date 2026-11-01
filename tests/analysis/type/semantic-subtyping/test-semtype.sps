@@ -187,7 +187,7 @@
     (not (sem:subtype? (sem:convert '(inner:vector? number?)) (sem:convert 'number?))))
 (test-end)
 
-(test-begin "sem:arrow sort (approximate single rule)")
+(test-begin "sem:arrow sort")
   ;ret covariant: (fixnum <- (number?)) <: (number <- (number?))
   (test-assert
     (sem:subtype?
@@ -218,6 +218,44 @@
     (not (sem:subtype? (sem:convert 'number?) (sem:convert '(number? <- (number?))))))
   ;lambdas with undetermined parts stay permissive
   (test-equal #f (sem:convert '(something? <- (number?))))
+(test-end)
+
+
+(test-begin "sem:arrow Thm 2.17 combination cases")
+  ;the completeness case the conservative single rule missed: a family
+  ;of per-class arrows whose combination covers the whole numeric tower
+  ;subtypes the generic arrow, though no single member does.
+  (let ([per-class
+          (sem:intersect
+            (sem:convert '(integer? <- (integer?)))
+            (sem:intersect
+              (sem:convert '(ratnum? <- (ratnum?)))
+              (sem:intersect
+                (sem:convert '(flonum? <- (flonum?)))
+                (sem:convert '(cflonum? <- (cflonum?))))))]
+      [generic (sem:convert '(number? <- (number?)))])
+    (test-assert "combination of per-class arrows <: generic arrow"
+      (sem:subtype? per-class generic))
+    (test-assert "generic arrow is NOT <: any single per-class arrow"
+      (not (sem:subtype? generic (sem:convert '(integer? <- (integer?)))))))
+  ;the old single-rule results still hold
+  (test-assert
+    (sem:subtype? (sem:convert '(fixnum? <- (number?))) (sem:convert '(number? <- (number?)))))
+  (test-assert
+    (not (sem:subtype? (sem:convert '(number? <- (fixnum?))) (sem:convert '(number? <- (string?))))))
+(test-end)
+
+(test-begin "sem:memos are per-thread and clearable")
+  ;convert caching: same tree twice returns the same record
+  (test-assert
+    (eq? (sem:convert '(inner:pair? fixnum? string?))
+      (sem:convert '(inner:pair? fixnum? string?))))
+  ;empty-memo: repeated deep queries stay consistent after clearing
+  (let ([t (sem:convert '(inner:list? fixnum?))]
+      [u (sem:convert '(inner:list? number?))])
+    (test-assert (sem:subtype? t u))
+    (sem:clear-memos!)
+    (test-assert (sem:subtype? t u)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
