@@ -8,6 +8,7 @@
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis type domain-specific-language interpreter)
+    (scheme-langserver analysis type semantic-subtyping display)
 
     (scheme-langserver protocol alist-access-object)
 
@@ -45,7 +46,25 @@
                     (lambda (prev current)
                       (string-append prev "\n\n" current))
                     "## Type Inference"
-                    (dedupe (apply append (map type:interpret->strings types)))))
+                    (dedupe
+  (call-with-values
+    (lambda () (sem:compact-display types 10))
+    (lambda (items total truncated?)
+      (append
+        (apply append
+          (map
+            (lambda (item)
+              (map
+                (lambda (str)
+                  (if (and (eq? (quote rep) (car item)) (> (caddr item) 1))
+                    (string-append str "  (x" (number->string (caddr item)) ")")
+                    str))
+                (type:interpret->strings (cadr item))))
+            items))
+        (if truncated?
+          (list (string-append "... " (number->string total) " candidates total"))
+          (quote ())))
+)))))
                 "")])
           (if (null? import-file-node)
             (make-alist
