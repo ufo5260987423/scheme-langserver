@@ -258,4 +258,17 @@
     (test-assert (sem:subtype? t u)))
 (test-end)
 
+(test-begin "sem:unknown vs top")
+  ;#f stays permissive in judgments (the existing contract)
+  (test-assert (sem:subtype? #f (sem:convert 'number?)))
+  (test-assert (sem:subtype? (sem:convert 'number?) #f))
+  ;sem:universe is the real top, not #f
+  (test-assert (sem:subtype? (sem:convert 'number?) (sem:universe)))
+  (test-assert (not (sem:subtype? (sem:universe) (sem:convert 'number?))))
+  (test-assert (sem:is-empty? (sem:complement (sem:universe))))
+  ;its complement is genuinely inhabited
+  (test-assert
+    (not (sem:is-empty? (sem:diff (sem:universe) (sem:convert 'number?)))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

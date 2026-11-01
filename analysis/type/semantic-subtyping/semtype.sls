@@ -149,11 +149,15 @@
 ;; conversion: DSL predicate trees -> sem:type
 ;; ---------------------------------------------------------------------
 
-;returns a sem:type, or #f for "undetermined" (something?, unknown
-;symbols, unsupported shapes). subtype? treats #f as permissive,
-;preserving the DSL's current lenient behavior. Memoized per thread on
-;the input tree so repeated judgments share sem:type identities (which
-;the eq?-keyed empty-memo below relies on).
+;returns a sem:type, or #f. Three distinct meanings are collapsed into
+;#f ON PURPOSE, and the API contract pins them apart:
+;  (a) unknown / something?   -- no information; judgments short-circuit
+;      permissively (never a false positive);
+;  (b) unsupported shapes     -- same treatment as (a) by design;
+;  (c) the universal type TOP -- NOT #f: it is a first-class value,
+;      (sem:universe), and the five operations are total on it.
+;Memoized per thread on the input tree so repeated judgments share
+;sem:type identities (which the eq?-keyed empty-memo relies on).
 (define sem:convert
   (case-lambda
     [(expression)
