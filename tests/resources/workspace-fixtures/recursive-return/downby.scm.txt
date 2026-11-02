@@ -1,0 +1,10 @@
+(library (fixtures recursive-return downby)
+  (export downby)
+  (import (chezscheme))
+
+  ;; direct self-recursion through a define
+  (define (downby n)
+    (if (< n 1)
+      0
+      (downby (- n 1))))
+)

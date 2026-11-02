@@ -1,0 +1,7 @@
+(library (fixtures recursive-return plain)
+  (export plain)
+  (import (chezscheme))
+
+  ;; non-recursive control
+  (define (plain x) (+ x 1))
+)

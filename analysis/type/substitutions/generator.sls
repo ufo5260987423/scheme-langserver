@@ -26,6 +26,7 @@
     (scheme-langserver analysis type substitutions rules unless)
     (scheme-langserver analysis type substitutions util)
 
+    (scheme-langserver analysis type substitutions fixpoint)
     (scheme-langserver analysis type substitutions macro-expansion)
     (scheme-langserver analysis type substitutions self-defined-rules router))
 
@@ -43,7 +44,10 @@
             (lambda (infer-root-library-node infer-document infer-node)
               (type:expand-and-infer construct-substitutions-for
                 infer-root-library-node infer-document infer-node))))
-        (document-index-node-list document))]))
+        (document-index-node-list document))
+      ;;P1: recursive-return fixpoint pass (guarded internally; a failure
+      ;;degrades to the pre-fixpoint status quo, never breaks the caller)
+      (fixpoint-substitutions-for! document)]))
 
 ; document index-node allow-unquote? quoted?
 (define step

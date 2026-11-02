@@ -1,0 +1,13 @@
+(library (fixtures recursive-return case-lambda-sum)
+  (export case-lambda-sum)
+  (import (chezscheme))
+
+  ;; variable define + case-lambda self-recursion (binary-search style)
+  (define case-lambda-sum
+    (case-lambda
+      [(n) (case-lambda-sum n 0)]
+      [(n acc)
+       (if (< n 1)
+         acc
+         (case-lambda-sum (- n 1) (+ acc n)))]))
+)

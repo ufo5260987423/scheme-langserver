@@ -1,0 +1,11 @@
+(library (fixtures recursive-return loop-sum)
+  (export loop-sum)
+  (import (chezscheme))
+
+  ;; named-let arithmetic recursion: base case returns a number
+  (define (loop-sum n)
+    (let loop ([i n] [acc 0])
+      (if (< i 1)
+        acc
+        (loop (- i 1) (+ acc i)))))
+)

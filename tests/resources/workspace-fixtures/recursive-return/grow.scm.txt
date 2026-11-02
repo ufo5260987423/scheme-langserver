@@ -1,0 +1,11 @@
+(library (fixtures recursive-return grow)
+  (export grow)
+  (import (chezscheme))
+
+  ;; unbounded container growth: candidate terms grow every round,
+  ;; the fixpoint round-cap must stop iteration gracefully (sound over-approx)
+  (define (grow n)
+    (if (< n 1)
+      '()
+      (cons n (grow (- n 1)))))
+)
