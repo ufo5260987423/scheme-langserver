@@ -47,44 +47,106 @@
 (define PRIVATE-MAX-FIXPOINT-ROUNDS 6)
 (define PRIVATE-MAX-FIXPOINT-ATOMS 32)
 
+(define (private:now-ms)
+  (let ([t (current-time)])
+    (+ (* 1000 (time-second t)) (div (time-nanosecond t) 1000000))))
+
+;;hard budget: the pass must never dominate analysis time. The cost of a
+;;group is dominated by its interpretation rounds, which on huge import/
+;;match rule bodies (define-library-import.sls measured 69 s for ONE
+;;document) can blow up to the interpreter's internal cartesian caps. A
+;;document-level wall-clock budget caps the whole pass; a group that would
+;;exceed it is restored to status quo and the remaining groups are skipped.
+;;Two guards keep the pass from ever dominating analysis time: (1) a
+;;static size cap -- measured blow-up groups (define-library-import.sls:
+;;69 s for ONE document) have return-chain subtrees of 1500+ nodes while
+;;ordinary recursive functions stay under ~200 (binary-search 121,
+;;contain 150, define.sls 80), so groups whose return chains exceed 500
+;;nodes are skipped outright; (2) a document-level wall-clock budget --
+;;a group that would exceed it is restored to status quo and the
+;;remaining groups are skipped.
+(define PRIVATE-MAX-FIXPOINT-MS-PER-DOCUMENT 50)
+(define PRIVATE-MAX-GROUP-RETURN-NODES 500)
+
+(define private:budget-tag 'private:fixpoint-budget)
+
+(define (private:budget-exceeded? ex)
+  (eq? ex private:budget-tag))
+
 (define (fixpoint-substitutions-for! document)
-  (guard (ex [else
-              ;;never break the generator; a failed pass degrades to status quo
-              (append-new-diagnoses
-                document
-                `(0 0 2
-                  ,(string-append "Recursive fixpoint warning: "
-                      (if (condition? ex) (condition-message ex) "unknown"))
-                  "type" "type-fixpoint-warning"))
-              (void)])
-    (for-each
-      private:solve-group!
-      (private:merge-groups (private:collect-raw-groups document)))))
-
+  (let ([deadline (+ (private:now-ms) PRIVATE-MAX-FIXPOINT-MS-PER-DOCUMENT)])
+    (guard (ex [else
+                (unless (private:budget-exceeded? ex)
+                  ;;never break the generator; a failed pass degrades to
+                  ;;status quo with a diagnosis (budget exhaustion is silent)
+                  (append-new-diagnoses
+                    document
+                    `(0 0 2
+                      ,(string-append "Recursive fixpoint warning: "
+                          (if (condition? ex) (condition-message ex) "unknown"))
+                      "type" "type-fixpoint-warning")))
+                (void)])
+      (for-each
+        (lambda (group) (private:solve-group! group deadline))
+        (private:merge-groups (private:collect-raw-groups document))))))
 ;; group = (kind names return-nodes call-nodes); call-node = (node . name)
-(define (private:solve-group! group)
-  (let* ([names (cadr group)]
-      [return-nodes (caddr group)]
-      [my-calls
-        (filter
-          (lambda (call) (find (lambda (n) (eq? n (cdr call))) names))
-          (cadddr group))]
-      [call-nodes (map car my-calls)])
-    (unless (null? call-nodes)
-      (let ([saved (map (lambda (n) (cons n (index-node-substitution-list n))) call-nodes)])
-        (guard (ex [else (private:restore-substitutions! saved)])
-          ;;R0: sever the cycle, interpret the pure base case, keep only
-          ;;solved candidates (raw severed call nodes and unsolved parameter
-          ;;references are placeholders, never estimates)
-          (for-each
-            (lambda (n) (index-node-substitution-list-set! n '()))
-            call-nodes)
-          (let ([r0 (private:interpret-union return-nodes)])
-            (if (private:worthwhile? r0)
-              (private:iterate! return-nodes call-nodes saved r0 0)
-              (private:restore-substitutions! saved))))))))
+(define (private:solve-group! group deadline)
+  (when (< (private:now-ms) deadline)
+    (let* ([names (cadr group)]
+        [return-nodes (caddr group)]
+        [my-calls
+          (filter
+            (lambda (call) (find (lambda (n) (eq? n (cdr call))) names))
+            (cadddr group))]
+        [call-nodes (map car my-calls)])
+      (unless (or (null? call-nodes)
+              ;;static guard: huge return chains blow interpretation up to
+              ;;the interpreter's internal caps (measured: a 1500-node body
+              ;;takes 69 s); ordinary recursive groups stay well under it
+              (> (private:group-return-size return-nodes)
+                PRIVATE-MAX-GROUP-RETURN-NODES))
+        (let ([saved (map (lambda (n) (cons n (index-node-substitution-list n))) call-nodes)])
+          (guard (ex [else
+                      (private:restore-substitutions! saved)
+                      (when (private:budget-exceeded? ex) (raise ex))])
+            ;;R0: sever the cycle, interpret the pure base case, keep only
+            ;;solved candidates (raw severed call nodes and unsolved parameter
+            ;;references are placeholders, never estimates)
+            (for-each
+              (lambda (n) (index-node-substitution-list-set! n '()))
+              call-nodes)
+            (private:check-budget! deadline)
+            (let ([r0 (private:interpret-union return-nodes)])
+              (if (private:worthwhile? r0)
+                (private:iterate! return-nodes call-nodes saved r0 0 deadline)
+                (private:restore-substitutions! saved)))))))))
 
-(define (private:iterate! return-nodes call-nodes saved current i)
+;;total number of index-nodes in the return chains (shared nodes counted
+;;once); stops counting past limit+1
+(define (private:group-return-size return-nodes)
+  (let ([visited (make-eq-hashtable)])
+    (fold-left
+      (lambda (acc node) (private:count-subtree node visited acc (+ PRIVATE-MAX-GROUP-RETURN-NODES 1)))
+      0
+      return-nodes)))
+
+(define (private:count-subtree node visited acc limit)
+  (cond
+    [(> acc limit) acc]
+    [(not (index-node? node)) acc]
+    [(hashtable-ref visited node #f) acc]
+    [else
+      (hashtable-set! visited node #t)
+      (fold-left
+        (lambda (a child) (private:count-subtree child visited a limit))
+        (+ acc 1)
+        (index-node-children node))]))
+
+(define (private:check-budget! deadline)
+  (when (>= (private:now-ms) deadline)
+    (raise private:budget-tag)))
+
+(define (private:iterate! return-nodes call-nodes saved current i deadline)
   (cond
     [(or (>= i PRIVATE-MAX-FIXPOINT-ROUNDS)
         (> (private:count-atoms current) PRIVATE-MAX-FIXPOINT-ATOMS))
@@ -97,9 +159,10 @@
       ;;same filter: the estimate only ever contains solved atoms, so a
       ;;placeholder can never be cached into a "concrete" composite
       (let ([next (private:interpret-union return-nodes)])
+        (private:check-budget! deadline)
         (if (equal? (private:sort-candidates next) (private:sort-candidates current))
           (private:finalize! call-nodes saved next)
-          (private:iterate! return-nodes call-nodes saved next (+ i 1))))]))
+          (private:iterate! return-nodes call-nodes saved next (+ i 1) deadline)))]))
 
 (define (private:interpret-union return-nodes)
   (fold-left
