@@ -132,7 +132,7 @@ success-typing 语义）；(b) 单趟 + 重入守卫 + 占位符传播（Pyright
 |--------|------|----------|--------|------|
 | P0 | record 谓词签名（恢复+扩展 record.sls） | no-info 13%→~5% | 极小 | **已完成**（2026-11-02，谓词定义节点携带 arrow，导出/悬停验证通过） |
 | P1 | 递归 fixpoint B+D | imprecise 49%→~25% | ~200 行 | **已完成**（2026-11-02，`fixpoint.sls`；binary-search 返回类型全 something? → 20/21 条具体 list 签名；互递归联合求解；性能中性） |
-| P2 | 1B/1A 签名压缩 | 显示签名数 -80%+，无损 | 小 | 未开始 |
+| P2 | 1B/1A 签名压缩 | 显示签名数 -80%+，无损 | 小 | **已完成**（2026-11-02：1B hover 语义折叠 `bfeead30`；1A raw 侧 canonical 去重 + 箭头支配消除 + `output-type-analysis.ss` 接入同一管线，natural-order-compare 端到端 182 候选 → 6 条互不包含签名，并集不变） |
 | P3 | 2A rest 槽 | protocol API 一批签名复活 | 小 | 未开始 |
 | P4 | 谓词命题 + semtype narrowing | 根治 something? 泛滥 | 中 | 未开始 |
 | P5 | record 字段类型 / CDuce record / SCC 互递归 | 长期 | 大 | 未开始 |

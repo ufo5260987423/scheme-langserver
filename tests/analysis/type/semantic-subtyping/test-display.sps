@@ -9,6 +9,7 @@
   (srfi :64 testing)
 
   (scheme-langserver virtual-file-system index-node)
+  (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis type semantic-subtyping semtype)
   (scheme-langserver analysis type semantic-subtyping display))
 
@@ -83,6 +84,61 @@
           (lambda (item)
             (and (eq? 'raw (car item)) (eq? node (cadr item))))
           items))))
+(test-end)
+
+(test-begin "display compaction: raw arrows with mixed non-arrow candidates")
+  ;regression (2026-11-02): private-arrow-absorb crashed with car of an
+  ;index-node when a raw arrow candidate coexisted with non-arrow raw
+  ;candidates (dominance find ran over every other candidate unchecked)
+  (let* ([node (make-index-node #f '() '() '() #f '() '() '() '())]
+      [candidates
+        (list
+          '(something? <- (inner:list? number?))
+          '(something? <- (inner:list? fixnum?))
+          node)])
+    (let-values
+      ([(items total truncated?) (sem:compact-display candidates 10)])
+      (test-equal 3 total)
+      ;the fixnum-parameter arrow is dominated by the number-parameter
+      ;one (same return, narrower domain) and folds away; the bare
+      ;index-node survives as raw
+      (test-equal 2 (length items))
+      (test-assert
+        (find
+          (lambda (item)
+            (and (eq? 'raw (car item)) (eq? node (cadr item))))
+          items))
+      (test-assert
+        (find
+          (lambda (item)
+            (and (eq? 'raw (car item))
+              (equal? '(something? <- (inner:list? number?)) (cadr item))))
+          items))))
+(test-end)
+
+(test-begin "display compaction: identical raw arrows dedup")
+  ;shared candidates arrive as the SAME object twice; the dominance
+  ;self-guard (not (eq? other current)) cannot fold those, so syntactic
+  ;dedup must run before absorb
+  (let* ([arrow '(something? <- (inner:list? number?))]
+      [candidates (list arrow arrow)])
+    (let-values
+      ([(items total truncated?) (sem:compact-display candidates 10)])
+      (test-equal 2 total)
+      (test-equal 1 (length items))
+      (test-equal '(raw (something? <- (inner:list? number?))) (car items)))
+    ;same story when the duplicates differ only in identifier-reference
+    ;identity (distinct records, same printed rendering)
+    (let* ([ref-a (make-identifier-reference 'number? '() '() '() '() '() '() '())]
+        [ref-b (make-identifier-reference 'number? '() '() '() '() '() '() '())]
+        [candidates
+          (list
+            `(something? <- (inner:list? ,ref-a))
+            `(something? <- (inner:list? ,ref-b)))])
+      (let-values
+        ([(items total truncated?) (sem:compact-display candidates 10)])
+        (test-equal 2 total)
+        (test-equal 1 (length items)))))
 (test-end)
 
 (test-begin "display compaction: deterministic ordering")

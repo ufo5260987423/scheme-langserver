@@ -6,6 +6,7 @@
 
   (scheme-langserver util dedupe)
   (scheme-langserver analysis type domain-specific-language interpreter)
+  (scheme-langserver analysis type semantic-subtyping display)
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
   (scheme-langserver analysis identifier rules library-import))
@@ -39,25 +40,49 @@
   (put-string port "identifier:\t")
   (put-string port (symbol->string (identifier-reference-identifier identifier-reference)))
   (put-string port "\n")
-  (map 
-    (lambda (s)
-      (put-string port "type:\t\t")
-      (put-string port s)
-      (put-string port "\n"))
-    (dedupe 
-      (apply append 
-        (map 
-          (lambda (ir)
-            (apply append 
-              (map 
-                type:interpret->strings 
-                (if (or 
-                    (null? (identifier-reference-document ir)) 
+  ;;P2: semantic compaction (same pipeline as hover): anti-chain
+  ;;absorption is a semantic equality, so the report never loses
+  ;;information -- dominated overloads collapse (e.g. the 73-signature
+  ;;numeric-tower cross product of natural-order-compare). The final
+  ;;dedupe on rendered strings covers candidates whose only observable
+  ;;identity IS the rendering (bare index-node candidates are distinct
+  ;;records yet print identically); hover does the same.
+  (let* ([types
+          (apply append
+            (map
+              (lambda (ir)
+                (if (or
+                    (null? (identifier-reference-document ir))
                     (not (null? (identifier-reference-type-expressions ir))))
                   (identifier-reference-type-expressions ir)
-                  (type:interpret-result-list 
-                    (identifier-reference-index-node ir))))))
-          (recursive-top identifier-reference))))))
+                  (type:interpret-result-list (identifier-reference-index-node ir))))
+              (recursive-top identifier-reference)))]
+      [limit 10])
+    (call-with-values
+      (lambda () (sem:compact-display types limit))
+      (lambda (items total truncated?)
+        (let ([lines
+                (dedupe
+                  (append
+                    (apply append
+                      (map
+                        (lambda (item)
+                          (map
+                            (lambda (str)
+                              (if (and (eq? 'rep (car item)) (> (caddr item) 1))
+                                (string-append str "  (x" (number->string (caddr item)) ")")
+                                str))
+                            (type:interpret->strings (cadr item))))
+                        items))
+                    (if truncated?
+                      (list (string-append "... " (number->string total) " candidates total"))
+                      '())))])
+          (for-each
+            (lambda (str)
+              (put-string port "type:\t\t")
+              (put-string port str)
+              (put-string port "\n"))
+            lines))))))
 
 (define (step-library-identifiers current-library-node port)
   (let loop ([file-nodes (library-node-file-nodes current-library-node)])
