@@ -244,4 +244,34 @@
 
 (test-end)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Group G: predicator binder node carries its own signature (P0 fix)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-begin "predicator binder node signature")
+
+;; The predicator's own binder node must carry the boolean? arrow so that
+;; hover at the definition site and output-type-analysis.ss (which interpret
+;; the binder node directly) see a signature instead of a bare something?.
+(let ([point?-ref (get-first-ref target-document root-index-node 'point?)])
+  (test-assert "point? ref exists" (identifier-reference? point?-ref))
+  (let ([binder (identifier-reference-index-node point?-ref)])
+    (test-assert "point? binder is an index-node" (index-node? binder))
+    (let ([subs (index-node-substitution-list binder)])
+      (test-assert "binder subs contain at least one arrow (list)"
+        (find list? subs))
+      (let ([arrow (find list? subs)])
+        (test-assert "arrow return type is an identifier-reference"
+          (identifier-reference? (car arrow)))
+        (test-equal "arrow return type identifier is boolean?"
+          'boolean? (identifier-reference-identifier (car arrow)))))
+    ;; Interpreter view of the binder: same signature
+    (let ([results (type:interpret-result-list binder)])
+      (test-assert "binder interpret result exists" (> (length results) 0))
+      (test-equal "binder interpret string"
+        "([identifier-reference boolean?] <- (inner:list? something? ) ) "
+        (inner:type->string (car results))))))
+
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

@@ -5,6 +5,7 @@
     (ufo-match-steer)
 
     (scheme-langserver analysis identifier reference)
+    (scheme-langserver analysis identifier meta)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -39,6 +40,17 @@
                     ;; (identifier-reference-type-expressions-set! 
                     ;;   predicator
                     ;;   `((,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?))))
+                    ;; The predicator's own binder node must carry the arrow signature:
+                    ;; hover at the definition site and export tools (output-type-analysis.ss)
+                    ;; interpret the binder node directly, and without a substitution here
+                    ;; it degrades to a bare something?. Extending the binder node (rather
+                    ;; than setting reference type-expressions) avoids the 930d04f6 ordering
+                    ;; concern, since it does not interact with trivial.sls's use-site clauses.
+                    (let ([predicator-node (identifier-reference-index-node predicator)])
+                      (when (index-node? predicator-node)
+                        (extend-index-node-substitution-list
+                          predicator-node
+                          `(,(construct-type-expression-with-meta 'boolean?) <- (inner:list? something?)))))
                     (identifier-reference-type-expressions-set! 
                       constructor 
                       `((,predicator <- (inner:list? something? ...)))))))))
