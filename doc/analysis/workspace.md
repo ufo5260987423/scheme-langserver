@@ -360,14 +360,17 @@ When `threaded?` is `#f`, `(workspace-mutex workspace)` is `'()`. Every call sit
 
 ### Current implementation (`kimi` branch)
 
-> **Measured 2026-10-29** (this repo, 820 files, system load ~2–3): cold
-> `init-workspace` with full identifier analysis takes ~0.1–0.4 s depending on
-> the macro-resolution switch (broad arm ON adds ~0.2 s for this repo's 199
-> macro call sites), while a warm cache load takes ~300 ms — dominated by the
-> 25 MB `fasl-read` plus the per-file mtime consistency sweep. The cache is
-> therefore a net loss at init for workspaces of this size and currently
-> justifies itself mainly through persisted diagnostics. Note the full server
-> process pays ~4 s of Chez boot + image load before init (see AGENTS.md §11).
+> **Measured 2026-11-02** (this repo, 1318 files in the VFS / 826 analyzed
+> paths, single-threaded, type inference off, fresh process per measurement):
+> cold `init-workspace` takes ~6.2 s with macro resolution off and ~15.4 s
+> with it on (IR auto-route expansion attempts on this repo's macro call
+> sites), while a warm cache load takes ~1.2 s regardless of the macro
+> switch — the cache skips analysis entirely. The exit-time cache save costs
+> ~13 s for a workspace this size (FASL serialization of the full object
+> graph, about half of it GC), which dominates the economics: the cache pays
+> for itself from the second restart onward. Note the full server process
+> pays ~2 s of Chez boot before init, so end-to-end LSP `initialize`
+> responses are ~3.4 s warm and ~16.5 s cold (macro resolution on).
 
 A FASL-based workspace cache is implemented and enabled via the `--cache-path`
 CLI option. It persists the full workspace object graph (`file-node` tree,
@@ -375,18 +378,24 @@ CLI option. It persists the full workspace object graph (`file-node` tree,
 `file-linkage`) so that `init-references` is skipped on restart when files are
 unchanged.
 
-Benchmarks (measured 2026-10-30, min of 3 runs, identifier analysis only,
-macro resolution off):
+Benchmarks (measured 2026-11-02, min of 3 runs, fresh process per measurement,
+single-threaded, identifier analysis only, type inference off):
 
-| Fixture | Cold startup | Cached startup | Speedup |
-|---------|--------------|----------------|---------|
-| simple-lib (2 files) | ~3 ms | ~2 ms | ~1.5x |
-| Synthetic 100 independent simple-lib copies (200 files) | ~407 ms | ~49 ms | ~8x |
-| scheme-langserver itself | ~0.1–0.4 s | ~300 ms | ~break-even |
+| Fixture | Cold startup | Cached startup | Cache save |
+|---------|--------------|----------------|------------|
+| simple-lib (2 files) | ~3 ms | ~3 ms | ~20 ms |
+| Synthetic 100 independent simple-lib copies (200 files) | ~410 ms | ~70 ms | ~0.6 s |
+| scheme-langserver itself (macro resolution off) | ~6.2 s | ~1.2 s | ~13 s |
+| scheme-langserver itself (macro resolution on) | ~15.4 s | ~1.2 s | ~13 s |
 
-The 2026-10 analysis caches made cold initialization fast enough that the cache
-is close to break-even at init for small workspaces; it still pays off on larger
-workspaces and through persisted diagnostics.
+The cache skips analysis entirely on load (~1.2 s for this repo, dominated by
+the 26 MB `fasl-read` plus the per-file consistency sweep), so it is a clear
+win at init for workspaces of this size. The counterweight is the exit-time
+save: serializing the full workspace object graph takes ~13 s here, so the
+cache pays for itself from the second restart onward. Small workspaces save
+their cache in milliseconds, where the cache is close to break-even at init.
+It additionally pays off through persisted diagnostics, which are republished
+immediately after a cache load without re-diagnosing files.
 
 Key implementation details:
 

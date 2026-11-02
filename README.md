@@ -48,21 +48,25 @@ machines or Chez versions**. When only a few files have changed since the cache
 was saved, the server performs an incremental refresh and preserves the analysis
 results for unchanged files.
 
-Typical numbers (measured 2026-10-30, min of 3 runs, identifier analysis only,
-macro resolution off):
+Typical numbers (measured 2026-11-02, min of 3 runs, fresh process per
+measurement, single-threaded, identifier analysis only, type inference off;
+"startup" is in-process `init-workspace`, excluding the ~2 s Chez boot):
 
-| Fixture | Cold startup | Cached startup | Speedup |
-|---------|--------------|----------------|---------|
-| simple-lib (2 files) | ~3 ms | ~2 ms | ~1.5x |
-| Synthetic 100 independent simple-lib copies (200 files) | ~407 ms | ~49 ms | ~8x |
-| scheme-langserver itself | ~0.1–0.4 s | ~300 ms | ~break-even |
+| Fixture | Cold startup | Cached startup | Cache save |
+|---------|--------------|----------------|------------|
+| simple-lib (2 files) | ~3 ms | ~3 ms | ~20 ms |
+| Synthetic 100 independent simple-lib copies (200 files) | ~410 ms | ~70 ms | ~0.6 s |
+| scheme-langserver itself (macro resolution off) | ~6.2 s | ~1.2 s | ~13 s |
+| scheme-langserver itself (macro resolution on) | ~15.4 s | ~1.2 s | ~13 s |
 
-Since the 2026-10 analysis caches (import-set caching, negative caching of
-unexpandable call sites, expansion budgets), cold initialization is fast enough
-that the cache is close to break-even at init for small workspaces — the FASL
-read plus the per-file mtime sweep costs about as much as re-analysis. It still
-pays off on larger workspaces and through persisted diagnostics, which are
-republished immediately after a cache load without re-diagnosing files.
+End-to-end LSP handshake on the scheme-langserver repo itself (spawn to
+`initialize` response, single-threaded, type inference off) is ~3.4 s with a
+warm cache and ~16.5 s cold with macro resolution on. Note the asymmetric cost:
+the exit-time cache save takes ~13 s for a workspace this size (FASL
+serialization of the full object graph; about half is GC), so a session that
+starts cold pays the save once, and the cache pays for itself from the second
+restart onward. Small workspaces save their cache in milliseconds, where the
+cache is close to break-even at init.
 
 See [doc/analysis/workspace.md](./doc/analysis/workspace.md) §8 and
 [AGENTS.md](./AGENTS.md) §11 for implementation details.

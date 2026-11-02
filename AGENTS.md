@@ -635,34 +635,31 @@ Place production logs at `~/ready-for-analyse.log`. Both replay scripts reconstr
 
 ### Current implementation (`kimi` branch)
 
-> **Re-measured 2026-10-29, afternoon, system load ~2–3** (8 cores, warm
-> `.so` cache, this repo as the fixture: 820 files incl. Akku deps, 128
-> project `.sls`). **Caveat: an earlier set of numbers recorded this morning
-> (50 ms init etc.) turned out to be timer-starvation artifacts** — Chez's
-> `time-monotonic` is serviced by a timer thread, and CPU-saturated runaway
-> processes on the same machine froze it mid-measurement. Treat all
-> single-digit-millisecond figures from loaded machines with suspicion; under
-> load these numbers degrade roughly 2–20x.
+> **Re-measured 2026-11-02** (this repo as fixture: 1318 files in the VFS /
+> 826 analyzed paths; fresh process per measurement, min of 3 runs, warm
+> `.so` cache, single-threaded, type inference off). Methodology note:
+> in-process `init-workspace` timings only; the full server process pays
+> ~2 s of Chez boot before init.
 
 | Scenario | Measured |
 |----------|----------|
-| `init-workspace` ST, full identifier analysis, macro resolution OFF | ~0.1–0.2 s |
-| same, macro resolution ON (broad arm, 199 call sites on this repo) | ~0.3–0.4 s |
-| same + type inference | ~0.2–0.7 s (high variance) |
-| Full LSP handshake (process start → initialize response → exit), macro OFF | ~8 s wall (~2 s Chez boot + ~2 s image load + init) |
-| Full LSP handshake, macro ON | ~18 s wall — the +10 s over script mode suggests GC pressure from 199 sc-expands against the 40 MB image; not yet investigated |
+| `init-workspace` ST cold, full identifier analysis, macro resolution OFF | ~6.2 s |
+| same, macro resolution ON (broad arm; expansion attempts on this repo's macro call sites) | ~15.4 s |
+| `init-workspace` with warm cache (load + rebuild + consistency sweep) | ~1.2 s — macro switch irrelevant, analysis is skipped entirely |
+| Full LSP handshake (spawn → `initialize` response), warm cache | ~3.4 s wall |
+| Full LSP handshake, cold, macro ON | ~16.5 s wall |
 | Single-file re-analysis (didOpen-equivalent) | 25–50 ms |
 | Peak RSS (full analysis + MT + type inference) | ~830 MB |
-| Cache save | ~0.6 s → 25 MB `workspace.fasl` |
-| Cache load (warm) | ~300 ms (25 MB `fasl-read` + per-file mtime consistency check) — still slower than a cold init for this repo |
+| Cache save at exit | ~13 s → 26 MB `workspace.fasl` (fasl-write traversal of the full object graph; ~half is GC — `collect-trip-bytes` is only 8 MB by default) |
 
-**Consequence: the cache is currently a net loss at init.** Loading it costs
-~300 ms while a cold init costs ~100–200 ms because the cached payload holds
-the *unanalyzed* VFS (references are deliberately not persisted across
-versions; see the stale-diagnosis trap below) and the mtime sweep over 820
-files dominates the load. The cache remains justified only for diagnostics
-persistence and for pathological workspaces where cold init genuinely exceeds
-it; measure before enabling `cache-path`.
+**Economics: the cache is a clear win at load** (1.2 s vs 6.2 s cold, 5x), and
+the counterweight is the exit-time save: ~13 s for a workspace this size,
+spent unconditionally on every graceful exit even when nothing changed. The
+cache therefore pays for itself from the second restart onward, and is
+additionally justified by persisted diagnostics (republished immediately after
+load without re-diagnosing files). Known improvement target: skip the save when
+the workspace is unchanged since load, and bump `collect-trip-bytes` around
+`fasl-write` (measured 12 s → 8 s).
 
 Key design points:
 
