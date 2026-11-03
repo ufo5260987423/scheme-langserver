@@ -165,6 +165,13 @@
   (test-equal
     (inner:?->pair (construct-type-expression-with-meta '(inner:list? number? number?)))
     (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?))))
+  ;2026-11-02: non-inner:list? 3-tuples pass through untouched --
+  ;the old ufo-match pattern rewrote ANY >=3-element list and dropped
+  ;its head, mangling (inner:pair? ...) types, (with ...) macros, and
+  ;arrows (arrows got a dedicated exemption, see test-interpreter)
+  (test-equal
+    (inner:?->pair (construct-type-expression-with-meta '(inner:pair? number? number?)))
+    (construct-type-expression-with-meta '(inner:pair? number? number?)))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

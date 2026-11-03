@@ -27,9 +27,15 @@
     (except c 
       (else #f))))
 
+;returns #f -- never raises -- when either side is not segmentable
+;(e.g. a template with two ... markers): private-segment signals
+;"wrong rule" on those, and callers must not need a try guard just to
+;ask whether two shapes match.
 (define (candy:matchable? parameter-template argument-list)
-  (equal? 'skipped 
-    (vector-ref (private-segments->match-matrix (private-segment parameter-template) (private-segment argument-list)) 0)))
+  (and (candy:segmentable? parameter-template)
+    (candy:segmentable? argument-list)
+    (equal? 'skipped 
+      (vector-ref (private-segments->match-matrix (private-segment parameter-template) (private-segment argument-list)) 0))))
 
 (define (private:group-match-pairs match-segment-pairs)
   (map 

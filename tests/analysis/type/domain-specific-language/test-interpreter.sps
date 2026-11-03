@@ -24,6 +24,20 @@
       (let ([v (make-virtual-index-node)])
         (type:interpret-result-list `((,v <- (inner:list? ,v)) ,(construct-type-expression-with-meta 'number?))))
       (construct-type-expression-with-meta 'number?)))
+  ;meta-level arrows (rnrs signatures: no real parameter index-nodes
+  ;inside) are arity-checked since 2026-11-02 -- a non-matchable call
+  ;used to return the return type unconditionally, so (* "a" "b")
+  ;against (number? <- (inner:list? number? ...)) still came back
+  ;number?. The check is structural (candy shapes, not per-position
+  ;types).
+  (test-assert
+    (null? (type:interpret-result-list
+      (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number? number?)))))
+  ;zero-argument call of a fully variadic builtin is unmatched
+  ;(candy:matchable?'s single-elastic-segment case) and gets no type
+  (test-assert
+    (null? (type:interpret-result-list
+      (construct-type-expression-with-meta '((number? <- (inner:list? number? ...)))))))
 (test-end)
 
 (test-begin "type:->?/<-?/=? ")
@@ -35,6 +49,19 @@
   (test-equal #f (type:->?
     (construct-type-expression-with-meta '(inner:list? number? number?))
     (construct-type-expression-with-meta '(inner:pair? number? (inner:list? number?)))
+    (make-type:environment '())))
+  ;regression (2026-11-02): inner:?->pair used to rewrite arrows too,
+  ;dropping the return position -- any structurally matchable arrow
+  ;pair with parameter subtyping was judged subtype regardless of
+  ;returns. Arrows are now exempt from the rewrite, so the return
+  ;position is compared like any other segment.
+  (test-equal #f (type:->?
+    (construct-type-expression-with-meta '(string? <- (inner:list? integer? ...)))
+    (construct-type-expression-with-meta '(number? <- (inner:list? number? ...)))
+    (make-type:environment '())))
+  (test-equal #t (type:->?
+    (construct-type-expression-with-meta '(number? <- (inner:list? integer? ...)))
+    (construct-type-expression-with-meta '(number? <- (inner:list? number? ...)))
     (make-type:environment '())))
 (test-end)
 

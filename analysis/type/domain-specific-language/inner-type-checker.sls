@@ -40,11 +40,6 @@
       (pretty-print target)
       (raise "can't do the transformation")]))
 
-(define (inner:?->pair target)
-  (match target
-    [(inner:list? item _ **1) `(inner:pair? ,item ,(inner:?->pair `(inner:list? ,@_)))]
-    [else target]))
-
 (define (inner:trivial? expression)
   (cond
     [(private-inner:trivial-item? expression) #t]
@@ -130,6 +125,23 @@
     [((? inner:trivial? head) '<- (? inner:list? tail)) head]
     [((? inner:trivial? head) '<- (? index-node? tail)) head]
     [else '()]))
+
+;rewrites an inner:list?-headed type with at least two items into a
+;right-nested inner:pair? chain (the established "list as pair chain"
+;candy, pinned by test-inner-type-checker.sls). Explicit predicates
+;replaced the old ufo-match pattern, which fired on ANY >=3-element
+;list and dropped its head -- mangling arrows (their return position;
+;ARROWS ARE EXEMPT below) as well as (inner:pair? ...) types, (with
+;...) macros, and any other 3-tuple that reached type:->?'s list
+;branch. Those shapes now pass through untouched.
+(define (inner:?->pair target)
+  (if (or (inner:lambda? target)
+          (not (and (list? target)
+                  (>= (length target) 3)
+                  (eq? (car target) 'inner:list?))))
+    target
+    `(inner:pair? ,(cadr target)
+        ,(inner:?->pair `(inner:list? ,@(cddr target))))))
 
 (define (inner:list? body)
   (match body

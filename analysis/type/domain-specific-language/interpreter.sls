@@ -248,7 +248,22 @@
                             new-memory))
                         (except c (type:environment-result-list-set! env '())))
                       (type:environment-result-list-set! env '()))
-                    (type:environment-result-list-set! env (list (inner:lambda-return l))))
+                    ;meta-level arrows (rnrs-meta-rules: no real
+                    ;parameter index-nodes inside) used to return their
+                    ;return type UNCONDITIONALLY -- arity mismatches
+                    ;like (* "a" "b") against (number? <- (inner:list?
+                    ;number? ...)) still came back number?. Gate them on
+                    ;the same structural candy check as user lambdas:
+                    ;non-matchable calls get no type. Note this check
+                    ;is structural (arity/shape only, no per-position
+                    ;type comparison); the empty-call of a fully
+                    ;variadic builtin, e.g. (*) vs (number? ...), is
+                    ;correctly unmatched (see candy:matchable? -- the
+                    ;single-elastic-segment case).
+                    (type:environment-result-list-set! env
+                      (if (candy:matchable? (inner:list-content (inner:lambda-param l)) params)
+                        (list (inner:lambda-return l))
+                        '())))
                   (type:environment-result-list-set! env (list (inner:lambda-return l))))]
               [else expression])]
           [(index-node? expression)
