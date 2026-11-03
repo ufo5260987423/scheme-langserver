@@ -115,9 +115,16 @@
               (and (list? result)
                 (memq '<- result)
                 (let ([params (cdr (memq '<- result))])
+                  ;rest encoding since 2026-11-03: the parameter
+                  ;template itself is variadic -- an elastic something?
+                  ;tail (inner:list? fixed... something? ...), not a
+                  ;nested (inner:list? ...) item
                   (find (lambda (param-list)
                           (and (list? param-list)
-                            (find (lambda (param) (and (list? param) (eq? 'inner:list? (car param)))) param-list)))
+                            (>= (length param-list) 3)
+                            (eq? 'inner:list? (car param-list))
+                            (eq? '... (car (reverse param-list)))
+                            (eq? 'something? (cadr (reverse param-list)))))
                     params))))
         (type:interpret-result-list target-index-node))))
 (test-end)

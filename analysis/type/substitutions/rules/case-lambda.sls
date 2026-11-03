@@ -28,25 +28,9 @@
           `(,return)
           (construct-parameter-index-nodes-products-with params)))]
     [(formals :_ ... return)
-      (let ([parameter-types (private:collect-param-types formals)])
+      (let ([parameter-types (construct-rest-parameter-template (index-node-children formals))])
         (for-each 
           (lambda (t) (extend-index-node-substitution-list root-index-node t))
           (construct-lambdas-with `(,return) (list parameter-types))))]
     [else '()]))
-
-; Collect parameter types for a dotted formal list. The last parameter (the rest
-; parameter) is represented as (inner:list? something? ...).
-(define (private:collect-param-types formals-node)
-  (let ([expression (annotation-stripped (index-node-datum/annotations formals-node))]
-      [children (index-node-children formals-node)])
-    (cond
-      [(symbol? expression) `((inner:list? something? ...))]
-      [(null? children) '()]
-      [(null? (cdr children)) `((inner:list? something? ...))]
-      [else
-        (let ([car-node (car children)]
-            [cdr-node (cadr children)])
-          (if (symbol? (annotation-stripped (index-node-datum/annotations cdr-node)))
-            `(,car-node (inner:list? something? ...))
-            (cons car-node (private:collect-param-types cdr-node))))])))
 )

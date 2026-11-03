@@ -1,0 +1,23 @@
+(library (fixtures rest-elements main)
+  (export f g h)
+  (import (chezscheme))
+
+  ;; dotted rest: element types come from the call sites
+  (define (f a . rest)
+    (car rest))
+
+  ;; dotted rest consumed through apply: element type from +'s
+  ;; elastic-tail (number?)
+  (define (g a . rest)
+    (apply + a rest))
+
+  ;; symbol rest, zero fixed: every call argument is an element
+  (define (h . args)
+    args)
+
+  (define (use-them)
+    (f 1 "x" #\a)
+    (g 1 2 3)
+    (h 1 "u")
+    'ok)
+)
