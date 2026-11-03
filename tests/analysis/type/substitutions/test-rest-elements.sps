@@ -118,6 +118,16 @@
       (has-rest-element? name-node '(number?))))
 (test-end)
 
+(test-begin "rest element inference: apply ownership")
+  ;;unrelated's (apply string-append x "y") must NOT contribute to
+  ;;g -- g's own call sites and its (apply + a rest) give number?
+  ;;only, so any string? on g can only come from pollution. (f and h
+  ;;legitimately have string? elements from their own call sites.)
+  (let ([g-node (find-define-name-node root 'g)])
+    (test-assert "g free of string? pollution"
+      (not (has-rest-element? g-node '(string?)))))
+(test-end)
+
 (test-begin "rest element inference: symbol rest")
   ;;(h 1 "u") -- every argument is an element
   (let ([name-node (find-define-name-node root 'h)])

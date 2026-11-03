@@ -15,9 +15,15 @@
   (define (h . args)
     args)
 
+  ;; NOT a rest target and its apply must not pollute the variadic
+  ;; functions' element inference
+  (define (unrelated x)
+    (apply string-append x "y"))
+
   (define (use-them)
     (f 1 "x" #\a)
     (g 1 2 3)
     (h 1 "u")
+    (unrelated 'a)
     'ok)
 )
