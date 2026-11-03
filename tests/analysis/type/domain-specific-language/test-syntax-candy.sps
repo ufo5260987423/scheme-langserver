@@ -68,6 +68,27 @@
   (test-equal
     '((a . (1)))
     (candy:match-left '(a **1) '(1)))
+
+  ;; B1/B3 (2026-11-03): a ZERO-consumed elastic segment binds EMPTY --
+  ;; it must not steal the previous argument's binding (trailing case)
+  ;; nor vanish from the bindings entirely (mid-list case)
+  (test-equal
+    '((b) (a . 1))
+    (candy:match-left '(a b ...) '(1)))
+  (test-equal
+    '((b) (a . 1) (c . 2))
+    (candy:match-left '(a b ... c) '(1 2)))
+  ;greedy consumption is untouched
+  (test-equal
+    '((a . 1) (b 2 3))
+    (candy:match-left '(a b ...) '(1 2 3)))
+  ;apply's signature shape: the canonical (apply f lst) idiom has the
+  ;mid-list ... consume ZERO arguments and must match (was #f before
+  ;the B1/B3 fix -- every 2-argument apply call site was untypeable)
+  (test-equal #t
+    (candy:matchable?
+      '((something? <- (inner:list? something?)) something? ... (inner:list? something? ...))
+      '(f (1 2))))
 (test-end)
 
 ;; ---------------------------------------------------------------------------

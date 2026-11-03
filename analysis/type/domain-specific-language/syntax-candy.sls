@@ -106,8 +106,16 @@
       (let* ([rest-segment (private-segment parameter-template)]
           [ready-segment (private-segment argument-list)]
           [matrix (private-segments->match-matrix rest-segment ready-segment)]
-          [raw-pairs (candy:match matrix rest-segment ready-segment 0 0)])
-        (private:group-match-pairs raw-pairs))]
+          [raw-pairs
+            (private:purge-bogus-elastic-pairs
+              (candy:match matrix rest-segment ready-segment 0 0)
+              rest-segment)]
+          [grouped (private:group-match-pairs raw-pairs)])
+        ;2026-11-03 (B1/B3): an elastic template segment that consumed
+        ;ZERO arguments must still be visible as an EMPTY binding (seg),
+        ;not steal the previous argument's binding (trailing case) nor
+        ;vanish from the bindings (mid-list case)
+        (private:fill-empty-elastic-segments grouped raw-pairs rest-segment))]
     [(matrix rest-segments ready-segments row-id column-id)
       (let ([rest-count (vector-length rest-segments)]
             [ready-count (vector-length ready-segments)]
@@ -126,6 +134,50 @@
                                  (append (walk (+ r 1) c) (walk r (+ c 1)))]
                                [(equal? current-value 'unused) '()]))))])
           (walk row-id column-id)))]))
+
+;The matrix end-zone corner is marked 'matched whenever the LAST
+;template segment is elastic (private-segments->match-matrix's
+;end-zone clause), and the pair walker then reads that corner as a
+;real binding. For an elastic segment that consumed ZERO arguments
+;this fabricates a pair stealing the previous argument's ready
+;segment (trailing ... at minimum arity), while a mid-list zero-
+;consumption leaves no pair at all. A zero-consumed elastic segment
+;is recognizable: its ONLY raw pair shares the ready segment with a
+;non-elastic segment (a real consumption path never splits one ready
+;segment between a fixed and an elastic template segment).
+(define (private:purge-bogus-elastic-pairs raw-pairs rest-segments)
+  (filter
+    (lambda (pair)
+      (let ([seg (car pair)])
+        (not (and (private:elastic-segment? seg)
+                  (private:zero-consumed-elastic-pair? seg pair raw-pairs)))))
+    raw-pairs))
+
+(define (private:elastic-segment? seg)
+  (or (private-is-... seg) (private-is-**1 seg)))
+
+(define (private:zero-consumed-elastic-pair? seg pair raw-pairs)
+  (let ([own (filter (lambda (p) (eq? (car p) seg)) raw-pairs)])
+    (and (null? (cdr own))
+      (find
+        (lambda (other)
+          (and (not (eq? other pair))
+            (not (private:elastic-segment? (car other)))
+            (eq? (cdr other) (cdr pair))))
+        raw-pairs))))
+
+;append an explicit (type) empty binding for every elastic template
+;segment that has no raw pair at all (zero-consumption mid-list case)
+(define (private:fill-empty-elastic-segments grouped raw-pairs rest-segments)
+  (let loop ([i 0] [acc grouped])
+    (if (>= i (vector-length rest-segments))
+      acc
+      (let ([seg (vector-ref rest-segments i)])
+        (loop (+ i 1)
+          (if (and (private:elastic-segment? seg)
+                (not (find (lambda (p) (eq? (car p) seg)) raw-pairs)))
+            (cons (list (segment-type seg)) acc)
+            acc))))))
 
 (define private-segments->match-matrix
   (case-lambda 
