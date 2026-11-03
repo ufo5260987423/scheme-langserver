@@ -9,14 +9,28 @@
 
 ;display compaction for hover (phase 1 of the display-quality roadmap,
 ;see the improvement survey): candidate type trees are merged into a
-;compact, deterministic view. The display guarantee is
+;compact, deterministic view. The display guarantee is TWO-ORDERED:
 ;
-;    display(C)  >=  union(C)        (allowed to be wider, never narrower)
+;  (a) VALUE order (soundness): display(C) >= union(C) -- allowed to be
+;      wider, never narrower. Checked per position with the system's
+;      own subtype semantics (sem:subtype? / sem:equivalent? on
+;      convertible trees).
+;  (b) KNOWLEDGE order (informativeness): the something? sentinel is
+;      "no information", NOT honest top -- sem:convert fails on any
+;      tree containing it, so such trees only ever merge with an
+;      EQUAL tree, never absorb or get absorbed by a known type.
+;      (Value semantics alone would allow something? -- it IS the top
+;      of type:->? -- and hover would collapse every signature into
+;      "unknown", destroying exactly the information the candidate
+;      list exists to show.)
 ;
-;so the "definitional union" product contract is preserved: anti-chain
-;absorption is a semantic equality (the absorbed candidate's values are a
-;subset of the covering candidate's), dedup is equality, and truncation
+;So the "definitional union" product contract is preserved: anti-chain
+;absorption is a semantic equality on known types (the absorbed
+;candidate's values are a subset of the covering candidate's), dedup is
+;equality, and truncation
 ;only hides representatives behind a total count, never deletes values.
+;Deletion under (a)+(b) never loses information: what remains is at
+;least as wide AND at least as known.
 ;
 ;Phase 1 covers: semantic dedup (stage 1), anti-chain reduction (stage
 ;2), specificity ordering + truncation (stage 4). Factorized slot-union
@@ -136,6 +150,22 @@
 ;every wide parameter covers the narrow one (set inclusion) and the
 ;returns are equivalent. Deleting dominated signatures loses no
 ;information -- same return type, wider or equal domain.
+;
+;Variadic markers (stage 1.5b): in this DSL, ... and **1 attach to the
+;PRECEDING parameter item (syntax-candy.sls private-segment), which is
+;both a required position and the element type of the elastic tail, and
+;each parameter list allows at most ONE top-level marker. Arrow params
+;are compared COVARIANTLY here -- matching the DSL's own arrow comparison
+;(type:->? pairs parameter positions covariantly), not classical
+;contravariant function subtyping. A trailing marker therefore
+;participates in dominance only when: both sides are stripped to equal
+;fixed lengths, the marker shapes are compatible (wide must accept every
+;arity narrow accepts; the only unsafe pair is narrow=... with
+;wide=**1), and positions cover pairwise (the last fixed item doubles
+;as the tail element type on both sides). Anything else -- marker on
+;one side only, mid-list markers (apply's shape), marker without a
+;preceding item -- disqualifies the pair from dominance, which is the
+;conservative status quo.
 (define (private-arrow-absorb raw-trees)
   (if (> (length raw-trees) 200)
     ;;pathological input: keep status quo rather than quadratic work
@@ -168,18 +198,49 @@
   (and (private-arrow-tree? wide)
     (private-arrow-tree? narrow)
     (private-return-equivalent? (car wide) (car narrow))
-    (let ([wparams (private-filter-modifiers (cdaddr wide))]
-        [nparams (private-filter-modifiers (cdaddr narrow))])
-      (and (= (length wparams) (length nparams))
-        (for-all private-atom-covers? wparams nparams)))))
+    (call-with-values
+      (lambda () (private-split-marker (cdaddr wide)))
+      (lambda (wfixed wmarker)
+        (call-with-values
+          (lambda () (private-split-marker (cdaddr narrow)))
+          (lambda (nfixed nmarker)
+            (and wfixed nfixed
+              (= (length wfixed) (length nfixed))
+              (private-marker-covers? wmarker nmarker)
+              (for-all private-atom-covers? wfixed nfixed))))))))
 
-(define (private-filter-modifiers items)
-  (filter
-    (lambda (x) (and (not (eq? x '...)) (not (eq? x '**1))))
-    items))
+;strip a single TRAILING variadic marker off a raw arrow's parameter
+;items (the inner:list?/inner:pair? head stays a fixed item). Returns
+;(values fixed-items marker) with marker in {'..., '**1, #f}; returns
+;(values #f #f) when the marker is mid-list, missing its preceding
+;item, or duplicated -- the pair must then stay out of dominance.
+(define (private-split-marker items)
+  (let loop ([rest items] [fixed '()])
+    (cond
+      [(null? rest) (values (reverse fixed) #f)]
+      [(or (eq? (car rest) '...) (eq? (car rest) '**1))
+        (if (or (null? fixed) (not (null? (cdr rest))))
+          (values #f #f)
+          (values (reverse fixed) (car rest)))]
+      [else (loop (cdr rest) (cons (car rest) fixed))])))
+
+;soundness table for equal fixed lengths (arity sets: no marker =
+;exactly m, ... = >= m-1 unbounded, **1 = >= m unbounded; an elastic
+;narrow is never covered by a fixed wide, and **1 does not cover ...).
+;everything else is covariantly sound: elastic wide covers fixed
+;narrow, and ... covers **1.
+(define (private-marker-covers? wmarker nmarker)
+  (cond
+    [(not nmarker) #t]
+    [(not wmarker) #f]
+    [else (not (and (eq? nmarker '...) (eq? wmarker '**1)))]))
 
 ;;set inclusion wide ⊇ narrow for one parameter position; atom-level
-;;sem judgments only (containers convert fine; arrows never reach here)
+;;sem judgments only (containers convert fine; arrows never reach here).
+;;KNOWLEDGE ORDER: a tree containing something? failed sem:convert
+;;above, so it falls through to equal? -- it merges only with an
+;;identically-unknown tree, never absorbs nor is absorbed by known
+;;types (see the header invariant (b)).
 (define (private-atom-covers? wide narrow)
   (let ([sw (sem:convert wide)]
       [sn (sem:convert narrow)])
@@ -192,6 +253,11 @@
       [else (equal? wide narrow)])))
 
 (define (private-return-equivalent? a b)
+  ;return positions require KNOWLEDGE equality: a known return and an
+  ;unknown (something?) return are never merged -- which one is
+  ;"correct" is unknown, and showing both is the informative answer.
+  ;sem:equivalent? covers the both-known case; something?-bearing
+  ;returns failed sem:convert and fall through to equal?.
   (let ([sa (sem:convert a)]
       [sb (sem:convert b)])
     (cond

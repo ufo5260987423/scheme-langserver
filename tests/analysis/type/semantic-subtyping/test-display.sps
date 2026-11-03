@@ -116,6 +116,123 @@
           items))))
 (test-end)
 
+(test-begin "display compaction: variadic arrow dominance")
+  ;.../**1 attach to the preceding item (required position AND tail
+  ;element type). Soundness for equal fixed lengths, covariant per
+  ;position: an elastic wide covers a fixed narrow (... and **1 both
+  ;do), ... covers **1, but a fixed wide never covers an elastic
+  ;narrow, and **1 does not cover ... . The survivor of every merge
+  ;below is the wider arrow, in either input order.
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number? ...))
+          (something? <- (inner:list? fixnum? ...)))
+        10)])
+    (test-equal 1 (length items))
+    (test-equal
+      '(raw (something? <- (inner:list? number? ...)))
+      (car items)))
+  ;... covers **1 (the only dominance in this pair, both orders)
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number? **1))
+          (something? <- (inner:list? number? ...)))
+        10)])
+    (test-equal 1 (length items))
+    (test-equal
+      '(raw (something? <- (inner:list? number? ...)))
+      (car items)))
+  ;elastic wide covers fixed narrow, either order, wide survives
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number?))
+          (something? <- (inner:list? number? ...)))
+        10)])
+    (test-equal 1 (length items))
+    (test-equal
+      '(raw (something? <- (inner:list? number? ...)))
+      (car items)))
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number? ...))
+          (something? <- (inner:list? number?)))
+        10)])
+    (test-equal 1 (length items))
+    (test-equal
+      '(raw (something? <- (inner:list? number? ...)))
+      (car items)))
+  ;different fixed lengths under markers: no dominance
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number? string? ...))
+          (something? <- (inner:list? number? ...)))
+        10)])
+    (test-equal 2 (length items)))
+  ;mid-list markers (apply's shape) disqualify the pair
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number? ... string?))
+          (something? <- (inner:list? fixnum? ... string?)))
+        10)])
+    (test-equal 2 (length items)))
+(test-end)
+
+(test-begin "display compaction: knowledge order of the something? sentinel")
+  ;something? is "no information", not honest top: it must never
+  ;absorb -- nor be absorbed by -- a known type, or hover would
+  ;collapse every signature into "unknown". (Value semantics alone
+  ;would allow it: something? IS the top of type:->?.)
+  ;poisoned param vs known param, both orders
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((boolean? <- (inner:list? something?))
+          (boolean? <- (inner:list? number?)))
+        10)])
+    (test-equal 2 (length items)))
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((boolean? <- (inner:list? number?))
+          (boolean? <- (inner:list? something?)))
+        10)])
+    (test-equal 2 (length items)))
+  ;poison inside a nested container param still blocks absorption
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((boolean? <- (inner:list? (inner:list? something?)))
+          (boolean? <- (inner:list? (inner:list? number?))))
+        10)])
+    (test-equal 2 (length items)))
+  ;return position: known and unknown never merge
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? number?))
+          (boolean? <- (inner:list? number?)))
+        10)])
+    (test-equal 2 (length items)))
+  ;unknown return with coverable known params DOES merge (union of
+  ;knowledge; the wider known position survives)
+  (let-values
+    ([(items total truncated?)
+      (sem:compact-display
+        '((something? <- (inner:list? something? number?))
+          (something? <- (inner:list? something? fixnum?)))
+        10)])
+    (test-equal 1 (length items))
+    (test-equal
+      '(raw (something? <- (inner:list? something? number?)))
+      (car items)))
+(test-end)
+
 (test-begin "display compaction: identical raw arrows dedup")
   ;shared candidates arrive as the SAME object twice; the dominance
   ;self-guard (not (eq? other current)) cannot fold those, so syntactic
