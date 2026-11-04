@@ -202,8 +202,18 @@
           (cond
             [(and (zero? row-id) (zero? column-id))
               (matrix-set! matrix cols row-id column-id 'skipped)]
-            [(or (zero? row-id) (zero? column-id))
+            [(zero? row-id)
               '()]
+            [(zero? column-id)
+              ;no ready segments left: passable only when the last
+              ;template segment is an elastic STAR -- it may consume
+              ;ZERO arguments ('(a ...) vs '() must match; **1 is
+              ;one-or-more and still fails here). Was the documented
+              ;single-elastic-segment blind spot: every zero-argument
+              ;call of a STAR-variadic builtin was untypeable.
+              (if (private-is-... (vector-ref rest-segments (- row-id 1)))
+                (matrix-set! matrix cols row-id column-id 'skipped)
+                '())]
             [(or 
                 (equal? 'skipped (matrix-take matrix cols (- row-id 1) column-id))
                 (equal? 'skipped (matrix-take matrix cols row-id (- column-id 1))))

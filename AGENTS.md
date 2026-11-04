@@ -283,6 +283,15 @@ In Scheme a list is a chain of pairs terminated by `'()`, so `(cons x '())` is *
 
 **Trap**: `cons`'s type rule in `rnrs-meta-rules.sls` returns `inner:pair?`, while `append` returns `inner:list?`. If you rewrite an accumulator loop from `(append result `(,x))` to `(cons x result)`, the type inferrer sees the recursive argument as `inner:pair?` instead of `inner:list?`, which can break substitution generation for named-let bindings. The fix is to keep `append` (or add a `reverse` at the return point and teach the type system that `(cons x <list>)` → `<list>`).
 
+### `syntax-candy` elastic markers: `...` = 0+, `**1` = 1+, trailing `something?` = MANDATORY
+`private-segment` (`analysis/type/domain-specific-language/syntax-candy.sls`) builds match segments from parameter templates. Only `...` and `**1` are elastic markers; a trailing `something?` is an ordinary one-argument segment, NOT "rest of unknown type".
+
+**Trap**: meta-level arrow application (rnrs-meta-rules builtins) has been arity-checked via `candy:matchable?` since `aed09617` (2026-11-03): a non-matchable call gets NO type. Since then, a rule whose template means fewer arguments than the builtin actually requires silently untypes every correct call site (the 2.1.11 -> 2.1.12 regression where `clear-references-for` lost all candidates was a wrong `for-each` template demanding min 3 args). When adding/editing rnrs-meta-rules, count mandatory segments against the real arity.
+
+**Known unresolved convention conflict**: the rule library uses trailing `something?` as "remaining args unknown" in ~327 forms (e.g. `make-vector: ((inner:vector? something? ...) <- (inner:list? integer? something?))`), which the matcher reads as exactly-one-more mandatory argument, so 1-arg `(make-vector n)` is untypeable. Fixing this is a pending semantic decision (make trailing `something?` elastic in candy -- weakens exactly-N rules like `vector-set!` -- versus auditing the rules to explicit `...` form).
+
+**Zero-consumption**: an elastic STAR segment may consume zero arguments (`'(a ...)` vs `'()` matches since 2026-11-04; fixed in the matrix end-zone). `**1` stays one-or-more.
+
 ### `ufo-match` wildcard
 `ufo-match` uses `:_` as the "match anything, don't bind" wildcard, **not** `_`.
 `_` is treated as a normal pattern variable.

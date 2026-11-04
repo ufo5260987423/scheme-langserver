@@ -89,6 +89,16 @@
     (candy:matchable?
       '((something? <- (inner:list? something?)) something? ... (inner:list? something? ...))
       '(f (1 2))))
+  ;2026-11-04: a single elastic STAR segment consumes ZERO arguments
+  ;-- '(a ...) vs '() must match (was the single-elastic-segment end-
+  ;zone blind spot: every zero-argument call of a STAR-variadic
+  ;builtin was untypeable). **1 stays one-or-more. A MANDATORY head
+  ;segment still requires its argument ('(a b ...) vs '() is #f).
+  (test-equal #t (candy:matchable? '(a ...) '()))
+  (test-equal #f (candy:matchable? '(a **1) '()))
+  (test-equal #f (candy:matchable? '(a b ...) '()))
+  (test-equal '((a)) (candy:match-left '(a ...) '()))
+  (test-equal '((b) (a . 1)) (candy:match-left '(a b ...) '(1)))
 (test-end)
 
 ;; ---------------------------------------------------------------------------

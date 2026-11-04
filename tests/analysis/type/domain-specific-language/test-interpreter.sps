@@ -33,11 +33,17 @@
   (test-assert
     (null? (type:interpret-result-list
       (construct-type-expression-with-meta '((number? <- (inner:list? number? number?)) number? number? number?)))))
-  ;zero-argument call of a fully variadic builtin is unmatched
-  ;(candy:matchable?'s single-elastic-segment case) and gets no type
+  ;bare STAR-variadic arrow: since 2026-11-04 a single elastic STAR
+  ;consumes ZERO arguments ('(a ...) vs '() matches -- the end-zone
+  ;blind spot is fixed), so the arrow survives interpretation as a
+  ;candidate instead of degrading to no type. The **1 form stays
+  ;one-or-more and still disappears.
+  (test-assert
+    (not (null? (type:interpret-result-list
+      (construct-type-expression-with-meta '((number? <- (inner:list? number? ...))))))))
   (test-assert
     (null? (type:interpret-result-list
-      (construct-type-expression-with-meta '((number? <- (inner:list? number? ...)))))))
+      (construct-type-expression-with-meta '((number? <- (inner:list? number? **1)))))))
 (test-end)
 
 (test-begin "type:->?/<-?/=? ")
