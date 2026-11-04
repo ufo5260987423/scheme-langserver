@@ -236,7 +236,15 @@
       [(null? nodes) acc]
       [else
         (let* ([node (dereference-index-node (car nodes))]
-            [children (if (index-node? node) (index-node-children node) '())]
+            [children
+              (if (or (not (index-node? node)) (hashtable-ref visited node #f))
+                ;;visited-set DFS, same as walk-node/find-calls/count-subtree
+                ;;below: proper cyclic literals (#0=(1 2 3 . #0#)) make the
+                ;;DEREFERENCED graph cyclic (the #0# leaf resolves back to
+                ;;its own ancestor), on which this walk used to spin forever
+                '()
+                (begin (hashtable-set! visited node #t)
+                  (index-node-children node)))]
             [head-expr
               (and (index-node? node)
                 (not (null? children))
