@@ -64,7 +64,9 @@
                   (identifier-reference-type-expressions ir)
                   (type:interpret-result-list (identifier-reference-index-node ir))))
               (recursive-top identifier-reference)))]
-      [limit 10])
+      [limit (greatest-fixnum)] ;no truncation in the full report: this
+                                ;script's only job is dumping every candidate
+      )
     (call-with-values
       (lambda () (sem:compact-display types limit))
       (lambda (items total truncated?)
@@ -152,9 +154,11 @@
        (let* ([file-filter (detect-file-filter target-path)]
               [workspace (init-workspace target-path file-filter 'r6rs #f #t)]
               [root-library-node (workspace-library-node workspace)])
-         (call-with-output-file output-path
-           (lambda (port)
-             (step-library-identifiers root-library-node port)))))]
+         (begin
+           (when (file-exists? output-path) (delete-file output-path))
+           (call-with-output-file output-path
+             (lambda (port)
+               (step-library-identifiers root-library-node port))))))]
     [(= argc 3)
      (let ([target-path (car args)]
            [library-name-string (cadr args)]
@@ -168,9 +172,11 @@
            (begin
              (display (string-append "Library not found: " library-name-string "\n"))
              (exit 1))
-           (call-with-output-file output-path
-             (lambda (port)
-               (step-single-library target-library-node port))))))]
+           (begin
+             (when (file-exists? output-path) (delete-file output-path))
+             (call-with-output-file output-path
+               (lambda (port)
+                 (step-single-library target-library-node port)))))))]
     [else
       (display "Usage:\n")
       (display "  Single library: scheme --script output-type-analysis.ss <dir> <lib-name> <out>\n")
