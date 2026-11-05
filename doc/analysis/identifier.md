@@ -126,7 +126,7 @@ To be a simple conclusion, these criterions are not more efficient than fully up
 
 This document previously contained a full description of "route 2", a self-built macro-expansion pipeline (`analysis/identifier/expanders/`: dispatch-matcher transcription, template instantiation, `shallow-copy` reference back-propagation, pretty-print/reparse replay) plus the OPT-1~5 performance fixes, the memory investigation, and the 2026-05-04 decision record for that pipeline.
 
-Route 2 was **retired on 2026-10-21** and its code was removed. The decision record is [doc/design/route2-retirement-proposal.md](../design/route2-retirement-proposal.md).
+Route 2 was **retired on 2026-10-21** and its code was removed.
 
 The current production mechanism is **IR auto-route**: on any macro-family call site, Chez's own expander (`sc-expand` via `analysis/identifier/expander/chez-ir.sls`) produces the parsed Lsrc IR with per-expression source locations, from which macro-derived bindings are synthesized onto the document. Per-stage code map: [doc/analysis/ir-auto-route-walkthrough.md](ir-auto-route-walkthrough.md). Theoretical framework: [doc/analysis/macro-analysis-framework.md](macro-analysis-framework.md).
 

@@ -205,11 +205,11 @@ find . -name "*.sls" ! -path "./.akku/*" |xargs wc -l
 ### Research & Experiments
 12. [Scheme-langserver paper (ELS'25)](./doc/paper.pdf) — academic paper on static analysis for Scheme
 13. [Macro analysis framework](./doc/analysis/macro-analysis-framework.md) — theoretical coordinates of the macro-analysis mechanisms (with the retired route-2 pipeline as reference)
-14. [Syntax candy DSL](./doc/analysis/type/domain-specific-language/syntax-candy.md) — pattern matcher for type-rule authoring
-15. [Record type inference analysis](./doc/analysis/type/record-inference.md) — `define-record-type` in the type system
+14. [Syntax candy DSL](./doc/analysis/type/type.md#12-dsl-引擎syntax-candylist-pattern-matcher) — pattern matcher for type-rule authoring
+15. [Record type inference analysis](./doc/analysis/type/type.md#13-record-类型推断) — `define-record-type` in the type system
 16. [Type inference performance field notes](./doc/analysis/type/type.md#103-performance-optimization-attempts-field-notes) — benchmark methodology and dead-end records
 17. [DeepWiki](https://deepwiki.com/ufo5260987423/scheme-langserver)
-18. [Type inference precedents](./doc/analysis/type/type-inference-precedents.md) — external theory survey (success typing, occurrence typing, conditional types, semantic subtyping) with adoption roadmap for the type-rule DSL
+18. [Type inference precedents](./doc/analysis/type/type.md#16-外部先例深度调研类型推断-dsl-的理论背景) — external theory survey (success typing, occurrence typing, conditional types, semantic subtyping) with adoption roadmap for the type-rule DSL
 
 ## License
 [MIT](./LICENSE)

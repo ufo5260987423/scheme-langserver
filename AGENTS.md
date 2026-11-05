@@ -511,8 +511,7 @@ Never probe with the `_` wildcard (ufo-match rejects it in every mode).
 
 Key tests: differential + IR suite below. Docs:
 `doc/analysis/ir-auto-route-walkthrough.md` (per-stage code map, CN),
-`doc/analysis/chez-sc-expand-records-switch.md` (the sc-expand switch),
-`doc/design/route2-retirement-proposal.md` (decision record).
+`doc/analysis/chez-sc-expand-records-switch.md` (the sc-expand switch).
 - Ground truth: `analysis/identifier/expander/chez-ir.sls` wraps the switch (feature
   self-check `chez-ir-available?`). It is the ONLY project library starting
   with `#!chezscheme` (required for `#%$` kernel primitives; the directive
@@ -523,7 +522,6 @@ Key tests: differential + IR suite below. Docs:
   Load-path + free-variable retry coverage:
   `tests/analysis/identifier/test-ir-auto-route-load.sps`. Full mechanism
   walkthrough (per-stage code map, CN): doc/analysis/ir-auto-route-walkthrough.md.
-  Retirement plan: doc/design/route2-retirement-proposal.md (Phase 1 done).
   Deployment caveat: none -- script and compiled binaries both work via the
   load path (measured); the host needs NO ufo-match import (run.ss dropped
   it). Pattern-variable bindings anchor at pattern positions (Chez's own

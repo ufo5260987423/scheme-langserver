@@ -268,7 +268,7 @@ IR 遍历结果（节选，完整复现见 §7）：
 
 ## 9. 对 scheme-langserver 的应用方向与落地记录
 
-> **2026-10-29 压缩**：本节原为 route-2 时代的四段落地日志（route 2 对照验证通道、 受控并行期、路线三 spike、expander-doc 替代设想），细节已随 route 2 退役失去时效。 完整脉络（含逐阶段实测数字、部署形态修正史、二十一条陷阱汇编、测试矩阵）见 [ir-auto-route-walkthrough.md](./ir-auto-route-walkthrough.md)；退役决策与证据汇总见 [route2-retirement-proposal.md](../design/route2-retirement-proposal.md)。 保留一句话结论：本文的机制探索（§1-§8、§10）已落地为 `analysis/identifier/expander/chez-ir.sls` + `ir-auto-route.sls`—— 未文档化访问全部单点封装、启动自检（`chez-ir-available?`）、Chez 升级时只改这一个文件。
+> **2026-10-29 压缩**：本节原为 route-2 时代的四段落地日志（route 2 对照验证通道、 受控并行期、路线三 spike、expander-doc 替代设想），细节已随 route 2 退役失去时效。 完整脉络（含逐阶段实测数字、部署形态修正史、二十一条陷阱汇编、测试矩阵）见 [ir-auto-route-walkthrough.md](./ir-auto-route-walkthrough.md)。 保留一句话结论：本文的机制探索（§1-§8、§10）已落地为 `analysis/identifier/expander/chez-ir.sls` + `ir-auto-route.sls`—— 未文档化访问全部单点封装、启动自检（`chez-ir-available?`）、Chez 升级时只改这一个文件。
 ## 10. 与 Racket 机制对照
 
 | | Racket `expand` | Chez `sc-expand ... #t` |
