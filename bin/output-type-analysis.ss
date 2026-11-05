@@ -9,7 +9,14 @@
   (scheme-langserver analysis type semantic-subtyping display)
   (scheme-langserver analysis workspace)
   (scheme-langserver analysis identifier reference)
-  (scheme-langserver analysis identifier rules library-import))
+  (scheme-langserver analysis identifier rules library-import)
+  (scheme-langserver analysis type substitutions generator))
+
+;;this report is meant to showcase FULL inference quality: opt in to the
+;;expensive passes (P1 fixpoint + P3 rest-elements), same as run.ss
+;;-t advance. Without this the report silently degrades to basic
+;;inference (default off since 2026-11-05).
+(type-inference-advanced? #t)
 
 (define (detect-file-filter path)
   (if (file-directory? (string-append path "/.akku"))
