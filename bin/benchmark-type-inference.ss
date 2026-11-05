@@ -1,7 +1,7 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Performance benchmark for type inference subsystem.
-;; Run: source .akku/bin/activate && scheme --script benchmark-type-inference.ss
+;; Run: source .akku/bin/activate && scheme --script bin/benchmark-type-inference.ss
 #!r6rs
 
 (import

@@ -1,6 +1,12 @@
 #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Memory investigation script for auto macro expansion
+;; HISTORICAL ARCHIVE (route-2 era, retired 2026-10-21): this script
+;; profiles the deleted self-built expansion pipeline; its imports
+;; (analysis/identifier/expanders/expansion-wrap, expansion-generator->rule,
+;; identifier-reference-syntax-expander) no longer exist, so it does not
+;; run as-is. Kept as the record of the allocation investigation that
+;; motivated the IR auto-route replacement.
 ;; Phase 1: Per-function allocation attribution via (statistics)
 ;; Phase 2: Object-type census via (object-counts)
 ;; Phase 3: Process-level baseline via external time -v
@@ -68,7 +74,8 @@
     '(pair vector string symbol closure hashtable box record)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Reproduced core of test-auto-resolve-basic.sps
+;; Reproduced core of the route-2-era test-auto-resolve-basic.sps
+;; (deleted with route 2, 2026-10-21)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (run-simple-let-test)

@@ -1,6 +1,9 @@
 #!/usr/bin/env scheme-script
 ;; P1 performance probe: whole-workspace init timing with type inference ON.
 ;; Usage: scheme --script bin/profile-fixpoint-cost.ss
+;; Note: as written this measures BASIC type inference -- the P1 fixpoint
+;; SOLVE phase is gated behind type-inference-advanced? (default off since
+;; 2026-11-05) and this script does not opt in.
 #!r6rs
 
 (import

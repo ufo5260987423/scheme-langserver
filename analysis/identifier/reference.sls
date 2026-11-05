@@ -281,9 +281,8 @@
       (let ([expression (annotation-stripped (index-node-datum/annotations current-index-node))]
           [export-list (index-node-references-export-to-other-node current-index-node)])
         ;binding-position short-circuit: a node whose expression IS the identifier and which carries a same-named export reference is a
-        ;declaration, not a use. Only a NON-speculative export counts: back-propagation (shallow-copy) stamps speculative export copies
-        ;onto use-position nodes too (single-symbol macro clause bodies), and those must keep resolving -- see doc/analysis/
-        ;match-auto-resolution.md TODO-steer investigation 2026-10-07.
+        ;declaration, not a use. Only a NON-speculative export counts: macro expansion (ir-auto-route) can stamp speculative export
+        ;copies onto use-position nodes too (single-symbol macro clause bodies), and those must keep resolving.
         (if (and
             (find
               (lambda (i)

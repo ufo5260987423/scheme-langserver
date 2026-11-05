@@ -71,7 +71,6 @@
         (fixpoint-substitutions-for! document)
         (rest-elements-substitutions-for! document))]))
 
-; document index-node allow-unquote? quoted?
 (define step
   (case-lambda
     [(current-document current-index-node root-library-node macro-infer)
@@ -118,7 +117,6 @@
                         "type" "type-rule-warning"))
                     '()]
                   [else (raise c)]))
-              ;this must be grounded, generally you shouldn't test this.
               (application-process current-document current-index-node))
             ;;per-child isolation: a condition in ONE child must not
             ;;starve its later siblings of analysis (measured: the macro-

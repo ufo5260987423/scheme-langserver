@@ -17,8 +17,8 @@
     (scheme-langserver analysis type domain-specific-language interpreter)
     (scheme-langserver analysis type domain-specific-language inner-type-checker))
 
-;; P1: recursive-return fixpoint. See
-;; doc/analysis/type/type-inference-improvement-plan.md §1 (two-phase
+;; P1: recursive-return fixpoint (设计来源： type.md §15 改进路线图，
+;; P0-P3 已落地，见 §15.2 注记)。Two-phase
 ;; re-interpretation, after orly issue #128 Option B, with Dialyzer-style
 ;; caps). Self/mutual recursive calls currently come back unsolved through
 ;; the interpreter's cycle cut and degrade to something?. For each
@@ -183,7 +183,7 @@
             (private:check-budget! deadline)
             (let ([r0 (private:interpret-union return-nodes)])
               (if (private:worthwhile? r0)
-                (private:iterate! return-nodes call-nodes saved r0 0 deadline)
+                (private:iterate! return-nodes call-nodes r0 0 deadline)
                 (private:restore-substitutions! saved)))))))))
 
 ;;total number of index-nodes in the return chains (shared nodes counted
@@ -211,12 +211,12 @@
   (when (>= (private:now-ms) deadline)
     (raise private:budget-tag)))
 
-(define (private:iterate! return-nodes call-nodes saved current i deadline)
+(define (private:iterate! return-nodes call-nodes current i deadline)
   (cond
     [(or (>= i PRIVATE-MAX-FIXPOINT-ROUNDS)
         (> (private:count-atoms current) PRIVATE-MAX-FIXPOINT-ATOMS))
       ;;cap fired: current is still a sound over-approx -- keep it
-      (private:finalize! call-nodes saved current)]
+      (private:finalize! call-nodes current)]
     [else
       (for-each
         (lambda (n) (index-node-substitution-list-set! n current))
@@ -226,8 +226,8 @@
       (let ([next (private:interpret-union return-nodes)])
         (private:check-budget! deadline)
         (if (equal? (private:sort-candidates next) (private:sort-candidates current))
-          (private:finalize! call-nodes saved next)
-          (private:iterate! return-nodes call-nodes saved next (+ i 1) deadline)))]))
+          (private:finalize! call-nodes next)
+          (private:iterate! return-nodes call-nodes next (+ i 1) deadline)))]))
 
 (define (private:interpret-union return-nodes)
   (fold-left
@@ -244,7 +244,7 @@
 (define (private:worthwhile? candidates)
   (not (null? candidates)))
 
-(define (private:finalize! call-nodes saved final)
+(define (private:finalize! call-nodes final)
   ;;Replace (not append): the children-chain substitution is exactly the
   ;;cyclic path that used to degrade to raw remainders; the converged
   ;;estimate R = F(R) is its sound solution. The saved chain is dropped --

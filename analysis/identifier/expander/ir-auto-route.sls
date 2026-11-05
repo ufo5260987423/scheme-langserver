@@ -1,10 +1,10 @@
 #!chezscheme
 (library (scheme-langserver analysis identifier expander ir-auto-route)
   ;; IR auto-route (route 3; doc/analysis/ir-auto-route-walkthrough.md): for
-  ;; macro call sites dispatched by the router (ufo-match family, match-index-node),
-  ;; expand with Chez's own expander and synthesize references from the IR.
-  ;; Unconditional since 2026-10-21 -- the underlying Chez APIs are being
-  ;; upstreamed for documentation, so no opt-out gate remains.
+  ;; macro call sites dispatched by the router (one generic arm since
+  ;; 2026-10-29 -- any define-syntax-headed call site), expand with Chez's
+  ;; own expander and synthesize references from the IR. OPT-IN since
+  ;; 2026-10-29 via ir-auto-route:enabled? (see below).
   (export
     ir-auto-route:enabled?
     ir-auto-route:try-expand
@@ -29,34 +29,31 @@
     (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier expander chez-ir))
 
-;; Expansion environment, cached process-wide. Bootstrap order (v2,
-;; 2026-10-20):
-;;  1. probe interaction-environment -- fast path when the host imported
-;;     (ufo-match) (e.g. run.ss in script mode). Mutable and lenient: expands
-;;     defines directly.
-;;  2. locate the ufo-match SOURCE and (load …) it: explicit load registers
-;;     the library in Chez's global library manager and makes it resolvable
-;;     in BOTH script and compiled binaries (measured with compile-chez-program
-;;     probes). Release binaries no longer depend on the host import, and the
-;;     expansion uses the WORKSPACE'S OWN macro copy (no version skew).
-;;     Sources, in order:
-;;       a. the workspace's own (ufo-match) library-node (walk-library)
-;;       b. a CHEZSCHEMELIBDIRS scan for ufo-match.{sls,chezscheme.sls,ss}
+;; Expansion environment, cached process-wide. Bootstrap order (v3,
+;; generic arm 2026-10-29; head symbol and library come from each call site):
+;;  1. probe interaction-environment -- fast path when the head macro is
+;;     visible there (host import or prior load). Mutable and lenient:
+;;     expands defines directly.
+;;  2. build the env with (environment ...) from the macro library's OWN
+;;     source, located per call site. Sources, in order:
+;;       a. the document's import resolution for the head (private:import-source)
+;;       b. the workspace's library-node for the head's library (walk-library)
+;;       c. a CHEZSCHEMELIBDIRS scan for <library>.{sls,chezscheme.sls,ss}
+;;     This reuses an already-registered library without reloading (no
+;;     double-load compilation-instance poisoning) and needs no host import;
+;;     (load source) + retry is only the fallback for libraries not
+;;     locatable on the current library-directories (compiled-binary case:
+;;     the compile-time-embedded envs, see private:embedded-self-lib-envs).
 ;;     A fresh (environment ...) is IMMUTABLE -- rejects top-level define and
 ;;     is strict about free identifiers -- so the fresh-env mode expands via
 ;;     private:expand-fresh's let-wrapper + free-variable parameter growth.
-;;  3. on failure cache 'unavailable (permanent silent fallback to route 2).
+;;  3. on failure cache 'unavailable (permanent silent fallback: the call
+;;     site simply gets no expansion-derived references).
 ;; Probe verification is TWO-SIDED: interaction envs are LENIENT -- an unbound
 ;; `match` expands to ($top-level-value 'match) with NO error (false positive
 ;; for naive probes, and the `_` wildcard is rejected by ufo-match in every
 ;; mode). Real expansion consumes the keyword: no $top-level-value lookup,
 ;; and the failure thunk carries (quote match). The probe is '(match 1 [x x]).
-;NO GATE: the IR path is unconditional since 2026-10-21 (the user is
-;preparing an upstream PR to document the underlying Chez APIs -- sc-expand's
-;records? switch, #%$record-type-descriptor, the Lsrc IR -- at which point
-;the undocumented-access rationale for an opt-out disappears). The only
-;remaining guard is chez-ir-available?'s feature self-check, which degrades
-;to "no auto-resolution" on Chez builds lacking the APIs.
 ;OPT-IN SINCE 2026-10-29: the whole mechanism (identifier-side auto-route AND
 ;type-side macro inference) sits behind the ir-auto-route:enabled? parameter,
 ;DEFAULT #f (off). run.ss -a/--auto-expand enable turns it on; init-server's
@@ -223,7 +220,8 @@
 
 ;Env cache: 'interaction -> env | 'failed; <source path> -> env | 'failed.
 ;Per-source caching matters when one server process analyzes several
-;workspaces with DIFFERENT ufo-match copies -- each gets its own env.
+;workspaces with DIFFERENT copies of the same macro library -- each gets
+;its own env.
 (define private:env-cache-ht (make-hashtable equal-hash equal?))  ; keys: 'interaction | source path string
 
 ;Bootstrap returns (env . mode), mode in (interaction | fresh).
@@ -411,7 +409,8 @@
 ;; annotated-forms cache keyed by the document TEXT (not the path): parsing
 ;; the in-memory text directly (sfd constructed over the string) keeps the IR
 ;; path correct for unsaved/dirty buffers -- a disk-based design would fall
-;; back to route 2 for every edited file, i.e. throughout an editing session.
+;; leave every edited file without expansion-derived references throughout
+;; an editing session.
 (define private:forms-cache (make-hashtable string-hash string=?))
 (define private:forms-mutex (make-mutex))
 
@@ -729,11 +728,11 @@
 
 (define (ir-auto-route:call-site-flows root-library-node document call-node)
   ;;Type-flow EXTRACTION service. NOT on any production path: the type
-  ;;side types macros with generator rules over source syntax (type
-  ;;router family arms). This entry survives as the DIFFERENTIAL-TEST
-  ;;ORACLE for those rules -- its facts are true by construction (Chez's
-  ;;own expansion), so tests can assert the hand-written rules cover what
-  ;;the IR proves is bound. Returns ((binding-bias . flow) ...),
+  ;;side types macros by expansion (type:expand-and-infer,
+  ;;macro-expansion.sls). This entry survives as the DIFFERENTIAL-TEST
+  ;;ORACLE for that production path -- its facts are true by construction
+  ;;(Chez's own expansion), so tests can assert the expansion-driven
+  ;;inference covers what the IR proves is bound. Returns ((binding-bias . flow) ...),
   ;;vocabulary-neutral positional facts, or #f on any failure (with a
   ;;type-stats miss; see REPLAY_TRACE). root-library-node may be #f
   ;;(source location falls back to the import target / libdirs scan).
@@ -770,7 +769,7 @@
               flows))))))))
 
 (define (ir-auto-route:try-expand)
-  ;; The IR-only rule for the router's ufo-match arm (route 2 retired). On
+  ;; The IR-only rule for the router's generic macro arm (route 2 retired). On
   ;; ANY failure -- gate off, feature probe failed, env unavailable, miss --
   ;; the call site simply gets no expansion-derived references; the stats and
   ;; REPLAY_TRACE diagnostics carry the reason. root-file-node is accepted

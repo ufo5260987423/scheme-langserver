@@ -2,7 +2,8 @@
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright (c) 2026 WANG Zheng
 ;; SPDX-License-Identifier: MIT
-;; Differential test: Chez sc-expand IR ground truth vs route-2 resolution.
+;; Differential test: Chez sc-expand IR ground truth vs analysis resolution
+;; (route 2 at the time; today the analysis side is ir-auto-route).
 ;; See doc/analysis/chez-sc-expand-records-switch.md.
 #!r6rs
 
@@ -40,18 +41,13 @@
       [document (file-node-document target-file-node)]
       [index-node-list (document-index-node-list document)])
 
-    ;; Pattern-variable anchoring (fixed 2026-10-20, expansion-wrap.sls): Chez's
-    ;; own expander attributes pattern-variable bindings to the pattern positions
-    ;; (e.g. a -> bias 152). Route 2 now matches: shallow-copy's import fallback
-    ;; recovers the true anchor by scanning all hops' pair compounds for a
-    ;; call-site-tree leaf with the binding identifier (the pvar link exists only
-    ;; at leaf pairs, while bindings attach to interior scope nodes). Scope
-    ;; visibility and definition position are separated: the reference resolves
-    ;; from the macro call node (ancestor of all uses) while its index-node is the
-    ;; recovered pattern position. Investigation trail: protocol-wrapped
-    ;; constructor trap (mkref) located the creators; SLSCOPY_TRACE showed the
-    ;; pair-less interior entries. Known remaining gap: duplicate speculative
-    ;; references (resolution count 2 vs Chez's 1) -- TODO-15 P1/P2 multiplicity.
+    ;; Pattern-variable anchoring: Chez's own expander attributes
+    ;; pattern-variable bindings to the pattern positions (e.g. a -> bias
+    ;; 152), and ir-auto-route synthesizes its references there -- one
+    ;; reference per binding, no duplicate candidates. (Route 2 needed an
+    ;; expansion-wrap/shallow-copy anchor-recovery fix for this, and left a
+    ;; duplicate-speculative-reference gap; both are gone with the retired
+    ;; pipeline, 2026-10-21.)
     (test-assert "chez-ir feature probes pass" (chez-ir-available?))
     (test-assert "define form found in annotated source" (not (eq? #f define-form)))
     (test-assert "ground truth has call-site refs"

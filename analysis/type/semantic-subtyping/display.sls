@@ -8,7 +8,7 @@
     (scheme-langserver analysis type semantic-subtyping semtype))
 
 ;display compaction for hover (phase 1 of the display-quality roadmap,
-;see the improvement survey): candidate type trees are merged into a
+;see doc/analysis/type/type.md §15): candidate type trees are merged into a
 ;compact, deterministic view. The display guarantee is TWO-ORDERED:
 ;
 ;  (a) VALUE order (soundness): display(C) >= union(C) -- allowed to be

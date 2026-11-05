@@ -5,7 +5,7 @@
 ;; Route-3 spike: replace route 2's generator pipeline with Chez sc-expand IR
 ;; for one match call site -- synthesize identifier-references from the IR's
 ;; call-site refs and verify resolution + performance.
-;; Ground truth / extractor: analysis/identifier/chez-ir.sls
+;; Ground truth / extractor: analysis/identifier/expander/chez-ir.sls
 ;; (doc/analysis/chez-sc-expand-records-switch.md).
 #!r6rs
 
@@ -31,7 +31,8 @@
 ;; one reference per (identifier binding-bias), inserted into the macro call
 ;; node's imports (ancestor of every use, so resolution works), anchored at
 ;; the binding position (goto-definition target). This mirrors the semantics
-;; route 2's expansion-wrap produces after the pattern-anchoring fix, but the
+;; route 2's expansion-wrap produced after the pattern-anchoring fix (route 2
+;; retired 2026-10-21), but the
 ;; knowledge comes from Chez's own expander instead of the syntax-rules
 ;; machinery. Only bindings INSIDE the macro call span are macro-derived
 ;; (e.g. pattern variables); ordinary bindings (lambda params) are excluded.

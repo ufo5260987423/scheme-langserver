@@ -77,7 +77,6 @@
 (test-end)
 
 ;; P1: multiple consecutive/independent close delimiters should all be diagnosed
-;; (A2, A5, E3 from task1.md)
 
 (test-begin "consecutive-extra-close-parens")
 (let ([doc (make-document "file:///test.ss" "(a b)))" '())])

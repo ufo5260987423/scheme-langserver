@@ -3,7 +3,7 @@
 ;; Copyright (c) 2022-2023 WANG Zheng
 ;; SPDX-License-Identifier: MIT
 #!r6rs
-;;to read log and reproduce similar action for debug
+;; Print the inferred types of a library's imported identifiers.
 (import 
   (chezscheme) 
   (srfi :64 testing) 

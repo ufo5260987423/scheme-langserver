@@ -1,12 +1,16 @@
 #!chezscheme
-;; Canary for the route-3 controlled parallel phase (ir-auto-route): analyze
-;; this repository with init-workspace and print a compact metric line, so two
-;; runs (SLSCHEME_IR_ROUTE unset vs set) can be diffed. Metrics: wall time,
-;; IR-route stats, aggregate reference/diagnosis counts over all documents.
+;; Canary from the route-2 -> route-3 (ir-auto-route) comparison era: analyze
+;; this repository with init-workspace and print a compact metric line.
+;; Metrics: wall time, IR-route stats, aggregate reference/diagnosis counts
+;; over all documents.
+;;
+;; Historical note: the SLSCHEME_IR_ROUTE env switch and the "route 2 mode"
+;; baseline are gone -- route 2 was retired 2026-10-21 and ir-auto-route is
+;; the only macro path, opt-in via (ir-auto-route:enabled? #t) since
+;; 2026-10-29 (which this script does not set, so it runs with the gate off).
 ;;
 ;;   source .akku/bin/activate
-;;   scheme --script bin/ir-route-canary.ss              # route 2 mode
-;;   SLSCHEME_IR_ROUTE=1 scheme --script bin/ir-route-canary.ss   # IR mode
+;;   scheme --script bin/ir-route-canary.ss
 (import (chezscheme)
   ;deliberately NO (ufo-match): dogfood the v2 load fallback (workspace
   ;library-node / CHEZSCHEMELIBDIRS locate + load) instead of the

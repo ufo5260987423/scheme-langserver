@@ -36,7 +36,7 @@
     (immutable input-port)
     (immutable output-port)
     (immutable log-port)
-    ; only have 1 thread, in order to asynchronize request processing
+    ; thread pool for asynchronous request processing (or #f in single-thread mode)
     (immutable thread-pool)
     ;;for output-port
     (immutable mutex)

@@ -13,7 +13,7 @@
 
     (scheme-langserver analysis identifier reference))
 
-;route-4 (doc/analysis/type/type-inference-precedents.md §4.6): a
+;route-4 (doc/analysis/type/type.md §16, 原 precedents 调研 §4.6): a
 ;set-theoretic internal representation for the type-equivalence layer.
 ;
 ;Phase 2 adds the pair/vector sorts and the inner:list? sugar:
@@ -115,7 +115,7 @@
   (fields
     (immutable base)     ; fixnum bitset over base sorts (union of the sort)
     (immutable pair)     ; shard: clause list | #f (empty sort)
-    (immutable arrow)    ; #f (empty) | 'ALL (whole function sort) -- phase 3
+    (immutable arrow)    ; shard: clause list | #f (empty sort)
     (immutable vector))) ; shard: clause list | #f (empty sort)
 
 ;; ---------------------------------------------------------------------
@@ -504,7 +504,7 @@
       '()
       PRIVATE-BIT-ALIST)))
 
-;occurrence-typing hooks (type-inference-precedents §2.5).
+;occurrence-typing hooks (type.md §16, 原 precedents §2.5).
 (define (sem:restrict s t)
   (sem:intersect s t))
 

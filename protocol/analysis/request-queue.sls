@@ -120,6 +120,6 @@
       ["textDocument/didChange"
         (make-tickal-task request queue workspace)]
       [else (make-tickal-task request queue workspace)])
-      ; Because the pool is limited to have only one thread.
+      ; Only one consumer thread ever waits on this condition, so a signal (not broadcast) suffices.
       (condition-signal (request-queue-condition queue))))
 )

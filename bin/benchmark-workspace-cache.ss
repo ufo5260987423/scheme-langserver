@@ -1,5 +1,6 @@
 #!/usr/bin/env scheme-script
-;; Reproduce the README/workspace.md fixture benchmark table.
+;; Fixture benchmark table for the workspace FASL cache: cold init, cached
+;; init, and cache-save timings per fixture.
 ;; Run: source .akku/bin/activate && scheme --script bin/benchmark-workspace-cache.ss [mode]
 ;;   mode = fixtures (default): simple-lib + synthetic-200 + repo (macro off)
 ;;   mode = repo-on: repo with ir-auto-route enabled (run in a FRESH process)

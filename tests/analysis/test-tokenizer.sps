@@ -32,7 +32,7 @@
 
 ;; The following tests verify that source-file->annotations gracefully degrades
 ;; various lexical and syntactic errors that Chez Scheme's get-datum may throw,
-;; instead of crashing. See doc/get-datum-read-exceptions.md for details.
+;; instead of crashing. See doc/analysis/tokenizer.md for details.
 
 (test-begin "tolerant: eof in list")
   (test-assert (list? (source-file->annotations "tests/resources/tokenizer-exceptions/eof-list.ss.test")))

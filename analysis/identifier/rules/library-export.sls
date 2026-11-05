@@ -76,8 +76,8 @@
           (append 
             (index-node-references-export-to-other-node identifier)
             (if (zero? reference-count)
-        ;; in srfi 13, library file using a self-made include/revolve procedure
-        ;; and in this case, replace '() with a special 
+        ;; in srfi 13, library file using a self-made include/resolve procedure
+        ;; and in this case, replace '() with a special self-named reference
               `(,(make-identifier-reference
                 (index-node-expression identifier)
                 document

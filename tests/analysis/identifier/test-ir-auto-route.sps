@@ -2,9 +2,9 @@
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright (c) 2026 WANG Zheng
 ;; SPDX-License-Identifier: MIT
-;; IR auto-route test: the router's ufo-match arm resolves the call site
+;; IR auto-route test: the router's generic macro arm resolves the call site
 ;; through Chez's own expander IR (ir-auto-route), and the analysis must
-;; satisfy the IR ground truth. The path is unconditional (no gate).
+;; satisfy the IR ground truth. The path is opt-in (see the gate below).
 #!r6rs
 
 (import
