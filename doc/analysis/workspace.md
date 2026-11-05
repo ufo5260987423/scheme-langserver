@@ -400,8 +400,9 @@ immediately after a cache load without re-diagnosing files.
 Key implementation details:
 
 - Uses Chez native `fasl-read` / `fasl-write` with binary ports.
-- A manifest records `format-version`, `langserver-version`, `chez-version`,
-  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
+- A manifest records `format-version` (3 since 2026-11-05), `langserver-version`, `chez-version`,
+  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags
+  (`type-inference?` and the `type-advanced?` expensive-pass gate); any mismatch
   triggers a cold start.
 - `file-linkage-path->id-map` is an `equal-hashtable`; because Chez `fasl-write`
   only supports `eq-hashtable`, it is serialized as an alist and rebuilt on load.

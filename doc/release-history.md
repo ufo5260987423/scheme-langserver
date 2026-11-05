@@ -1,5 +1,16 @@
 # Release History
 
+## Unreleased
+
+Type-inference quality and performance release: set-theoretic type semantics, recursive-return and variadic-rest inference (opt-in), and a fix for a proper-cyclic-literal hang.
+
+### What's new (unreleased)
+- **Type semantics engine** (`analysis/type/semantic-subtyping/`): set-theoretic type-equivalence and semantic subtyping with per-thread memos, arrow-dominance elimination, and a two-order display invariant. Hover and the full type report now compact candidate overloads semantically (no information loss; e.g. `natural-order-compare`'s 73-signature numeric-tower cross product collapses to 6 mutually-exclusive signatures).
+- **Recursive-return fixpoint (P1)** and **dotted-rest element inference (P3)**: recursive calls converge to concrete return types (Dialyzer-style iteration, direct/mutual recursion, named let), and variadic functions get concrete rest-element signatures from call sites and `apply` tails.
+- **`-t advance` gate**: both expensive passes run only in the new `advance` level of the tri-state `-t/--type-inference` option (`enable` (default) / `advance` / `disable`). Measured on this repo (834 documents): full init with type inference **~11 s basic vs ~32 s advance**; a pathological single interpretation in srfi-115's `regexp-impl.scm` (~22 s) only runs under `advance`. The workspace-cache manifest (format-version 3) keys on the flag.
+- **Fixes**: proper cyclic literals (`#0=(1 2 3 . #0#)`) hung the fixpoint pass's define-name collection (missing visited set) — workspace init on such files went from >90 s hang to ~17 ms; `rnrs-meta-rules` arities audited against the DSL arity gate; type-DSL fixes (zero-consumption elastic `...` segments bind empty, arrow returns no longer dropped in `type:->?`).
+- **Tooling**: `bin/output-type-analysis.ss` opts in to full inference, no longer truncates its report, and safely overwrites an existing output file.
+
 ## 2.1.11
 Macro release: automatic macro resolution rebuilt on Chez's own expander IR, macro-aware type inference, and a fix that makes macro expansion work in compiled binaries.
 

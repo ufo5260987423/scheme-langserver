@@ -40,6 +40,12 @@ CLI 值到内部符号的映射如下：
   top-environment)
 ```
 
+> 注（2026-11-05）：`init-server` 此后扩展为最多 11 个参数（依次为
+> `… top-environment debug? cache-path file-filter auto-expand? advanced-type-inference?`），
+> 上文示例只展示前 6 个。第 11 个参数是昂贵类型推断 pass 的开关
+> （`-t advance`，对应 `type-inference-advanced?` 参数）；短 arity 形式继承
+> 参数当前值。详见 `AGENTS.md` §2 “Expensive type-inference gate”。
+
 ## 2. 进入服务器层
 
 `init-server` 定义在 `scheme-langserver.sls`，会把 `top-environment` 放进 `protocol/server.sls` 中定义的 `server` 记录：

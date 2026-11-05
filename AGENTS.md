@@ -66,14 +66,18 @@ scheme --script run.ss
 
 ### Expensive type-inference gate (`-t advance`)
 
-`construct-substitutions-for` runs two expensive post-passes -- P1
-recursive-return fixpoint (`analysis/type/substitutions/fixpoint.sls`)
-and P3 dotted-rest element inference (`rest-elements.sls`) -- only when
+The P1 recursive-return fixpoint (`analysis/type/substitutions/fixpoint.sls`)
+and P3 dotted-rest element inference (`rest-elements.sls`) are gated by
 the `type-inference-advanced?` parameter (exported from
-`analysis/type/substitutions/generator.sls`) is `#t`. Default off
-(measured 2026-11-05 on this repo: full init with type inference
-~32 s -> ~12 s, and the pathological single interpretation in srfi-115's
-regexp-impl.scm never runs at init). Servers opt in with `run.ss
+`analysis/type/substitutions/generator.sls`). Fixpoint COLLECTION rides
+the generator walk -- the define/let type rules note recursion groups
+via the cddr half of the rule chain (same two-phase idiom as the
+identifier side's `(do-nothing . begin-process)`) -- and is always on;
+only the SOLVE phase is gated. `rest-elements` stays a whole gated
+post-pass. Default off (measured 2026-11-05 on this repo: full init
+with type inference ~31 s advance -> ~11 s basic, and the pathological
+single interpretation in srfi-115's regexp-impl.scm never runs at
+init). Servers opt in with `run.ss
 -t advance` (`-t` is tri-state: `enable` (default) / `advance` /
 `disable`); `init-server`'s 11-argument form sets the parameter before
 the thread pool spawns so forked workers inherit it; shorter arities and

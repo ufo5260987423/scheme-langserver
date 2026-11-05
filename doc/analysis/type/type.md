@@ -868,6 +868,8 @@ Type inference is gated by the `type-inference?` flag passed to `init-workspace`
 1. `init-references` (in `analysis/workspace.sls`) runs `construct-substitutions-for` on every document in topological order.
 2. After substitution generation, `identifier-reference-type-expressions` are populated by calling `type:recursive-interpret-result-list` on each exported identifier.
 
+The P1 recursive-return fixpoint (`fixpoint.sls`) and the P3 dotted-rest element inference (`rest-elements.sls`) sit behind the `type-inference-advanced?` parameter (exported from `generator.sls`, 2026-11-05, commit `9b99a8d7`). Since the 2026-11-05 refactor the two passes differ in structure: fixpoint *collection* rides the generator walk -- the define/let type rules note recursion groups as they fire (the cddr half of the rule chain, the same two-phase idiom as the identifier side's `(do-nothing . begin-process)`) -- and is always on; only the *solve* phase is gated. `rest-elements` stays a whole gated post-pass. Servers opt in with `run.ss -t advance` (`-t` is tri-state: `enable` (default) / `advance` / `disable`); `init-server`'s 11-argument form sets the parameter before the thread pool spawns. Measured on this repo: full init with type inference is ~11 s basic vs ~31 s advance, and a pathological single argument interpretation in srfi-115's `regexp-impl.scm` (~22 s, uninterruptible by the passes' between-calls budgets) only runs under `advance`. See `AGENTS.md` §2 "Expensive type-inference gate".
+
 ### 9.2 Incremental Updates
 
 When a file is changed:
@@ -949,6 +951,8 @@ A standalone benchmark runner was added at `bin/benchmark-type-inference.ss`. It
 - End-to-end API latency (`hover`)
 
 > **Baseline note (2026-10-29):** all numbers in §10.3 are the 2026-06 pre-optimization baseline (single-function `binary-search cl` measurements). After the 2026-10-28 resource-control work (macro-expansion caches, expansion budget, walker memoization), whole-repo init **with** type inference measures ~474 ms / 471 MB peak. The attempt-by-attempt failure records below remain valid as methodology; the baseline table does not describe the current system.
+>
+> **2026-11-05 note (post-P1/P3, commit `9b99a8d7` gate):** full-repo init with type inference measures **~11 s basic / ~32 s advance** (min-of-3, this repo, 834 documents). Phase split under `advance`: generator walk ~3.2 s, fixpoint ~3.5-5 s, rest-elements ~18.5-25 s — of which **~22 s is a single uninterruptible `type:interpret-result-list` call** on one call-site argument in srfi-115's `regexp-impl.scm` (the between-calls 50 ms budgets cannot interrupt a running interpretation; argument-level size guards do not help because the blow-up is combinatorial, not closure-size). The two passes are therefore gated behind `-t advance` (default basic). Also fixed the same day: a proper-cyclic-literal hang (`#0=(1 2 3 . #0#)`) in the fixpoint pass's `collect-define-names`, the only graph walk in `fixpoint.sls` without a visited set.
 
 Key baseline numbers (2026-06, before any optimization):
 

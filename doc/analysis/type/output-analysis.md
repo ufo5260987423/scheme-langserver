@@ -103,7 +103,10 @@ type:		<type-expression>
 
 1. **每次修改 `analysis/` 下的 `.sls` 源码后，若用此工具验证，建议先 `rm -rf .akku/libobj/scheme-langserver`，避免加载旧的 `.so` 缓存。**
 2. 类型推断依赖 `init-workspace` 的完整分析流程（VFS → library-node → file-linkage → abstract interpreter），首次运行需要编译缓存，耗时较长（数十秒到数分钟）。
-3. 批量模式在项目自身（~200 个 `.sls`）上运行可能需要数分钟，属正常现象。
+3. 批量模式在项目自身（~200 个 `.sls`）上运行可能需要数十分钟，属正常现象。
+4. 脚本已内置 `(type-inference-advanced? #t)`（2026-11-05 起），即默认启用完整推断（等价 `run.ss -t advance`：fixpoint + rest-elements 两个 pass）；此前门控落地后脚本曾静默退化为 basic 推断。
+5. 输出**不截断**：展示上限为 `greatest-fixnum`，所有候选类型全部列出（hover 仍保留 10 条截断，两者管线不同段）。
+6. 输出文件已存在时会**先删除再写**（2026-11-05 修复：Chez `call-with-output-file` 遇已存在文件直接报错，此前重跑到同一路径会以静默崩溃告终）。
 
 ## 4. 历史与实现细节
 
@@ -127,7 +130,9 @@ type:		<type-expression>
 
 **第三阶段（2026-06-20，commit `7691c08`）**：移除合并与过滤。
 
-当前实现只保留 `dedupe`，直接输出推断层原始结果。`something?` 被视为"不够精确"而非"错误签名"。例如 `contain?` 会同时显示：
+`something?` 被视为"不够精确"而非"错误签名"，不再做 union 级合并。
+
+**第四阶段（2026-11-02/05，P2 压缩 + advance 门控）**：输出接入 hover 同款的语义压缩管线（`sem:compact-display`：语法去重 → 箭头支配消除 → 反链吸收，语义等价不丢信息，`natural-order-compare` 73 签名 → 6 条互不包含签名）；展示上限放开为不截断；脚本内置开启 `type-inference-advanced?`（完整推断）。例如 `contain?` 会同时显示：
 
 ```text
 type:		([identifier-reference boolean?] <- (inner:list? something? something? something? ) ) 
@@ -141,7 +146,7 @@ type:		(something? <- (inner:list? something? something? something? ) )
 - 对非递归函数，输出没有明显改善，有时甚至退化（如 `type:solved?` 的 `boolean?` 重载被替换为 `something?`）。
 - 对递归函数（`util/contain`、`util/binary-search`），会因未解决表达式集合爆炸而超时。
 
-因此当前仍使用 `type:interpret-result-list`，配合 `PRIVATE-MAX-RESULTS = 500` 的结果数量预算，在合理时间内完成推断。
+因此当前仍使用 `type:interpret-result-list`（无额外结果数量预算，依赖解释器自身的 max-depth/max-recursion 限制），在合理时间内完成推断。
 
 ### 4.3 常见审查标准
 
