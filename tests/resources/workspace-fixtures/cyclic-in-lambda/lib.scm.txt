@@ -1,0 +1,6 @@
+(library (fixtures cyclic-in-lambda lib)
+  (export f)
+  (import (rnrs))
+  (define (f)
+    (display '#0=(a . #0#))
+    'done))

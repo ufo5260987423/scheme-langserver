@@ -104,20 +104,25 @@
 ;;that call each other's DEFINED names, so unfiltered collection is
 ;;safe and drops the old all-define-names pre-pass entirely.
 (define (fixpoint-find-calls body)
+  ;;visited cuts RECURSION (not just re-reporting): the dereferenced
+  ;;walk must terminate on shared/cyclic literals (#0=(a . #0#) in a
+  ;;lambda body measured to hang forever otherwise) and must not
+  ;;re-walk shared subtrees exponentially ((#1=(x) #1#)).
   (let loop ([nodes body] [visited (make-eq-hashtable)])
     (if (null? nodes)
       '()
-      (let* ([node (dereference-index-node (car nodes))]
-          [children (if (index-node? node) (index-node-children node) '())]
-          [here
-            (and (index-node? node)
-              (not (hashtable-ref visited node #f))
-              (private-application-head node))])
-        (if (index-node? node) (hashtable-set! visited node #t) (void))
-        (append
-          (if here (list (cons node here)) '())
-          (loop children visited)
-          (loop (cdr nodes) visited))))))
+      (let ([node (dereference-index-node (car nodes))])
+        (if (hashtable-ref visited node #f)
+          (loop (cdr nodes) visited)
+          (begin
+            (hashtable-set! visited node #t)
+            (append
+              (cond
+                [(private-application-head node)
+                 => (lambda (head) (list (cons node head)))]
+                [else '()])
+              (loop (index-node-children node) visited)
+              (loop (cdr nodes) visited))))))))
 
 ;;the head symbol of node when node is application-shaped
 (define (private-application-head node)

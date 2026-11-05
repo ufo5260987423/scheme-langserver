@@ -219,4 +219,32 @@
 
 (test-end)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Case F: self-cyclic literal inside a lambda body
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;fixpoint-find-calls walks the whole body INCLUDING quoted data. Its
+;;visited set must cut recursion (not just re-reporting), else the
+;;dereferenced walk of #0=(a . #0#) never terminates -- and collection
+;;rides the generator walk, so it hangs even in basic mode. Reaching
+;;the assertions at all is the regression signal (measured: the old
+;;walk hung forever, 2026-11-05).
+
+(test-begin "cyclic literal in lambda body terminates")
+
+(let ([cyclic-fixture
+        (string-append (current-directory)
+          "/tests/resources/workspace-fixtures/cyclic-in-lambda")])
+  (let ([cyclic-workspace (init-workspace cyclic-fixture 'txt 'r6rs #f #f)])
+    (let* ([node (walk-file (workspace-file-node cyclic-workspace)
+                (string-append cyclic-fixture "/lib.scm.txt"))]
+        [document (file-node-document node)])
+      (construct-substitutions-for document)
+      (let ([root (car (document-index-node-list document))])
+        (let ([return-node (find-toplevel-define-return root 'f)])
+          (test-assert "return node found" (index-node? return-node))
+          (test-assert "return still interprets after the cyclic walk"
+            (> (length (type:interpret-result-list return-node)) 0)))))))
+
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
