@@ -20,6 +20,11 @@
   (scheme-langserver analysis type domain-specific-language inner-type-checker)
   (scheme-langserver analysis type substitutions generator))
 
+;;this suite exercises the P3 rest-elements pass, which is gated behind the
+;;type-inference-advanced? parameter (default off since 2026-11-05); opt in
+;;directly, same as run.ss -t advance does for servers.
+(type-inference-advanced? #t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

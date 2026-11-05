@@ -19,7 +19,10 @@ Options:
   -l, --log-path                Path to write log output. (default: current-project-directory/.scheme-langserver.log)
   -m, --multi-thread            Enable multi thread. (default: enable)
 
-  -t, --type-inference          Enable type inference. (default: enable)
+  -t, --type-inference          Type inference: enable (basic; default), advance
+                                (basic + expensive passes: recursive-return
+                                fixpoint + dotted-rest element inference),
+                                or disable.
 
   -a, --auto-expand             Enable automatic macro resolution (IR auto-route
                                 + macro type inference). (default: disable)
@@ -67,7 +70,7 @@ Example Usage:
 
 (define default-log-path "./.scheme-langserver.log")
 (define default-multi-thread #t)
-(define default-type-inference #t)
+(define default-type-inference 'basic)
 (define default-auto-expand #f)
 (define default-top-environment 'r6rs)
 (define default-cache-path #f)
@@ -132,7 +135,18 @@ Example Usage:
     seeds))
 
 (define multi-thread-proc (boolean-option-proc "multi-thread"))
-(define type-inference-proc (boolean-option-proc "type-inference"))
+(define (type-inference-proc _option _name arg seeds)
+  (cond
+    [(string-ci=? arg "enable")
+      (hashtable-set! seeds "type-inference" 'basic)]
+    [(string-ci=? arg "advance")
+      (hashtable-set! seeds "type-inference" 'advance)]
+    [(string-ci=? arg "disable")
+      (hashtable-set! seeds "type-inference" #f)]
+    [else
+      (display "Invalid value for --type-inference. Valid values: enable, advance, disable\n")
+      (exit 1)])
+  seeds)
 (define auto-expand-proc (boolean-option-proc "auto-expand"))
 
 (define (cache-path-proc _option _name arg seeds)
@@ -228,20 +242,22 @@ Example Usage:
           (lambda (_operand seeds)
             seeds)
           (make-default-options))])
-  (init-server
-    (standard-input-port)
-    (standard-output-port)
-    (open-file-output-port 
-      (hashtable-ref args "log-path" default-log-path) 
-      (file-options replace) 
-      'block 
-      (make-transcoder (utf-8-codec)))
-    (hashtable-ref args "multi-thread" default-multi-thread)
-    (hashtable-ref args "type-inference" default-type-inference)
-    (hashtable-ref args "top-environment" default-top-environment)
-    #f
-    (hashtable-ref args "cache-path" default-cache-path)
-    (private:resolve-file-filter
-      (hashtable-ref args "package-manager" #f)
-      (private:normalize-file-filter (hashtable-ref args "file-filter" '())))
-    (hashtable-ref args "auto-expand" default-auto-expand)))
+  (let ([ti-mode (hashtable-ref args "type-inference" default-type-inference)])
+    (init-server
+      (standard-input-port)
+      (standard-output-port)
+      (open-file-output-port 
+        (hashtable-ref args "log-path" default-log-path) 
+        (file-options replace) 
+        'block 
+        (make-transcoder (utf-8-codec)))
+      (hashtable-ref args "multi-thread" default-multi-thread)
+      (not (eq? ti-mode #f))
+      (hashtable-ref args "top-environment" default-top-environment)
+      #f
+      (hashtable-ref args "cache-path" default-cache-path)
+      (private:resolve-file-filter
+        (hashtable-ref args "package-manager" #f)
+        (private:normalize-file-filter (hashtable-ref args "file-filter" '())))
+      (hashtable-ref args "auto-expand" default-auto-expand)
+      (eq? ti-mode 'advance))))

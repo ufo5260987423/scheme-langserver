@@ -1,6 +1,7 @@
 (library (scheme-langserver analysis type substitutions generator)
   (export 
-    construct-substitutions-for)
+    construct-substitutions-for
+    type-inference-advanced?)
   (import 
     (chezscheme)
     (ufo-try)
@@ -31,6 +32,17 @@
     (scheme-langserver analysis type substitutions macro-expansion)
     (scheme-langserver analysis type substitutions self-defined-rules router))
 
+;;OPT-IN gate for the expensive type-inference passes (P1 recursive-return
+;;fixpoint + P3 dotted-rest element inference), measured 2026-11-05 on this
+;;repo: with the gate off, full init with type inference drops from ~32 s
+;;to ~12 s, and the pathological single interpretation in srfi-115's
+;;regexp-impl.scm (~22 s, uninterruptible by the passes' between-calls
+;;budgets) never runs. Default off; set BEFORE the thread pool spawns
+;;(init-server's 11-argument form, run.ss -t advance) so forked workers
+;;inherit it; shorter init-server arities and tests set the parameter
+;;directly. The workspace-cache manifest keys on it.
+(define type-inference-advanced? (make-parameter #f))
+
 (define construct-substitutions-for
   (case-lambda
     [(document)
@@ -48,10 +60,12 @@
         (document-index-node-list document))
       ;;P1: recursive-return fixpoint pass (guarded internally; a failure
       ;;degrades to the pre-fixpoint status quo, never breaks the caller)
-      (fixpoint-substitutions-for! document)
-      ;;P3: dotted-rest element-type inference (same discipline: guarded,
-      ;;budgeted, status-quo on failure)
-      (rest-elements-substitutions-for! document)]))
+      ;;and P3: dotted-rest element-type inference (same discipline:
+      ;;guarded, budgeted, status-quo on failure). Both sit behind the
+      ;;type-inference-advanced? gate: off by default, -t advance opts in.
+      (when (type-inference-advanced?)
+        (fixpoint-substitutions-for! document)
+        (rest-elements-substitutions-for! document))]))
 
 ; document index-node allow-unquote? quoted?
 (define step

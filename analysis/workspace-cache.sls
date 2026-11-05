@@ -23,7 +23,12 @@
     (scheme-langserver virtual-file-system index-node)
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system file-node)
-    (scheme-langserver virtual-file-system library-node))
+    (scheme-langserver virtual-file-system library-node)
+
+    ;; for type-inference-advanced?: the manifest keys on the expensive-pass
+    ;; gate so caches saved with -t advance are never served to basic
+    ;; sessions and vice versa.
+    (scheme-langserver analysis type substitutions generator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Registry initialization
@@ -134,13 +139,14 @@
 
 (define (private:make-manifest file-filter top-environment type-inference? threaded?)
   `(cache-manifest
-    (format-version 2)
+    (format-version 3)
     (langserver-version ,(private:get-langserver-version))
     (chez-version ,(private:get-chez-version))
     (machine-type ,(private:get-machine-type))
     (file-filter ,file-filter)
     (top-environment ,top-environment)
     (type-inference? ,type-inference?)
+    (type-advanced? ,(type-inference-advanced?))
     (threaded? ,threaded?)
     (created-at ,(private:format-current-date))
     (record-fingerprint ,(private:record-fingerprint))))
@@ -148,10 +154,11 @@
 (define (private:manifest-matches? manifest file-filter top-environment type-inference? threaded?)
   (and (pair? manifest)
        (eq? 'cache-manifest (car manifest))
-       (equal? '(format-version 2) (assq 'format-version (cdr manifest)))
+       (equal? '(format-version 3) (assq 'format-version (cdr manifest)))
        (equal? `(file-filter ,file-filter) (assq 'file-filter (cdr manifest)))
        (equal? `(top-environment ,top-environment) (assq 'top-environment (cdr manifest)))
        (equal? `(type-inference? ,type-inference?) (assq 'type-inference? (cdr manifest)))
+       (equal? `(type-advanced? ,(type-inference-advanced?)) (assq 'type-advanced? (cdr manifest)))
        (equal? `(threaded? ,threaded?) (assq 'threaded? (cdr manifest)))
        (equal? `(chez-version ,(private:get-chez-version))
                (assq 'chez-version (cdr manifest)))

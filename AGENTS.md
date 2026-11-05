@@ -64,6 +64,24 @@ scheme --script run.ss
 ./run
 ```
 
+### Expensive type-inference gate (`-t advance`)
+
+`construct-substitutions-for` runs two expensive post-passes -- P1
+recursive-return fixpoint (`analysis/type/substitutions/fixpoint.sls`)
+and P3 dotted-rest element inference (`rest-elements.sls`) -- only when
+the `type-inference-advanced?` parameter (exported from
+`analysis/type/substitutions/generator.sls`) is `#t`. Default off
+(measured 2026-11-05 on this repo: full init with type inference
+~32 s -> ~12 s, and the pathological single interpretation in srfi-115's
+regexp-impl.scm never runs at init). Servers opt in with `run.ss
+-t advance` (`-t` is tri-state: `enable` (default) / `advance` /
+`disable`); `init-server`'s 11-argument form sets the parameter before
+the thread pool spawns so forked workers inherit it; shorter arities and
+tests set the parameter directly (suites for the two passes do this at
+the top). The workspace-cache manifest (format-version 3) keys on the
+flag so caches saved under `-t advance` are never served to basic
+sessions and vice versa.
+
 ---
 
 ## 3. Testing Conventions
@@ -679,7 +697,9 @@ Key design points:
 - Skips the heaviest phase: `init-references` (abstract interpreter / type
   inference).
 - Manifest includes `format-version`, `langserver-version`, `chez-version`,
-  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags; any mismatch
+  `machine-type`, `record-fingerprint`, `file-filter`, and runtime flags
+  (including `type-inference?` and the `type-advanced?` expensive-pass
+  gate); any mismatch
   falls back to cold start.
 - Chez `fasl-write` only supports `eq-hashtable`, so
   `file-linkage-path->id-map` (an `equal-hashtable`) is converted to/from an

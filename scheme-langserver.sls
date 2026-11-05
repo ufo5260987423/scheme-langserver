@@ -9,6 +9,7 @@
 
     (scheme-langserver analysis workspace)
     (scheme-langserver analysis identifier expander ir-auto-route)
+    (scheme-langserver analysis type substitutions generator)
     (scheme-langserver analysis package-manager file-filter)
 
     (scheme-langserver protocol error-code)
@@ -253,6 +254,17 @@
           ;overrides (run.ss -a/--auto-expand).
           (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter (ir-auto-route:enabled?))]
         [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter auto-expand?)
+          ;INHERIT the current switch instead of forcing off: callers that
+          ;opted in via the type-inference-advanced? parameter (tests, log
+          ;replays) keep their choice; only an explicit 11th argument
+          ;overrides (run.ss -t advance).
+          (init-server input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter auto-expand? (type-inference-advanced?))]
+        [(input-port output-port log-port enable-multi-thread? type-inference? top-environment debug? cache-path file-filter auto-expand? advanced-type-inference?)
+          ;Opt-in expensive type inference passes (P1 fixpoint + P3
+          ;rest-elements): set BEFORE the thread pool spawns so forked
+          ;workers inherit the parameter. Defaults off; run.ss -t advance
+          ;turns it on.
+          (type-inference-advanced? advanced-type-inference?)
           ;Opt-in automatic macro resolution (IR auto-route + macro type
           ;inference): set BEFORE the thread pool spawns so forked workers
           ;inherit the parameter. Defaults off; run.ss -a enable turns it on.
