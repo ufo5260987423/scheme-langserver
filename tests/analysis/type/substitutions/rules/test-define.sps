@@ -21,6 +21,11 @@
 
   (scheme-langserver analysis type substitutions generator))
 
+;;the "define rest parameter type inference" group below exercises the P3
+;;rest-elements pass, gated behind type-inference-advanced? (default off
+;;since 9b99a8d7); opt in directly, same as test-fixpoint.sps does.
+(type-inference-advanced? #t)
+
 (test-begin "define for type inference")
   (let* ([workspace (init-workspace (string-append (current-directory) "/util/") '() #f #f)]
       [root-file-node (workspace-file-node workspace)]
