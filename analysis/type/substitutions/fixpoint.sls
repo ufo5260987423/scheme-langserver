@@ -1,12 +1,15 @@
 (library (scheme-langserver analysis type substitutions fixpoint)
-  (export fixpoint-substitutions-for!)
+  (export 
+    fixpoint-substitutions-for!
+    fixpoint-note-group!
+    fixpoint-find-calls
+    fixpoint-clear-document!)
   (import
     (chezscheme)
 
     (scheme-langserver virtual-file-system document)
     (scheme-langserver virtual-file-system index-node)
 
-    (scheme-langserver analysis identifier reference)
     (scheme-langserver analysis identifier util)
 
     (scheme-langserver util dedupe)
@@ -68,27 +71,84 @@
 (define PRIVATE-MAX-FIXPOINT-MS-PER-DOCUMENT 50)
 (define PRIVATE-MAX-GROUP-RETURN-NODES 500)
 
+;;Groups are NOT collected by this pass: the define/let type rules note
+;;them (via fixpoint-note-group!) as they fire during the generator
+;;walk -- see possible-fix-point-process:define in rules/define.sls and
+;;possible-fix-point-process:named-let in rules/let.sls, mounted as the
+;;cddr half of the rule chain in generator.sls's
+;;establish-available-rules-from (the same two-phase chain idiom as the
+;;identifier side's (do-nothing . begin-process): first proc before the
+;;children walk, cddr after it). This pass only merges the noted groups
+;;and solves them; solving stays behind the type-inference-advanced?
+;;gate in construct-substitutions-for, while collection is always on
+;;(it is a cheap local read of the just-stepped subtree).
+
 (define private:budget-tag 'private:fixpoint-budget)
+
+;;raw-group accumulator, keyed by document and consumed (then dropped)
+;;by fixpoint-substitutions-for!. A side table rather than a document
+;;record field keeps the record layout -- and the workspace fasl cache
+;;format -- untouched.
+(define private:raw-groups (make-eq-hashtable))
+
+(define (fixpoint-note-group! document group)
+  (hashtable-update! private:raw-groups document
+    (lambda (groups) (cons group groups)) '()))
+
+(define (fixpoint-clear-document! document)
+  (hashtable-delete! private:raw-groups document))
+
+;;every application-shaped node in body whose head is a leaf symbol,
+;;as ((node . name) ...). NOT filtered by a name set: solve-group!
+;;filters by the group's own names, and merge-groups only links groups
+;;that call each other's DEFINED names, so unfiltered collection is
+;;safe and drops the old all-define-names pre-pass entirely.
+(define (fixpoint-find-calls body)
+  (let loop ([nodes body] [visited (make-eq-hashtable)])
+    (if (null? nodes)
+      '()
+      (let* ([node (dereference-index-node (car nodes))]
+          [children (if (index-node? node) (index-node-children node) '())]
+          [here
+            (and (index-node? node)
+              (not (hashtable-ref visited node #f))
+              (private-application-head node))])
+        (if (index-node? node) (hashtable-set! visited node #t) (void))
+        (append
+          (if here (list (cons node here)) '())
+          (loop children visited)
+          (loop (cdr nodes) visited))))))
+
+;;the head symbol of node when node is application-shaped
+(define (private-application-head node)
+  (let* ([children (index-node-children node)]
+      [head (and (pair? children) (car children))])
+    (and head
+      (let ([expr (annotation-stripped (index-node-datum/annotations head))])
+        (and (symbol? expr) expr)))))
 
 (define (private:budget-exceeded? ex)
   (eq? ex private:budget-tag))
 
 (define (fixpoint-substitutions-for! document)
-  (let ([deadline (+ (private:now-ms) PRIVATE-MAX-FIXPOINT-MS-PER-DOCUMENT)])
-    (guard (ex [else
-                (unless (private:budget-exceeded? ex)
-                  ;;never break the generator; a failed pass degrades to
-                  ;;status quo with a diagnosis (budget exhaustion is silent)
-                  (append-new-diagnoses
-                    document
-                    `(0 0 2
-                      ,(string-append "Recursive fixpoint warning: "
-                          (if (condition? ex) (condition-message ex) "unknown"))
-                      "type" "type-fixpoint-warning")))
-                (void)])
-      (for-each
-        (lambda (group) (private:solve-group! group deadline))
-        (private:merge-groups (private:collect-raw-groups document))))))
+  (let ([raw (hashtable-ref private:raw-groups document '())])
+    ;;consume once: a re-analyzed document must not accumulate duplicates
+    (hashtable-delete! private:raw-groups document)
+    (let ([deadline (+ (private:now-ms) PRIVATE-MAX-FIXPOINT-MS-PER-DOCUMENT)])
+      (guard (ex [else
+                  (unless (private:budget-exceeded? ex)
+                    ;;never break the generator; a failed pass degrades to
+                    ;;status quo with a diagnosis (budget exhaustion is silent)
+                    (append-new-diagnoses
+                      document
+                      `(0 0 2
+                        ,(string-append "Recursive fixpoint warning: "
+                            (if (condition? ex) (condition-message ex) "unknown"))
+                        "type" "type-fixpoint-warning")))
+                  (void)])
+        (for-each
+          (lambda (group) (private:solve-group! group deadline))
+          (private:merge-groups raw))))))
 ;; group = (kind names return-nodes call-nodes); call-node = (node . name)
 (define (private:solve-group! group deadline)
   (when (< (private:now-ms) deadline)
@@ -213,199 +273,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Group collection
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; raw group = (kind names return-nodes call-nodes); call-node = (node . name)
-;; kind 'define groups may merge (mutual recursion); 'named-let never does.
-;; Call collection keeps EVERY call whose head resolves to any document-level
-;; define name (not just self-calls): the merge pass uses these name sets to
-;; discover mutual recursion, and solving binds only calls whose name is in
-;; the merged group's own name set.
-(define (private:collect-raw-groups document)
-  (let* ([visited (make-eq-hashtable)]
-      [all-names (private:collect-define-names document (make-eq-hashtable))])
-    (apply append
-      (map
-        (lambda (root) (private:walk-node document all-names root visited))
-        (document-index-node-list document)))))
-
-;;first pass: every top-level-ish define name in the document (pair form and
-;;variable form), for cross-call collection
-(define (private:collect-define-names document visited)
-  (let walk ([nodes (document-index-node-list document)] [acc '()])
-    (cond
-      [(null? nodes) acc]
-      [else
-        (let* ([node (dereference-index-node (car nodes))]
-            [children
-              (if (or (not (index-node? node)) (hashtable-ref visited node #f))
-                ;;visited-set DFS, same as walk-node/find-calls/count-subtree
-                ;;below: proper cyclic literals (#0=(1 2 3 . #0#)) make the
-                ;;DEREFERENCED graph cyclic (the #0# leaf resolves back to
-                ;;its own ancestor), on which this walk used to spin forever
-                '()
-                (begin (hashtable-set! visited node #t)
-                  (index-node-children node)))]
-            [head-expr
-              (and (index-node? node)
-                (not (null? children))
-                (let ([e (annotation-stripped (index-node-datum/annotations (car children)))])
-                  (and (symbol? e) e)))]
-            [name
-              (and (index-node? node)
-                (eq? 'define head-expr)
-                (>= (length children) 3)
-                (let ([name-expr
-                        (annotation-stripped
-                          (index-node-datum/annotations (cadr children)))])
-                  (cond
-                    [(and (list? name-expr) (not (null? name-expr)) (symbol? (car name-expr)))
-                      (car name-expr)]
-                    [(symbol? name-expr) name-expr]
-                    [else #f])))])
-          (walk
-            (append children (cdr nodes))
-            (if (and name (not (memq name acc)))
-              (cons name acc)
-              acc)))])))
-
-(define (private:walk-node document all-names node visited)
-  (let ([node (dereference-index-node node)])
-    (cond
-      [(or (not (index-node? node)) (hashtable-ref visited node #f))
-        '()]
-      [else
-        (hashtable-set! visited node #t)
-        (let ([group (private:group-for-node document all-names node)]
-            [child-groups
-              (apply append
-                (map
-                  (lambda (child) (private:walk-node document all-names child visited))
-                  (index-node-children node)))])
-          (if group (cons group child-groups) child-groups))])))
-
-(define (private:group-for-node document all-names node)
-  (let* ([children (index-node-children node)]
-      [head-expr
-        (and (not (null? children))
-          (let ([e (annotation-stripped (index-node-datum/annotations (car children)))])
-            (and (symbol? e) e)))])
-    (cond
-      [(and (eq? 'define head-expr) (>= (length children) 3))
-        (private:define-group document all-names children)]
-      [(and (eq? 'let head-expr) (>= (length children) 4))
-        (private:named-let-group document all-names children)]
-      [else #f])))
-
-(define (private:define-group document all-names children)
-  ;;(define (name . params) body ...) or (define name value)
-  (let* ([name-form (cadr children)]
-      [name-expr (annotation-stripped (index-node-datum/annotations name-form))])
-    (cond
-      ;;(define (name . params) body ...)
-      [(and (list? name-expr) (not (null? name-expr)) (symbol? (car name-expr)))
-        (let ([name (car name-expr)]
-            [body (cddr children)])
-          (private:make-group 'define (list name) all-names name body))]
-      ;;(define name (lambda ...)) / (define name (case-lambda ...))
-      [(symbol? name-expr)
-        (let ([value-node (and (>= (length children) 3) (caddr children))])
-          (if (index-node? value-node)
-            (let* ([value-kids (index-node-children value-node)]
-                [value-head-expr
-                  (and (not (null? value-kids))
-                    (let ([e (annotation-stripped (index-node-datum/annotations (car value-kids)))])
-                      (and (symbol? e) e)))])
-              (cond
-                [(eq? 'lambda value-head-expr)
-                  (let ([body (cddr value-kids)])
-                    (private:make-group 'define (list name-expr) all-names name-expr body))]
-                [(eq? 'case-lambda value-head-expr)
-                  ;;each clause is an independent return chain; solve jointly
-                  (let ([clauses (cdr value-kids)])
-                    (private:make-case-lambda-group document all-names name-expr clauses))]
-                [else #f]))
-            #f))]
-      [else #f])))
-
-(define (private:make-case-lambda-group document all-names name clauses)
-  (let ([return-nodes
-          (filter index-node?
-            (map
-              (lambda (clause)
-                ;;clause children: (params body ...) -- body is cdr
-                (let ([body (cdr (index-node-children clause))])
-                  (if (null? body) #f (list-ref body (- (length body) 1)))))
-              clauses))]
-      [calls
-        (fold-left
-          (lambda (acc clause)
-            (append acc
-              (private:find-calls #f all-names (cdr (index-node-children clause))
-                (make-eq-hashtable))))
-          '()
-          clauses)])
-    (if (null? calls)
-      #f
-      `(define (,name) ,return-nodes ,calls))))
-
-(define (private:named-let-group document all-names children)
-  ;;children: (let loop ((binding ...) ...) body ...)
-  ;;named-let groups stand alone (never merge) and use their own name as
-  ;;the call filter
-  (let ([name-node (cadr children)])
-    (let ([name
-            (let ([e (annotation-stripped (index-node-datum/annotations name-node))])
-              (and (symbol? e) e))])
-      (private:make-group 'named-let
-        (if name (list name) '())
-        (if name (list name) '())
-        name
-        (cdddr children)))))
-
-(define (private:make-group kind names call-names name body)
-  (if (and name (not (null? body)))
-    (let ([calls (private:find-calls #f call-names body (make-eq-hashtable))])
-      (if (null? calls)
-        #f
-        `(,kind ,names ,(list (list-ref body (- (length body) 1))) ,calls)))
-    #f))
-
-;;find application nodes in body whose head symbol is in call-names.
-;;Returns ((node . name) ...). document = #f skips the resolution check; a
-;;false positive only adds a sound candidate union at a same-named call.
-(define (private:find-calls document call-names body visited)
-  (let loop ([nodes body])
-    (if (null? nodes)
-      '()
-      (let* ([node (dereference-index-node (car nodes))]
-          [children (if (index-node? node) (index-node-children node) '())]
-          [here
-            (and (index-node? node)
-              (not (hashtable-ref visited node #f))
-              (private:group-call? document node call-names))])
-        (if (index-node? node) (hashtable-set! visited node #t) (void))
-        (append
-          (if here (list (cons node (car here))) '())
-          (loop children)
-          (loop (cdr nodes)))))))
-
-;;returns (name) when node's head is a symbol in call-names and (when
-;;document is given) resolves to a reference with a matching root ancestor
-(define (private:group-call? document node call-names)
-  (let* ([children (index-node-children node)]
-      [head (and (pair? children) (car children))])
-    (and head
-      (let ([expr (annotation-stripped (index-node-datum/annotations head))])
-        (and (symbol? expr)
-          (find (lambda (n) (eq? n expr)) call-names)
-          (or (not document)
-            (find
-              (lambda (ref)
-                (find
-                  (lambda (top) (eq? expr (identifier-reference-identifier top)))
-                  (root-ancestor ref)))
-              (find-available-references-for document node expr)))
-          (cons expr '()))))))
+;; Group collection lives in the rules (see the header note)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Union-merge raw groups connected by cross-calls (mutual recursion).
 ;;Only 'define groups participate; 'named-let groups are always standalone.

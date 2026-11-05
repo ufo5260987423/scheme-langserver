@@ -1,10 +1,11 @@
 (library (scheme-langserver analysis type substitutions rules define)
-  (export define-process)
+  (export define-process possible-fix-point-process:define)
   (import 
     (chezscheme) 
     (ufo-match-steer)
 
     (scheme-langserver analysis type substitutions util)
+    (scheme-langserver analysis type substitutions fixpoint)
 
     (scheme-langserver virtual-file-system index-node))
 
@@ -32,4 +33,64 @@
       (extend-index-node-substitution-list name return)
       (extend-index-node-substitution-list return name)]
     [else '()]))
+
+;;fixpoint (P1) collection hook, mounted as the cddr half of the rule chain
+;;in generator.sls (see fixpoint.sls's header): runs AFTER this define's
+;;subtree has been stepped. Builds a raw recursion group for the three
+;;recursive-define shapes and notes it; merging and solving stay in the
+;;gated fixpoint pass.
+(define (possible-fix-point-process:define document index-node)
+  (let ([children (index-node-children index-node)])
+    (when (and (>= (length children) 3) (index-node? (cadr children)))
+      (let* ([name-expr
+              (annotation-stripped
+                (index-node-datum/annotations (cadr children)))])
+        (cond
+          ;;(define (name . params) body ...)
+          [(and (pair? name-expr) (not (null? name-expr)) (symbol? (car name-expr)))
+            (private:note-define-group! document (car name-expr) (cddr children))]
+          ;;(define name (lambda ...)) / (define name (case-lambda ...))
+          [(symbol? name-expr)
+            (let ([value-node (caddr children)])
+              (when (index-node? value-node)
+                (let* ([value-kids (index-node-children value-node)]
+                    [value-head-expr
+                      (and (not (null? value-kids))
+                        (let ([e (annotation-stripped
+                                    (index-node-datum/annotations (car value-kids)))])
+                          (and (symbol? e) e)))])
+                  (cond
+                    [(eq? 'lambda value-head-expr)
+                      (private:note-define-group! document name-expr (cddr value-kids))]
+                    [(eq? 'case-lambda value-head-expr)
+                      (private:note-case-lambda-group! document name-expr (cdr value-kids))]
+                    [else '()]))))]
+          [else '()])))))
+
+;;(define (name . params) body ...) / (define name (lambda ...))
+(define (private:note-define-group! document name body)
+  (when (and name (not (null? body)))
+    (let ([calls (fixpoint-find-calls body)])
+      (unless (null? calls)
+        (fixpoint-note-group! document
+          `(define (,name) ,(list (list-ref body (- (length body) 1))) ,calls))))))
+
+;;(define name (case-lambda ...)) -- each clause is an independent return
+;;chain; solve jointly
+(define (private:note-case-lambda-group! document name clauses)
+  (let ([return-nodes
+          (filter index-node?
+            (map
+              (lambda (clause)
+                (let ([body (cdr (index-node-children clause))])
+                  (if (null? body) #f (list-ref body (- (length body) 1)))))
+              clauses))]
+      [calls
+        (fold-left
+          (lambda (acc clause)
+            (append acc (fixpoint-find-calls (cdr (index-node-children clause)))))
+          '()
+          clauses)])
+    (unless (null? calls)
+      (fixpoint-note-group! document `(define (,name) ,return-nodes ,calls)))))
 )

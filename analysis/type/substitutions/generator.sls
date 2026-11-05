@@ -51,6 +51,10 @@
       ;;root-library-node reaches the macro type-inference arm (see
       ;;establish-available-rules-from): it locates the workspace's own
       ;;copies of macro libraries for the expansion env bootstrap.
+      ;;Drop any fixpoint groups noted by a previous analysis of this
+      ;;document first: a refresh re-runs the walk and the accumulator
+      ;;table must not accumulate duplicates.
+      (fixpoint-clear-document! document)
       (for-each
         (lambda (index-node)
           (step document index-node root-library-node
@@ -133,7 +137,27 @@
                           "type" "type-inference-warning"))
                       '()]
                     [else (raise c)])))
-              (cons head rest)))]
+              (cons head rest))
+            ;;the cddr half of a rule chain runs AFTER the children walk --
+            ;;the same two-phase idiom as the identifier side's
+            ;;(do-nothing . begin-process). Today only the fixpoint
+            ;;collection hooks use it (possible-fix-point-process:define /
+            ;;:named-let); singleton chains have a null cddr and no-op.
+            (try
+              (for-each
+                (lambda (target-rule)
+                  (let ([after (cddr target-rule)])
+                    (when (procedure? after)
+                      (after current-document current-index-node))))
+                target-rules)
+              (except c
+                [(condition? c)
+                  (append-new-diagnoses current-document
+                    `(,(index-node-start current-index-node) ,(index-node-end current-index-node) 2
+                      ,(string-append "Type inference warning: " (condition-message c))
+                      "type" "type-inference-warning"))
+                  '()]
+                [else (raise c)])))]
         [else (trivial-process current-document current-index-node)])]
       [(current-document current-index-node available-identifiers quasi-quoted-syntaxed root-library-node macro-infer)
         (match-index-node current-index-node
@@ -172,7 +196,7 @@
           (private-add-rule rules `((,application-process) . ,identifier))
           (if (find meta? top)
             (cond 
-              [(equal? r '(define)) (private-add-rule rules `((,define-process) . ,identifier))]
+              [(equal? r '(define)) (private-add-rule rules `((,define-process . ,possible-fix-point-process:define) . ,identifier))]
               [(equal? r '(define-record-type)) (private-add-rule rules `((,define-record-type-process) . ,identifier))]
               [(equal? r '(define-top-level-value)) (private-add-rule rules `((,define-process) . ,identifier))]
               [(equal? r '(do)) (private-add-rule rules `((,do-process) . ,identifier))]
@@ -184,7 +208,7 @@
               [(equal? r '(case-lambda)) (private-add-rule rules `((,case-lambda-process) . ,identifier))]
               [(equal? r '(lambda)) (private-add-rule rules `((,lambda-process) . ,identifier))]
 
-              [(equal? r '(let)) (private-add-rule rules `((,let-process) . ,identifier))]
+              [(equal? r '(let)) (private-add-rule rules `((,let-process . ,possible-fix-point-process:named-let) . ,identifier))]
               [(equal? r '(let*)) (private-add-rule rules `((,let*-process) . ,identifier))]
               [(equal? r '(letrec)) (private-add-rule rules `((,let*-process) . ,identifier))]
               [(equal? r '(letrec*)) (private-add-rule rules `((,let*-process) . ,identifier))]
