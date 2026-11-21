@@ -166,8 +166,23 @@
               '())])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;The LSP spec allows rootUri to be null (e.g. Helix sends rootUri null with a valid rootPath). Fall back to the deprecated
+;;rootPath, then to the first workspace folder. Returns #f when the client gave no root at all.
+(define (private:resolve-root-path params)
+  (let ([root-uri (assq-ref params 'rootUri)]
+      [root-path (assq-ref params 'rootPath)]
+      [workspace-folders (assq-ref params 'workspaceFolders)])
+    (cond
+      [(string? root-uri) (uri->path root-uri)]
+      [(string? root-path) root-path]
+      [(and (vector? workspace-folders)
+          (> (vector-length workspace-folders) 0)
+          (string? (assq-ref (vector-ref workspace-folders 0) 'uri)))
+        (uri->path (assq-ref (vector-ref workspace-folders 0) 'uri))]
+      [else #f])))
+
 (define (initialize server-instance id params)
-  (let* ([root-path (uri->path (assq-ref params 'rootUri))]
+  (let* ([root-path (private:resolve-root-path params)]
         [client-capabilities (assq-ref params 'capabilities)]
         [window (assq-ref client-capabilities 'window)]
         [workDoneProgress? (if window (assq-ref window 'workDoneProgress) #f)]
@@ -204,18 +219,21 @@
                             (file-filter->watched-file-glob-patterns (server-file-filter server-instance))))))
               )])
 
-    (if (null? (server-mutex server-instance))
-      (begin
+    (cond
+      [(not root-path)
+        (fail-response id invalid-params "initialize: no workspace root (rootUri, rootPath and workspaceFolders are all empty)")]
+      [(null? (server-mutex server-instance))
         (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #f (server-type-inference? server-instance) (server-cache-path server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)
-        (success-response id (make-alist 'capabilities server-capabilities)))
-      (with-mutex (server-mutex server-instance)
-        (if (null? (server-workspace server-instance))
-          (begin
-            (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #t (server-type-inference? server-instance) (server-cache-path server-instance)))
-            (server-work-done-progress?-set! server-instance workDoneProgress?)
-            (success-response id (make-alist 'capabilities server-capabilities)))
-          (fail-response id server-error-start "server has been initialized"))))))
+        (success-response id (make-alist 'capabilities server-capabilities))]
+      [else
+        (with-mutex (server-mutex server-instance)
+          (if (null? (server-workspace server-instance))
+            (begin
+              (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #t (server-type-inference? server-instance) (server-cache-path server-instance)))
+              (server-work-done-progress?-set! server-instance workDoneProgress?)
+              (success-response id (make-alist 'capabilities server-capabilities)))
+            (fail-response id server-error-start "server has been initialized")))])))
 
 (define init-server
     (case-lambda
