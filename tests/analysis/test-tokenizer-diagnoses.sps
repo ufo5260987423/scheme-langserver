@@ -19,6 +19,11 @@
         [(string=? substr (substring str i (+ i sub-len))) #t]
         [else (loop (+ i 1))]))))
 
+;; The cases below write their source to this directory; create it so the test
+;; doesn't depend on it being left over from an earlier run.
+(unless (file-directory? "/tmp/test-tokenizer")
+  (mkdir "/tmp/test-tokenizer"))
+
 (test-begin "tokenizer-diagnoses")
 
 (test-begin "nested-unclosed-parens")
