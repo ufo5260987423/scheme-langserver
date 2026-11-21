@@ -739,7 +739,7 @@
     (let loop ([c (get-char ip)]
         [inline-comment? #f])
       (cond 
-        [(eof-object? c) (- (port-position ip) 1)]
+        [(eof-object? c) (max 0 (- (port-position ip) 1))]
         [(eqv? #\newline c) (loop (get-char ip) #f)]
         [(eqv? #\return c) (loop (get-char ip) #f)]
         [(eqv? c #\;
