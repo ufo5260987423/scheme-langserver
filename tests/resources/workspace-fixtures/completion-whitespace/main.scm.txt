@@ -1,0 +1,6 @@
+(define greeting "hi")
+(display )
+( )
+(display "a" )
+gree
+(list (display ))

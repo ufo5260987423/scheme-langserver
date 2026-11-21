@@ -80,22 +80,27 @@
             (lambda (identifier) (identifier-reference->completion-item-alist identifier prefix "" position))
             (sort-identifier-references whole-list))]))))))
 
+;;'() means the position doesn't constrain the type. That is also the case for a node without a parent: a top-level form,
+;;which is what the cursor resolves to on whitespace inside a top-level list such as "(display |)".
 (define (private-generate-position-expression index-node)
   (let ([ancestor (index-node-parent index-node)])
-    (if (and (not (null? ancestor)) (is-first-child? index-node))
-      `(,ancestor <- (inner:list? ,@(cdr (index-node-children ancestor))))
-      (let* ([children (index-node-children ancestor)]
-          [head (car children)]
-          [rests (cdr children)]
-          [index (index-of rests index-node)]
-          [symbols (generate-symbols-with "d" (length rests))])
-        (if (= index (length rests))
-          '()
-          `((with ((a b c)) 
-            ((with ((x ,@symbols x0 ...))
-              ,(vector-ref (list->vector symbols) index))
-              c)) 
-            ,head))))))
+    (cond
+      [(null? ancestor) '()]
+      [(is-first-child? index-node)
+        `(,ancestor <- (inner:list? ,@(cdr (index-node-children ancestor))))]
+      [else
+        (let* ([children (index-node-children ancestor)]
+            [head (car children)]
+            [rests (cdr children)]
+            [index (index-of rests index-node)]
+            [symbols (generate-symbols-with "d" (length rests))])
+          (if (= index (length rests))
+            '()
+            `((with ((a b c)) 
+              ((with ((x ,@symbols x0 ...))
+                ,(vector-ref (list->vector symbols) index))
+                c)) 
+              ,head)))])))
 
 (define (sort-with-type-inferences position-index-node target-identifier-reference-list)
   (let* ([position-expression (private-generate-position-expression position-index-node)]
