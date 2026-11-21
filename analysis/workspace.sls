@@ -28,6 +28,8 @@
     update-file-node-with-tail
 
     attach-new-file
+    attach-opened-document
+    detach-opened-document
 
     save-workspace-cache-for!)
   (import
@@ -628,15 +630,78 @@
               (file-node-children-set! parent `(,@(file-node-children parent) ,node))
               node)]))]))
 
+(define (private:top-environment->meta-library top-environment)
+  (case top-environment
+    ['r7rs '(scheme base)]
+    ['s7 '(s7)]
+    ['goldfish '(s7)]
+    ['fluent '(fluent)]
+    [else '(chezscheme)]))
+
+; Find the folder node for dir under node, creating folder nodes for directories that don't exist (yet). dir must be node's
+; path or below it.
+(define (private:ensure-folder-node node dir)
+  (if (equal? (file-node-path node) dir)
+    node
+    (let ([child
+          (find
+            (lambda (child)
+              (and (file-node-folder? child)
+                (or (equal? (file-node-path child) dir)
+                  (string-prefix? (string-append (file-node-path child) (string (directory-separator))) dir))))
+            (file-node-children node))])
+      (if child
+        (private:ensure-folder-node child dir)
+        (let* ([rest (substring dir (+ 1 (string-length (file-node-path node))) (string-length dir))]
+            [name (let loop ([i 0])
+                    (cond
+                      [(= i (string-length rest)) rest]
+                      [(char=? (string-ref rest i) (directory-separator)) (substring rest 0 i)]
+                      [else (loop (+ i 1))]))]
+            [new-node (make-file-node (string-append (file-node-path node) (string (directory-separator)) name) name node #t '() '())])
+          (file-node-children-set! node `(,@(file-node-children node) ,new-node))
+          (private:ensure-folder-node new-node dir))))))
+
+; Register a document the client opened but that isn't in the workspace, typically a new buffer that hasn't been saved
+; yet. Its content comes from the client, not the disk, and it bypasses the file filter because the client explicitly
+; opened it. Returns the new file-node, or '() when path is outside the workspace root.
+(define (attach-opened-document workspace-instance path text)
+  (let* ([root-file-node (workspace-file-node workspace-instance)]
+      [root-path (file-node-path root-file-node)]
+      [top-environment (workspace-top-environment workspace-instance)])
+    (cond
+      [(not (string-prefix? (string-append root-path (string (directory-separator))) path)) '()]
+      [(file-node? (walk-file root-file-node path)) (walk-file root-file-node path)]
+      [else
+        (let* ([parent (private:ensure-folder-node root-file-node (path-parent path))]
+            [document (make-document (path->uri path) "" (find-meta (private:top-environment->meta-library top-environment) top-environment))]
+            [node (make-file-node path (path->name path) parent #f '() document)])
+          (file-node-children-set! parent `(,@(file-node-children parent) ,node))
+          ; Index the client's text the same way an edit would: this tokenizes it, registers any library it defines and
+          ; updates the file linkage.
+          (update-file-node-with-tail workspace-instance node text)
+          node)])))
+
+; Drop a document registered by attach-opened-document once the client closes it without having saved it, so a
+; discarded buffer's definitions and libraries don't linger. Folders that only existed for it are removed too. Files
+; that exist on disk are left alone: the disk is authoritative again.
+(define (detach-opened-document workspace-instance path)
+  (let ([node (walk-file (workspace-file-node workspace-instance) path)])
+    (when (and (file-node? node) (not (file-node-folder? node)) (not (file-exists? path)))
+      ; Emptying the document unregisters any library it defined and refreshes its dependants.
+      (update-file-node-with-tail workspace-instance node "")
+      (shrink-file-linkage! (workspace-file-linkage workspace-instance) path)
+      (let loop ([child node] [parent (file-node-parent node)])
+        (file-node-children-set! parent (filter (lambda (sibling) (not (eq? sibling child))) (file-node-children parent)))
+        (when (and (null? (file-node-children parent))
+                (not (null? (file-node-parent parent)))
+                (not (file-directory? (file-node-path parent))))
+          (loop parent (file-node-parent parent)))))))
+
 (define (init-document path top-environment)
   (let ([uri (path->uri path)]
       [s (read-string path)]
-      [meta-lib (case top-environment
-                  ['r7rs '(scheme base)]
-                  ['s7 '(s7)]
-                  ['goldfish '(s7)]
-                  ['fluent '(fluent)]
-                  [else '(chezscheme)])])
+      [meta-lib (private:top-environment->meta-library top-environment)])
     (cond
       [(string? s)
         (let ([d (make-document uri s (find-meta meta-lib top-environment))])

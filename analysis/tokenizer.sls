@@ -653,7 +653,9 @@
     ([source path start-position tolerant? maybe-document]
       (source-file->annotations source path start-position tolerant? maybe-document 'r6rs))
     ([source path start-position tolerant? maybe-document top-environment]
-      (if (file-exists? path)
+      ;The source text is always parsed from memory. A document the client opened before saving it has no file on disk
+      ;yet, so its source-file-descriptor is built from that text instead.
+      (if (or (file-exists? path) (string? source))
         (let* ([preprocessed-source
                  (if tolerant?
                    (let* ([bad-positions (compute-bad-brackets source)]
@@ -668,7 +670,11 @@
                      cleaned-source)
                    source)]
                [port (open-string-input-port preprocessed-source)]
-               [source-file-descriptor (make-source-file-descriptor path (open-file-input-port path))])
+               [source-file-descriptor
+                 (make-source-file-descriptor path
+                   (if (file-exists? path)
+                     (open-file-input-port path)
+                     (open-bytevector-input-port (string->utf8 source))))])
           (set-port-position! port start-position)
           (filter annotation? 
             (let loop ([position start-position])
