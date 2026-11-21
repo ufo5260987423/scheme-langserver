@@ -36,7 +36,7 @@
 (define (private:save-workspace-cache-if-any server-instance)
   (let ([workspace (server-workspace server-instance)]
       [cache-path (server-cache-path server-instance)])
-    (when (and workspace (not (null? workspace)) cache-path)
+    (when (and workspace (not (null? workspace)) cache-path (not (workspace-single-file? workspace)))
       (guard (ex [else
               (do-log "failed to save workspace cache" server-instance)
               (do-log (format "cache save exception: ~a ~a"
@@ -220,8 +220,14 @@
               )])
 
     (cond
-      [(not root-path)
-        (fail-response id invalid-params "initialize: no workspace root (rootUri, rootPath and workspaceFolders are all empty)")]
+      [(and (not root-path) (null? (server-workspace server-instance)))
+        ;No root at all (e.g. Neovim found no root marker): single-file mode, analysing only the documents the client opens.
+        (server-workspace-set! server-instance
+          (init-single-file-workspace (server-file-filter server-instance) (server-top-environment server-instance)
+            (not (null? (server-mutex server-instance))) (server-type-inference? server-instance)))
+        (server-work-done-progress?-set! server-instance workDoneProgress?)
+        (success-response id (make-alist 'capabilities server-capabilities))]
+      [(not root-path) (fail-response id server-error-start "server has been initialized")]
       [(null? (server-mutex server-instance))
         (server-workspace-set! server-instance (init-workspace root-path (server-file-filter server-instance) (server-top-environment server-instance) #f (server-type-inference? server-instance) (server-cache-path server-instance)))
         (server-work-done-progress?-set! server-instance workDoneProgress?)

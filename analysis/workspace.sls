@@ -30,6 +30,8 @@
     attach-new-file
     attach-opened-document
     detach-opened-document
+    init-single-file-workspace
+    workspace-single-file?
 
     save-workspace-cache-for!)
   (import
@@ -97,6 +99,12 @@
           (new file-node library-node file-linkage (if threaded? (make-mutex) '()) facet file-filter threaded? type-inference? top-environment undiagnosed-paths path->mtime-cache)]))))
 
 (define (refresh-workspace workspace-instance)
+  (if (workspace-single-file? workspace-instance)
+    ;A single-file workspace has no root to rescan: it only holds the documents the client opened.
+    workspace-instance
+    (private:refresh-workspace-from-disk workspace-instance)))
+
+(define (private:refresh-workspace-from-disk workspace-instance)
   (let* ([path (file-node-path (workspace-file-node workspace-instance))]
       [root-file-node (init-virtual-file-system path '() (workspace-facet workspace-instance) (workspace-top-environment workspace-instance))]
       [root-library-node (init-library-node root-file-node (workspace-top-environment workspace-instance))]
@@ -108,6 +116,18 @@
     (workspace-file-linkage-set! workspace-instance file-linkage)
     (workspace-undiagnosed-paths-set! workspace-instance (apply append batches))
     workspace-instance))
+
+;Single-file mode: when the client gives no workspace root, the workspace holds exactly the documents the client has open
+;(see attach-opened-document / detach-opened-document) and nothing is scanned from disk. Its root file-node has the empty
+;path, so every absolute path falls under it; its facet rejects every path, so file events never pull files in.
+(define (init-single-file-workspace file-filter top-environment threaded? type-inference?)
+  (let* ([root-file-node (make-file-node "" "" '() #t '() '())]
+      [root-library-node (init-library-node root-file-node top-environment)]
+      [file-linkage (init-file-linkage root-file-node root-library-node top-environment)])
+    (make-workspace root-file-node root-library-node file-linkage (lambda (path) #f) file-filter threaded? type-inference? top-environment '())))
+
+(define (workspace-single-file? workspace-instance)
+  (equal? "" (file-node-path (workspace-file-node workspace-instance))))
 
 (define (private:generate-facet file-filter path)
   (file-filter->predicate file-filter path))
@@ -684,10 +704,12 @@
 
 ; Drop a document registered by attach-opened-document once the client closes it without having saved it, so a
 ; discarded buffer's definitions and libraries don't linger. Folders that only existed for it are removed too. Files
-; that exist on disk are left alone: the disk is authoritative again.
+; that exist on disk are left alone: the disk is authoritative again. In single-file mode the workspace only holds open
+; documents, so a closed document is always dropped.
 (define (detach-opened-document workspace-instance path)
-  (let ([node (walk-file (workspace-file-node workspace-instance) path)])
-    (when (and (file-node? node) (not (file-node-folder? node)) (not (file-exists? path)))
+  (let ([node (walk-file (workspace-file-node workspace-instance) path)]
+      [single-file? (workspace-single-file? workspace-instance)])
+    (when (and (file-node? node) (not (file-node-folder? node)) (or single-file? (not (file-exists? path))))
       ; Emptying the document unregisters any library it defined and refreshes its dependants.
       (update-file-node-with-tail workspace-instance node "")
       (shrink-file-linkage! (workspace-file-linkage workspace-instance) path)
@@ -695,7 +717,7 @@
         (file-node-children-set! parent (filter (lambda (sibling) (not (eq? sibling child))) (file-node-children parent)))
         (when (and (null? (file-node-children parent))
                 (not (null? (file-node-parent parent)))
-                (not (file-directory? (file-node-path parent))))
+                (or single-file? (not (file-directory? (file-node-path parent)))))
           (loop parent (file-node-parent parent)))))))
 
 (define (init-document path top-environment)

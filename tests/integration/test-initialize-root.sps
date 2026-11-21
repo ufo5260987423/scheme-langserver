@@ -72,10 +72,11 @@
     (test-equal "workspace root" fixture-path (workspace-root (cdr r))))
 (test-end)
 
-(test-begin "initialize without any root fails cleanly")
+(test-begin "initialize without any root starts in single-file mode")
+  ;; This is what Neovim sends when no root marker is found (see #77).
   (let ([r (initialize-with "\"rootUri\":null,\"rootPath\":null,\"workspaceFolders\":null")])
-    (test-assert "returns InvalidParams" (string-contains (car r) "\"code\":-32602"))
-    (test-assert "explains why" (string-contains (car r) "no workspace root")))
+    (test-assert "succeeds" (string-contains (car r) "\"capabilities\""))
+    (test-assert "single-file workspace" (workspace-single-file? (server-workspace (cdr r)))))
 (test-end)
 
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))

@@ -26,9 +26,11 @@
     (map 
       (lambda (file-node)
         (refresh-workspace-for workspace file-node))
-      (map 
-        (lambda (path) (attach-new-file path root-file-node facet))
-        paths))))
+      ;attach-new-file returns '() for paths the facet rejects (always, in single-file mode).
+      (filter file-node?
+        (map 
+          (lambda (path) (attach-new-file path root-file-node facet))
+          paths)))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didRenameFiles
 (define (did-rename workspace params)
@@ -42,7 +44,8 @@
           [root-file-node (workspace-file-node workspace)]
           [facet (workspace-facet workspace)]
           [new-file-node (attach-new-file new-path root-file-node facet)])
-        (file-node-document-set! new-file-node (file-node-document old-file-node))))
+        (when (and (file-node? new-file-node) (file-node? old-file-node))
+          (file-node-document-set! new-file-node (file-node-document old-file-node)))))
     (vector->list (assq-ref params 'files))))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeWatchedFiles
