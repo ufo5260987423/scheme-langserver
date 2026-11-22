@@ -44,7 +44,14 @@
         ;the other party will return paths with drive letters cased the same as itself.
         (null? (resolve-uri->file-node (workspace-file-node workspace) uri)))
         ;TODO:well, can be optimized
-        (refresh-workspace workspace)]
+        (refresh-workspace workspace)
+        ;A rescan only finds files on disk that pass the file filter. A new buffer that hasn't been saved yet (or a file the
+        ;filter excludes) is registered from the text the client sent.
+        (when (and (string? text) (null? (walk-file (workspace-file-node workspace) path)))
+          (if (null? (workspace-mutex workspace))
+            (attach-opened-document workspace path text)
+            (with-mutex (workspace-mutex workspace)
+              (attach-opened-document workspace path text))))]
       [(and (file-node? target-file) (string? text)
           (not (equal? (document-text (file-node-document target-file)) text)))
         ; The client may have opened a file whose content differs from the
@@ -58,14 +65,19 @@
             (update-file-node-with-tail workspace target-file text)))]
       [else '()])))
 
-(define (did-close _workspace params . maybe-open-document-uris)
+(define (did-close workspace params . maybe-open-document-uris)
   (let* ([text-document (alist->text-document (assq-ref params 'textDocument))]
       [uri (text-document-uri text-document)]
       [open-document-uris (if (null? maybe-open-document-uris) #f (car maybe-open-document-uris))])
     (when (and open-document-uris (string? uri))
       (hashtable-delete! open-document-uris uri))
-    ; did-close currently does not need to mutate the document; the LSP spec
-    ; treats the file as closed and the disk as authoritative again.
+    ; The LSP spec treats the file as closed and the disk as authoritative again. A document that was never saved has
+    ; nothing on disk, so drop it.
+    (when (string? uri)
+      (if (null? (workspace-mutex workspace))
+        (detach-opened-document workspace (uri->path uri))
+        (with-mutex (workspace-mutex workspace)
+          (detach-opened-document workspace (uri->path uri)))))
     '()))
 
 ; https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didSave
@@ -89,7 +101,7 @@
 (define (did-change workspace params)
   (let* ([versioned-text-document-identifier (alist->versioned-text-document-identifier (assq-ref params 'textDocument))]
       [file-node (walk-file (workspace-file-node workspace) (uri->path (versioned-text-document-identifier-uri versioned-text-document-identifier)))]
-      [document-text (document-text (file-node-document file-node))]
+      [document-text (if (file-node? file-node) (document-text (file-node-document file-node)) "")]
       [body (lambda() 
           (let loop ([content-changes (map alist->text-edit (vector->list (assq-ref params 'contentChanges)))]
               [text document-text])
@@ -115,8 +127,12 @@
 ;;- apply the `TextDocumentContentChangeEvent`s in a single notification
 ;;  in the order you receive them.
                   (string-replace text temp-text start end))))))])
-    (if (null? (workspace-mutex workspace))
-      (body)
-      (with-mutex (workspace-mutex workspace)
-        (body)))))
+    (cond
+      ;didOpen registers every document the client opens, so this only happens for a client that sends changes for a
+      ;document it never opened. There is nothing to apply the changes to.
+      [(not (file-node? file-node)) '()]
+      [(null? (workspace-mutex workspace)) (body)]
+      [else
+        (with-mutex (workspace-mutex workspace)
+          (body))])))
 )
