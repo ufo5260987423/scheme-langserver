@@ -61,12 +61,16 @@
                 (server-type-inference? server-instance)
                 (not (null? (server-mutex server-instance)))))))))))
 
+;;For JSON-RPC notifications, `id` is absent => `#f`. The server must not reply to a notification, even when handling it
+;;failed; the error has already been logged by the caller.
 (define (private:send-error-response server-instance id method)
-  (try
-    (send-message server-instance (fail-response id unknown-error-code method))
-    (except c
-      [(condition? c)
-        (do-log "Failed to send error response" server-instance)])))
+  (if id
+    (try
+      (send-message server-instance (fail-response id unknown-error-code method))
+      (except c
+        [(condition? c)
+          (do-log "Failed to send error response" server-instance)]))
+    '()))
 
 (define (private:try-catch server-instance request debug?)
   (let ([method (request-method request)]
