@@ -48,4 +48,32 @@
       (test-equal "textEdit end character" 6 (assq-ref end 'character)))))
 (test-end)
 
+;; With auto-pairs, typing "(display " leaves the cursor on whitespace right
+;; before the closing paren. Completion there used to raise
+;; ("~s is not of type ~s" () index-node) when type inference was enabled
+;; (the server's default).
+(test-begin "completion on whitespace before a closing paren")
+(let* ([fixture (string-append (current-directory) "/tests/resources/workspace-fixtures/completion-whitespace")]
+       [workspace (init-workspace fixture 'txt 'r6rs #f #t)]
+       [uri (path->uri (string-append fixture "/main.scm.txt"))]
+       [complete
+         (lambda (line character)
+           (guard (e [else (list 'raised (if (condition? e) (condition-message e) e))])
+             (completion workspace
+               (make-alist
+                 'textDocument (make-alist 'uri uri)
+                 'position (make-alist 'line line 'character character)))))]
+       [labels
+         (lambda (result)
+           (if (vector? result) (map (lambda (item) (assq-ref item 'label)) (vector->list result)) '()))])
+  (let ([result (complete 1 9)])
+    (test-assert "(display |) returns a vector" (vector? result))
+    (test-assert "(display |) offers identifiers in scope" (member "greeting" (labels result))))
+  (test-assert "( |) returns a vector" (vector? (complete 2 2)))
+  (test-assert "(display \"a\" |) returns a vector" (vector? (complete 3 13)))
+  ;; Other positions around top-level and nested lists keep working.
+  (test-assert "top-level gree| returns a vector" (vector? (complete 4 4)))
+  (test-assert "(list (display |)) offers greeting" (member "greeting" (labels (complete 5 15)))))
+(test-end)
+
 (exit (if (zero? (test-runner-fail-count (test-runner-get))) 0 1))
