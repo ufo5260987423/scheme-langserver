@@ -33,10 +33,10 @@
         (rnrs unicode) (rnrs enums) (rnrs r5rs) (rnrs eval) (rnrs hashtables) (rnrs sorting) (rnrs programs) (rnrs mutable-pairs) 
         (rnrs mutable-strings) (rnrs io ports) (rnrs io simple) (rnrs arithmetic flonums) (rnrs arithmetic bitwise) (rnrs arithmetic fixnums)
         (rnrs records syntactic) (rnrs records procedural) (rnrs records inspection) (chezscheme csv7) (scheme csv7))]
-      [(eq? 'r7rs top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
-        (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs))]
-      [(eq? 's7 top-environment) '((scheme base) (scheme case lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
-        (scheme load) (scheme process context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs) (s7))]
+      [(eq? 'r7rs top-environment) '((scheme base) (scheme case-lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
+        (scheme load) (scheme process-context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs))]
+      [(eq? 's7 top-environment) '((scheme base) (scheme case-lambda) (scheme char) (scheme complex) (scheme cxr) (scheme eval) (scheme file) (scheme inexact) (scheme lazy)
+        (scheme load) (scheme process-context) (scheme read) (scheme repl) (scheme time) (scheme write) (scheme r5rs) (s7))]
       [else #f])
     list-instance))
 
@@ -101,7 +101,7 @@
         [(equal? top-environment 'r7rs) 
           (cond
             [(equal? list-instance '(scheme base)) scheme-base]
-            [(equal? list-instance '(scheme case lambda)) scheme-case-lambda]
+            [(equal? list-instance '(scheme case-lambda)) scheme-case-lambda]
             [(equal? list-instance '(scheme char)) scheme-char]
             [(equal? list-instance '(scheme complex)) scheme-complex]
             [(equal? list-instance '(scheme cxr)) scheme-cxr]
@@ -110,7 +110,7 @@
             [(equal? list-instance '(scheme inexact)) scheme-inexact]
             [(equal? list-instance '(scheme lazy)) scheme-lazy]
             [(equal? list-instance '(scheme load)) scheme-load]
-            [(equal? list-instance '(scheme process context)) scheme-process-context]
+            [(equal? list-instance '(scheme process-context)) scheme-process-context]
             [(equal? list-instance '(scheme read)) scheme-read]
             [(equal? list-instance '(scheme repl)) scheme-repl]
             [(equal? list-instance '(scheme time)) scheme-time]
@@ -120,7 +120,7 @@
         [(equal? top-environment 's7)
           (cond
             [(equal? list-instance '(scheme base)) scheme-base]
-            [(equal? list-instance '(scheme case lambda)) scheme-case-lambda]
+            [(equal? list-instance '(scheme case-lambda)) scheme-case-lambda]
             [(equal? list-instance '(scheme char)) scheme-char]
             [(equal? list-instance '(scheme complex)) scheme-complex]
             [(equal? list-instance '(scheme cxr)) scheme-cxr]
@@ -129,7 +129,7 @@
             [(equal? list-instance '(scheme inexact)) scheme-inexact]
             [(equal? list-instance '(scheme lazy)) scheme-lazy]
             [(equal? list-instance '(scheme load)) scheme-load]
-            [(equal? list-instance '(scheme process context)) scheme-process-context]
+            [(equal? list-instance '(scheme process-context)) scheme-process-context]
             [(equal? list-instance '(scheme read)) scheme-read]
             [(equal? list-instance '(scheme repl)) scheme-repl]
             [(equal? list-instance '(scheme time)) scheme-time]
@@ -5161,7 +5161,7 @@ scheme-time scheme-write scheme-r5rs s7 fluent))
 (zero? procedure)
 ) 'r7rs))
 
-(define scheme-case-lambda (private-process '(scheme case lambda) '( 
+(define scheme-case-lambda (private-process '(scheme case-lambda) '( 
 (case-lambda syntax)
 ) 'r7rs))
 
@@ -5271,7 +5271,7 @@ scheme-time scheme-write scheme-r5rs s7 fluent))
 (load procedure)
 ) 'r7rs))
 
-(define scheme-process-context (private-process '(scheme process context) '( 
+(define scheme-process-context (private-process '(scheme process-context) '( 
 (command-line procedure)
 (emergency-exit procedure)
 (exit procedure)

@@ -1,0 +1,12 @@
+(import (scheme base)
+        (scheme case-lambda)
+        (scheme process-context)
+        (scheme write))
+
+(define greet
+  (case-lambda
+    [() (greet "world")]
+    [(name) (display name)]))
+
+(greet)
+(exit 0)
